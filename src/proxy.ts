@@ -45,7 +45,7 @@ function setCachedTenant(tenant: CachedTenant): void {
 }
 
 // ---------------------------------------------------------------------------
-// Supabase client for middleware (lightweight, no cookies needed)
+// Supabase client for proxy (lightweight, no cookies needed)
 // ---------------------------------------------------------------------------
 
 function getSupabaseClient() {
@@ -66,7 +66,10 @@ function extractSubdomain(host: string): string | null {
   // Local development: agentur-x.localhost -> "agentur-x"
   if (IS_LOCAL && hostname.endsWith(`.${LOCAL_DOMAIN}`)) {
     const subdomain = hostname.replace(`.${LOCAL_DOMAIN}`, '')
-    return subdomain || null
+    if (!subdomain) return null
+    // Treat "www" as root domain (no tenant)
+    if (subdomain === 'www') return null
+    return subdomain
   }
 
   // Local development: plain localhost -> no subdomain (root domain)
@@ -77,7 +80,10 @@ function extractSubdomain(host: string): string | null {
   // Production: agentur-x.boost-hive.de -> "agentur-x"
   if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
     const subdomain = hostname.replace(`.${ROOT_DOMAIN}`, '')
-    return subdomain || null
+    if (!subdomain) return null
+    // Treat "www" as root domain (no tenant)
+    if (subdomain === 'www') return null
+    return subdomain
   }
 
   // Production: boost-hive.de -> no subdomain (root domain)
@@ -90,16 +96,38 @@ function extractSubdomain(host: string): string | null {
 }
 
 // ---------------------------------------------------------------------------
-// Middleware
+// Header Sanitization
 // ---------------------------------------------------------------------------
 
-export async function middleware(request: NextRequest) {
+// Tenant-related headers that MUST be controlled exclusively by this proxy.
+// Any incoming values are stripped to prevent spoofing attacks (SEC-1).
+const TENANT_HEADERS = ['x-tenant-id', 'x-tenant-slug']
+
+/**
+ * Returns a copy of the request headers with all tenant-related headers removed.
+ * This MUST be used as the base for every response to prevent header spoofing.
+ */
+function sanitizedHeaders(request: NextRequest): Headers {
+  const headers = new Headers(request.headers)
+  for (const h of TENANT_HEADERS) {
+    headers.delete(h)
+  }
+  return headers
+}
+
+// ---------------------------------------------------------------------------
+// Proxy (Next.js 16 convention, replaces deprecated middleware.ts)
+// ---------------------------------------------------------------------------
+
+export async function proxy(request: NextRequest) {
   const host = request.headers.get('host') || ''
   const subdomain = extractSubdomain(host)
 
   // ----- Root domain (no subdomain) → pass through to landing page -----
   if (subdomain === null) {
-    return NextResponse.next()
+    // Strip any spoofed tenant headers before passing through (BUG-1 fix)
+    const headers = sanitizedHeaders(request)
+    return NextResponse.next({ request: { headers } })
   }
 
   // ----- Validate subdomain format -----
@@ -108,13 +136,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // ----- Local development fallback -----
-  if (IS_LOCAL && subdomain !== null) {
+  if (IS_LOCAL) {
     // In local dev, resolve from cache/DB but fall back to test-tenant
     const tenant = await resolveTenant(subdomain)
 
     if (tenant === null) {
       // Use fallback for any subdomain in local dev
-      const headers = new Headers(request.headers)
+      const headers = sanitizedHeaders(request)
       headers.set('x-tenant-id', 'local-dev-fallback')
       headers.set('x-tenant-slug', subdomain)
       console.log(
@@ -123,11 +151,12 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next({ request: { headers } })
     }
 
-    if (tenant.status === 'inactive') {
-      return new NextResponse('Tenant ist inaktiv', { status: 403 })
-    }
+    // NOTE: The inactive-tenant check is handled by RLS policy
+    // `tenants_select_active` which only returns tenants with status = 'active'.
+    // If a tenant is inactive, `resolveTenant()` returns null (treated as 404).
+    // See BUG-4 in QA report for details.
 
-    const headers = new Headers(request.headers)
+    const headers = sanitizedHeaders(request)
     headers.set('x-tenant-id', tenant.id)
     headers.set('x-tenant-slug', tenant.slug)
     return NextResponse.next({ request: { headers } })
@@ -137,18 +166,17 @@ export async function middleware(request: NextRequest) {
   const tenant = await resolveTenant(subdomain)
 
   if (tenant === null) {
-    // Unknown subdomain → 404
+    // Unknown or inactive subdomain → 404
+    // NOTE: Inactive tenants are also filtered out by the RLS policy
+    // `tenants_select_active` (anon key can only read active tenants).
+    // Therefore this branch covers both "not found" and "inactive" cases.
     const url = request.nextUrl.clone()
     url.pathname = '/not-found'
     return NextResponse.rewrite(url, { status: 404 })
   }
 
-  if (tenant.status === 'inactive') {
-    return new NextResponse('Tenant ist inaktiv', { status: 403 })
-  }
-
   // ----- Inject tenant context as request headers -----
-  const headers = new Headers(request.headers)
+  const headers = sanitizedHeaders(request)
   headers.set('x-tenant-id', tenant.id)
   headers.set('x-tenant-slug', tenant.slug)
 
@@ -196,7 +224,7 @@ async function resolveTenant(
 }
 
 // ---------------------------------------------------------------------------
-// Middleware Config — run on all routes except static assets
+// Proxy Config — run on all routes except static assets
 // ---------------------------------------------------------------------------
 
 export const config = {
