@@ -1,0 +1,62 @@
+# PROJ-6: Role-Based Access Control (RBAC)
+
+## Status: Planned
+**Created:** 2026-03-26
+**Last Updated:** 2026-03-26
+
+## Dependencies
+- Requires: PROJ-3 (User Authentication) — Rollen werden in der Session gespeichert
+
+## User Stories
+- Als Owner möchte ich systemweit auf alle Tenants zugreifen können, ohne in einem spezifischen Tenant-Kontext zu sein.
+- Als Admin möchte ich auf alle Verwaltungsfunktionen meines eigenen Tenants zugreifen, aber nicht auf andere Tenants.
+- Als Member möchte ich nur auf die operativen Tools meines Tenants zugreifen, ohne Admin-Bereiche sehen zu können.
+- Als System möchte ich bei jedem Request prüfen, ob der eingeloggte User die nötige Rolle für die angeforderte Ressource hat.
+- Als Admin möchte ich die Rolle eines bestehenden Members innerhalb meines Tenants ändern können.
+
+## Rollen & Berechtigungen
+
+| Aktion | Owner | Admin | Member |
+|--------|-------|-------|--------|
+| Tenant erstellen/löschen | ✅ | ❌ | ❌ |
+| Tenant deaktivieren | ✅ | ❌ | ❌ |
+| Alle Tenants einsehen | ✅ | ❌ | ❌ |
+| Members einladen | ❌ | ✅ | ❌ |
+| Members entfernen | ❌ | ✅ | ❌ |
+| Rollen vergeben (innerhalb Tenant) | ❌ | ✅ | ❌ |
+| Tenant-Tools nutzen | ❌ | ✅ | ✅ |
+| Eigenes Profil bearbeiten | ✅ | ✅ | ✅ |
+
+## Acceptance Criteria
+- [ ] Jeder User hat genau eine Rolle: `owner` | `admin` | `member`
+- [ ] Rolle wird bei Login in Session gesetzt und bei jedem Request validiert
+- [ ] Server-seitige Middleware prüft Rollen für alle geschützten API-Routen
+- [ ] Client-seitige Navigation zeigt nur Menüpunkte, auf die der User Zugriff hat
+- [ ] Admin kann Rolle eines Members zwischen `admin` und `member` wechseln
+- [ ] Owner-Rolle kann nur manuell (DB-Level) vergeben werden — kein UI-Flow
+- [ ] Unbefugter Zugriff auf geschützte Route → HTTP 403 mit klarer Fehlermeldung
+- [ ] Rollen-Checks sind in einer zentralen Middleware/Helper-Funktion implementiert (kein duplicated Code)
+
+## Edge Cases
+- Admin versucht eigene Rolle zu degradieren → Abgelehnt (min. 1 Admin pro Tenant)
+- Letzter Admin eines Tenants soll entfernt werden → Abgelehnt mit Fehlermeldung
+- User wechselt Tenant (via direktem URL-Zugriff) → Zugriff abgelehnt, Rollen gelten nur im eigenen Tenant
+- Owner greift auf Tenant-Route zu → Sonderbehandlung: Owner hat globale Leseberechtigung
+- Role-Check bei API-Route ohne Session → 401 (nicht 403)
+
+## Technical Requirements
+- Security: Rollen-Checks IMMER serverseitig — Client-seitiges Ausblenden ist nur UX, kein Sicherheitsfeature
+- Security: Row-Level Security (RLS) in Supabase als zweite Sicherheitsebene
+- Maintainability: Rollen als TypeScript-Enum / konstante Strings definiert
+
+---
+<!-- Sections below are added by subsequent skills -->
+
+## Tech Design (Solution Architect)
+_To be added by /architecture_
+
+## QA Test Results
+_To be added by /qa_
+
+## Deployment
+_To be added by /deploy_

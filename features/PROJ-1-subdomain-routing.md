@@ -4,6 +4,25 @@
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-26
 
+## Implementation Notes
+**Implementiert am 2026-03-26**
+
+Folgende Dateien wurden erstellt/geändert:
+- `src/middleware.ts` — Subdomain-Extraktion, Tenant-Resolution mit Supabase, In-Memory-Cache (60s TTL), lokaler Fallback für `*.localhost`
+- `src/lib/supabase.ts` — Browser-Client, Server-Client (SSR), schlanker Middleware-Client
+- `src/lib/tenant.ts` — `getTenantContext()` und `requireTenantContext()` für Server Components / Route Handlers
+- `supabase/migrations/001_create_tenants.sql` — `tenants`-Tabelle mit RLS, Policies, Indexes, Trigger, Seed-Tenant
+- `src/app/not-found/page.tsx` — 404-Seite für unbekannte Subdomains
+- `.env.local.example` — Dokumentation aller benötigten Env-Variablen
+
+**Abweichungen vom ursprünglichen Plan:**
+- Next.js 16 Deprecation: `middleware.ts` → künftig `proxy.ts` (noch nicht umbenannt, da breaking change)
+- Lokaler Fallback gibt `local-dev-fallback` als Tenant-ID zurück (kein echter DB-Lookup bei fehlendem Tenant in Dev)
+
+**Noch offen:**
+- Migration manuell in Supabase Dashboard ausführen
+- Lokales Testen mit `agentur-x.localhost:3000` erfordert hosts-file-Eintrag
+
 ## Dependencies
 - None (Fundament für alle anderen Features)
 

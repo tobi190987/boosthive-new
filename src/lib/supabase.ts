@@ -1,14 +1,60 @@
-// Supabase Client Setup
-// Uncomment this file when you're ready to use Supabase
+import { createBrowserClient as createBrowserSupabaseClient } from '@supabase/ssr'
+import { createServerClient as createServerSupabaseClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
-/*
-import { createClient } from '@supabase/supabase-js'
+/**
+ * Supabase Client for Client Components (Browser)
+ * Use this in 'use client' components only.
+ */
+export function createBrowserClient() {
+  return createBrowserSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+/**
+ * Supabase Client for Server Components and Route Handlers
+ * Use this in Server Components, Server Actions, and API Routes.
+ * Must be called within a request context (where cookies() is available).
+ */
+export async function createClient() {
+  const cookieStore = await cookies()
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
-*/
+  return createServerSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // The `setAll` method is called from a Server Component where
+            // cookies cannot be set. This can be safely ignored if middleware
+            // is refreshing user sessions.
+          }
+        },
+      },
+    }
+  )
+}
 
-// For now, export a placeholder to avoid import errors
-export const supabase = null;
+/**
+ * Lightweight Supabase client for Middleware (Edge Runtime).
+ * Does NOT use cookies — used only for tenant lookups.
+ */
+export function createMiddlewareClient() {
+  // Use the base supabase-js client directly for edge-compatible tenant lookups.
+  // We import dynamically to avoid bundling issues in middleware.
+  const { createClient } = require('@supabase/supabase-js')
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
