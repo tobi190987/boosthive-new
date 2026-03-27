@@ -1,6 +1,6 @@
 # PROJ-7: Member Invitation (Admin)
 
-## Status: Planned
+## Status: In Review
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-26
 
@@ -118,7 +118,20 @@ Admin-Routen gesichert via `requireTenantAdmin()` aus PROJ-6.
 `crypto` (Node.js eingebaut), Nodemailer/Mailtrap (PROJ-4), Supabase (PROJ-3), `requireTenantAdmin()` (PROJ-6), alle UI-Komponenten bereits in shadcn/ui vorhanden.
 
 ## QA Test Results
-_To be added by /qa_
+
+### Review Date: 2026-03-27
+### Reviewer: Codex QA
+### Status: READY
+
+### Findings
+- Keine blockierenden Findings im QA-Re-Run.
+
+### Verification
+- `npm run build` erfolgreich
+- Code Review gegen Acceptance Criteria und Edge Cases durchgefuehrt
+- Accept-Flow nutzt jetzt Claim-Logik fuer idempotente Token-Verarbeitung
+- Create/Resend behalten bestehende funktionierende Links bis nach erfolgreichem Mailversand
+- Kein echter End-to-End-Test mit Supabase/Mailtrap in dieser Session
 
 ## Deployment
 _To be added by /deploy_

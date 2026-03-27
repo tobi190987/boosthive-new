@@ -38,6 +38,12 @@ export default async function TenantDashboardPage() {
             <CardContent className="space-y-2 text-sm text-slate-500">
               <p>Von hier aus können die tenant-spezifischen Produktmodule angeschlossen werden.</p>
               <Link
+                href="/settings/team"
+                className="inline-flex font-medium text-[#0d9488] underline-offset-4 hover:underline"
+              >
+                Team-Einladungen verwalten
+              </Link>
+              <Link
                 href="/forgot-password"
                 className="inline-flex font-medium text-[#0d9488] underline-offset-4 hover:underline"
               >
