@@ -225,6 +225,8 @@ function hasPreviewAccess(request: NextRequest): boolean {
 function isPreviewGateBypassPath(pathname: string): boolean {
   return (
     pathname === '/access' ||
+    pathname === '/impressum' ||
+    pathname === '/datenschutz' ||
     pathname.startsWith('/api/access') ||
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
