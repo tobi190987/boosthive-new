@@ -166,50 +166,37 @@ export async function PUT(request: NextRequest) {
           .maybeSingle()
 
         if (tenantStripeError) {
-          console.error(
+          console.warn(
             '[PUT /api/tenant/profile] Stripe-Tenantdaten konnten nicht geladen werden:',
             tenantStripeError
           )
-          return NextResponse.json(
-            { error: 'Stripe-Status konnte nicht geprueft werden.' },
-            { status: 500 }
+        } else if (!tenantStripeData) {
+          console.warn('[PUT /api/tenant/profile] Stripe-Tenantdatensatz fehlt fuer:', tenantId)
+        } else if (!tenantStripeData.stripe_customer_id) {
+          console.warn(
+            '[PUT /api/tenant/profile] Kein stripe_customer_id hinterlegt; Stripe-Pruefung wird uebersprungen.'
           )
-        }
+        } else {
+          let hasPaymentMethod = false
 
-        if (!tenantStripeData) {
-          return NextResponse.json({ error: 'Tenant konnte nicht geladen werden.' }, { status: 404 })
-        }
+          try {
+            const { stripe } = await import('@/lib/stripe')
+            const paymentMethods = await stripe.paymentMethods.list({
+              customer: tenantStripeData.stripe_customer_id,
+              type: 'card',
+              limit: 1,
+            })
+            hasPaymentMethod = paymentMethods.data.length > 0
+          } catch (stripeError) {
+            console.warn('[PUT /api/tenant/profile] Stripe-Pruefung fehlgeschlagen:', stripeError)
+          }
 
-        if (!tenantStripeData.stripe_customer_id) {
-          return NextResponse.json(
-            { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
-            { status: 400 }
-          )
-        }
-
-        let hasPaymentMethod = false
-
-        try {
-          const { stripe } = await import('@/lib/stripe')
-          const paymentMethods = await stripe.paymentMethods.list({
-            customer: tenantStripeData.stripe_customer_id,
-            type: 'card',
-            limit: 1,
-          })
-          hasPaymentMethod = paymentMethods.data.length > 0
-        } catch (stripeError) {
-          console.error('[PUT /api/tenant/profile] Stripe-Pruefung fehlgeschlagen:', stripeError)
-          return NextResponse.json(
-            { error: 'Stripe-Verbindung konnte nicht geprueft werden.' },
-            { status: 500 }
-          )
-        }
-
-        if (!hasPaymentMethod) {
-          return NextResponse.json(
-            { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
-            { status: 400 }
-          )
+          if (!hasPaymentMethod) {
+            return NextResponse.json(
+              { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
+              { status: 400 }
+            )
+          }
         }
       }
 
