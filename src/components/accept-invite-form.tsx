@@ -34,7 +34,6 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
   const [serverError, setServerError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isValidating, setIsValidating] = useState(true)
   const [validation, setValidation] = useState<InvitationValidationState | null>(null)
 
@@ -47,7 +46,6 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
     defaultValues: {
       name: '',
       password: '',
-      confirmPassword: '',
     },
   })
 
@@ -234,33 +232,6 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
             </button>
           </div>
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
-            Passwort bestätigen
-          </Label>
-          <div className="relative">
-            <Input
-              id="confirmPassword"
-              type={showConfirmPassword ? 'text' : 'password'}
-              placeholder="Passwort wiederholen"
-              className={`${fieldClassName} pr-12`}
-              disabled={isSubmitting}
-              {...register('confirmPassword')}
-            />
-            <button
-              type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-900"
-              onClick={() => setShowConfirmPassword((value) => !value)}
-              aria-label={showConfirmPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
-            >
-              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-          {errors.confirmPassword && (
-            <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
-          )}
         </div>
 
         <Button
