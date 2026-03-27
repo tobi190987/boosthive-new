@@ -1,6 +1,6 @@
 # PROJ-1: Subdomain Routing & Tenant Resolution
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-26
 
@@ -300,4 +300,9 @@ Alle kritischen (P0) und die meisten mittelschweren (P1) Bugs wurden erfolgreich
 **Ergebnis: PRODUKTIONSBEREIT** -- Alle P0/P1 Bugs behoben. Feature kann deployed werden.
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-03-27
+**Production URL:** https://boosthive-lrpmvh3xp-tobis-projects-24837701.vercel.app
+**Wildcard Domain:** https://*.boost-hive.de
+**Vercel Project:** tobis-projects-24837701/boosthive-new
+**Build:** Successful (13 routes, Next.js 16.1.1 Turbopack)
