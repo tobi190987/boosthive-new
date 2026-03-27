@@ -227,6 +227,9 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname === '/access' ||
     pathname === '/impressum' ||
     pathname === '/datenschutz' ||
+    pathname === '/reset-password' ||
+    pathname === '/api/auth/email-link' ||
+    pathname === '/api/auth/password-reset/confirm' ||
     pathname.startsWith('/api/access') ||
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
