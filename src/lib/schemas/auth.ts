@@ -15,3 +15,37 @@ export const LoginSchema = z.object({
 })
 
 export type LoginInput = z.infer<typeof LoginSchema>
+
+export const ForgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .min(1, 'E-Mail-Adresse ist erforderlich.')
+    .email('Bitte eine gueltige E-Mail-Adresse eingeben.'),
+})
+
+export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>
+
+export const ResetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Passwort muss mindestens 8 Zeichen lang sein.'),
+    confirmPassword: z
+      .string()
+      .min(1, 'Bitte bestaetige dein neues Passwort.'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Die Passwoerter muessen uebereinstimmen.',
+    path: ['confirmPassword'],
+  })
+
+export type ResetPasswordInput = z.infer<typeof ResetPasswordSchema>
+
+export const ResetPasswordConfirmSchema = ResetPasswordSchema.extend({
+  token: z
+    .string()
+    .min(1, 'Token ist erforderlich.')
+    .min(32, 'Token ist ungueltig.'),
+})
+
+export type ResetPasswordConfirmInput = z.infer<typeof ResetPasswordConfirmSchema>

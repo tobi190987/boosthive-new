@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { buildTenantUrl, sendWelcome } from '@/lib/email'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { CreateTenantSchema } from '@/lib/schemas/tenant'
@@ -131,7 +132,14 @@ export async function POST(request: NextRequest) {
     console.error('[POST /api/owner/tenants] RPC-Fehler:', rpcError)
 
     // Rollback: Auth-User loeschen, da Tenant-Erstellung fehlgeschlagen
-    await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
+    const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
+    if (rollbackError) {
+      console.error(
+        '[POST /api/owner/tenants] ROLLBACK FEHLGESCHLAGEN — Verwaister Auth-User:',
+        newUser.user.id,
+        rollbackError
+      )
+    }
 
     // Spezifische Fehlermeldung bei Unique-Constraint-Verletzung
     if (rpcError.code === '23505') {
@@ -147,8 +155,34 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // TODO: E-Mail-Einladung hier ausloesen (PROJ-4)
-  // Der Admin erhaelt eine Einladungs-E-Mail mit Link zum Passwort-Reset.
+  const redirectTo = buildTenantUrl(slug, '/reset-password')
+  const { data: recoveryLinkData, error: recoveryLinkError } =
+    await supabaseAdmin.auth.admin.generateLink({
+      type: 'recovery',
+      email: adminEmail,
+      options: {
+        redirectTo,
+      },
+    })
+
+  if (recoveryLinkError) {
+    console.error(
+      '[POST /api/owner/tenants] Recovery-Link fuer Willkommens-E-Mail fehlgeschlagen:',
+      recoveryLinkError
+    )
+  } else {
+    const actionLink = recoveryLinkData.properties.action_link
+    const setupUrl = `${buildTenantUrl(slug, '/api/auth/email-link')}?link=${encodeURIComponent(actionLink)}`
+
+    void sendWelcome({
+      to: adminEmail,
+      tenantName: name,
+      tenantSlug: slug,
+      setupUrl,
+    }).catch((error) => {
+      console.error('[POST /api/owner/tenants] Willkommens-E-Mail fehlgeschlagen:', error)
+    })
+  }
 
   return NextResponse.json({ tenant }, { status: 201 })
 }

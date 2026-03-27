@@ -1,6 +1,6 @@
 # PROJ-4: Transactional Email (Mailtrap)
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -113,7 +113,32 @@ Keine neuen npm-Packages erforderlich — native `fetch` reicht.
 - Keine PII in Fehler-Logs
 
 ## QA Test Results
-_To be added by /qa_
+### QA Run
+- Date: 2026-03-27
+- Scope: Re-run after bug fixes, code review, API-flow review, build verification
+- Constraints: Kein echter Browser-/Mailtrap-End-to-End-Test in dieser Session; Bewertung basiert auf Codepfaden, Specs und lokalem Build
+
+### Acceptance Criteria Review
+- PASS: Mailtrap-Konfiguration erfolgt ueber Umgebungsvariablen, kein Hardcoding im Code (`MAILTRAP_*` in `src/lib/email.ts`)
+- PASS: E-Mail-Service-Modul mit `sendWelcome`, `sendPasswordReset`, `sendInvitation` ist vorhanden
+- PASS: Absendername wird tenant-spezifisch gesetzt (`${tenantName} via BoostHive`)
+- PASS: Alle E-Mails enthalten tenant-spezifische Links; Welcome-Mails laufen ueber tenant-direkte `email-link`-URLs, Reset-Mails ueber tenant-spezifische Reset-URLs
+- PASS: HTML-Templates fuer Welcome, Password Reset und Invitation sind vorhanden
+- PASS: Plaintext-Fallback ist fuer alle drei E-Mail-Typen vorhanden
+- PASS: Password-Reset-Mails werden nach der Response ueber `after()` im Hintergrund versendet und blockieren den Haupt-Request nicht
+- PASS: Fehler-Logs enthalten keine Klartext-E-Mail-Adressen mehr; Empfaenger werden nur gehasht protokolliert
+
+### Findings
+- No blocking defects found in the current implementation.
+
+### Additional Notes
+- Residual risk: Die in den Edge Cases erwaehnte Retry-Logik fuer temporaere Mailtrap-Fehler ist weiterhin nicht explizit implementiert. Das ist fuer diesen QA-Re-Run kein Release-Blocker, sollte aber vor breiterem Produktionsverkehr bewusst entschieden werden.
+- `npm run build` war erfolgreich.
+- `npm run lint` ist aktuell projektweit defekt und konnte fuer diese QA nicht als Signal genutzt werden (`next lint` wird mit falschem Projektpfad aufgerufen).
+
+### Production Readiness
+- Decision: READY
+- Reason: Keine Critical- oder High-Bugs offen; verbleibend nur Testing-Gap beim echten Mailtrap-E2E und die separate Lint-Fehlkonfiguration ausserhalb des Features
 
 ## Deployment
 _To be added by /deploy_
