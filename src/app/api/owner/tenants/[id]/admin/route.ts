@@ -126,10 +126,46 @@ export async function POST(
       membership.role === 'admin' &&
       membership.status === 'active'
     ) {
-      return NextResponse.json(
-        { error: 'Diese Person ist bereits der aktuelle Admin dieses Tenants.' },
-        { status: 409 }
-      )
+      // Bereits aktueller Admin → neuen Recovery-Link generieren und E-Mail neu senden
+      const redirectTo = buildTenantUrl(tenant.slug, '/reset-password')
+      const { data: recoveryLinkData, error: recoveryLinkError } =
+        await supabaseAdmin.auth.admin.generateLink({
+          type: 'recovery',
+          email,
+          options: { redirectTo },
+        })
+
+      if (recoveryLinkError) {
+        console.error(
+          '[POST /api/owner/tenants/[id]/admin] Recovery-Link (Resend) fehlgeschlagen:',
+          recoveryLinkError
+        )
+      } else {
+        const actionLink = overrideActionLinkRedirect(
+          recoveryLinkData.properties.action_link,
+          redirectTo
+        )
+        const setupUrl = `${buildTenantUrl(tenant.slug, '/api/auth/email-link')}?link=${encodeURIComponent(actionLink)}`
+
+        void sendWelcome({
+          to: email,
+          tenantName: tenant.name,
+          tenantSlug: tenant.slug,
+          setupUrl,
+        }).catch((err) => {
+          console.error('[POST /api/owner/tenants/[id]/admin] E-Mail-Resend fehlgeschlagen:', err)
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        resent: true,
+        currentAdmin: {
+          id: existingUser.id,
+          name: normalizedDisplayName(email),
+          email,
+        },
+      })
     }
   } else {
     const randomPassword = crypto.randomBytes(32).toString('base64url')

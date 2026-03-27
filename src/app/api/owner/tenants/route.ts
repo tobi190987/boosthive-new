@@ -181,30 +181,64 @@ export async function POST(request: NextRequest) {
       email_confirm: false,
     })
 
+  let adminUserId: string
+  let adminUserCreated = false
+
   if (createUserError) {
     // Supabase meldet doppelte E-Mail mit "already been registered" oder Status 422
     const isDuplicate =
       createUserError.message?.toLowerCase().includes('already been registered') ||
       createUserError.message?.toLowerCase().includes('already exists') ||
       (createUserError as { status?: number }).status === 422
-    if (isDuplicate) {
+
+    if (!isDuplicate) {
+      console.error('[POST /api/owner/tenants] User-Erstellung fehlgeschlagen:', createUserError)
+      return NextResponse.json(
+        { error: 'Admin-User konnte nicht erstellt werden.' },
+        { status: 500 }
+      )
+    }
+
+    // E-Mail bereits vergeben: existierenden User prüfen
+    const existingUserLookup = await supabaseAdmin.rpc('find_auth_user_by_email', {
+      p_email: adminEmail,
+    })
+
+    if (existingUserLookup.error || !existingUserLookup.data?.[0]?.id) {
+      console.error('[POST /api/owner/tenants] Lookup für bestehenden User fehlgeschlagen:', existingUserLookup.error)
       return NextResponse.json(
         { error: `Ein User mit der E-Mail "${adminEmail}" existiert bereits im System.` },
         { status: 409 }
       )
     }
-    console.error('[POST /api/owner/tenants] User-Erstellung fehlgeschlagen:', createUserError)
-    return NextResponse.json(
-      { error: 'Admin-User konnte nicht erstellt werden.' },
-      { status: 500 }
-    )
-  }
 
-  if (!newUser?.user) {
-    return NextResponse.json(
-      { error: 'Admin-User konnte nicht erstellt werden.' },
-      { status: 500 }
-    )
+    const existingUserId = existingUserLookup.data[0].id as string
+
+    // Prüfen ob der User bereits in einem anderen Tenant ist
+    const { data: otherMembership } = await supabaseAdmin
+      .from('tenant_members')
+      .select('id')
+      .eq('user_id', existingUserId)
+      .limit(1)
+      .maybeSingle()
+
+    if (otherMembership) {
+      return NextResponse.json(
+        { error: `Ein User mit der E-Mail "${adminEmail}" ist bereits in einem anderen Tenant aktiv.` },
+        { status: 409 }
+      )
+    }
+
+    adminUserId = existingUserId
+  } else {
+    if (!newUser?.user) {
+      return NextResponse.json(
+        { error: 'Admin-User konnte nicht erstellt werden.' },
+        { status: 500 }
+      )
+    }
+    adminUserId = newUser.user.id
+    adminUserCreated = true
   }
 
   // 4. Tenant + Admin-Membership atomar erstellen via RPC
@@ -213,21 +247,23 @@ export async function POST(request: NextRequest) {
     {
       p_tenant_name: name,
       p_slug: slug,
-      p_admin_user_id: newUser.user.id,
+      p_admin_user_id: adminUserId,
     }
   )
 
   if (rpcError) {
     console.error('[POST /api/owner/tenants] RPC-Fehler:', rpcError)
 
-    // Rollback: Auth-User löschen, da Tenant-Erstellung fehlgeschlagen
-    const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
-    if (rollbackError) {
-      console.error(
-        '[POST /api/owner/tenants] ROLLBACK FEHLGESCHLAGEN — Verwaister Auth-User:',
-        newUser.user.id,
-        rollbackError
-      )
+    // Rollback: nur neu erstellten Auth-User löschen (nicht wiederverwendete bestehende User)
+    if (adminUserCreated) {
+      const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(adminUserId)
+      if (rollbackError) {
+        console.error(
+          '[POST /api/owner/tenants] ROLLBACK FEHLGESCHLAGEN — Verwaister Auth-User:',
+          adminUserId,
+          rollbackError
+        )
+      }
     }
 
     // Spezifische Fehlermeldung bei Unique-Constraint-Verletzung

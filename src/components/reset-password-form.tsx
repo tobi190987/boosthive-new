@@ -39,13 +39,51 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
     }
 
     const supabase = createBrowserClient()
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (
+        event === 'PASSWORD_RECOVERY' ||
+        ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && Boolean(session))
+      ) {
+        setRecoverySessionReady(true)
+        setIsPreparingRecoverySession(false)
+      }
+    })
+    const searchParams = new URLSearchParams(window.location.search)
     const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
     const hashErrorDescription = hashParams.get('error_description')
+    const queryErrorDescription = searchParams.get('error_description')
+    const authCode = searchParams.get('code')
 
-    if (hashErrorDescription) {
-      setServerError(decodeURIComponent(hashErrorDescription.replace(/\+/g, ' ')))
+    if (hashErrorDescription || queryErrorDescription) {
+      const raw = hashErrorDescription ?? queryErrorDescription ?? ''
+      setServerError(decodeURIComponent(raw.replace(/\+/g, ' ')))
       setRecoverySessionReady(false)
       setIsPreparingRecoverySession(false)
+      return
+    }
+
+    if (authCode) {
+      void supabase.auth
+        .exchangeCodeForSession(authCode)
+        .then(({ error }) => {
+          if (error) {
+            setServerError('Der Recovery-Link konnte nicht bestätigt werden. Bitte fordere einen neuen Link an.')
+            setRecoverySessionReady(false)
+            return
+          }
+
+          setRecoverySessionReady(true)
+          window.history.replaceState(null, '', window.location.pathname)
+        })
+        .catch(() => {
+          setServerError('Der Recovery-Link konnte nicht bestätigt werden. Bitte fordere einen neuen Link an.')
+          setRecoverySessionReady(false)
+        })
+        .finally(() => {
+          setIsPreparingRecoverySession(false)
+        })
       return
     }
 
@@ -54,8 +92,10 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
     const flowType = hashParams.get('type')
 
     if (!accessToken || !refreshToken || flowType !== 'recovery') {
-      setRecoverySessionReady(false)
-      setIsPreparingRecoverySession(false)
+      void supabase.auth.getSession().then(({ data }) => {
+        setRecoverySessionReady(Boolean(data.session))
+        setIsPreparingRecoverySession(false)
+      })
       return
     }
 
@@ -81,6 +121,10 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
       .finally(() => {
         setIsPreparingRecoverySession(false)
       })
+
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [token])
 
   const {
