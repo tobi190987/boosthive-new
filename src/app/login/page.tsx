@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/login-form'
 import { getTenantContext } from '@/lib/tenant'
 
 interface LoginPageProps {
-  searchParams: Promise<{ returnTo?: string }>
+  searchParams: Promise<{ returnTo?: string; reason?: string }>
 }
 
 export default async function TenantLoginPage({ searchParams }: LoginPageProps) {
@@ -13,6 +13,10 @@ export default async function TenantLoginPage({ searchParams }: LoginPageProps) 
   const tenant = await getTenantContext()
   const rawReturnTo = params.returnTo
   const returnTo = rawReturnTo?.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/dashboard'
+  const notice =
+    params.reason === 'tenant_inactive'
+      ? 'Dieser Tenant wurde deaktiviert. Deine Sitzung wurde beendet und neue Logins sind aktuell blockiert.'
+      : undefined
 
   return (
     <AuthShell
@@ -38,6 +42,7 @@ export default async function TenantLoginPage({ searchParams }: LoginPageProps) 
         returnTo={returnTo}
         title={tenant ? `Anmeldung bei ${tenant.slug}` : undefined}
         showForgotPasswordLink
+        notice={notice}
       />
     </AuthShell>
   )

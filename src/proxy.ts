@@ -107,6 +107,23 @@ function getSupabaseAdminClient() {
   )
 }
 
+async function redirectInactiveTenant(request: NextRequest): Promise<NextResponse> {
+  const loginUrl = request.nextUrl.clone()
+  loginUrl.pathname = '/login'
+  loginUrl.searchParams.set('reason', 'tenant_inactive')
+
+  const response = NextResponse.redirect(loginUrl)
+  const supabase = createMiddlewareClient(request, response)
+
+  try {
+    await supabase.auth.signOut()
+  } catch (error) {
+    console.warn('[Proxy] Tenant inactive sign-out failed:', error)
+  }
+
+  return response
+}
+
 // ---------------------------------------------------------------------------
 // Subdomain Extraction
 // ---------------------------------------------------------------------------
@@ -290,9 +307,9 @@ export async function proxy(request: NextRequest) {
       return maybeProtectTenantRoute(request, response, pathname, 'local-dev-fallback')
     }
 
-    // NOTE: The inactive-tenant check is handled by RLS policy
-    // `tenants_select_active` which only returns tenants with status = 'active'.
-    // If a tenant is inactive, `resolveTenant()` returns null (treated as 404).
+    if (tenant.status === 'inactive') {
+      return redirectInactiveTenant(request)
+    }
 
     const headers = sanitizedHeaders(request)
     headers.set('x-tenant-id', tenant.id)
@@ -305,13 +322,13 @@ export async function proxy(request: NextRequest) {
   const tenant = await resolveTenant(subdomain)
 
   if (tenant === null) {
-    // Unknown or inactive subdomain → 404
-    // NOTE: Inactive tenants are also filtered out by the RLS policy
-    // `tenants_select_active` (anon key can only read active tenants).
-    // Therefore this branch covers both "not found" and "inactive" cases.
     const url = request.nextUrl.clone()
     url.pathname = '/not-found'
     return NextResponse.rewrite(url, { status: 404 })
+  }
+
+  if (tenant.status === 'inactive') {
+    return redirectInactiveTenant(request)
   }
 
   // ----- Inject tenant context as request headers -----
@@ -407,7 +424,7 @@ async function resolveTenant(
   slug: string
 ): Promise<{ id: string; slug: string; status: 'active' | 'inactive' } | null> {
   try {
-    const supabase = getSupabaseClient()
+    const supabase = getSupabaseAdminClient()
     const { data, error } = await supabase
       .from('tenants')
       .select('id, slug, status')

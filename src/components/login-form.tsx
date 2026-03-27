@@ -16,6 +16,7 @@ interface LoginFormProps {
   returnTo: string
   title?: string
   showForgotPasswordLink?: boolean
+  notice?: string
 }
 
 function sanitizeReturnTo(url: string, fallback: string): string {
@@ -28,7 +29,13 @@ function sanitizeReturnTo(url: string, fallback: string): string {
 const fieldClassName =
   'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
 
-export function LoginForm({ action, returnTo, title, showForgotPasswordLink = false }: LoginFormProps) {
+export function LoginForm({
+  action,
+  returnTo,
+  title,
+  showForgotPasswordLink = false,
+  notice,
+}: LoginFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
 
@@ -79,6 +86,13 @@ export function LoginForm({ action, returnTo, title, showForgotPasswordLink = fa
         <Alert className="rounded-xl border-red-200 bg-red-50 text-red-700">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {notice && !error && (
+        <Alert className="rounded-xl border-[#f1d4b7] bg-[#fff4ea] text-[#8c4a19]">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{notice}</AlertDescription>
         </Alert>
       )}
 

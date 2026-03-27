@@ -20,7 +20,7 @@
 | PROJ-6 | Role-Based Access Control | Deployed | [PROJ-6-role-based-access-control.md](PROJ-6-role-based-access-control.md) | 2026-03-26 |
 | PROJ-7 | Member Invitation (Admin) | Deployed | [PROJ-7-member-invitation.md](PROJ-7-member-invitation.md) | 2026-03-26 |
 | PROJ-8 | Owner Super-Admin Dashboard | In Review | [PROJ-8-owner-super-admin-dashboard.md](PROJ-8-owner-super-admin-dashboard.md) | 2026-03-26 |
-| PROJ-9 | Tenant Dashboard Shell | Planned | [PROJ-9-tenant-dashboard-shell.md](PROJ-9-tenant-dashboard-shell.md) | 2026-03-26 |
+| PROJ-9 | Tenant Dashboard Shell | In Review | [PROJ-9-tenant-dashboard-shell.md](PROJ-9-tenant-dashboard-shell.md) | 2026-03-26 |
 | PROJ-10 | SEO Analyse Tool | Planned | [PROJ-10-seo-analyse.md](PROJ-10-seo-analyse.md) | 2026-03-26 |
 | PROJ-11 | AI Performance Analyse | Planned | [PROJ-11-ai-performance-analyse.md](PROJ-11-ai-performance-analyse.md) | 2026-03-26 |
 | PROJ-12 | AI Visibility Tool | Planned | [PROJ-12-ai-visibility.md](PROJ-12-ai-visibility.md) | 2026-03-26 |
