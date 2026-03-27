@@ -81,12 +81,14 @@ function isAllowedOrigin(origin: string): boolean {
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'boost-hive.de'
 const LOCAL_DOMAIN = process.env.LOCAL_DOMAIN || 'localhost'
 const IS_LOCAL = process.env.NODE_ENV === 'development'
+const PREVIEW_ACCESS_COOKIE = 'bh_preview_access'
 
 // Fallback tenant slug used when running on *.localhost in dev mode
 const LOCAL_FALLBACK_TENANT_SLUG = 'test-tenant'
 
 // Subdomain validation: 3-63 chars, lowercase alphanumeric + hyphens
 const SUBDOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/
+const STATIC_FILE_REGEX = /\.(?:png|jpg|jpeg|gif|webp|svg|ico|txt|xml|woff2?|css|js|map)$/i
 
 // ---------------------------------------------------------------------------
 // Supabase client for proxy (lightweight, no cookies needed)
@@ -216,6 +218,28 @@ function isAdminOnlyPath(pathname: string): boolean {
   return ADMIN_ONLY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
+function hasPreviewAccess(request: NextRequest): boolean {
+  return request.cookies.get(PREVIEW_ACCESS_COOKIE)?.value === 'granted'
+}
+
+function isPreviewGateBypassPath(pathname: string): boolean {
+  return (
+    pathname === '/access' ||
+    pathname.startsWith('/api/access') ||
+    pathname.startsWith('/_next/') ||
+    pathname === '/favicon.ico' ||
+    STATIC_FILE_REGEX.test(pathname)
+  )
+}
+
+function buildPreviewRedirect(request: NextRequest): NextResponse {
+  const accessUrl = request.nextUrl.clone()
+  const returnTo = `${request.nextUrl.pathname}${request.nextUrl.search}`
+  accessUrl.pathname = '/access'
+  accessUrl.searchParams.set('returnTo', returnTo)
+  return NextResponse.redirect(accessUrl)
+}
+
 // ---------------------------------------------------------------------------
 // Proxy (Next.js 16 convention, replaces deprecated middleware.ts)
 // ---------------------------------------------------------------------------
@@ -224,6 +248,17 @@ export async function proxy(request: NextRequest) {
   const host = request.headers.get('host') || ''
   const pathname = request.nextUrl.pathname
   const subdomain = extractSubdomain(host)
+
+  if (!hasPreviewAccess(request) && !isPreviewGateBypassPath(pathname)) {
+    if (pathname.startsWith('/api/')) {
+      return NextResponse.json(
+        { error: 'Temporärer Zugangsschutz aktiv. Bitte zuerst das Zugriffspasswort eingeben.' },
+        { status: 401 }
+      )
+    }
+
+    return buildPreviewRedirect(request)
+  }
 
   // Owner-Routen und Owner-APIs sind strikt Root-Domain-only.
   if (
