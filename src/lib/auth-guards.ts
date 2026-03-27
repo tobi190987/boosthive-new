@@ -9,6 +9,51 @@ export interface AuthContext {
   tenantId: string | null
 }
 
+export async function requireTenantUser(
+  tenantIdFromHeader: string
+): Promise<{ auth: AuthContext } | { error: NextResponse }> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return {
+      error: NextResponse.json(
+        { error: 'Nicht authentifiziert. Bitte einloggen.' },
+        { status: 401 }
+      ),
+    }
+  }
+
+  const { data: membership } = await supabase
+    .from('tenant_members')
+    .select('tenant_id, role, status')
+    .eq('user_id', user.id)
+    .eq('tenant_id', tenantIdFromHeader)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (!membership) {
+    return {
+      error: NextResponse.json(
+        { error: 'Zugriff verweigert. Keine aktive Tenant-Mitgliedschaft.' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  return {
+    auth: {
+      userId: user.id,
+      role: membership.role as AppRole,
+      tenantId: membership.tenant_id,
+    },
+  }
+}
+
 /**
  * Prüft ob der aktuelle Request von einem User mit einer der erlaubten Rollen kommt.
  * Liest Rolle aus JWT app_metadata (wird beim Login gesetzt).
@@ -97,31 +142,12 @@ export async function requireRole(
 export async function requireTenantAdmin(
   tenantIdFromHeader: string
 ): Promise<{ auth: AuthContext } | { error: NextResponse }> {
-  const supabase = await createClient()
-
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser()
-
-  if (authError || !user) {
-    return {
-      error: NextResponse.json(
-        { error: 'Nicht authentifiziert. Bitte einloggen.' },
-        { status: 401 }
-      ),
-    }
+  const authResult = await requireTenantUser(tenantIdFromHeader)
+  if ('error' in authResult) {
+    return authResult
   }
 
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('tenant_id, role, status')
-    .eq('user_id', user.id)
-    .eq('tenant_id', tenantIdFromHeader)
-    .eq('status', 'active')
-    .maybeSingle()
-
-  if (!membership || membership.role !== 'admin') {
+  if (authResult.auth.role !== 'admin') {
     return {
       error: NextResponse.json(
         { error: 'Zugriff verweigert. Unzureichende Berechtigung.' },
@@ -131,10 +157,6 @@ export async function requireTenantAdmin(
   }
 
   return {
-    auth: {
-      userId: user.id,
-      role: 'admin',
-      tenantId: membership.tenant_id,
-    },
+    auth: authResult.auth,
   }
 }

@@ -4,6 +4,7 @@ import { useState, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
+  CircleUserRound,
   ChevronRight,
   CreditCard,
   LayoutDashboard,
@@ -17,7 +18,9 @@ import { Sheet, SheetContent } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { TenantLogoutButton } from '@/components/tenant-logout-button'
+import { getUserDisplayName, getUserInitials } from '@/lib/profile'
 import { cn } from '@/lib/utils'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
@@ -30,10 +33,6 @@ interface NavItem {
   href: string
   icon: ComponentType<{ className?: string }>
   comingSoon?: boolean
-}
-
-function initialsFromEmail(email: string) {
-  return email.slice(0, 2).toUpperCase()
 }
 
 function roleLabel(role: TenantShellContext['membership']['role']) {
@@ -51,7 +50,7 @@ function tenantNav(context: TenantShellContext) {
       ? [
           { label: 'User-Management', href: '/settings/team', icon: Users2 },
           { label: 'Abrechnung', href: '/billing', icon: CreditCard },
-          { label: 'Einstellungen', href: '/settings', icon: Settings2, comingSoon: true },
+          { label: 'Profil', href: '/settings/profile', icon: Settings2 },
         ]
       : []
 
@@ -188,17 +187,39 @@ function NavigationContent({
       <Separator className="bg-[#ebe2d5]" />
 
       <div className="space-y-4 p-4">
-        <div className="rounded-[26px] border border-[#ebe2d5] bg-white p-3 shadow-sm">
+        <Link
+          href="/settings/profile"
+          onClick={onNavigate}
+          className="block rounded-[26px] border border-[#ebe2d5] bg-white p-3 shadow-sm transition hover:border-[#d7ccbc] hover:bg-[#fffdf9]"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#e8f8f3] text-sm font-semibold text-[#0d9488]">
-              {initialsFromEmail(context.user.email)}
-            </div>
+            <Avatar className="h-10 w-10 border border-[#dceee9]">
+              <AvatarImage src={context.user.avatarUrl ?? undefined} alt={context.user.email} />
+              <AvatarFallback className="bg-[#e8f8f3] text-sm font-semibold text-[#0d9488]">
+                {getUserInitials(
+                  {
+                    first_name: context.user.firstName,
+                    last_name: context.user.lastName,
+                  },
+                  context.user.email
+                )}
+              </AvatarFallback>
+            </Avatar>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-slate-900">{context.user.email}</p>
+              <p className="truncate text-sm font-semibold text-slate-900">
+                {getUserDisplayName(
+                  {
+                    first_name: context.user.firstName,
+                    last_name: context.user.lastName,
+                  },
+                  context.user.email
+                )}
+              </p>
               <p className="text-xs text-slate-500">{roleLabel(context.membership.role)}</p>
             </div>
+            <CircleUserRound className="ml-auto h-4 w-4 text-slate-300" />
           </div>
-        </div>
+        </Link>
 
         <TenantLogoutButton
           className="w-full rounded-2xl border-[#e3daca] bg-white justify-center"

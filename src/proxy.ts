@@ -191,10 +191,10 @@ function sanitizedHeaders(request: NextRequest): Headers {
 // ---------------------------------------------------------------------------
 
 // Tenant-scoped protected paths (require valid session + tenant membership)
-const TENANT_PROTECTED_PREFIXES = ['/dashboard', '/settings']
+const TENANT_PROTECTED_PREFIXES = ['/dashboard', '/settings', '/billing', '/onboarding']
 
 // Admin-only paths within a tenant (require role === 'admin' in JWT)
-const ADMIN_ONLY_PREFIXES = ['/settings']
+const ADMIN_ONLY_PREFIXES = ['/settings/team', '/billing']
 
 // Owner-scoped protected paths (require valid session + platform_admin)
 const OWNER_PROTECTED_PREFIXES = ['/owner']

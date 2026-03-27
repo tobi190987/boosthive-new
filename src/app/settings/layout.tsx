@@ -1,4 +1,3 @@
-import { forbidden } from 'next/navigation'
 import type { ReactNode } from 'react'
 import { TenantAppShell } from '@/components/tenant-app-shell'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
@@ -10,16 +9,12 @@ export default async function SettingsLayout({
 }) {
   const context = await requireTenantShellContext()
 
-  if (context.membership.role !== 'admin') {
-    forbidden()
-  }
-
   return (
     <TenantAppShell
       context={context}
-      eyebrow="Tenant Admin"
-      title="Verwaltung und Team sauber gebuendelt"
-      description="Admin-Routen bleiben serverseitig geschützt und nutzen dieselbe Tenant-Shell wie das Dashboard, damit Navigation und Kontext konsistent bleiben."
+      eyebrow="Profil & Einstellungen"
+      title="Persoenliche Daten und Workspace-Verwaltung"
+      description="Profil, Team und die administrativen Einstellungen laufen ueber dieselbe Tenant-Shell, damit Rollen und Kontext konsistent bleiben."
     >
       {children}
     </TenantAppShell>
