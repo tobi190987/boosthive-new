@@ -1,7 +1,7 @@
 'use client'
 
 import { type FormEvent, useState } from 'react'
-import { MailPlus } from 'lucide-react'
+import { Loader2, MailPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -35,10 +35,13 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'admin' | 'member'>('member')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   function resetForm() {
     setEmail('')
     setRole('member')
+    setError(null)
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -48,6 +51,9 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
       return
     }
 
+    setLoading(true)
+    setError(null)
+
     try {
       await onInvite({
         email: email.trim(),
@@ -56,8 +62,10 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
 
       resetForm()
       setOpen(false)
-    } catch {
-      // Fehler werden in der aufrufenden Workspace-Komponente angezeigt.
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unbekannter Fehler.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -73,13 +81,19 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
         <form onSubmit={handleSubmit}>
           <DialogHeader className="space-y-3 border-b border-[#ece2d5] px-6 py-6 text-left">
             <DialogTitle className="text-2xl font-semibold text-slate-950">
-              Neue Einladung vorbereiten
+              Mitglied einladen
             </DialogTitle>
             <DialogDescription className="text-sm leading-6 text-slate-600">
-              Lege Rolle und Zieladresse fest. Der Backend-Flow aus `PROJ-7` verschickt später den
-              echten Token-Link.
+              Gib E-Mail-Adresse und Rolle an. Das Mitglied erhält eine Einladungsmail mit einem
+              Aktivierungslink.
             </DialogDescription>
           </DialogHeader>
+
+          {error && (
+            <div className="mx-6 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           <div className="space-y-5 px-6 py-6">
             <div className="space-y-2">
@@ -128,8 +142,13 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
             >
               Abbrechen
             </Button>
-            <Button type="submit" className="rounded-full bg-[#b85e34] px-5 text-white hover:bg-[#9f4f2d]">
-              Einladung vormerken
+            <Button
+              type="submit"
+              disabled={loading}
+              className="rounded-full bg-[#b85e34] px-5 text-white hover:bg-[#9f4f2d]"
+            >
+              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Einladung versenden
             </Button>
           </DialogFooter>
         </form>

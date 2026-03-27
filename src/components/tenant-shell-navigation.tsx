@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   ChevronRight,
+  CreditCard,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -49,6 +50,7 @@ function tenantNav(context: TenantShellContext) {
     context.membership.role === 'admin'
       ? [
           { label: 'User-Management', href: '/settings/team', icon: Users2 },
+          { label: 'Abrechnung', href: '/billing', icon: CreditCard },
           { label: 'Einstellungen', href: '/settings', icon: Settings2, comingSoon: true },
         ]
       : []
@@ -210,7 +212,7 @@ function NavigationContent({
 
 export function TenantSidebar(props: TenantShellNavigationProps) {
   return (
-    <aside className="hidden h-screen w-[280px] shrink-0 flex-col border-r border-[#ebe2d5] bg-[#fffaf3] md:flex">
+    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-[#ebe2d5] bg-[#fffaf3] md:flex">
       <NavigationContent {...props} />
     </aside>
   )
