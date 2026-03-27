@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { createBrowserClient } from '@/lib/supabase-browser'
 
 interface ResetPasswordFormProps {
   action: string
@@ -24,8 +25,63 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
   const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [recoverySessionReady, setRecoverySessionReady] = useState(Boolean(token?.trim()))
+  const [isPreparingRecoverySession, setIsPreparingRecoverySession] = useState(!token?.trim())
 
-  const missingToken = !token?.trim()
+  const missingToken =
+    !token?.trim() && !recoverySessionReady && !isPreparingRecoverySession && !serverError
+
+  useEffect(() => {
+    if (token?.trim()) {
+      setRecoverySessionReady(true)
+      setIsPreparingRecoverySession(false)
+      return
+    }
+
+    const supabase = createBrowserClient()
+    const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const hashErrorDescription = hashParams.get('error_description')
+
+    if (hashErrorDescription) {
+      setServerError(decodeURIComponent(hashErrorDescription.replace(/\+/g, ' ')))
+      setRecoverySessionReady(false)
+      setIsPreparingRecoverySession(false)
+      return
+    }
+
+    const accessToken = hashParams.get('access_token')
+    const refreshToken = hashParams.get('refresh_token')
+    const flowType = hashParams.get('type')
+
+    if (!accessToken || !refreshToken || flowType !== 'recovery') {
+      setRecoverySessionReady(false)
+      setIsPreparingRecoverySession(false)
+      return
+    }
+
+    void supabase.auth
+      .setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      })
+      .then(({ error }) => {
+        if (error) {
+          setServerError('Der Recovery-Link konnte nicht bestätigt werden. Bitte fordere einen neuen Link an.')
+          setRecoverySessionReady(false)
+          return
+        }
+
+        setRecoverySessionReady(true)
+        window.history.replaceState(null, '', window.location.pathname + window.location.search)
+      })
+      .catch(() => {
+        setServerError('Der Recovery-Link konnte nicht bestätigt werden. Bitte fordere einen neuen Link an.')
+        setRecoverySessionReady(false)
+      })
+      .finally(() => {
+        setIsPreparingRecoverySession(false)
+      })
+  }, [token])
 
   const {
     register,
@@ -40,7 +96,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
   })
 
   async function onSubmit(data: ResetPasswordInput) {
-    if (missingToken) {
+    if (!token?.trim() && !recoverySessionReady) {
       setServerError('Der Reset-Link ist unvollständig. Bitte fordere einen neuen Link an.')
       return
     }
@@ -48,29 +104,45 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
     setServerError(null)
 
     try {
-      const response = await fetch(action, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token,
-          password: data.password,
-        }),
-      })
+      if (token?.trim()) {
+        const response = await fetch(action, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token,
+            password: data.password,
+          }),
+        })
 
-      const payload = (await response.json().catch(() => null)) as
-        | { error?: string; redirectTo?: string }
-        | null
+        const payload = (await response.json().catch(() => null)) as
+          | { error?: string; redirectTo?: string }
+          | null
 
-      if (!response.ok) {
-        throw new Error(payload?.error ?? 'Das Passwort konnte nicht aktualisiert werden.')
+        if (!response.ok) {
+          throw new Error(payload?.error ?? 'Das Passwort konnte nicht aktualisiert werden.')
+        }
+
+        setIsSuccess(true)
+        window.location.assign(
+          typeof payload?.redirectTo === 'string' && payload.redirectTo.startsWith('/')
+            ? payload.redirectTo
+            : '/dashboard'
+        )
+        return
       }
 
+      const supabase = createBrowserClient()
+      const { error } = await supabase.auth.updateUser({
+        password: data.password,
+      })
+
+      if (error) {
+        throw new Error(error.message || 'Das Passwort konnte nicht aktualisiert werden.')
+      }
+
+      await supabase.auth.signOut()
       setIsSuccess(true)
-      window.location.assign(
-        typeof payload?.redirectTo === 'string' && payload.redirectTo.startsWith('/')
-          ? payload.redirectTo
-          : '/dashboard'
-      )
+      window.location.assign('/login')
     } catch (submitError) {
       setServerError(
         submitError instanceof Error ? submitError.message : 'Das Passwort konnte nicht aktualisiert werden.'
@@ -93,6 +165,13 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        {isPreparingRecoverySession && (
+          <Alert className="rounded-xl border-[#d1faf4] bg-[#f0fdfb] text-[#0d9488]">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            <AlertDescription>Recovery-Link wird geprüft, einen Moment bitte.</AlertDescription>
+          </Alert>
+        )}
+
         {missingToken && !serverError && (
           <Alert className="rounded-xl border-red-200 bg-red-50 text-red-700">
             <AlertCircle className="h-4 w-4" />
@@ -173,7 +252,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
         <Button
           type="submit"
           className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
-          disabled={isSubmitting || isSuccess}
+          disabled={isSubmitting || isSuccess || isPreparingRecoverySession}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Passwort zurücksetzen

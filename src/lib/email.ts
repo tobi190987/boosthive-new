@@ -102,6 +102,12 @@ export function buildTenantUrl(slug: string, path: string): string {
   return `${getTenantOrigin(slug)}${normalizedPath}`
 }
 
+export function overrideActionLinkRedirect(actionLink: string, redirectTo: string): string {
+  const url = new URL(actionLink)
+  url.searchParams.set('redirect_to', redirectTo)
+  return url.toString()
+}
+
 async function sendEmail({
   to,
   tenantName,

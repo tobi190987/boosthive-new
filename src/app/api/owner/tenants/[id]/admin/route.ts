@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
-import { buildTenantUrl, sendWelcome } from '@/lib/email'
+import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/email'
 import { requireOwner } from '@/lib/owner-auth'
 import { AssignTenantAdminSchema } from '@/lib/schemas/tenant'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -241,7 +241,10 @@ export async function POST(
         recoveryLinkError
       )
     } else {
-      const actionLink = recoveryLinkData.properties.action_link
+      const actionLink = overrideActionLinkRedirect(
+        recoveryLinkData.properties.action_link,
+        redirectTo
+      )
       const setupUrl = `${buildTenantUrl(tenant.slug, '/api/auth/email-link')}?link=${encodeURIComponent(actionLink)}`
 
       void sendWelcome({

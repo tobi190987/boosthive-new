@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildTenantUrl, sendWelcome } from '@/lib/email'
+import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/email'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { CreateTenantSchema } from '@/lib/schemas/tenant'
@@ -260,7 +260,10 @@ export async function POST(request: NextRequest) {
       recoveryLinkError
     )
   } else {
-    const actionLink = recoveryLinkData.properties.action_link
+    const actionLink = overrideActionLinkRedirect(
+      recoveryLinkData.properties.action_link,
+      redirectTo
+    )
     const setupUrl = `${buildTenantUrl(slug, '/api/auth/email-link')}?link=${encodeURIComponent(actionLink)}`
 
     void sendWelcome({
