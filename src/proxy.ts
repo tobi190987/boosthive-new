@@ -1,6 +1,58 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { createMiddlewareClient } from '@/lib/supabase-middleware'
+
+// ---------------------------------------------------------------------------
+// BUG-2: Rate Limiting für /api/owner/* Routen
+// ---------------------------------------------------------------------------
+// In-Memory-Rate-Limiter pro IP + Pfad.
+// WICHTIG: Funktioniert nur bei Single-Instance (lokaler Dev-Server).
+// In Produktion (Vercel serverless) durch Upstash Redis ersetzen:
+// https://github.com/upstash/ratelimit
+// ---------------------------------------------------------------------------
+
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 Minute
+const RATE_LIMIT_MAX_REQUESTS = 30 // max. 30 Requests pro Minute pro IP
+
+function checkRateLimit(request: NextRequest): boolean {
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
+    'unknown'
+  const key = `${ip}:${request.nextUrl.pathname}`
+  const now = Date.now()
+  const entry = rateLimitMap.get(key)
+
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
+    return true
+  }
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) return false
+  entry.count++
+  return true
+}
+
+// ---------------------------------------------------------------------------
+// BUG-5: CSRF-Schutz für zustandsaendernde Methoden
+// ---------------------------------------------------------------------------
+// Prueft den Origin-Header fuer POST/PATCH/PUT/DELETE auf /api/owner/*.
+// Requests ohne Origin-Header (z.B. Server-zu-Server) werden durchgelassen —
+// requireOwner() in den API-Routen bleibt als zweite Schutzschicht aktiv.
+// ---------------------------------------------------------------------------
+
+const STATE_CHANGING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
+
+function isAllowedOrigin(origin: string): boolean {
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'boost-hive.de'
+  if (origin === 'http://localhost:3000') return true
+  if (origin === `https://${rootDomain}`) return true
+  if (origin === `https://www.${rootDomain}`) return true
+  // Alle Subdomains erlauben (z.B. agentur.boost-hive.de)
+  if (origin.startsWith('https://') && origin.endsWith(`.${rootDomain}`)) return true
+  return false
+}
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -116,18 +168,82 @@ function sanitizedHeaders(request: NextRequest): Headers {
 }
 
 // ---------------------------------------------------------------------------
+// Route Protection — Paths that require authentication
+// ---------------------------------------------------------------------------
+
+// Tenant-scoped protected paths (require valid session + tenant membership)
+const TENANT_PROTECTED_PREFIXES = ['/dashboard', '/settings']
+
+// Owner-scoped protected paths (require valid session + platform_admin)
+const OWNER_PROTECTED_PREFIXES = ['/owner']
+
+// Public paths that never require auth (even under protected prefixes)
+const PUBLIC_PATHS = ['/login', '/owner/login', '/api/', '/_next/', '/favicon.ico']
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p))
+}
+
+function isTenantProtectedPath(pathname: string): boolean {
+  return TENANT_PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
+function isOwnerProtectedPath(pathname: string): boolean {
+  return OWNER_PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
+// ---------------------------------------------------------------------------
 // Proxy (Next.js 16 convention, replaces deprecated middleware.ts)
 // ---------------------------------------------------------------------------
 
 export async function proxy(request: NextRequest) {
   const host = request.headers.get('host') || ''
+  const pathname = request.nextUrl.pathname
   const subdomain = extractSubdomain(host)
 
-  // ----- Root domain (no subdomain) → pass through to landing page -----
+  // BUG-5 + BUG-2: CSRF-Schutz und Rate Limiting fuer /api/owner/* Routen
+  if (pathname.startsWith('/api/owner/')) {
+    // CSRF: Origin-Pruefung fuer zustandsaendernde Methoden
+    if (STATE_CHANGING_METHODS.has(request.method)) {
+      const origin = request.headers.get('origin')
+      if (origin !== null && !isAllowedOrigin(origin)) {
+        console.warn(`[CSRF] Blocked ${request.method} from origin: ${origin}`)
+        return NextResponse.json(
+          { error: 'Ungueltige Anfragequelle (CSRF).' },
+          { status: 403 }
+        )
+      }
+    }
+
+    // Rate Limiting
+    if (!checkRateLimit(request)) {
+      return NextResponse.json(
+        { error: 'Zu viele Anfragen. Bitte warte eine Minute.' },
+        { status: 429 }
+      )
+    }
+  }
+
+  // ----- Root domain (no subdomain) → handle owner routes + landing page -----
   if (subdomain === null) {
     // Strip any spoofed tenant headers before passing through (BUG-1 fix)
     const headers = sanitizedHeaders(request)
-    return NextResponse.next({ request: { headers } })
+    const response = NextResponse.next({ request: { headers } })
+
+    // Owner-protected routes: require authenticated owner session
+    if (!isPublicPath(pathname) && isOwnerProtectedPath(pathname)) {
+      const supabase = createMiddlewareClient(request, response)
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) {
+        const loginUrl = request.nextUrl.clone()
+        loginUrl.pathname = '/owner/login'
+        loginUrl.searchParams.set('returnTo', pathname)
+        return NextResponse.redirect(loginUrl)
+      }
+    }
+
+    return response
   }
 
   // ----- Validate subdomain format -----
@@ -148,7 +264,8 @@ export async function proxy(request: NextRequest) {
       console.log(
         `[Middleware] Local dev fallback: ${subdomain} -> ${LOCAL_FALLBACK_TENANT_SLUG}`
       )
-      return NextResponse.next({ request: { headers } })
+      const response = NextResponse.next({ request: { headers } })
+      return maybeProtectTenantRoute(request, response, pathname)
     }
 
     // NOTE: The inactive-tenant check is handled by RLS policy
@@ -159,7 +276,8 @@ export async function proxy(request: NextRequest) {
     const headers = sanitizedHeaders(request)
     headers.set('x-tenant-id', tenant.id)
     headers.set('x-tenant-slug', tenant.slug)
-    return NextResponse.next({ request: { headers } })
+    const response = NextResponse.next({ request: { headers } })
+    return maybeProtectTenantRoute(request, response, pathname)
   }
 
   // ----- Production: resolve tenant from DB -----
@@ -180,7 +298,45 @@ export async function proxy(request: NextRequest) {
   headers.set('x-tenant-id', tenant.id)
   headers.set('x-tenant-slug', tenant.slug)
 
-  return NextResponse.next({ request: { headers } })
+  const response = NextResponse.next({ request: { headers } })
+  return maybeProtectTenantRoute(request, response, pathname)
+}
+
+// ---------------------------------------------------------------------------
+// Tenant Route Protection — checks session for protected paths
+// ---------------------------------------------------------------------------
+
+/**
+ * If the current pathname is a tenant-protected route, verifies that the user
+ * has a valid Supabase session. Redirects to /login with returnTo if not.
+ * For public paths (login, API, static), passes through without checking.
+ */
+async function maybeProtectTenantRoute(
+  request: NextRequest,
+  response: NextResponse,
+  pathname: string
+): Promise<NextResponse> {
+  // Public paths don't need auth
+  if (isPublicPath(pathname)) {
+    return response
+  }
+
+  // Only check auth for protected tenant paths
+  if (!isTenantProtectedPath(pathname)) {
+    return response
+  }
+
+  const supabase = createMiddlewareClient(request, response)
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('returnTo', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return response
 }
 
 // ---------------------------------------------------------------------------

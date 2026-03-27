@@ -1,29 +1,62 @@
 # Product Requirements Document
 
 ## Vision
-_Describe what you are building and why._
+BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige Whitelabel-Lösung fungiert. Jede Agentur erhält eine eigene, isolierte Arbeitsumgebung über eine individuelle Subdomain (z. B. `agentur-name.boost-hive.de`) — mit eigenem Branding, eigenem Team und strikter Datentrennung.
 
 ## Target Users
-_Who will use this product? Describe their needs and pain points._
+
+### Owner (Plattformbetreiber — du)
+- Betreibt die gesamte Plattform
+- Legt neue Tenants (Agenturen) an und verwaltet Subdomains
+- Hat systemweiten Zugriff zur Administration
+
+### Admin (Agentur-Inhaber / -Manager)
+- Verwaltet den eigenen Tenant
+- Lädt Mitarbeiter ein und vergibt Rollen
+- Konfiguriert Tenant-spezifische Einstellungen
+
+### Member (Mitarbeiter der Agentur)
+- Nutzt die Tools und Funktionen innerhalb seines Tenants
+- Kein Zugriff auf andere Tenants oder Admin-Bereiche
+
+**Pain Points der Agenturen:**
+- Keine einheitliche Plattform für alle Marketing-Tools
+- Kein White-Label-Angebot am Markt ohne hohe Setup-Kosten
+- Datenschutzbedenken bei geteilten SaaS-Tools
 
 ## Core Features (Roadmap)
 
 | Priority | Feature | Status |
 |----------|---------|--------|
-| P0 (MVP) | _Feature 1_ | Planned |
-| P0 (MVP) | _Feature 2_ | Planned |
-| P1 | _Feature 3_ | Planned |
-| P2 | _Feature 4_ | Planned |
+| P0 (MVP) | Subdomain Routing & Tenant Resolution | Planned |
+| P0 (MVP) | Tenant Provisioning | Planned |
+| P0 (MVP) | User Authentication | Planned |
+| P0 (MVP) | Transactional Email (Mailtrap) | Planned |
+| P0 (MVP) | Password Reset Flow | Planned |
+| P0 (MVP) | Role-Based Access Control | Planned |
+| P0 (MVP) | Member Invitation (Admin) | Planned |
+| P1 | Owner Super-Admin Dashboard | Planned |
+| P1 | Tenant Dashboard Shell | Planned |
+| P2 | SEO Analyse Tool | Planned |
+| P2 | AI Performance Analyse | Planned |
+| P2 | AI Visibility Tool | Planned |
 
 ## Success Metrics
-_How will you measure success? (e.g., user signups, retention, task completion rate)_
+- **Technische Stabilität:** Zero-Downtime-Deployment, nachgewiesene Datenisolation zwischen Tenants
+- **Sicherheit:** Keine Cross-Tenant-Datenlecks (verifiziert durch Tests)
+- **Skalierbarkeit:** Neue Tenants können innerhalb von Minuten provisioniert werden
+- **E-Mail-Zuverlässigkeit:** 100% Zustellung transaktionaler E-Mails (Login, Reset)
 
 ## Constraints
-_Budget, timeline, technical limitations, team size._
+- **Team:** Solo-Entwickler
+- **Timeline:** 4–8 Wochen für MVP Foundation
+- **Tech Stack:** Next.js 16, Supabase (PostgreSQL + Auth), Tailwind CSS + shadcn/ui, Vercel
+- **E-Mail:** Mailtrap als SMTP-Relay (kein eigenständiges E-Mail-System)
+- **Domain:** Wildcard-Subdomain `*.boost-hive.de` (DNS-Konfiguration erforderlich)
 
 ## Non-Goals
-_What are you explicitly NOT building in this version?_
-
----
-
-Use `/requirements` to create detailed feature specifications for each item in the roadmap above.
+- Kein eigenes E-Mail-System (nur SMTP-Relay über Mailtrap)
+- Kein Billing/Invoicing in v1
+- Keine nativen Mobile Apps (nur Web)
+- Kein öffentliches Self-Signup für Agenturen (Owner provisiert manuell)
+- Keine KI-Tools in v1 (kommen nach dem Foundation-Layer)
