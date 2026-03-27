@@ -15,21 +15,41 @@ import { createMiddlewareClient } from '@/lib/supabase-middleware'
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 Minute
 const RATE_LIMIT_MAX_REQUESTS = 30 // max. 30 Requests pro Minute pro IP
+const AUTH_RATE_LIMIT_MAX_REQUESTS = 5 // max. 5 Requests pro Minute pro IP (Auth-Routen)
+// BUG-12: Maximale Map-Groesse — bei Ueberschreitung werden abgelaufene Eintraege bereinigt
+const RATE_LIMIT_MAX_ENTRIES = 10_000
 
-function checkRateLimit(request: NextRequest): boolean {
+// BUG-12: Bereinigt abgelaufene Eintraege aus der Rate-Limit-Map
+function pruneRateLimitMap(): void {
+  const now = Date.now()
+  for (const [key, entry] of rateLimitMap.entries()) {
+    if (now > entry.resetAt) {
+      rateLimitMap.delete(key)
+    }
+  }
+}
+
+function checkRateLimit(request: NextRequest, maxRequests = RATE_LIMIT_MAX_REQUESTS): boolean {
+  // BUG-11: In Produktion auf Vercel wird x-forwarded-for von der Edge-Network gesetzt
+  // (nicht vom Client spoofbar). x-real-ip als weiterer Fallback, 'unknown' fuer lokale Dev.
+  // Fuer Multi-Instance-Produktion: durch Upstash Redis ersetzen (dann echte Client-IP via Vercel).
   const ip =
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     request.headers.get('x-real-ip') ??
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
     'unknown'
   const key = `${ip}:${request.nextUrl.pathname}`
   const now = Date.now()
   const entry = rateLimitMap.get(key)
 
   if (!entry || now > entry.resetAt) {
+    // BUG-12: Abgelaufene Eintraege bereinigen, wenn Map zu gross wird
+    if (rateLimitMap.size >= RATE_LIMIT_MAX_ENTRIES) {
+      pruneRateLimitMap()
+    }
     rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
     return true
   }
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) return false
+  if (entry.count >= maxRequests) return false
   entry.count++
   return true
 }
@@ -107,6 +127,14 @@ function getSupabaseClient() {
   )
 }
 
+function getSupabaseAdminClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
+
 // ---------------------------------------------------------------------------
 // Subdomain Extraction
 // ---------------------------------------------------------------------------
@@ -174,6 +202,9 @@ function sanitizedHeaders(request: NextRequest): Headers {
 // Tenant-scoped protected paths (require valid session + tenant membership)
 const TENANT_PROTECTED_PREFIXES = ['/dashboard', '/settings']
 
+// Admin-only paths within a tenant (require role === 'admin' in JWT)
+const ADMIN_ONLY_PREFIXES = ['/settings']
+
 // Owner-scoped protected paths (require valid session + platform_admin)
 const OWNER_PROTECTED_PREFIXES = ['/owner']
 
@@ -192,6 +223,10 @@ function isOwnerProtectedPath(pathname: string): boolean {
   return OWNER_PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
 }
 
+function isAdminOnlyPath(pathname: string): boolean {
+  return ADMIN_ONLY_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + '/'))
+}
+
 // ---------------------------------------------------------------------------
 // Proxy (Next.js 16 convention, replaces deprecated middleware.ts)
 // ---------------------------------------------------------------------------
@@ -201,8 +236,16 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const subdomain = extractSubdomain(host)
 
-  // BUG-5 + BUG-2: CSRF-Schutz und Rate Limiting fuer /api/owner/* Routen
-  if (pathname.startsWith('/api/owner/')) {
+  // BUG-6: Owner-API nur auf Root-Domain erlauben (nicht auf Subdomains)
+  if (subdomain !== null && pathname === '/api/auth/owner/login') {
+    return new NextResponse('Not Found', { status: 404 })
+  }
+
+  // CSRF-Schutz und Rate Limiting fuer /api/auth/* und /api/owner/* Routen
+  const isAuthRoute = pathname.startsWith('/api/auth/')
+  const isOwnerApiRoute = pathname.startsWith('/api/owner/')
+
+  if (isAuthRoute || isOwnerApiRoute) {
     // CSRF: Origin-Pruefung fuer zustandsaendernde Methoden
     if (STATE_CHANGING_METHODS.has(request.method)) {
       const origin = request.headers.get('origin')
@@ -215,8 +258,9 @@ export async function proxy(request: NextRequest) {
       }
     }
 
-    // Rate Limiting
-    if (!checkRateLimit(request)) {
+    // Rate Limiting: Auth-Routen strenger (5/min), Owner-API normal (30/min)
+    const maxReqs = isAuthRoute ? AUTH_RATE_LIMIT_MAX_REQUESTS : RATE_LIMIT_MAX_REQUESTS
+    if (!checkRateLimit(request, maxReqs)) {
       return NextResponse.json(
         { error: 'Zu viele Anfragen. Bitte warte eine Minute.' },
         { status: 429 }
@@ -265,19 +309,18 @@ export async function proxy(request: NextRequest) {
         `[Middleware] Local dev fallback: ${subdomain} -> ${LOCAL_FALLBACK_TENANT_SLUG}`
       )
       const response = NextResponse.next({ request: { headers } })
-      return maybeProtectTenantRoute(request, response, pathname)
+      return maybeProtectTenantRoute(request, response, pathname, 'local-dev-fallback')
     }
 
     // NOTE: The inactive-tenant check is handled by RLS policy
     // `tenants_select_active` which only returns tenants with status = 'active'.
     // If a tenant is inactive, `resolveTenant()` returns null (treated as 404).
-    // See BUG-4 in QA report for details.
 
     const headers = sanitizedHeaders(request)
     headers.set('x-tenant-id', tenant.id)
     headers.set('x-tenant-slug', tenant.slug)
     const response = NextResponse.next({ request: { headers } })
-    return maybeProtectTenantRoute(request, response, pathname)
+    return maybeProtectTenantRoute(request, response, pathname, tenant.id)
   }
 
   // ----- Production: resolve tenant from DB -----
@@ -299,7 +342,7 @@ export async function proxy(request: NextRequest) {
   headers.set('x-tenant-slug', tenant.slug)
 
   const response = NextResponse.next({ request: { headers } })
-  return maybeProtectTenantRoute(request, response, pathname)
+  return maybeProtectTenantRoute(request, response, pathname, tenant.id)
 }
 
 // ---------------------------------------------------------------------------
@@ -308,13 +351,15 @@ export async function proxy(request: NextRequest) {
 
 /**
  * If the current pathname is a tenant-protected route, verifies that the user
- * has a valid Supabase session. Redirects to /login with returnTo if not.
+ * has a valid Supabase session AND is an active member of this tenant (BUG-3).
+ * Redirects to /login with returnTo if not.
  * For public paths (login, API, static), passes through without checking.
  */
 async function maybeProtectTenantRoute(
   request: NextRequest,
   response: NextResponse,
-  pathname: string
+  pathname: string,
+  tenantId?: string
 ): Promise<NextResponse> {
   // Public paths don't need auth
   if (isPublicPath(pathname)) {
@@ -334,6 +379,43 @@ async function maybeProtectTenantRoute(
     loginUrl.pathname = '/login'
     loginUrl.searchParams.set('returnTo', pathname)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // BUG-3: Cross-Tenant-Check — User muss aktives Mitglied dieses Tenants sein.
+  // Verhindert, dass ein manuell uebertragenes Cookie Zugriff auf fremde Tenants ermoegicht.
+  if (tenantId && tenantId !== 'local-dev-fallback') {
+    const adminClient = getSupabaseAdminClient()
+    const { data: membership } = await adminClient
+      .from('tenant_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active')
+      .single()
+
+    if (!membership) {
+      const loginUrl = request.nextUrl.clone()
+      loginUrl.pathname = '/login'
+      return NextResponse.redirect(loginUrl)
+    }
+  }
+
+  if (isAdminOnlyPath(pathname)) {
+    const adminClient = getSupabaseAdminClient()
+    const { data: adminMembership } = await adminClient
+      .from('tenant_members')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('tenant_id', tenantId)
+      .eq('status', 'active')
+      .eq('role', 'admin')
+      .maybeSingle()
+
+    if (!adminMembership) {
+      const dashboardUrl = request.nextUrl.clone()
+      dashboardUrl.pathname = '/dashboard'
+      return NextResponse.redirect(dashboardUrl)
+    }
   }
 
   return response

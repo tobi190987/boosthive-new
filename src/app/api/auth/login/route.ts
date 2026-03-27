@@ -71,7 +71,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 7. Erfolg — Session-Cookie wurde bereits von Supabase SSR gesetzt
+  // 7. JWT Custom Claims setzen (tenant_id + role fuer sicheren Proxy-Check)
+  const { error: claimError } = await supabaseAdmin.auth.admin.updateUserById(authData.user.id, {
+    app_metadata: { tenant_id: tenantId, role: membership.role },
+  })
+  if (claimError) {
+    console.error('[POST /api/auth/login] Claim-Update fehlgeschlagen:', claimError)
+    await supabase.auth.signOut()
+    return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 })
+  }
+
+  // Session neu erstellen damit neue Claims sofort im JWT enthalten sind
+  const { error: refreshError } = await supabase.auth.refreshSession()
+  if (refreshError) {
+    console.error('[POST /api/auth/login] Session-Refresh fehlgeschlagen:', refreshError)
+    await supabase.auth.signOut()
+    return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 })
+  }
+
+  // 8. Erfolg — Session-Cookie wurde bereits von Supabase SSR gesetzt
   return NextResponse.json({
     user: {
       id: authData.user.id,

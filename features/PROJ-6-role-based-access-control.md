@@ -1,6 +1,6 @@
 # PROJ-6: Role-Based Access Control (RBAC)
 
-## Status: Planned
+## Status: In Review
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-26
 
@@ -53,10 +53,41 @@
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### 3 Schutzschichten
+1. **Middleware (proxy.ts)** — `/settings/*` → nur `role === 'admin'` im JWT; `/owner/*` → Owner-Session
+2. **API Route Guards** — `requireRole()` / `requireTenantAdmin()` in `src/lib/auth-guards.ts`
+3. **Supabase RLS** — DB-Ebene: Admin kann Members des eigenen Tenants SELECTen
+
+### Neue Dateien
+| Datei | Zweck |
+|---|---|
+| `src/lib/auth-guards.ts` | `requireRole()` + `requireTenantAdmin()` Helper |
+| `src/hooks/use-role.ts` | Client-Hook: `useRole()` für bedingte UI-Anzeige |
+| `src/app/api/tenant/members/[id]/role/route.ts` | `PATCH` — Rolle eines Members ändern (admin only) |
+| `supabase/migrations/005_rbac.sql` | RLS: Admin kann alle Members seines Tenants lesen |
+
+### Proxy-Erweiterung (proxy.ts)
+- `ADMIN_ONLY_PREFIXES = ['/settings']` — neue Konstante
+- `isAdminOnlyPath()` — neue Hilfsfunktion
+- `maybeProtectTenantRoute()` erweitert: nach Membership-Check, Rollenprüfung aus `user.app_metadata.role`
+- Redirect zu `/dashboard` bei fehlender Admin-Rolle
+
+### Rollen-Änderungs-Flow
+`PATCH /api/tenant/members/[id]/role` → `requireTenantAdmin(tenantId)` → Edge-Case-Checks → DB-Update + JWT-Claim-Update
+
+Edge Cases implementiert:
+- Letzter Admin kann nicht degradiert werden (HTTP 422)
+- Admin kann eigene Rolle nicht ändern (HTTP 422)
+- Cross-Tenant-Zugriff blockiert (tenantId aus Header vs. JWT verglichen)
 
 ## QA Test Results
 _To be added by /qa_
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-03-27
+**Production URL:** https://boosthive-aoajov36r-tobis-projects-24837701.vercel.app
+**Wildcard Domain:** https://*.boost-hive.de
+**Vercel Project:** tobis-projects-24837701/boosthive-new
+**Build:** Successful (19 app routes, Next.js 16.1.1 Turbopack)
+**DB Migration:** Pending -- `supabase/migrations/005_rbac.sql` konnte nicht automatisch gepusht werden, weil das lokale Supabase-CLI-Setup nicht mit einem Remote-Projekt verlinkt ist (`supabase link` fehlt).
