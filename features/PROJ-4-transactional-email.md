@@ -1,8 +1,8 @@
 # PROJ-4: Transactional Email (Mailtrap)
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-03-26
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-03-27
 
 ## Dependencies
 - Requires: PROJ-2 (Tenant Provisioning) — Tenant-Daten für E-Mail-Personalisierung
@@ -53,7 +53,64 @@
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+Zentraler Email-Service als reines Backend-Modul. Kein eigenes UI. Wird von bestehenden und zukünftigen API-Routen aufgerufen.
+
+### Komponentenstruktur
+
+```
+src/lib/email.ts            ← Zentraler Email-Service (sendWelcome, sendPasswordReset, sendInvitation)
+src/emails/
+  +-- welcome.ts            ← HTML + Plaintext Template: Willkommens-E-Mail
+  +-- password-reset.ts     ← HTML + Plaintext Template: Passwort-Reset
+  +-- invitation.ts         ← HTML + Plaintext Template: Mitarbeiter-Einladung
+
+Aufgerufen von:
+  src/app/api/owner/tenants/route.ts   ← löst sendWelcome aus (nach Tenant-Erstellung)
+  src/app/api/auth/[password-reset]    ← löst sendPasswordReset aus (PROJ-5)
+  src/app/api/[invitations]            ← löst sendInvitation aus (PROJ-7)
+```
+
+### Datenfluss
+
+1. API-Route ruft Email-Service auf und übergibt Tenant-Daten (Name, Subdomain) + Empfänger
+2. Email-Service baut HTML-Template mit Tenant-spezifischem Branding
+3. E-Mail wird **asynchron** via HTTP POST an Mailtrap API gesendet (blockiert API-Response nicht)
+4. Bei Fehler: Fehlermeldung wird geloggt — Hauptprozess läuft weiter (kein Silent Fail)
+
+### Tenant-Branding in E-Mails
+- Absendername: `"Agentur X via BoostHive"`
+- Absender-Adresse: aus `MAILTRAP_FROM`
+- Links zeigen auf Tenant-Subdomain: `agentur-x.boost-hive.de/...`
+
+### Umgebungsvariablen (aktuell vorhanden)
+- `MAILTRAP_API_TOKEN` — Authentifizierung gegen Mailtrap HTTP API
+- `MAILTRAP_FROM` — Absender-Adresse
+
+### API-Endpunkte (Mailtrap)
+- Sandbox (Test): `https://sandbox.api.mailtrap.io/api/send/{inbox_id}`
+- Live (Produktion): `https://send.api.mailtrap.io/api/send`
+
+Umschaltung via separatem Env-Flag oder direkt über verschiedene Token.
+
+### Tech-Entscheidungen
+
+| Entscheidung | Gewählt | Warum |
+|---|---|---|
+| Versand-Methode | Mailtrap HTTP API | Nutzer hat bereits API-Token, kein SMTP nötig |
+| HTTP-Client | Native `fetch` (Node 18+) | Keine zusätzliche Dependency, in Next.js bereits verfügbar |
+| Templates | TypeScript-Funktionen in `src/emails/` | Einfach, kein extra Rendering-Framework für 3 Templates |
+| Async-Versand | Fire-and-forget mit Error-Catch | E-Mail-Fehler sollen API-Response nicht blockieren |
+| Idempotenz | Nur bei Password Reset | DB-Check ob Token noch aktiv (verhindert E-Mail-Spam) |
+
+### Abhängigkeiten
+Keine neuen npm-Packages erforderlich — native `fetch` reicht.
+
+### Sicherheit
+- Tokens in Logs nur als gehashten Wert (nie Klartext)
+- SMTP-Credentials ausschließlich als Env-Variablen
+- Keine PII in Fehler-Logs
 
 ## QA Test Results
 _To be added by /qa_

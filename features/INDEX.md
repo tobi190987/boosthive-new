@@ -15,7 +15,7 @@
 | PROJ-1 | Subdomain Routing & Tenant Resolution | Deployed | [PROJ-1-subdomain-routing.md](PROJ-1-subdomain-routing.md) | 2026-03-26 |
 | PROJ-2 | Tenant Provisioning | In Review | [PROJ-2-tenant-provisioning.md](PROJ-2-tenant-provisioning.md) | 2026-03-26 |
 | PROJ-3 | User Authentication | In Review | [PROJ-3-user-authentication.md](PROJ-3-user-authentication.md) | 2026-03-26 |
-| PROJ-4 | Transactional Email (Mailtrap) | Planned | [PROJ-4-transactional-email.md](PROJ-4-transactional-email.md) | 2026-03-26 |
+| PROJ-4 | Transactional Email (Mailtrap) | In Progress | [PROJ-4-transactional-email.md](PROJ-4-transactional-email.md) | 2026-03-26 |
 | PROJ-5 | Password Reset Flow | Planned | [PROJ-5-password-reset.md](PROJ-5-password-reset.md) | 2026-03-26 |
 | PROJ-6 | Role-Based Access Control | Planned | [PROJ-6-role-based-access-control.md](PROJ-6-role-based-access-control.md) | 2026-03-26 |
 | PROJ-7 | Member Invitation (Admin) | Planned | [PROJ-7-member-invitation.md](PROJ-7-member-invitation.md) | 2026-03-26 |
