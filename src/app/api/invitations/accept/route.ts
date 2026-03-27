@@ -273,12 +273,12 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { error: claimError } = await supabaseAdmin.auth.admin.updateUserById(userId!, {
+  const { error: claimUpdateError } = await supabaseAdmin.auth.admin.updateUserById(userId!, {
     app_metadata: { tenant_id: tenantId, role: invitation.role },
   })
 
-  if (claimError) {
-    console.error('[POST /api/invitations/accept] Claim-Update fehlgeschlagen:', claimError)
+  if (claimUpdateError) {
+    console.error('[POST /api/invitations/accept] Claim-Update fehlgeschlagen:', claimUpdateError)
     await supabase.auth.signOut()
     return NextResponse.json(
       { error: 'Einladung angenommen, aber die Sitzung konnte nicht vorbereitet werden.' },
