@@ -26,7 +26,7 @@ function sanitizeReturnTo(url: string, fallback: string): string {
 }
 
 const fieldClassName =
-  'h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6] px-4 text-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition placeholder:text-slate-400 focus-visible:border-[#b7673f] focus-visible:ring-[#b7673f]/25 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
 
 export function LoginForm({ action, returnTo, title, showForgotPasswordLink = false }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null)
@@ -67,22 +67,22 @@ export function LoginForm({ action, returnTo, title, showForgotPasswordLink = fa
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {title && (
-        <div className="rounded-[24px] border border-[#eadfce] bg-[#f8f0e4] px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[#8a6d47]">Arbeitsbereich</p>
-          <p className="mt-1 text-base font-semibold text-slate-900">{title}</p>
+        <div className="rounded-xl border border-[#d1faf4] bg-[#f0fdfb] px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#0d9488]">Arbeitsbereich</p>
+          <p className="mt-0.5 text-sm font-semibold text-slate-900">{title}</p>
         </div>
       )}
 
       {error && (
-        <Alert className="rounded-[20px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <Alert className="rounded-xl border-red-200 bg-red-50 text-red-700">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         <Label htmlFor="email" className="text-sm font-medium text-slate-700">
           E-Mail
         </Label>
@@ -99,13 +99,13 @@ export function LoginForm({ action, returnTo, title, showForgotPasswordLink = fa
         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
       </div>
 
-      <div className="space-y-2.5">
+      <div className="space-y-2">
         <div className="flex items-center justify-between gap-4">
           <Label htmlFor="password" className="text-sm font-medium text-slate-700">
             Passwort
           </Label>
           {showForgotPasswordLink && (
-            <Link href="/forgot-password" className="text-sm font-medium text-[#9c4f2c] underline-offset-4 hover:underline">
+            <Link href="/forgot-password" className="text-sm font-medium text-[#0d9488] underline-offset-4 hover:underline">
               Passwort vergessen?
             </Link>
           )}
@@ -124,7 +124,7 @@ export function LoginForm({ action, returnTo, title, showForgotPasswordLink = fa
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-900"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
             onClick={() => setShowPassword((value) => !value)}
             tabIndex={-1}
             aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
@@ -137,7 +137,7 @@ export function LoginForm({ action, returnTo, title, showForgotPasswordLink = fa
 
       <Button
         type="submit"
-        className="h-[52px] w-full rounded-[18px] bg-[#1f2937] text-white shadow-[0_18px_36px_rgba(31,41,55,0.18)] hover:bg-[#111827]"
+        className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

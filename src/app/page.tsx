@@ -1,101 +1,122 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowRight, Building2, LockKeyhole, ShieldCheck } from 'lucide-react'
+
+const features = [
+  {
+    icon: ShieldCheck,
+    title: 'Sicherer Tenant-Zugang',
+    copy: 'Klare Einstiege für Teams, Admins und einzelne Workspaces.',
+  },
+  {
+    icon: Building2,
+    title: 'Isolierte Workspaces',
+    copy: 'Jede Agentur erhält eine eigene, vollständig isolierte Umgebung.',
+  },
+  {
+    icon: LockKeyhole,
+    title: 'Sauberer Recovery-Flow',
+    copy: 'Passwort-Reset bleibt visuell und technisch in einer Linie.',
+  },
+]
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{' '}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <main className="min-h-screen bg-[#f0f4f8] px-4 py-8 sm:px-6 lg:px-10">
+      <div className="mx-auto max-w-6xl">
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+        {/* Header */}
+        <header className="flex items-center justify-between py-4 mb-12">
+          <Link href="/" className="flex items-center">
             <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+              src="/boosthive_light.png"
+              alt="BoostHive Logo"
+              width={759}
+              height={213}
+              priority
+              className="h-10 w-auto object-contain"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+          </Link>
+
+          <div className="flex items-center gap-3">
+            <Link
+              href="/login"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
+            >
+              Tenant Login
+            </Link>
+            <Link
+              href="/owner/login"
+              className="inline-flex items-center justify-center rounded-lg bg-[#0f1c2e] px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#1a2f45]"
+            >
+              Owner Login
+            </Link>
+          </div>
+        </header>
+
+        {/* Hero */}
+        <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center mb-20">
+          <div className="space-y-6">
+            <span className="inline-flex items-center rounded-full border border-[#d1faf4] bg-[#f0fdfb] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#0d9488]">
+              SaaS Platform
+            </span>
+            <div className="space-y-4">
+              <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
+                White-Label Marketing Plattform für Agenturen.
+              </h1>
+              <p className="max-w-xl text-base leading-7 text-slate-500">
+                Jede Agentur erhält ihre eigene Subdomain, ihr eigenes Branding und eine vollständig isolierte Arbeitsumgebung.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-lg bg-[#1dbfaa] px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896]"
+              >
+                Zum Login
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/owner/login"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
+              >
+                Owner Bereich
+              </Link>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.08)]">
+            <div className="flex items-center gap-3 mb-5 pb-5 border-b border-slate-100">
+              <Image
+                src="/boosthive_light.png"
+                alt="BoostHive"
+                width={1264}
+                height={842}
+                className="h-10 w-auto object-contain"
+              />
+              <div>
+                <p className="text-sm font-semibold text-slate-900">BoostHive Platform</p>
+                <p className="text-xs text-slate-400">Multi-Tenant SaaS</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {features.map(({ icon: Icon, title, copy }) => (
+                <div key={title} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0fdfb]">
+                    <Icon className="h-4 w-4 text-[#1dbfaa]" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-800">{title}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500">{copy}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
   )
 }

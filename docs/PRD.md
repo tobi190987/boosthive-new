@@ -35,6 +35,7 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 | P0 (MVP) | Password Reset Flow | Planned |
 | P0 (MVP) | Role-Based Access Control | Planned |
 | P0 (MVP) | Member Invitation (Admin) | Planned |
+| P1 | Tenant Detail Management | Planned |
 | P1 | Owner Super-Admin Dashboard | Planned |
 | P1 | Tenant Dashboard Shell | Planned |
 | P2 | SEO Analyse Tool | Planned |

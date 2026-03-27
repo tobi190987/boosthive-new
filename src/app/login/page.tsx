@@ -24,10 +24,10 @@ export default async function TenantLoginPage({ searchParams }: LoginPageProps) 
       footer={
         <div className="flex flex-col gap-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
-            <Image src="/favicon_dark.png" alt="BoostHive Logo" width={1264} height={842} className="h-6 w-auto object-contain" />
+            <Image src="/boosthive_light.png" alt="BoostHive Logo" width={759} height={213} className="h-5 w-auto object-contain" />
             <span>{tenant ? `Tenant: ${tenant.slug}` : 'BoostHive Zugang'}</span>
           </div>
-          <Link href="/forgot-password" className="font-medium text-[#9c4f2c] underline-offset-4 hover:underline">
+          <Link href="/forgot-password" className="font-medium text-[#0d9488] underline-offset-4 hover:underline">
             Passwort vergessen?
           </Link>
         </div>

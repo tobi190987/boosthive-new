@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AI Coding Starter Kit",
-  description: "Built with AI Agent Team System",
+  title: "BoostHive",
+  description: "BoostHive Workspace Access",
+  icons: {
+    icon: "/favicon_dark.png",
+    shortcut: "/favicon_dark.png",
+    apple: "/favicon_dark.png",
+  },
 };
 
 export default function RootLayout({

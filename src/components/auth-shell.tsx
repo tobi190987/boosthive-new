@@ -1,7 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ReactNode } from 'react'
-import { ArrowLeft, CheckCircle2, LockKeyhole, ShieldCheck } from 'lucide-react'
+import { ArrowLeft, Building2, KeyRound, ShieldCheck } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface AuthShellProps {
@@ -20,17 +20,17 @@ const highlights = [
   {
     icon: ShieldCheck,
     title: 'Tenant-sicher',
-    description: 'Jeder Einstieg bleibt sauber an den richtigen Workspace gebunden.',
+    description: 'Jeder Einstieg bleibt klar an den richtigen Workspace gebunden.',
   },
   {
-    icon: LockKeyhole,
+    icon: KeyRound,
     title: 'Ruhiger Flow',
     description: 'Klare Formulare, gute Lesbarkeit und wenig visuelle Reibung.',
   },
   {
-    icon: CheckCircle2,
-    title: 'Schnell zurueck',
-    description: 'Von Login bis Recovery fuehrt alles wieder direkt in die App.',
+    icon: Building2,
+    title: 'Schnell zurück',
+    description: 'Von Login bis Recovery führt alles direkt zurück in die App.',
   },
 ]
 
@@ -46,41 +46,34 @@ export function AuthShell({
   children,
 }: AuthShellProps) {
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#f3efe7] text-slate-950">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(236,122,65,0.18),_transparent_34%),radial-gradient(circle_at_top_right,_rgba(16,185,129,0.16),_transparent_32%),linear-gradient(135deg,_#f6efe4_0%,_#f8f4eb_44%,_#eff5ef_100%)]" />
-      <div className="absolute inset-x-0 top-0 h-40 bg-[linear-gradient(180deg,rgba(255,255,255,0.5),transparent)]" />
-      <div className="absolute left-[-5rem] top-[10rem] h-56 w-56 rounded-full bg-[#eb6f3d]/18 blur-3xl" />
-      <div className="absolute bottom-[-3rem] right-[-4rem] h-72 w-72 rounded-full bg-[#157f68]/16 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-[#f0f4f8] text-slate-950">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(29,191,170,0.10),_transparent_40%),radial-gradient(ellipse_at_bottom_right,_rgba(29,191,170,0.06),_transparent_40%)]" />
 
       <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center px-4 py-8 sm:px-6 lg:px-10">
-        <div className="grid w-full gap-6 lg:grid-cols-[1.08fr_0.92fr] lg:items-stretch">
-          <section className="order-2 flex flex-col justify-between rounded-[36px] border border-[#223141] bg-[#1f2937] p-6 text-white shadow-[0_30px_120px_rgba(15,23,42,0.22)] sm:p-8 lg:order-1 lg:min-h-[720px] lg:p-10">
-            <div className="space-y-10">
-              <div className="flex items-center gap-4">
+        <div className="grid w-full gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-stretch">
+
+          {/* Left: Dark Panel */}
+          <section className="order-2 flex flex-col justify-between rounded-2xl border border-[#1e2d3d] bg-[#0f1c2e] p-6 text-white shadow-[0_20px_80px_rgba(0,0,0,0.20)] sm:p-8 lg:order-1 lg:min-h-[660px] lg:p-10">
+            <div className="space-y-8">
+              <div className="flex items-center gap-3">
                 <Image
-                  src="/favicon_dark.png"
+                  src="/boosthive_dark.png"
                   alt="BoostHive Logo"
-                  width={1264}
-                  height={842}
+                  width={759}
+                  height={213}
                   priority
-                  className="h-14 w-auto object-contain drop-shadow-[0_10px_24px_rgba(0,0,0,0.22)]"
+                  className="h-10 w-auto object-contain"
                 />
-                <div className="space-y-1">
-                  <p className="text-xs font-semibold uppercase tracking-[0.34em] text-slate-300">
-                    Secure Workspace Access
-                  </p>
-                  <p className="text-base font-medium text-slate-200">Workspace Login & Recovery</p>
-                </div>
               </div>
 
-              <div className="max-w-xl space-y-5">
-                <span className="inline-flex rounded-full border border-white/10 bg-white/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.26em] text-[#c9f6e7]">
+              <div className="space-y-4">
+                <span className="inline-flex rounded-full border border-[#1dbfaa]/30 bg-[#1dbfaa]/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#5ee8d6]">
                   Auth Experience
                 </span>
-                <h1 className="max-w-lg text-4xl font-semibold leading-tight tracking-tight sm:text-5xl">
+                <h1 className="max-w-lg text-3xl font-semibold leading-tight tracking-tight sm:text-4xl">
                   {asideTitle}
                 </h1>
-                <p className="max-w-xl text-base leading-7 text-slate-200 sm:text-lg">
+                <p className="max-w-lg text-sm leading-7 text-slate-300 sm:text-base">
                   {asideDescription}
                 </p>
               </div>
@@ -89,87 +82,75 @@ export function AuthShell({
                 {highlights.map(({ icon: Icon, title, description }) => (
                   <div
                     key={title}
-                    className="rounded-[26px] border border-white/10 bg-white/10 p-4 backdrop-blur-sm"
+                    className="rounded-xl border border-white/10 bg-white/5 p-4"
                   >
-                    <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10">
-                      <Icon className="h-5 w-5 text-[#c9f6e7]" />
+                    <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-[#1dbfaa]/20">
+                      <Icon className="h-4 w-4 text-[#5ee8d6]" />
                     </div>
                     <h2 className="text-sm font-semibold text-white">{title}</h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-200">{description}</p>
+                    <p className="mt-1.5 text-xs leading-5 text-slate-400">{description}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="mt-10 rounded-[28px] border border-white/10 bg-white/10 p-5 backdrop-blur-sm">
-              <div className="flex items-center gap-4">
-                <Image
-                  src="/favicon_dark.png"
-                  alt="BoostHive Logo"
-                  width={1264}
-                  height={842}
-                  className="h-10 w-auto object-contain"
-                />
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-white">Sauberes Markenbild</p>
-                  <p className="text-sm leading-6 text-slate-300">
-                    Das Website-Logo nutzt jetzt das richtige transparente Asset statt des Favicons.
-                  </p>
-                </div>
+            <div className="mt-8 flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1dbfaa]/20">
+                <ShieldCheck className="h-4 w-4 text-[#5ee8d6]" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white">BoostHive Platform</p>
+                <p className="text-xs text-slate-400">Sichere, isolierte Workspaces für jede Agentur.</p>
               </div>
             </div>
           </section>
 
+          {/* Right: Form Card */}
           <section className="order-1 lg:order-2">
-            <Card className="overflow-hidden rounded-[36px] border border-[#e2d8cb] bg-white shadow-[0_28px_100px_rgba(89,71,42,0.16)]">
-              <CardHeader className="space-y-5 border-b border-[#d8d0c4]/70 px-6 pb-6 pt-6 sm:px-8 sm:pb-8 sm:pt-8">
+            <Card className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_40px_rgba(15,23,42,0.08)]">
+              <CardHeader className="space-y-4 border-b border-slate-100 px-6 pb-5 pt-6 sm:px-8 sm:pt-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <Image
-                      src="/favicon_dark.png"
+                      src="/boosthive_light.png"
                       alt="BoostHive"
-                      width={1264}
-                      height={842}
-                      className="h-9 w-auto object-contain"
+                      width={759}
+                      height={213}
+                      className="h-8 w-auto object-contain"
                     />
-                    <div>
-                      <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#8a6d47]">
-                        BoostHive
-                      </p>
-                      <p className="text-sm text-slate-500">Workspace Login & Recovery</p>
-                    </div>
                   </div>
                   {backHref && (
                     <Link
                       href={backHref}
-                      className="inline-flex items-center gap-2 rounded-full border border-[#d8d0c4] bg-white/80 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-[#b7a181] hover:text-slate-950"
+                      className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
                     >
-                      <ArrowLeft className="h-4 w-4" />
+                      <ArrowLeft className="h-3.5 w-3.5" />
                       {backLabel}
                     </Link>
                   )}
                 </div>
 
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {eyebrow && (
-                    <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[#b85e34]">
+                    <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#1dbfaa]">
                       {eyebrow}
                     </p>
                   )}
-                  <CardTitle className="max-w-lg text-3xl font-semibold tracking-tight text-slate-950 sm:text-[2rem]">
+                  <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.75rem]">
                     {title}
                   </CardTitle>
-                  <CardDescription className="max-w-lg text-sm leading-7 text-slate-600 sm:text-[15px]">
+                  <CardDescription className="text-sm leading-6 text-slate-500">
                     {description}
                   </CardDescription>
                 </div>
               </CardHeader>
-              <CardContent className="px-6 py-6 sm:px-8 sm:py-8">
+              <CardContent className="px-6 py-6 sm:px-8 sm:py-7">
                 {children}
-                {footer && <div className="mt-8 border-t border-[#e4ddd4] pt-6">{footer}</div>}
+                {footer && <div className="mt-6 border-t border-slate-100 pt-5">{footer}</div>}
               </CardContent>
             </Card>
           </section>
+
         </div>
       </div>
     </div>

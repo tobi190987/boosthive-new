@@ -42,7 +42,80 @@
 <!-- Sections below are added by subsequent skills -->
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Überblick
+Zwei Bereiche: Admin-Verwaltung (Einladungen versenden/widerrufen) + öffentliche Annahme-Seite (Token-basiert, kein Login nötig).
+
+### Komponentenstruktur
+
+```
+/settings/team  (nur Admin)
++-- TeamPage
+    +-- InviteButton
+    |   +-- InviteDialog (Modal)
+    |       +-- InviteForm (E-Mail + Rollen-Auswahl)
+    +-- InvitationTable
+        +-- InvitationRow (E-Mail, Rolle, Status-Badge, Datum, Aktionen)
+            +-- "Erneut senden"-Button (nur bei Ausstehend)
+            +-- "Widerrufen"-Button + Bestätigungs-Dialog
+
+/accept-invite?token=...  (öffentlich)
++-- AcceptInvitePage
+    +-- TenantBanner (Tenant-Name aus Token)
+    +-- AcceptInviteForm (Anzeigename, Passwort, Bestätigung)
+    +-- ErrorState (abgelaufen / widerrufen / bereits angenommen)
+```
+
+### Datenmodell
+
+**Neue Tabelle: `tenant_invitations`**
+
+| Feld | Beschreibung |
+|---|---|
+| id | Eindeutige ID |
+| tenant_id | Welcher Tenant |
+| email | E-Mail der eingeladenen Person |
+| role | `admin` oder `member` |
+| token_hash | SHA-256-Hash des Tokens (nie Klartext) |
+| invited_by | User-ID des einladenden Admins |
+| created_at | Einladungszeitpunkt |
+| expires_at | created_at + 7 Tage |
+| accepted_at | Annahmezeitpunkt (null = ausstehend) |
+| revoked_at | Widerrufszeitpunkt (null = aktiv) |
+
+Token-Sicherheit: 32 zufällige Bytes als Klartext in der E-Mail-URL, SHA-256-Hash in der DB gespeichert.
+
+### API-Routen
+
+| Route | Methode | Wer? | Zweck |
+|---|---|---|---|
+| `/api/tenant/invitations` | POST | Admin | Einladung erstellen + E-Mail senden |
+| `/api/tenant/invitations` | GET | Admin | Alle Einladungen auflisten |
+| `/api/tenant/invitations/[id]/resend` | POST | Admin | Neuen Token + E-Mail erneut senden |
+| `/api/tenant/invitations/[id]` | DELETE | Admin | Einladung widerrufen |
+| `/api/invitations/validate` | GET | Öffentlich | Token prüfen, Tenant-Name zurückgeben |
+| `/api/invitations/accept` | POST | Öffentlich | Account erstellen, Token invalidieren, einloggen |
+
+Admin-Routen gesichert via `requireTenantAdmin()` aus PROJ-6.
+
+### Neue Dateien
+
+| Datei | Zweck |
+|---|---|
+| `src/app/settings/team/page.tsx` | Admin-Seite: Übersicht + Einladen-Button |
+| `src/components/invite-dialog.tsx` | Modal mit Einladungsformular |
+| `src/components/invitation-table.tsx` | Tabelle mit Status + Aktionsbuttons |
+| `src/app/accept-invite/page.tsx` | Öffentliche Annahme-Seite |
+| `src/components/accept-invite-form.tsx` | Formular: Name + Passwort setzen |
+| `src/app/api/tenant/invitations/route.ts` | POST + GET |
+| `src/app/api/tenant/invitations/[id]/route.ts` | DELETE |
+| `src/app/api/tenant/invitations/[id]/resend/route.ts` | POST |
+| `src/app/api/invitations/validate/route.ts` | GET |
+| `src/app/api/invitations/accept/route.ts` | POST |
+| `supabase/migrations/006_invitations.sql` | Tabelle + RLS |
+
+### Keine neuen Pakete nötig
+`crypto` (Node.js eingebaut), Nodemailer/Mailtrap (PROJ-4), Supabase (PROJ-3), `requireTenantAdmin()` (PROJ-6), alle UI-Komponenten bereits in shadcn/ui vorhanden.
 
 ## QA Test Results
 _To be added by /qa_

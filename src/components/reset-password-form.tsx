@@ -17,7 +17,7 @@ interface ResetPasswordFormProps {
 }
 
 const fieldClassName =
-  'h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6] px-4 text-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition placeholder:text-slate-400 focus-visible:border-[#b7673f] focus-visible:ring-[#b7673f]/25 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
 
 export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -41,7 +41,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
 
   async function onSubmit(data: ResetPasswordInput) {
     if (missingToken) {
-      setServerError('Der Reset-Link ist unvollstaendig. Bitte fordere einen neuen Link an.')
+      setServerError('Der Reset-Link ist unvollständig. Bitte fordere einen neuen Link an.')
       return
     }
 
@@ -79,38 +79,36 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="rounded-[24px] border border-[#eadfce] bg-[#f8f0e4] p-4">
-        <div className="flex items-start gap-3">
-          <div className="rounded-2xl bg-white/70 p-2.5 ring-1 ring-[#dccfbf]">
-            <KeyRound className="h-5 w-5 text-[#b85e34]" />
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-slate-900">Neues Passwort festlegen</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
-              Nutze ein starkes Passwort, damit der Zugang zu deinem Workspace sofort wieder sicher ist.
-            </p>
-          </div>
+    <div className="space-y-5">
+      <div className="flex items-start gap-3 rounded-xl border border-[#d1faf4] bg-[#f0fdfb] p-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1dbfaa]/20">
+          <KeyRound className="h-4 w-4 text-[#0d9488]" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-slate-900">Neues Passwort festlegen</p>
+          <p className="mt-0.5 text-xs leading-5 text-slate-500">
+            Nutze ein starkes Passwort, damit der Zugang zu deinem Workspace sofort wieder sicher ist.
+          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {missingToken && !serverError && (
-          <Alert className="rounded-[20px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+          <Alert className="rounded-xl border-red-200 bg-red-50 text-red-700">
             <AlertCircle className="h-4 w-4" />
-            <AlertDescription>Im Link fehlt ein gueltiges Reset-Token.</AlertDescription>
+            <AlertDescription>Im Link fehlt ein gültiges Reset-Token.</AlertDescription>
           </Alert>
         )}
 
         {serverError && (
-          <Alert className="rounded-[20px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+          <Alert className="rounded-xl border-red-200 bg-red-50 text-red-700">
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>{serverError}</AlertDescription>
           </Alert>
         )}
 
         {isSuccess && (
-          <Alert className="rounded-[20px] border-[#cfe7d7] bg-[#effaf2] text-[#14532d]">
+          <Alert className="rounded-xl border-[#d1faf4] bg-[#f0fdfb] text-[#0d9488]">
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
               Dein Passwort wurde aktualisiert. Du kannst dich jetzt neu anmelden.
@@ -118,7 +116,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
           </Alert>
         )}
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <Label htmlFor="password" className="text-sm font-medium text-slate-700">
             Neues Passwort
           </Label>
@@ -135,7 +133,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-900"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
               onClick={() => setShowPassword((value) => !value)}
               aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
             >
@@ -145,9 +143,9 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
         </div>
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
-            Passwort bestaetigen
+            Passwort bestätigen
           </Label>
           <div className="relative">
             <Input
@@ -162,7 +160,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-900"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
               onClick={() => setShowConfirmPassword((value) => !value)}
               aria-label={showConfirmPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
             >
@@ -174,17 +172,17 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
 
         <Button
           type="submit"
-          className="h-[52px] w-full rounded-[18px] bg-[#1f2937] text-white shadow-[0_18px_36px_rgba(31,41,55,0.18)] hover:bg-[#111827]"
+          className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
           disabled={isSubmitting || isSuccess}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-          Passwort zuruecksetzen
+          Passwort zurücksetzen
         </Button>
       </form>
 
       <p className="text-sm text-slate-500">
         Link abgelaufen?{' '}
-        <Link href="/forgot-password" className="font-medium text-[#9c4f2c] underline-offset-4 hover:underline">
+        <Link href="/forgot-password" className="font-medium text-[#0d9488] underline-offset-4 hover:underline">
           Neuen Reset anfordern
         </Link>
       </p>

@@ -15,7 +15,7 @@ const GENERIC_SUCCESS =
   'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
 
 const fieldClassName =
-  'h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6] px-4 text-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition placeholder:text-slate-400 focus-visible:border-[#b7673f] focus-visible:ring-[#b7673f]/25 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
 
 interface ForgotPasswordFormProps {
   action: string
@@ -61,38 +61,38 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[22px] border border-[#eadfce] bg-[#fbf6ef] p-4">
-          <MailCheck className="h-5 w-5 text-[#b85e34]" />
-          <p className="mt-3 text-sm font-semibold text-slate-900">Kein Account-Leak</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Die Rueckmeldung bleibt neutral, egal ob die Adresse existiert oder nicht.
+        <div className="rounded-xl border border-[#d1faf4] bg-[#f0fdfb] p-4">
+          <MailCheck className="h-4 w-4 text-[#0d9488]" />
+          <p className="mt-2.5 text-sm font-semibold text-slate-900">Kein Account-Leak</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Die Rückmeldung bleibt neutral, egal ob die Adresse existiert oder nicht.
           </p>
         </div>
-        <div className="rounded-[22px] border border-[#e1e7df] bg-[#f3f8f3] p-4">
-          <ShieldCheck className="h-5 w-5 text-[#157f68]" />
-          <p className="mt-3 text-sm font-semibold text-slate-900">Tenant-gebunden</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
-            Der Ablauf bleibt am richtigen Workspace und fuehrt nicht aus dem Flow heraus.
+        <div className="rounded-xl border border-[#d1faf4] bg-[#f0fdfb] p-4">
+          <ShieldCheck className="h-4 w-4 text-[#0d9488]" />
+          <p className="mt-2.5 text-sm font-semibold text-slate-900">Tenant-gebunden</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500">
+            Der Ablauf bleibt am richtigen Workspace und führt nicht aus dem Flow heraus.
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {serverError && (
-          <Alert className="rounded-[20px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+          <Alert className="rounded-xl border-red-200 bg-red-50 text-red-700">
             <AlertDescription>{serverError}</AlertDescription>
           </Alert>
         )}
 
         {isSuccess && (
-          <Alert className="rounded-[20px] border-[#cfe7d7] bg-[#effaf2] text-[#14532d]">
+          <Alert className="rounded-xl border-[#d1faf4] bg-[#f0fdfb] text-[#0d9488]">
             <AlertDescription>{GENERIC_SUCCESS}</AlertDescription>
           </Alert>
         )}
 
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           <Label htmlFor="email" className="text-sm font-medium text-slate-700">
             E-Mail
           </Label>
@@ -111,7 +111,7 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
 
         <Button
           type="submit"
-          className="h-[52px] w-full rounded-[18px] bg-[#1f2937] text-white shadow-[0_18px_36px_rgba(31,41,55,0.18)] hover:bg-[#111827]"
+          className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
           disabled={isSubmitting || isSuccess}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -120,8 +120,8 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
       </form>
 
       <p className="text-sm text-slate-500">
-        Zurueck zum Login?{' '}
-        <Link href="/login" className="font-medium text-[#9c4f2c] underline-offset-4 hover:underline">
+        Zurück zum Login?{' '}
+        <Link href="/login" className="font-medium text-[#0d9488] underline-offset-4 hover:underline">
           Jetzt anmelden
         </Link>
       </p>
