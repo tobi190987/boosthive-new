@@ -11,7 +11,6 @@ interface InvitationRecord {
   id: string
   email: string
   role: 'admin' | 'member'
-  claimed_at: string | null
   accepted_at: string | null
   revoked_at: string | null
   expires_at: string | null
@@ -48,86 +47,36 @@ export async function POST(request: NextRequest) {
   const supabaseAdmin = createAdminClient()
   const tokenHash = hashInvitationToken(parsed.data.token)
   const nowIso = new Date().toISOString()
-
-  const { data: claimedInvitation, error: claimError } = await supabaseAdmin
+  const { data: invitation, error: invitationError } = await supabaseAdmin
     .from('tenant_invitations')
-    .update({ claimed_at: nowIso })
+    .select('id, email, role, accepted_at, revoked_at, expires_at, tenants(name, slug)')
     .eq('tenant_id', tenantId)
     .eq('token_hash', tokenHash)
-    .is('accepted_at', null)
-    .is('revoked_at', null)
-    .is('claimed_at', null)
-    .gt('expires_at', nowIso)
-    .select('id, email, role, claimed_at, accepted_at, revoked_at, expires_at, tenants(name, slug)')
     .maybeSingle<InvitationRecord>()
 
-  if (claimError) {
-    console.error('[POST /api/invitations/accept] Einladung konnte nicht geclaimt werden:', claimError)
+  if (invitationError) {
+    console.error('[POST /api/invitations/accept] Einladung konnte nicht geladen werden:', invitationError)
     return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
   }
 
-  let invitation = claimedInvitation
-
   if (!invitation) {
-    const { data: existingInvitation, error: invitationError } = await supabaseAdmin
-      .from('tenant_invitations')
-      .select('id, email, role, claimed_at, accepted_at, revoked_at, expires_at, tenants(name, slug)')
-      .eq('tenant_id', tenantId)
-      .eq('token_hash', tokenHash)
-      .maybeSingle<InvitationRecord>()
-
-    if (invitationError) {
-      console.error(
-        '[POST /api/invitations/accept] Einladung konnte nicht geladen werden:',
-        invitationError
-      )
-      return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
-    }
-
-    if (!existingInvitation) {
-      return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
-    }
-
-    if (existingInvitation.accepted_at) {
-      return NextResponse.json({
-        success: true,
-        redirectTo: '/dashboard',
-        tenantName: tenantNameFromInvitation(existingInvitation),
-      })
-    }
-
-    if (existingInvitation.claimed_at) {
-      return NextResponse.json(
-        { error: 'Diese Einladung wird bereits verarbeitet. Bitte einen Moment warten.' },
-        { status: 409 }
-      )
-    }
-
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
   }
 
-  const rollbackClaim = async () => {
-    const { error } = await supabaseAdmin
-      .from('tenant_invitations')
-      .update({ claimed_at: null })
-      .eq('tenant_id', tenantId)
-      .eq('id', invitation.id)
-      .is('accepted_at', null)
-      .is('revoked_at', null)
-
-    if (error) {
-      console.error('[POST /api/invitations/accept] Claim-Rollback fehlgeschlagen:', error)
-    }
+  if (invitation.accepted_at) {
+    return NextResponse.json({
+      success: true,
+      redirectTo: '/dashboard',
+      tenantName: tenantNameFromInvitation(invitation),
+    })
   }
 
   if (!invitation.email || !invitation.role) {
-    await rollbackClaim()
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
   }
 
   const invitationStatus = deriveInvitationStatus(invitation)
   if (invitationStatus !== 'pending') {
-    await rollbackClaim()
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
   }
 
@@ -137,7 +86,6 @@ export async function POST(request: NextRequest) {
 
   if (existingUserLookup.error) {
     console.error('[POST /api/invitations/accept] User-Lookup fehlgeschlagen:', existingUserLookup.error)
-    await rollbackClaim()
     return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
   }
 
@@ -154,12 +102,10 @@ export async function POST(request: NextRequest) {
 
     if (membershipError) {
       console.error('[POST /api/invitations/accept] Membership-Prüfung fehlgeschlagen:', membershipError)
-      await rollbackClaim()
       return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
     }
 
     if (activeMembership) {
-      await rollbackClaim()
       return NextResponse.json(
         { error: 'User ist bereits Mitglied in diesem Tenant.' },
         { status: 409 }
@@ -184,7 +130,6 @@ export async function POST(request: NextRequest) {
 
     if (updateUserError) {
       console.error('[POST /api/invitations/accept] User-Update fehlgeschlagen:', updateUserError)
-      await rollbackClaim()
       return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
     }
   } else {
@@ -208,7 +153,6 @@ export async function POST(request: NextRequest) {
 
       if (retryLookup.error || !retryLookup.data?.[0]?.id) {
         console.error('[POST /api/invitations/accept] User-Anlage fehlgeschlagen:', createUserResult.error)
-        await rollbackClaim()
         return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
       }
 
@@ -234,7 +178,6 @@ export async function POST(request: NextRequest) {
 
   if (memberUpsertError) {
     console.error('[POST /api/invitations/accept] Membership-Upsert fehlgeschlagen:', memberUpsertError)
-    await rollbackClaim()
     return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
   }
 
@@ -253,8 +196,24 @@ export async function POST(request: NextRequest) {
 
   if (invitationUpdateError) {
     console.error('[POST /api/invitations/accept] Einladung konnte nicht finalisiert werden:', invitationUpdateError)
-    await rollbackClaim()
-    return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
+    const { data: finalizedInvitation, error: finalizedInvitationError } = await supabaseAdmin
+      .from('tenant_invitations')
+      .select('id, email, role, accepted_at, revoked_at, expires_at, tenants(name, slug)')
+      .eq('tenant_id', tenantId)
+      .eq('id', invitation.id)
+      .maybeSingle<InvitationRecord>()
+
+    if (finalizedInvitationError) {
+      console.error(
+        '[POST /api/invitations/accept] Einladung konnte nach Finalisierungsfehler nicht erneut geladen werden:',
+        finalizedInvitationError
+      )
+      return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
+    }
+
+    if (!finalizedInvitation?.accepted_at) {
+      return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
+    }
   }
 
   const supabase = await createClient()
