@@ -273,6 +273,29 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  const { error: claimError } = await supabaseAdmin.auth.admin.updateUserById(userId!, {
+    app_metadata: { tenant_id: tenantId, role: invitation.role },
+  })
+
+  if (claimError) {
+    console.error('[POST /api/invitations/accept] Claim-Update fehlgeschlagen:', claimError)
+    await supabase.auth.signOut()
+    return NextResponse.json(
+      { error: 'Einladung angenommen, aber die Sitzung konnte nicht vorbereitet werden.' },
+      { status: 500 }
+    )
+  }
+
+  const { error: refreshError } = await supabase.auth.refreshSession()
+  if (refreshError) {
+    console.error('[POST /api/invitations/accept] Session-Refresh fehlgeschlagen:', refreshError)
+    await supabase.auth.signOut()
+    return NextResponse.json(
+      { error: 'Einladung angenommen, aber die Sitzung konnte nicht aktualisiert werden.' },
+      { status: 500 }
+    )
+  }
+
   return NextResponse.json({
     success: true,
     redirectTo: '/dashboard',

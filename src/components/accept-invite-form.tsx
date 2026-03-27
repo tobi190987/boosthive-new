@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { CheckCircle2, Eye, EyeOff, Loader2, ShieldCheck, UserRoundPlus } from 'lucide-react'
@@ -32,7 +31,6 @@ const fieldClassName =
   'h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6] px-4 text-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition placeholder:text-slate-400 focus-visible:border-[#b7673f] focus-visible:ring-[#b7673f]/25 focus-visible:ring-offset-0'
 
 export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteFormProps) {
-  const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -99,27 +97,30 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
     }
 
     setServerError(null)
+    try {
+      const response = await fetch('/api/invitations/accept', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          ...data,
+          token,
+        }),
+      })
+      const payload = await response.json().catch(() => ({}))
 
-    const response = await fetch('/api/invitations/accept', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        ...data,
-        token,
-      }),
-    })
-    const payload = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        setServerError(payload.error ?? 'Einladung konnte nicht angenommen werden.')
+        return
+      }
 
-    if (!response.ok) {
-      setServerError(payload.error ?? 'Einladung konnte nicht angenommen werden.')
-      return
+      setIsSuccess(true)
+      window.location.assign(payload.redirectTo ?? '/dashboard')
+    } catch {
+      setServerError('Einladung konnte gerade nicht verarbeitet werden. Bitte versuche es erneut.')
     }
-
-    setIsSuccess(true)
-    router.push(payload.redirectTo ?? '/dashboard')
   }
 
   if (isSuccess) {

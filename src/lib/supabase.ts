@@ -32,7 +32,11 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, {
+                ...options,
+                // Keep auth cookies bound to the current tenant host.
+                domain: undefined,
+              })
             )
           } catch {
             // The `setAll` method is called from a Server Component where
@@ -44,4 +48,3 @@ export async function createClient() {
     }
   )
 }
-
