@@ -14,6 +14,11 @@ export const AcceptInvitationSchema = z
     password: z.string().min(8, 'Passwort muss mindestens 8 Zeichen lang sein.'),
   })
 
+export const AcceptInvitationFormSchema = AcceptInvitationSchema.omit({
+  token: true,
+})
+
 export type InvitationRole = z.infer<typeof InvitationRoleSchema>
 export type CreateInvitationInput = z.infer<typeof CreateInvitationSchema>
 export type AcceptInvitationInput = z.infer<typeof AcceptInvitationSchema>
+export type AcceptInvitationFormInput = z.infer<typeof AcceptInvitationFormSchema>

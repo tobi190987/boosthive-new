@@ -10,7 +10,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
+  AcceptInvitationFormSchema,
   AcceptInvitationSchema,
+  type AcceptInvitationFormInput,
   type AcceptInvitationInput,
 } from '@/lib/schemas/invitations'
 
@@ -41,8 +43,8 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<AcceptInvitationInput>({
-    resolver: zodResolver(AcceptInvitationSchema),
+  } = useForm<AcceptInvitationFormInput>({
+    resolver: zodResolver(AcceptInvitationFormSchema),
     defaultValues: {
       name: '',
       password: '',
@@ -90,7 +92,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
 
   const submitInvitation = handleSubmit(onSubmit)
 
-  async function onSubmit(data: AcceptInvitationInput) {
+  async function onSubmit(data: AcceptInvitationFormInput) {
     if (!token || !validation?.valid) {
       setServerError('Diese Einladung ist unvollständig oder bereits abgelaufen.')
       return
@@ -107,7 +109,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
         body: JSON.stringify({
           ...data,
           token,
-        }),
+        } satisfies AcceptInvitationInput),
       })
       const payload = await response.json().catch(() => ({}))
 
