@@ -18,13 +18,15 @@
 | PROJ-4 | Transactional Email (Mailtrap) | In Review | [PROJ-4-transactional-email.md](PROJ-4-transactional-email.md) | 2026-03-26 |
 | PROJ-5 | Password Reset Flow | In Review | [PROJ-5-password-reset.md](PROJ-5-password-reset.md) | 2026-03-26 |
 | PROJ-6 | Role-Based Access Control | In Review | [PROJ-6-role-based-access-control.md](PROJ-6-role-based-access-control.md) | 2026-03-26 |
-| PROJ-7 | Member Invitation (Admin) | Planned | [PROJ-7-member-invitation.md](PROJ-7-member-invitation.md) | 2026-03-26 |
+| PROJ-7 | Member Invitation (Admin) | In Progress | [PROJ-7-member-invitation.md](PROJ-7-member-invitation.md) | 2026-03-26 |
 | PROJ-8 | Owner Super-Admin Dashboard | Planned | [PROJ-8-owner-super-admin-dashboard.md](PROJ-8-owner-super-admin-dashboard.md) | 2026-03-26 |
 | PROJ-9 | Tenant Dashboard Shell | Planned | [PROJ-9-tenant-dashboard-shell.md](PROJ-9-tenant-dashboard-shell.md) | 2026-03-26 |
 | PROJ-10 | SEO Analyse Tool | Planned | [PROJ-10-seo-analyse.md](PROJ-10-seo-analyse.md) | 2026-03-26 |
 | PROJ-11 | AI Performance Analyse | Planned | [PROJ-11-ai-performance-analyse.md](PROJ-11-ai-performance-analyse.md) | 2026-03-26 |
 | PROJ-12 | AI Visibility Tool | Planned | [PROJ-12-ai-visibility.md](PROJ-12-ai-visibility.md) | 2026-03-26 |
 
+| PROJ-13 | Tenant Detail Management | In Progress | [PROJ-13-tenant-detail-management.md](PROJ-13-tenant-detail-management.md) | 2026-03-27 |
+
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-13
+## Next Available ID: PROJ-14
