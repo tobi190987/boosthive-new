@@ -1,6 +1,6 @@
 # PROJ-9: Tenant Dashboard Shell
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -319,4 +319,10 @@ Damit liefert `PROJ-9` zuerst die strukturelle Grundlage, auf die sich alle komm
 - Kein echter Browser-/Session-E2E-Test in dieser Session
 
 ## Deployment
-_To be added by /deploy_
+### Deployment Date: 2026-03-27
+### Deployment Status: Deployed
+
+- Production deploy released with commit `6a1da65` (`deploy(PROJ-9): ship tenant dashboard shell`)
+- Follow-up production hotfix released with commit `15feb2c` (`fix(PROJ-9): block tenant routes on root domain`)
+- Tenant subdomain routes and root-domain blocking were verified after rollout
+- `npm run build` was successful before deploy

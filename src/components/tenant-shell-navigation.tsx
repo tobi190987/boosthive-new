@@ -124,7 +124,7 @@ function NavigationContent({
                       </span>
                       {item.comingSoon ? (
                         <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
-                          Demnaechst
+                          Demnächst
                         </Badge>
                       ) : (
                         <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -168,7 +168,7 @@ function NavigationContent({
                         </span>
                         {item.comingSoon ? (
                           <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
-                            Demnaechst
+                            Demnächst
                           </Badge>
                         ) : (
                           <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -227,7 +227,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
         size="icon"
         className="text-slate-700"
         onClick={() => setOpen(true)}
-        aria-label="Tenant Navigation oeffnen"
+        aria-label="Tenant Navigation öffnen"
       >
         <Menu className="h-5 w-5" />
       </Button>

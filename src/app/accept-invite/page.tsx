@@ -15,14 +15,14 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
   return (
     <AuthShell
       eyebrow="Einladung"
-      title={hasToken ? 'Willkommen im Team' : 'Einladung pruefen'}
+      title={hasToken ? 'Willkommen im Team' : 'Einladung prüfen'}
       description={
         hasToken
           ? 'Lege Anzeigename und Passwort fest, um deinen Zugang zu aktivieren.'
-          : 'Dieser Link wirkt unvollstaendig. Fordere bei einem Admin eine neue Einladung an.'
+          : 'Dieser Link wirkt unvollständig. Fordere bei einem Admin eine neue Einladung an.'
       }
-      asideTitle="Onboarding fuer neue Teammitglieder."
-      asideDescription="Die Einladungsseite bleibt oeffentlich erreichbar, zeigt Tenant-Kontext und fuehrt eingeladene Personen ohne Login-Vorbedingung in den Workspace."
+      asideTitle="Onboarding für neue Teammitglieder."
+      asideDescription="Die Einladungsseite bleibt öffentlich erreichbar, zeigt Tenant-Kontext und führt eingeladene Personen ohne Login-Vorbedingung in den Workspace."
       backHref="/login"
       backLabel="Zur Login-Seite"
     >

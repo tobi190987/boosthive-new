@@ -69,7 +69,7 @@ function getMailtrapConfig(): MailtrapConfig | null {
   }
 
   if (mode === 'sandbox' && !inboxId) {
-    console.error('[email] MAILTRAP_INBOX_ID fehlt fuer MAILTRAP_MODE=sandbox.')
+    console.error('[email] MAILTRAP_INBOX_ID fehlt für MAILTRAP_MODE=sandbox.')
     return null
   }
 
@@ -115,7 +115,7 @@ async function sendEmail({
   const config = getMailtrapConfig()
 
   if (!config) {
-    console.warn('[email] Versand uebersprungen, Mailtrap ist nicht konfiguriert.', {
+    console.warn('[email] Versand übersprungen, Mailtrap ist nicht konfiguriert.', {
       subject,
       category,
       recipientHash: hashRecipientForLogs(to),

@@ -94,7 +94,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
 
   async function onSubmit(data: AcceptInvitationInput) {
     if (!token || !validation?.valid) {
-      setServerError('Diese Einladung ist unvollstaendig oder bereits abgelaufen.')
+      setServerError('Diese Einladung ist unvollständig oder bereits abgelaufen.')
       return
     }
 
@@ -128,7 +128,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
         <Alert className="rounded-[24px] border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
-            Deine Einladung fuer {validation?.tenantName ?? fallbackTenantName} wurde angenommen.
+            Deine Einladung für {validation?.tenantName ?? fallbackTenantName} wurde angenommen.
             Du wirst direkt in den Workspace weitergeleitet.
           </AlertDescription>
         </Alert>
@@ -154,7 +154,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
           <ShieldCheck className="h-5 w-5 text-[#157f68]" />
           <p className="mt-3 text-sm font-semibold text-slate-900">Token-basierter Einstieg</p>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Die Annahme-Seite bleibt oeffentlich, ohne vorherigen Login.
+            Die Annahme-Seite bleibt öffentlich, ohne vorherigen Login.
           </p>
         </div>
       </div>
@@ -162,7 +162,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
       {isValidating && (
         <Alert className="rounded-[24px] border-[#eadfce] bg-[#fbf6ef] text-slate-700">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <AlertDescription>Einladung wird geprueft...</AlertDescription>
+          <AlertDescription>Einladung wird geprüft...</AlertDescription>
         </Alert>
       )}
 
@@ -175,7 +175,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
                 ? 'Diese Einladung wurde widerrufen. Bitte melde dich bei deinem Admin.'
                 : validation?.reason === 'accepted'
                   ? 'Diese Einladung wurde bereits angenommen. Bitte melde dich normal an.'
-                  : 'Einladung fehlt oder ist unvollstaendig. Bitte fordere einen neuen Link an.'}
+                  : 'Einladung fehlt oder ist unvollständig. Bitte fordere einen neuen Link an.'}
           </AlertDescription>
         </Alert>
       )}
@@ -183,7 +183,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
       {validation?.valid && (
         <Alert className="rounded-[24px] border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
           <AlertDescription>
-            Einladung fuer {validation.email} zu {validation.tenantName ?? fallbackTenantName} als{' '}
+            Einladung für {validation.email} zu {validation.tenantName ?? fallbackTenantName} als{' '}
             {validation.role === 'admin' ? 'Admin' : 'Member'}.
           </AlertDescription>
         </Alert>
@@ -237,7 +237,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
 
         <div className="space-y-2">
           <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
-            Passwort bestaetigen
+            Passwort bestätigen
           </Label>
           <div className="relative">
             <Input

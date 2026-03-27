@@ -70,7 +70,7 @@ export default function NewTenantPage() {
       >
         <Link href="/owner/tenants">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurueck zu Agenturen
+          Zurück zu Agenturen
         </Link>
       </Button>
 

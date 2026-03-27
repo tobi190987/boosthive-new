@@ -3,7 +3,7 @@ import { z } from 'zod'
 export const InvitationRoleSchema = z.enum(['admin', 'member'])
 
 export const CreateInvitationSchema = z.object({
-  email: z.email('Bitte gib eine gueltige E-Mail-Adresse ein.'),
+  email: z.email('Bitte gib eine gültige E-Mail-Adresse ein.'),
   role: InvitationRoleSchema,
 })
 
@@ -12,10 +12,10 @@ export const AcceptInvitationSchema = z
     token: z.string().min(1, 'Einladungstoken fehlt.'),
     name: z.string().min(2, 'Bitte gib einen Anzeigenamen mit mindestens 2 Zeichen ein.'),
     password: z.string().min(8, 'Passwort muss mindestens 8 Zeichen lang sein.'),
-    confirmPassword: z.string().min(1, 'Bitte bestaetige dein Passwort.'),
+    confirmPassword: z.string().min(1, 'Bitte bestätige dein Passwort.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Die Passwoerter muessen uebereinstimmen.',
+    message: 'Die Passwörter muessen übereinstimmen.',
     path: ['confirmPassword'],
   })
 

@@ -24,14 +24,14 @@ export async function POST(
 
   const { id } = await params
   if (!isUuid(id)) {
-    return NextResponse.json({ error: 'Ungueltige Tenant-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = AssignTenantAdminSchema.safeParse(body)
@@ -104,7 +104,7 @@ export async function POST(
 
     if (membershipError) {
       console.error(
-        '[POST /api/owner/tenants/[id]/admin] Membership-Pruefung fehlgeschlagen:',
+        '[POST /api/owner/tenants/[id]/admin] Membership-Prüfung fehlgeschlagen:',
         membershipError
       )
       return NextResponse.json({ error: 'Admin-Wechsel konnte nicht vorbereitet werden.' }, { status: 500 })
@@ -200,7 +200,7 @@ export async function POST(
 
   if (newAdminClaimError) {
     console.error(
-      '[POST /api/owner/tenants/[id]/admin] Claim-Update fuer neuen Admin fehlgeschlagen:',
+      '[POST /api/owner/tenants/[id]/admin] Claim-Update für neuen Admin fehlgeschlagen:',
       newAdminClaimError
     )
   }
@@ -218,7 +218,7 @@ export async function POST(
 
     if (previousAdminClaimError) {
       console.error(
-        '[POST /api/owner/tenants/[id]/admin] Claim-Update fuer bisherigen Admin fehlgeschlagen:',
+        '[POST /api/owner/tenants/[id]/admin] Claim-Update für bisherigen Admin fehlgeschlagen:',
         previousAdminClaimError
       )
     }
@@ -237,7 +237,7 @@ export async function POST(
 
     if (recoveryLinkError) {
       console.error(
-        '[POST /api/owner/tenants/[id]/admin] Recovery-Link fuer neuen Admin fehlgeschlagen:',
+        '[POST /api/owner/tenants/[id]/admin] Recovery-Link für neuen Admin fehlgeschlagen:',
         recoveryLinkError
       )
     } else {

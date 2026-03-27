@@ -10,12 +10,12 @@ const UpdateRoleSchema = z.object({
 /**
  * PATCH /api/tenant/members/[id]/role
  *
- * Aendert die Rolle eines Members innerhalb des eigenen Tenants.
+ * Ändert die Rolle eines Members innerhalb des eigenen Tenants.
  * Nur Admins duerfen diese Route aufrufen.
  *
  * Edge Cases:
  * - Letzter Admin kann nicht degradiert werden
- * - Admin kann nicht die eigene Rolle aendern
+ * - Admin kann nicht die eigene Rolle ändern
  */
 export async function PATCH(
   request: NextRequest,
@@ -29,7 +29,7 @@ export async function PATCH(
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
   }
 
-  // 2. Nur Admins des selben Tenants duerfen Rollen aendern
+  // 2. Nur Admins des selben Tenants duerfen Rollen ändern
   const authResult = await requireTenantAdmin(tenantId)
   if ('error' in authResult) return authResult.error
 
@@ -91,7 +91,7 @@ export async function PATCH(
 
   const targetUserId = rpcData?.user_id as string | undefined
   if (!targetUserId) {
-    console.error('[PATCH /api/tenant/members/[id]/role] RPC lieferte keine user_id zurueck.')
+    console.error('[PATCH /api/tenant/members/[id]/role] RPC lieferte keine user_id zurück.')
     return NextResponse.json({ error: 'Rollen-Update fehlgeschlagen.' }, { status: 500 })
   }
 
@@ -106,7 +106,7 @@ export async function PATCH(
 
   if (claimError) {
     console.error('[PATCH /api/tenant/members/[id]/role] JWT-Claim-Update fehlgeschlagen:', claimError)
-    // Nicht kritisch — DB ist bereits aktuell, JWT wird beim naechsten Login korrigiert
+    // Nicht kritisch — DB ist bereits aktuell, JWT wird beim nächsten Login korrigiert
   }
 
   return NextResponse.json({ success: true, role: newRole })

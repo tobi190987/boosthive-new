@@ -1,6 +1,5 @@
 import { forbidden, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { createAdminClient } from '@/lib/supabase-admin'
 import { OwnerSidebar, OwnerMobileHeader } from "@/components/owner-sidebar"
 
 // BUG-4: Server-seitiger Auth-Guard — unauthentifizierte und Non-Owner-User
@@ -18,8 +17,7 @@ export default async function OwnerLayout({
     redirect('/owner/login')
   }
 
-  const supabaseAdmin = createAdminClient()
-  const { data: admin } = await supabaseAdmin
+  const { data: admin } = await supabase
     .from('platform_admins')
     .select('user_id')
     .eq('user_id', user.id)

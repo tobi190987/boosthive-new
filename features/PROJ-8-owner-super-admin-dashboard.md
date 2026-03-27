@@ -1,6 +1,6 @@
 # PROJ-8: Owner Super-Admin Dashboard
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -407,4 +407,10 @@ So liefert `PROJ-8` schnell einen echten Mehrwert, ohne direkt in Impersonation 
 - Kein echter Browser-/Session-E2E-Test in dieser Session
 
 ## Deployment
-_To be added by /deploy_
+### Deployment Date: 2026-03-27
+### Deployment Status: Deployed
+
+- Production deploy released with commit `10a742f` (`deploy(PROJ-8): ship owner super-admin dashboard`)
+- Follow-up production hotfix released with commit `2869594` (`fix(PROJ-8): block owner routes on tenant subdomains`)
+- Root-only owner routing verified live after rollout
+- `npm run build` was successful before deploy

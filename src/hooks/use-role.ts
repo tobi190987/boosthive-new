@@ -12,14 +12,14 @@ interface UseRoleResult {
   isOwner: boolean
   isAdmin: boolean
   isMember: boolean
-  /** true fuer admin UND owner */
+  /** true für admin UND owner */
   hasAdminAccess: boolean
 }
 
 /**
  * Client-seitiger Hook zum Lesen der Rolle des eingeloggten Users.
  *
- * WICHTIG: Nur fuer UX (Navigation, Buttons ausblenden).
+ * WICHTIG: Nur für UX (Navigation, Buttons ausblenden).
  * Sicherheits-relevante Checks IMMER serverseitig in API-Routen oder Middleware.
  */
 export function useRole(): UseRoleResult {

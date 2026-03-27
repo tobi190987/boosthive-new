@@ -14,7 +14,7 @@ export default async function DashboardLayout({
       context={context}
       eyebrow="Tenant Shell"
       title="Dein Tenant-Workspace auf einen Blick"
-      description="Header, Navigation und Rollen-Kontext laufen jetzt ueber eine gemeinsame Tenant-Shell fuer Dashboard, Team und die kommenden Produktmodule."
+      description="Header, Navigation und Rollen-Kontext laufen jetzt über eine gemeinsame Tenant-Shell für Dashboard, Team und die kommenden Produktmodule."
     >
       {children}
     </TenantAppShell>

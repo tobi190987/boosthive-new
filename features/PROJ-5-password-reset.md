@@ -1,6 +1,6 @@
 # PROJ-5: Password Reset Flow
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -178,4 +178,11 @@ Voraussichtlich genutzt werden nur bereits vorhandene Bausteine plus:
 - Reason: Keine Critical- oder High-Bugs offen; verbleibend nur Testing-Gap beim echten Browser-/Supabase-End-to-End-Test sowie die separate Lint-Fehlkonfiguration ausserhalb des Features
 
 ## Deployment
-_To be added by /deploy_
+
+### Deployed: 2026-03-27
+### Commit: `4156417`
+### Production URL: `https://boost-hive.de`
+
+### Notes
+- Deploy erfolgte zusammen mit PROJ-4.
+- Produktive Funktion braucht die zugehoerigen Mail- und Supabase-Umgebungsvariablen.

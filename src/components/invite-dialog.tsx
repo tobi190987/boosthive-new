@@ -76,7 +76,7 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
               Neue Einladung vorbereiten
             </DialogTitle>
             <DialogDescription className="text-sm leading-6 text-slate-600">
-              Lege Rolle und Zieladresse fest. Der Backend-Flow aus `PROJ-7` verschickt spaeter den
+              Lege Rolle und Zieladresse fest. Der Backend-Flow aus `PROJ-7` verschickt später den
               echten Token-Link.
             </DialogDescription>
           </DialogHeader>
@@ -106,7 +106,7 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
                   id="invite-role"
                   className="h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6]"
                 >
-                  <SelectValue placeholder="Rolle waehlen" />
+                  <SelectValue placeholder="Rolle wählen" />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-[#ddd3c5]">
                   <SelectItem value="member">Member</SelectItem>

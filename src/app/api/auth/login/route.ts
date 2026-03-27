@@ -6,14 +6,14 @@ import { LoginSchema } from '@/lib/schemas/auth'
 /**
  * POST /api/auth/login
  *
- * Tenant-Login: Authentifiziert einen User via Supabase Auth und prueft,
+ * Tenant-Login: Authentifiziert einen User via Supabase Auth und prüft,
  * ob er Mitglied des aktuellen Tenants ist (aktiv, nicht inaktiv).
  *
- * Gibt bei JEDEM Fehler die gleiche generische Meldung zurueck,
+ * Gibt bei JEDEM Fehler die gleiche generische Meldung zurück,
  * um Information Leakage zu verhindern (SEC).
  */
 export async function POST(request: NextRequest) {
-  const GENERIC_ERROR = 'Ungueltige Zugangsdaten.'
+  const GENERIC_ERROR = 'Ungültige Zugangsdaten.'
 
   // 1. Tenant-ID aus Header lesen (vom Proxy injiziert)
   const tenantId = request.headers.get('x-tenant-id')
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   const { email, password } = parsed.data
 
-  // 3.5 Tenant-Status pruefen: inaktive Tenants duerfen keine neuen Logins akzeptieren
+  // 3.5 Tenant-Status prüfen: inaktive Tenants duerfen keine neuen Logins akzeptieren
   const supabaseAdmin = createAdminClient()
   const { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 4. Supabase Auth: Credentials pruefen
+  // 4. Supabase Auth: Credentials prüfen
   const supabase = await createClient()
   const { data: authData, error: authError } =
     await supabase.auth.signInWithPassword({ email, password })
@@ -61,8 +61,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 5. Tenant-Membership pruefen (mit Admin-Client, da RLS zu restriktiv ist
-  // fuer die Mitgliedschaftspruefung eines gerade eingeloggten Users)
+  // 5. Tenant-Membership prüfen (mit Admin-Client, da RLS zu restriktiv ist
+  // für die Mitgliedschaftsprüfung eines gerade eingeloggten Users)
   const { data: membership, error: memberError } = await supabaseAdmin
     .from('tenant_members')
     .select('id, role, status')
@@ -76,13 +76,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 6. Status pruefen (inaktive Accounts -> generischer Fehler, kein Info Leak)
+  // 6. Status prüfen (inaktive Accounts -> generischer Fehler, kein Info Leak)
   if (membership.status !== 'active') {
     await supabase.auth.signOut()
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 7. JWT Custom Claims setzen (tenant_id + role fuer sicheren Proxy-Check)
+  // 7. JWT Custom Claims setzen (tenant_id + role für sicheren Proxy-Check)
   const { error: claimError } = await supabaseAdmin.auth.admin.updateUserById(authData.user.id, {
     app_metadata: { tenant_id: tenantId, role: membership.role },
   })

@@ -15,7 +15,7 @@ function parsePositiveInteger(value: string | null, fallback: number) {
 
 /**
  * GET /api/owner/tenants
- * Alle Tenants auflisten (nur fuer Owner).
+ * Alle Tenants auflisten (nur für Owner).
  */
 export async function GET(request: NextRequest) {
   const auth = await requireOwner()
@@ -127,7 +127,7 @@ export async function GET(request: NextRequest) {
  * Neuen Tenant mit initialem Admin-User atomar anlegen.
  */
 export async function POST(request: NextRequest) {
-  // Owner-Authentifizierung pruefen
+  // Owner-Authentifizierung prüfen
   const auth = await requireOwner()
   if ('error' in auth) return auth.error
 
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
     body = await request.json()
   } catch {
     return NextResponse.json(
-      { error: 'Ungueltiger JSON-Body.' },
+      { error: 'Ungültiger JSON-Body.' },
       { status: 400 }
     )
   }
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
   const { name, slug, adminEmail } = parsed.data
   const supabaseAdmin = createAdminClient()
 
-  // 1. Pruefen ob Slug bereits vergeben ist
+  // 1. Prüfen ob Slug bereits vergeben ist
   const { data: existingTenant } = await supabaseAdmin
     .from('tenants')
     .select('id')
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
 
   // 2. Auth-User erstellen mit sicherem Zufallspasswort
   // Doppelter E-Mail-Check via listUsers() entfernt (BUG-3: false negatives bei >1000 Usern).
-  // Stattdessen: createUser-Fehler fuer doppelte E-Mail abfangen.
+  // Stattdessen: createUser-Fehler für doppelte E-Mail abfangen.
   const randomPassword = crypto.randomBytes(32).toString('base64url')
 
   const { data: newUser, error: createUserError } =
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
   if (rpcError) {
     console.error('[POST /api/owner/tenants] RPC-Fehler:', rpcError)
 
-    // Rollback: Auth-User loeschen, da Tenant-Erstellung fehlgeschlagen
+    // Rollback: Auth-User löschen, da Tenant-Erstellung fehlgeschlagen
     const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(newUser.user.id)
     if (rollbackError) {
       console.error(
@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
 
   if (recoveryLinkError) {
     console.error(
-      '[POST /api/owner/tenants] Recovery-Link fuer Willkommens-E-Mail fehlgeschlagen:',
+      '[POST /api/owner/tenants] Recovery-Link für Willkommens-E-Mail fehlgeschlagen:',
       recoveryLinkError
     )
   } else {

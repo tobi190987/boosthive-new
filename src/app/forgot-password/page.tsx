@@ -10,8 +10,8 @@ export default async function ForgotPasswordPage() {
       eyebrow="Passwort Reset"
       title="Passwort vergessen?"
       description="Gib die E-Mail-Adresse deines Kontos ein. Falls ein passender Zugang in diesem Tenant existiert, senden wir dir einen sicheren Reset-Link."
-      asideTitle="Sicheres Recovery fuer deinen Arbeitsbereich."
-      asideDescription={`Der Reset bleibt an ${tenant?.slug ?? 'deinen Tenant'} gebunden, zeigt keine Kontoinformationen nach aussen und fuehrt dich sauber zurueck in dein Dashboard.`}
+      asideTitle="Sicheres Recovery für deinen Arbeitsbereich."
+      asideDescription={`Der Reset bleibt an ${tenant?.slug ?? 'deinen Tenant'} gebunden, zeigt keine Kontoinformationen nach aussen und führt dich sauber zurück in dein Dashboard.`}
       backHref="/login"
     >
       <ForgotPasswordForm action="/api/auth/password-reset/request" />

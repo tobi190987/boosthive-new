@@ -10,11 +10,11 @@ export interface AuthContext {
 }
 
 /**
- * Prueft ob der aktuelle Request von einem User mit einer der erlaubten Rollen kommt.
+ * Prüft ob der aktuelle Request von einem User mit einer der erlaubten Rollen kommt.
  * Liest Rolle aus JWT app_metadata (wird beim Login gesetzt).
  *
- * Gibt bei Erfolg den AuthContext zurueck.
- * Gibt bei Fehler eine NextResponse mit 401/403 zurueck.
+ * Gibt bei Erfolg den AuthContext zurück.
+ * Gibt bei Fehler eine NextResponse mit 401/403 zurück.
  */
 export async function requireRole(
   allowedRoles: AppRole[]
@@ -88,8 +88,8 @@ export async function requireRole(
 }
 
 /**
- * Prueft ob der aktuelle Request von einem Tenant-Admin kommt,
- * dessen JWT-Tenant mit dem Tenant-Header des Requests uebereinstimmt.
+ * Prüft ob der aktuelle Request von einem Tenant-Admin kommt,
+ * dessen JWT-Tenant mit dem Tenant-Header des Requests übereinstimmt.
  *
  * Verhindert Cross-Tenant-Angriffe: Admin von Tenant A kann nicht
  * Members von Tenant B verwalten.

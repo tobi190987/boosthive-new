@@ -21,7 +21,7 @@ export function renderWelcomeEmail({
     title: 'Willkommen in deinem Workspace',
     bodyHtml: `
       <p style="margin:0 0 16px;font-size:16px;line-height:1.7;color:#334155;">
-        Dein Workspace <strong>${safeTenantName}</strong> ist jetzt bereit. Richte als naechstes dein Passwort ein und melde dich danach direkt an.
+        Dein Workspace <strong>${safeTenantName}</strong> ist jetzt bereit. Richte als nächstes dein Passwort ein und melde dich danach direkt an.
       </p>
       <p style="margin:0 0 24px;">
         <a href="${safeSetupUrl}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#0f172a;color:#ffffff;text-decoration:none;font-weight:700;">

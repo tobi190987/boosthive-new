@@ -107,7 +107,7 @@ async function loadTenantDetail(tenantId: string) {
 
 /**
  * GET /api/owner/tenants/[id]
- * Detailansicht fuer genau einen Tenant (nur fuer Owner).
+ * Detailansicht für genau einen Tenant (nur für Owner).
  */
 export async function GET(
   _request: NextRequest,
@@ -118,7 +118,7 @@ export async function GET(
 
   const { id } = await params
   if (!isUuid(id)) {
-    return NextResponse.json({ error: 'Ungueltige Tenant-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
   const { tenant, currentAdmin, error } = await loadTenantDetail(id)
@@ -145,7 +145,7 @@ export async function GET(
 
 /**
  * PATCH /api/owner/tenants/[id]
- * Aktualisiert Status oder Detaildaten eines Tenants (nur fuer Owner).
+ * Aktualisiert Status oder Detaildaten eines Tenants (nur für Owner).
  */
 export async function PATCH(
   request: NextRequest,
@@ -156,14 +156,14 @@ export async function PATCH(
 
   const { id } = await params
   if (!isUuid(id)) {
-    return NextResponse.json({ error: 'Ungueltige Tenant-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const operationType =
@@ -234,7 +234,7 @@ export async function PATCH(
       .maybeSingle()
 
     if (conflictingTenantError) {
-      console.error(`[PATCH /api/owner/tenants/${id}] Slug-Pruefung fehlgeschlagen:`, conflictingTenantError)
+      console.error(`[PATCH /api/owner/tenants/${id}] Slug-Prüfung fehlgeschlagen:`, conflictingTenantError)
       return NextResponse.json(
         { error: 'Tenant konnte nicht aktualisiert werden.' },
         { status: 500 }

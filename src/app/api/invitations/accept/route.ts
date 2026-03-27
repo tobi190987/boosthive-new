@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const INVALID_TOKEN_ERROR =
-  'Der Einladungslink ist ungueltig oder abgelaufen. Bitte fordere einen neuen Link an.'
+  'Der Einladungslink ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.'
 
 interface InvitationRecord {
   id: string
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = AcceptInvitationSchema.safeParse(body)
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (membershipError) {
-      console.error('[POST /api/invitations/accept] Membership-Pruefung fehlgeschlagen:', membershipError)
+      console.error('[POST /api/invitations/accept] Membership-Prüfung fehlgeschlagen:', membershipError)
       await rollbackClaim()
       return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
     }

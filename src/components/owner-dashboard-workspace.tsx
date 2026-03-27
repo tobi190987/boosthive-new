@@ -259,7 +259,7 @@ export function OwnerDashboardWorkspace() {
                 Root Domain / Super Admin
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Systemweite Tenant-Uebersicht fuer BoostHive
+                Systemweite Tenant-Übersicht für BoostHive
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
                 Filtere aktive und inaktive Agenturen, springe in den Provisioning-Flow und behalte
@@ -303,7 +303,7 @@ export function OwnerDashboardWorkspace() {
               <Search className="h-5 w-5 text-[#0d9488]" />
               <p className="mt-3 text-sm font-semibold text-slate-900">Suche und Filter</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Name und Subdomain werden jetzt ueber die Owner-API serverseitig gefiltert.
+                Name und Subdomain werden jetzt über die Owner-API serverseitig gefiltert.
               </p>
             </CardContent>
           </Card>
@@ -312,7 +312,7 @@ export function OwnerDashboardWorkspace() {
               <Building2 className="h-5 w-5 text-[#1f2937]" />
               <p className="mt-3 text-sm font-semibold text-slate-900">Statuswechsel mit Klarheit</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Aktivieren und Deaktivieren passiert mit bestaetigtem Owner-Intent.
+                Aktivieren und Deaktivieren passiert mit bestätigtem Owner-Intent.
               </p>
             </CardContent>
           </Card>
@@ -407,7 +407,7 @@ export function OwnerDashboardWorkspace() {
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={page <= 1}
                   >
-                    Zurueck
+                    Zurück
                   </Button>
                   <Button
                     type="button"

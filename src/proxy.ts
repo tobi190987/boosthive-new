@@ -16,7 +16,7 @@ const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
 const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 Minute
 const RATE_LIMIT_MAX_REQUESTS = 30 // max. 30 Requests pro Minute pro IP
 const AUTH_RATE_LIMIT_MAX_REQUESTS = 5 // max. 5 Requests pro Minute pro IP (Auth-Routen)
-// BUG-12: Maximale Map-Groesse — bei Ueberschreitung werden abgelaufene Eintraege bereinigt
+// BUG-12: Maximale Map-Groesse — bei Überschreitung werden abgelaufene Eintraege bereinigt
 const RATE_LIMIT_MAX_ENTRIES = 10_000
 
 // BUG-12: Bereinigt abgelaufene Eintraege aus der Rate-Limit-Map
@@ -31,8 +31,8 @@ function pruneRateLimitMap(): void {
 
 function checkRateLimit(request: NextRequest, maxRequests = RATE_LIMIT_MAX_REQUESTS): boolean {
   // BUG-11: In Produktion auf Vercel wird x-forwarded-for von der Edge-Network gesetzt
-  // (nicht vom Client spoofbar). x-real-ip als weiterer Fallback, 'unknown' fuer lokale Dev.
-  // Fuer Multi-Instance-Produktion: durch Upstash Redis ersetzen (dann echte Client-IP via Vercel).
+  // (nicht vom Client spoofbar). x-real-ip als weiterer Fallback, 'unknown' für lokale Dev.
+  // Für Multi-Instance-Produktion: durch Upstash Redis ersetzen (dann echte Client-IP via Vercel).
   const ip =
     request.headers.get('x-real-ip') ??
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
@@ -55,9 +55,9 @@ function checkRateLimit(request: NextRequest, maxRequests = RATE_LIMIT_MAX_REQUE
 }
 
 // ---------------------------------------------------------------------------
-// BUG-5: CSRF-Schutz für zustandsaendernde Methoden
+// BUG-5: CSRF-Schutz für zustandsändernde Methoden
 // ---------------------------------------------------------------------------
-// Prueft den Origin-Header fuer POST/PATCH/PUT/DELETE auf /api/owner/*.
+// Prüft den Origin-Header für POST/PATCH/PUT/DELETE auf /api/owner/*.
 // Requests ohne Origin-Header (z.B. Server-zu-Server) werden durchgelassen —
 // requireOwner() in den API-Routen bleibt als zweite Schutzschicht aktiv.
 // ---------------------------------------------------------------------------
@@ -276,18 +276,18 @@ export async function proxy(request: NextRequest) {
     return new NextResponse('Not Found', { status: 404 })
   }
 
-  // CSRF-Schutz und Rate Limiting fuer /api/auth/* und /api/owner/* Routen
+  // CSRF-Schutz und Rate Limiting für /api/auth/* und /api/owner/* Routen
   const isAuthRoute = pathname.startsWith('/api/auth/')
   const isOwnerApiRoute = pathname.startsWith('/api/owner/')
 
   if (isAuthRoute || isOwnerApiRoute) {
-    // CSRF: Origin-Pruefung fuer zustandsaendernde Methoden
+    // CSRF: Origin-Prüfung für zustandsändernde Methoden
     if (STATE_CHANGING_METHODS.has(request.method)) {
       const origin = request.headers.get('origin')
       if (origin !== null && !isAllowedOrigin(origin)) {
         console.warn(`[CSRF] Blocked ${request.method} from origin: ${origin}`)
         return NextResponse.json(
-          { error: 'Ungueltige Anfragequelle (CSRF).' },
+          { error: 'Ungültige Anfragequelle (CSRF).' },
           { status: 403 }
         )
       }
@@ -331,7 +331,7 @@ export async function proxy(request: NextRequest) {
 
   // ----- Validate subdomain format -----
   if (!SUBDOMAIN_REGEX.test(subdomain)) {
-    return new NextResponse('Ungueltige Subdomain', { status: 400 })
+    return new NextResponse('Ungültige Subdomain', { status: 400 })
   }
 
   // ----- Local development fallback -----
@@ -421,7 +421,7 @@ async function maybeProtectTenantRoute(
   }
 
   // BUG-3: Cross-Tenant-Check — User muss aktives Mitglied dieses Tenants sein.
-  // Verhindert, dass ein manuell uebertragenes Cookie Zugriff auf fremde Tenants ermoegicht.
+  // Verhindert, dass ein manuell übertragenes Cookie Zugriff auf fremde Tenants ermoegicht.
   if (tenantId && tenantId !== 'local-dev-fallback') {
     const adminClient = getSupabaseAdminClient()
     const { data: membership } = await adminClient

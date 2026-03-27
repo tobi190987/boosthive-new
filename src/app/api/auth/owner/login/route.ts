@@ -6,13 +6,13 @@ import { LoginSchema } from '@/lib/schemas/auth'
 /**
  * POST /api/auth/owner/login
  *
- * Owner-Login: Authentifiziert via Supabase Auth und prueft,
+ * Owner-Login: Authentifiziert via Supabase Auth und prüft,
  * ob der User in der platform_admins-Tabelle steht.
  *
- * Gibt bei JEDEM Fehler die gleiche generische Meldung zurueck.
+ * Gibt bei JEDEM Fehler die gleiche generische Meldung zurück.
  */
 export async function POST(request: NextRequest) {
-  const GENERIC_ERROR = 'Ungueltige Zugangsdaten.'
+  const GENERIC_ERROR = 'Ungültige Zugangsdaten.'
 
   // 1. Request-Body parsen
   let body: unknown
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
 
   const { email, password } = parsed.data
 
-  // 3. Supabase Auth: Credentials pruefen
+  // 3. Supabase Auth: Credentials prüfen
   const supabase = await createClient()
   const { data: authData, error: authError } =
     await supabase.auth.signInWithPassword({ email, password })
@@ -42,10 +42,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 4. Owner-Status pruefen (Admin-Client, da RLS nur eigenen Eintrag zeigt
-  // und wir sicher sein muessen)
-  const supabaseAdmin = createAdminClient()
-  const { data: admin, error: adminError } = await supabaseAdmin
+  // 4. Owner-Status prüfen.
+  // Der eingeloggte User darf dank RLS seinen eigenen platform_admins-Eintrag
+  // selbst lesen, daher brauchen wir hier keinen service-role Client.
+  const { data: admin, error: adminError } = await supabase
     .from('platform_admins')
     .select('user_id')
     .eq('user_id', authData.user.id)
@@ -57,22 +57,32 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
-  // 5. JWT Custom Claims setzen (role: owner fuer sicheren Proxy-Check)
-  const { error: claimError } = await supabaseAdmin.auth.admin.updateUserById(authData.user.id, {
-    app_metadata: { role: 'owner', tenant_id: null },
-  })
-  if (claimError) {
-    console.error('[POST /api/auth/owner/login] Claim-Update fehlgeschlagen:', claimError)
-    await supabase.auth.signOut()
-    return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 })
-  }
+  // 5. Owner-Claims best effort aktualisieren.
+  // Die echte Autorisierung für den Owner-Bereich laeuft serverseitig über
+  // platform_admins. Wenn Claim-Update oder Session-Refresh in Produktion
+  // fehlschlagen, soll der Login deshalb nicht komplett blockiert werden.
+  try {
+    const supabaseAdmin = createAdminClient()
+    const mergedAppMetadata = {
+      ...(authData.user.app_metadata ?? {}),
+      role: 'owner',
+      tenant_id: null,
+    }
 
-  // Session neu erstellen damit neue Claims sofort im JWT enthalten sind
-  const { error: refreshError } = await supabase.auth.refreshSession()
-  if (refreshError) {
-    console.error('[POST /api/auth/owner/login] Session-Refresh fehlgeschlagen:', refreshError)
-    await supabase.auth.signOut()
-    return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 })
+    const { error: claimError } = await supabaseAdmin.auth.admin.updateUserById(authData.user.id, {
+      app_metadata: mergedAppMetadata,
+    })
+
+    if (claimError) {
+      console.error('[POST /api/auth/owner/login] Claim-Update fehlgeschlagen:', claimError)
+    } else {
+      const { error: refreshError } = await supabase.auth.refreshSession()
+      if (refreshError) {
+        console.error('[POST /api/auth/owner/login] Session-Refresh fehlgeschlagen:', refreshError)
+      }
+    }
+  } catch (claimSetupError) {
+    console.error('[POST /api/auth/owner/login] Admin-Client für Claim-Setup nicht verfügbar:', claimSetupError)
   }
 
   // 6. Erfolg — Session-Cookie wurde bereits von Supabase SSR gesetzt

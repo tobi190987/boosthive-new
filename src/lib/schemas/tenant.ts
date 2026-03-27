@@ -6,7 +6,7 @@ import { z } from 'zod'
 export const RESERVED_SLUGS = ['www', 'api', 'admin', 'app', 'owner'] as const
 
 /**
- * Regex fuer gueltige Subdomain-Slugs:
+ * Regex für gültige Subdomain-Slugs:
  * - Nur Kleinbuchstaben, Ziffern und Bindestriche
  * - Muss mit Buchstabe/Ziffer beginnen und enden
  * - 3-63 Zeichen (DNS-Limit)
@@ -39,7 +39,7 @@ export const CreateTenantSchema = z.object({
   slug: TenantSlugSchema,
   adminEmail: z
     .string()
-    .email('Bitte eine gueltige E-Mail-Adresse eingeben.'),
+    .email('Bitte eine gültige E-Mail-Adresse eingeben.'),
 })
 
 export type CreateTenantInput = z.infer<typeof CreateTenantSchema>
@@ -115,7 +115,7 @@ export const UpdateTenantContactSchema = z.object({
 export type UpdateTenantContactInput = z.infer<typeof UpdateTenantContactSchema>
 
 export const AssignTenantAdminSchema = z.object({
-  email: z.string().trim().email('Bitte eine gueltige E-Mail-Adresse eingeben.'),
+  email: z.string().trim().email('Bitte eine gültige E-Mail-Adresse eingeben.'),
 })
 
 export type AssignTenantAdminInput = z.infer<typeof AssignTenantAdminSchema>

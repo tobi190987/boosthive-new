@@ -130,7 +130,7 @@ export function OwnerTenantTable({
                             size="icon"
                             className="h-9 w-9 rounded-full"
                             disabled={isPending}
-                            aria-label={`Aktionen fuer ${tenant.name}`}
+                            aria-label={`Aktionen für ${tenant.name}`}
                           >
                             {isPending ? (
                               <Loader2 className="h-4 w-4 animate-spin" />
@@ -143,7 +143,7 @@ export function OwnerTenantTable({
                           <DropdownMenuItem asChild>
                             <Link href={`/owner/tenants/${tenant.id}`} className="cursor-pointer">
                               <ExternalLink className="mr-2 h-4 w-4" />
-                              Details oeffnen
+                              Details öffnen
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
@@ -180,7 +180,7 @@ export function OwnerTenantTable({
             </AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
               {confirmTenant?.status === 'active'
-                ? 'Neue Logins werden blockiert. Offene Tenant-Sessions verlieren spaetestens beim naechsten Request den Zugriff auf die Subdomain.'
+                ? 'Neue Logins werden blockiert. Offene Tenant-Sessions verlieren spätestens beim nächsten Request den Zugriff auf die Subdomain.'
                 : 'Der Tenant akzeptiert danach wieder neue Logins und erscheint als aktiv.'}
             </AlertDialogDescription>
           </AlertDialogHeader>

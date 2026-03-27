@@ -21,10 +21,10 @@ export default async function TenantLoginPage({ searchParams }: LoginPageProps) 
   return (
     <AuthShell
       eyebrow="Login"
-      title="Willkommen zurueck"
+      title="Willkommen zurück"
       description="Melde dich in deinem Tenant an, verwalte dein Team und starte von dort aus auch den sicheren Passwort-Reset."
       asideTitle="Recovery ohne Reibung, abgestimmt auf deinen Tenant."
-      asideDescription="Der Zugang bleibt klar, ruhig und markenkonform. Von der Anmeldung bis zum Passwort-Reset fuehrt dich derselbe BoostHive-Flow sicher durch den Prozess."
+      asideDescription="Der Zugang bleibt klar, ruhig und markenkonform. Von der Anmeldung bis zum Passwort-Reset führt dich derselbe BoostHive-Flow sicher durch den Prozess."
       footer={
         <div className="flex flex-col gap-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">

@@ -50,7 +50,7 @@ export function renderEmailLayout({
                 </tr>
                 <tr>
                   <td style="padding:12px 32px 32px;font-size:13px;line-height:1.6;color:#475569;">
-                    <p style="margin:0;">Diese Nachricht wurde fuer ${escapeHtml(tenantName)} ueber BoostHive versendet.</p>
+                    <p style="margin:0;">Diese Nachricht wurde für ${escapeHtml(tenantName)} über BoostHive versendet.</p>
                   </td>
                 </tr>
               </table>

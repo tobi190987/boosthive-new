@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger Request-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger Request-Body.' }, { status: 400 })
   }
 
   if (body?.password !== PREVIEW_PASSWORD) {

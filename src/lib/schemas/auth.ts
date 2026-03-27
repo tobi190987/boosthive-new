@@ -1,13 +1,13 @@
 import { z } from 'zod'
 
 /**
- * Login-Schema: Validiert E-Mail und Passwort fuer Tenant- und Owner-Login.
+ * Login-Schema: Validiert E-Mail und Passwort für Tenant- und Owner-Login.
  */
 export const LoginSchema = z.object({
   email: z
     .string()
     .min(1, 'E-Mail-Adresse ist erforderlich.')
-    .email('Bitte eine gueltige E-Mail-Adresse eingeben.'),
+    .email('Bitte eine gültige E-Mail-Adresse eingeben.'),
   password: z
     .string()
     .min(1, 'Passwort ist erforderlich.')
@@ -20,7 +20,7 @@ export const ForgotPasswordSchema = z.object({
   email: z
     .string()
     .min(1, 'E-Mail-Adresse ist erforderlich.')
-    .email('Bitte eine gueltige E-Mail-Adresse eingeben.'),
+    .email('Bitte eine gültige E-Mail-Adresse eingeben.'),
 })
 
 export type ForgotPasswordInput = z.infer<typeof ForgotPasswordSchema>
@@ -32,10 +32,10 @@ export const ResetPasswordSchema = z
       .min(8, 'Passwort muss mindestens 8 Zeichen lang sein.'),
     confirmPassword: z
       .string()
-      .min(1, 'Bitte bestaetige dein neues Passwort.'),
+      .min(1, 'Bitte bestätige dein neues Passwort.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Die Passwoerter muessen uebereinstimmen.',
+    message: 'Die Passwörter muessen übereinstimmen.',
     path: ['confirmPassword'],
   })
 
@@ -45,7 +45,7 @@ export const ResetPasswordConfirmSchema = ResetPasswordSchema.extend({
   token: z
     .string()
     .min(1, 'Token ist erforderlich.')
-    .min(32, 'Token ist ungueltig.'),
+    .min(32, 'Token ist ungültig.'),
 })
 
 export type ResetPasswordConfirmInput = z.infer<typeof ResetPasswordConfirmSchema>

@@ -176,11 +176,11 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
                 Settings / Team
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Einladungen fuer {tenantSlug} steuern
+                Einladungen für {tenantSlug} steuern
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                Admins sehen offene Einladungen, koennen neue Teammitglieder vormerken und die
-                zukuenftigen Aktionen fuers Resending oder Widerrufen direkt ansteuern.
+                Admins sehen offene Einladungen, können neue Teammitglieder vormerken und die
+                zukünftigen Aktionen fürs Resending oder Widerrufen direkt ansteuern.
               </p>
             </div>
           </div>
@@ -193,7 +193,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
             <Sparkles className="h-5 w-5 text-[#b85e34]" />
             <p className="mt-3 text-sm font-semibold text-slate-900">Rolle beim Einladen setzen</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Dialog fuer E-Mail + Rolle ist bereits fertig und auf den Admin-Flow zugeschnitten.
+              Dialog für E-Mail + Rolle ist bereits fertig und auf den Admin-Flow zugeschnitten.
             </p>
           </div>
           <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
@@ -207,7 +207,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
             <BellRing className="h-5 w-5 text-[#1f2937]" />
             <p className="mt-3 text-sm font-semibold text-slate-900">Echte API-Anbindung aktiv</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Neue Einladungen, Resend und Widerruf laufen jetzt direkt ueber Tenant-APIs.
+              Neue Einladungen, Resend und Widerruf laufen jetzt direkt über Tenant-APIs.
             </p>
           </div>
         </div>

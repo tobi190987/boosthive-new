@@ -5,7 +5,7 @@ import { ResetPasswordConfirmSchema } from '@/lib/schemas/auth'
 import { hashPasswordResetToken } from '@/lib/password-reset'
 
 const INVALID_TOKEN_ERROR =
-  'Der Link ist ungueltig oder abgelaufen. Bitte fordere einen neuen Reset-Link an.'
+  'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Reset-Link an.'
 
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = ResetPasswordConfirmSchema.safeParse(body)

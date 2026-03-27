@@ -68,7 +68,7 @@ export default function TenantsPage() {
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || "Statusaenderung fehlgeschlagen.")
+        throw new Error(data.error || "Statusänderung fehlgeschlagen.")
       }
       setTenants((prev) =>
         prev.map((t) => (t.id === tenant.id ? { ...t, status: newStatus } : t))
@@ -203,7 +203,7 @@ export default function TenantsPage() {
                           size="icon"
                           className="h-8 w-8"
                           disabled={togglingId === tenant.id}
-                          aria-label={`Aktionen fuer ${tenant.name}`}
+                          aria-label={`Aktionen für ${tenant.name}`}
                         >
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
@@ -211,7 +211,7 @@ export default function TenantsPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link href={`/owner/tenants/${tenant.id}`}>
-                            Details oeffnen
+                            Details öffnen
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem

@@ -49,7 +49,7 @@ export function OwnerDashboardMetrics({
     {
       label: 'Gesamt-User',
       value: String(totalUsers),
-      hint: 'Aktive Tenant-Members ueber alle Workspaces hinweg.',
+      hint: 'Aktive Tenant-Members über alle Workspaces hinweg.',
       icon: Users,
       accent: 'text-slate-700 bg-slate-100',
     },

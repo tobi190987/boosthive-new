@@ -62,14 +62,14 @@ export async function POST(
 
   if (invitation.accepted_at) {
     return NextResponse.json(
-      { error: 'Bereits angenommene Einladungen koennen nicht erneut versendet werden.' },
+      { error: 'Bereits angenommene Einladungen können nicht erneut versendet werden.' },
       { status: 409 }
     )
   }
 
   if (invitation.revoked_at) {
     return NextResponse.json(
-      { error: 'Widerrufene Einladungen koennen nicht erneut versendet werden.' },
+      { error: 'Widerrufene Einladungen können nicht erneut versendet werden.' },
       { status: 409 }
     )
   }

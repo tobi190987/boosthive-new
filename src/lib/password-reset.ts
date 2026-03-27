@@ -20,7 +20,7 @@ export function buildPasswordResetUrl(request: NextRequest, rawToken: string): s
   const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https'
 
   if (!host) {
-    throw new Error('Host-Header fehlt fuer Reset-URL.')
+    throw new Error('Host-Header fehlt für Reset-URL.')
   }
 
   const url = new URL(`${protocol}://${host}/reset-password`)

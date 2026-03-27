@@ -30,9 +30,9 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
           </CardHeader>
           <CardContent className="space-y-4 text-sm leading-7 text-slate-600">
             <p>
-              Dein Dashboard dient als gemeinsamer Einstieg fuer Team, Tools und spaetere Module.
+              Dein Dashboard dient als gemeinsamer Einstieg für Team, Tools und spätere Module.
               Die Shell ist jetzt bereit, damit `PROJ-10+` ohne neuen Navigationsumbau andocken
-              koennen.
+              können.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button
@@ -49,7 +49,7 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
                 variant="outline"
                 className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
               >
-                <Link href="/dashboard">Zur Uebersicht</Link>
+                <Link href="/dashboard">Zur Übersicht</Link>
               </Button>
             </div>
           </CardContent>
@@ -89,15 +89,15 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
           <CardContent className="space-y-3 text-sm leading-6 text-slate-600">
             <p>
               {isAdmin
-                ? 'Dein Team-Bereich ist aktiv und ueber dieselbe Tenant-Shell erreichbar.'
-                : 'Verwaltungsbereiche bleiben fuer Admins reserviert und serverseitig geschuetzt.'}
+                ? 'Dein Team-Bereich ist aktiv und über dieselbe Tenant-Shell erreichbar.'
+                : 'Verwaltungsbereiche bleiben für Admins reserviert und serverseitig geschützt.'}
             </p>
             {isAdmin ? (
               <Link
                 href="/settings/team"
                 className="inline-flex items-center gap-2 font-medium text-[#0d9488] hover:text-[#0b7c72]"
               >
-                Team-Einladungen oeffnen
+                Team-Einladungen öffnen
                 <ArrowRight className="h-4 w-4" />
               </Link>
             ) : (
@@ -118,7 +118,7 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
           <CardContent className="space-y-3 text-sm leading-6 text-slate-600">
             <p>SEO Analyse, AI Performance und AI Visibility werden in die Shell eingehangen.</p>
             <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
-              Demnaechst verfuegbar
+              Demnächst verfügbar
             </Badge>
           </CardContent>
         </Card>

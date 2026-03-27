@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 /**
  * GET /api/owner/dashboard
- * Aggregierte Kennzahlen fuer das Owner-Dashboard.
+ * Aggregierte Kennzahlen für das Owner-Dashboard.
  */
 export async function GET() {
   const auth = await requireOwner()

@@ -35,7 +35,7 @@ export async function DELETE(
 
   if (invitation.accepted_at) {
     return NextResponse.json(
-      { error: 'Bereits angenommene Einladungen koennen nicht widerrufen werden.' },
+      { error: 'Bereits angenommene Einladungen können nicht widerrufen werden.' },
       { status: 409 }
     )
   }

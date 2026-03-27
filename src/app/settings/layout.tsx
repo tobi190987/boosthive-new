@@ -19,7 +19,7 @@ export default async function SettingsLayout({
       context={context}
       eyebrow="Tenant Admin"
       title="Verwaltung und Team sauber gebuendelt"
-      description="Admin-Routen bleiben serverseitig geschuetzt und nutzen dieselbe Tenant-Shell wie das Dashboard, damit Navigation und Kontext konsistent bleiben."
+      description="Admin-Routen bleiben serverseitig geschützt und nutzen dieselbe Tenant-Shell wie das Dashboard, damit Navigation und Kontext konsistent bleiben."
     >
       {children}
     </TenantAppShell>

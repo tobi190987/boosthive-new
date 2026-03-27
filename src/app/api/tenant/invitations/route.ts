@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = CreateInvitationSchema.safeParse(body)
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (membershipError) {
-    console.error('[POST /api/tenant/invitations] Membership-Pruefung fehlgeschlagen:', membershipError)
+    console.error('[POST /api/tenant/invitations] Membership-Prüfung fehlgeschlagen:', membershipError)
     return NextResponse.json({ error: 'Einladung konnte nicht erstellt werden.' }, { status: 500 })
   }
 
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
 
       if (rollbackError) {
         console.error(
-          '[POST /api/tenant/invitations] Fehlgeschlagene Einladung konnte nicht zurueckgerollt werden:',
+          '[POST /api/tenant/invitations] Fehlgeschlagene Einladung konnte nicht zurückgerollt werden:',
           rollbackError
         )
       }

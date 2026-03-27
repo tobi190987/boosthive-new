@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Building2,
+  Copy,
   Globe,
   Loader2,
   Mail,
@@ -106,7 +107,7 @@ const ContactSchema = z.object({
 })
 
 const AdminSchema = z.object({
-  email: z.string().trim().email("Bitte eine gueltige E-Mail-Adresse eingeben."),
+  email: z.string().trim().email("Bitte eine gültige E-Mail-Adresse eingeben."),
 })
 
 type BasicsInput = z.infer<typeof BasicsSchema>
@@ -180,6 +181,24 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   const watchedSlug = basicsForm.watch("slug")
   const slugChanged = tenant ? watchedSlug.trim() !== tenant.slug : false
 
+  async function copyTenantId() {
+    const idToCopy = tenant?.id ?? tenantId
+
+    try {
+      await navigator.clipboard.writeText(idToCopy)
+      toast({
+        title: "Tenant-ID kopiert",
+        description: "Die vollständige Tenant-ID liegt jetzt in deiner Zwischenablage.",
+      })
+    } catch {
+      toast({
+        title: "Kopieren fehlgeschlagen",
+        description: "Bitte kopiere die Tenant-ID manuell aus dem Feld.",
+        variant: "destructive",
+      })
+    }
+  }
+
   useEffect(() => {
     let active = true
 
@@ -197,7 +216,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         if (!response.ok) {
           if (response.status === 405) {
             setApiPendingMessage(
-              "Die Detail-API fuer diese Seite wird im Backend-Schritt vervollstaendigt. Das Frontend ist bereits vorbereitet."
+              "Die Detail-API für diese Seite wird im Backend-Schritt vervollständigt. Das Frontend ist bereits vorbereitet."
             )
             return
           }
@@ -304,7 +323,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
       }
 
       toast({
-        title: "Aenderungen gespeichert",
+        title: "Änderungen gespeichert",
         description:
           type === "basics"
             ? "Die Agentur-Basisdaten wurden aktualisiert."
@@ -390,7 +409,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         <Button variant="ghost" asChild className="-ml-3 w-fit text-slate-500 hover:text-slate-900">
           <Link href="/owner/tenants">
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Zurueck zu Agenturen
+            Zurück zu Agenturen
           </Link>
         </Button>
 
@@ -407,7 +426,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
       <Button variant="ghost" asChild className="-ml-3 w-fit text-slate-500 hover:text-slate-900">
         <Link href="/owner/tenants">
           <ArrowLeft className="mr-2 h-4 w-4" />
-          Zurueck zu Agenturen
+          Zurück zu Agenturen
         </Link>
       </Button>
 
@@ -415,8 +434,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         <div className="absolute left-[-2rem] top-[-2rem] h-36 w-36 rounded-full bg-[#1dbfaa]/12 blur-3xl" />
         <div className="absolute bottom-[-3rem] right-[-2rem] h-40 w-40 rounded-full bg-[#eb6f3d]/12 blur-3xl" />
 
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-4">
+        <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+          <div className="min-w-0 space-y-4 xl:flex-1">
             <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
               Tenant Profile
             </Badge>
@@ -426,13 +445,13 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               </h1>
               <p className="max-w-2xl text-sm leading-6 text-slate-600">
                 Pflege Stammdaten, Rechnungsadresse, Kontaktinformationen und die
-                verantwortliche Admin-Person fuer diese Agentur.
+                verantwortliche Admin-Person für diese Agentur.
               </p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+          <div className="grid w-full min-w-0 gap-3 sm:grid-cols-3 xl:max-w-[560px]">
+            <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Status
               </p>
@@ -445,20 +464,32 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 {tenant ? statusCopy(tenant.status) : "Unbekannt"}
               </p>
             </div>
-            <div className="rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+            <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
                 Erstellt
               </p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">
+              <p className="mt-2 break-words text-base font-semibold text-slate-900 sm:text-lg">
                 {tenant?.created_at ? formatDate(tenant.created_at) : "-"}
               </p>
             </div>
-            <div className="rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-                Tenant-ID
-              </p>
-              <p className="mt-2 font-mono text-sm text-slate-700">
-                {tenant?.id.slice(0, 8) ?? tenantId.slice(0, 8)}...
+            <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  Tenant-ID
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  onClick={copyTenantId}
+                  aria-label="Tenant-ID kopieren"
+                >
+                  <Copy className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+              <p className="mt-2 break-all font-mono text-xs leading-5 text-slate-700 sm:text-sm">
+                {tenant?.id ?? tenantId}
               </p>
             </div>
           </div>
@@ -506,7 +537,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 <div>
                   <CardTitle className="text-xl text-slate-900">Allgemeine Angaben</CardTitle>
                   <p className="text-sm text-slate-500">
-                    Name und Subdomain der Agentur koennen hier angepasst werden.
+                    Name und Subdomain der Agentur können hier angepasst werden.
                   </p>
                 </div>
               </div>
@@ -559,9 +590,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   {slugChanged ? (
                     <Alert className="rounded-[24px] border-[#f0d2b8] bg-[#fff7ef] text-[#7c3d1d]">
                       <AlertTriangle className="h-4 w-4" />
-                      <AlertTitle>Subdomain wird geaendert</AlertTitle>
+                      <AlertTitle>Subdomain wird geändert</AlertTitle>
                       <AlertDescription>
-                        Die URL der Agentur aendert sich. Bestehende Bookmarks werden ungueltig.
+                        Die URL der Agentur ändert sich. Bestehende Bookmarks werden ungültig.
                       </AlertDescription>
                     </Alert>
                   ) : null}
@@ -594,7 +625,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 <div>
                   <CardTitle className="text-xl text-slate-900">Rechnungsadresse</CardTitle>
                   <p className="text-sm text-slate-500">
-                    Optionaler Billing-Bereich fuer Buchhaltung und Vertragsdaten.
+                    Optionaler Billing-Bereich für Buchhaltung und Vertragsdaten.
                   </p>
                 </div>
               </div>
@@ -717,7 +748,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 <div>
                   <CardTitle className="text-xl text-slate-900">Kontaktdaten</CardTitle>
                   <p className="text-sm text-slate-500">
-                    Damit Owner und Team die Agentur schnell erreichen koennen.
+                    Damit Owner und Team die Agentur schnell erreichen können.
                   </p>
                 </div>
               </div>
@@ -816,7 +847,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                           Name
                         </p>
                         <p className="mt-1 text-lg font-semibold text-slate-900">
-                          {tenant?.currentAdmin?.name || "Noch nicht verfuegbar"}
+                          {tenant?.currentAdmin?.name || "Noch nicht verfügbar"}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 text-sm text-slate-600">

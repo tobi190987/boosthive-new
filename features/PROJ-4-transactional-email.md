@@ -1,6 +1,6 @@
 # PROJ-4: Transactional Email (Mailtrap)
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -141,4 +141,11 @@ Keine neuen npm-Packages erforderlich — native `fetch` reicht.
 - Reason: Keine Critical- oder High-Bugs offen; verbleibend nur Testing-Gap beim echten Mailtrap-E2E und die separate Lint-Fehlkonfiguration ausserhalb des Features
 
 ## Deployment
-_To be added by /deploy_
+
+### Deployed: 2026-03-27
+### Commit: `4156417`
+### Production URL: `https://boost-hive.de`
+
+### Notes
+- Deploy erfolgte zusammen mit PROJ-5.
+- Produktion setzt funktionierende Mailtrap- und Domain-Umgebungsvariablen voraus.
