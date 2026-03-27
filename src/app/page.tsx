@@ -1,6 +1,8 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Building2, LockKeyhole, ShieldCheck } from 'lucide-react'
+import { createAdminClient } from '@/lib/supabase-admin'
+import { getTenantContext } from '@/lib/tenant'
 
 const features = [
   {
@@ -20,7 +22,21 @@ const features = [
   },
 ]
 
-export default function Home() {
+export default async function Home() {
+  const tenant = await getTenantContext()
+  let tenantLogoUrl: string | undefined
+
+  if (tenant?.id) {
+    const supabaseAdmin = createAdminClient()
+    const { data } = await supabaseAdmin
+      .from('tenants')
+      .select('name, logo_url')
+      .eq('id', tenant.id)
+      .maybeSingle()
+
+    tenantLogoUrl = data?.logo_url ?? undefined
+  }
+
   return (
     <main className="min-h-screen bg-[#f0f4f8] px-4 py-8 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl">
@@ -28,14 +44,26 @@ export default function Home() {
         {/* Header */}
         <header className="flex items-center justify-between py-4 mb-12">
           <Link href="/" className="flex items-center">
-            <Image
-              src="/boosthive_light.png"
-              alt="BoostHive Logo"
-              width={759}
-              height={213}
-              priority
-              className="h-10 w-auto object-contain"
-            />
+            {tenantLogoUrl ? (
+              <Image
+                src={tenantLogoUrl}
+                alt={`${tenant?.slug ?? 'Tenant'} Logo`}
+                width={240}
+                height={80}
+                priority
+                unoptimized
+                className="h-10 w-auto max-w-[220px] object-contain"
+              />
+            ) : (
+              <Image
+                src="/boosthive_light.png"
+                alt="BoostHive Logo"
+                width={759}
+                height={213}
+                priority
+                className="h-10 w-auto object-contain"
+              />
+            )}
           </Link>
 
           <div className="flex items-center gap-3">
@@ -62,10 +90,14 @@ export default function Home() {
             </span>
             <div className="space-y-4">
               <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
-                White-Label Marketing Plattform für Agenturen.
+                {tenant
+                  ? `Willkommen bei ${tenant.slug}.`
+                  : 'White-Label Marketing Plattform für Agenturen.'}
               </h1>
               <p className="max-w-xl text-base leading-7 text-slate-500">
-                Jede Agentur erhält ihre eigene Subdomain, ihr eigenes Branding und eine vollständig isolierte Arbeitsumgebung.
+                {tenant
+                  ? 'Melde dich in euren Workspace ein und arbeite in eurer eigenen, gebrandeten Umgebung.'
+                  : 'Jede Agentur erhält ihre eigene Subdomain, ihr eigenes Branding und eine vollständig isolierte Arbeitsumgebung.'}
               </p>
             </div>
 
@@ -88,16 +120,31 @@ export default function Home() {
 
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.08)]">
             <div className="flex items-center gap-3 mb-5 pb-5 border-b border-slate-100">
-              <Image
-                src="/boosthive_light.png"
-                alt="BoostHive"
-                width={1264}
-                height={842}
-                className="h-10 w-auto object-contain"
-              />
+              {tenantLogoUrl ? (
+                <Image
+                  src={tenantLogoUrl}
+                  alt={`${tenant?.slug ?? 'Tenant'} Logo`}
+                  width={240}
+                  height={80}
+                  unoptimized
+                  className="h-10 w-auto max-w-[180px] object-contain"
+                />
+              ) : (
+                <Image
+                  src="/boosthive_light.png"
+                  alt="BoostHive"
+                  width={1264}
+                  height={842}
+                  className="h-10 w-auto object-contain"
+                />
+              )}
               <div>
-                <p className="text-sm font-semibold text-slate-900">BoostHive Platform</p>
-                <p className="text-xs text-slate-400">Multi-Tenant SaaS</p>
+                <p className="text-sm font-semibold text-slate-900">
+                  {tenant ? `${tenant.slug}.boost-hive.de` : 'BoostHive Platform'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  {tenant ? 'Gebrandeter Tenant-Zugang' : 'Multi-Tenant SaaS'}
+                </p>
               </div>
             </div>
             <div className="space-y-3">

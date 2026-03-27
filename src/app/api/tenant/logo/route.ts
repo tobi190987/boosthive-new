@@ -27,13 +27,14 @@ async function clearTenantLogoFiles(tenantId: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const tenantId = request.headers.get('x-tenant-id')
-  if (!tenantId) {
+  const tenantIdFromHeader = request.headers.get('x-tenant-id')
+  if (!tenantIdFromHeader) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
   }
 
-  const authResult = await requireTenantAdmin(tenantId)
+  const authResult = await requireTenantAdmin(tenantIdFromHeader)
   if ('error' in authResult) return authResult.error
+  const tenantId = authResult.auth.tenantId ?? tenantIdFromHeader
 
   let formData: FormData
   try {
@@ -109,13 +110,14 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const tenantId = request.headers.get('x-tenant-id')
-  if (!tenantId) {
+  const tenantIdFromHeader = request.headers.get('x-tenant-id')
+  if (!tenantIdFromHeader) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
   }
 
-  const authResult = await requireTenantAdmin(tenantId)
+  const authResult = await requireTenantAdmin(tenantIdFromHeader)
   if ('error' in authResult) return authResult.error
+  const tenantId = authResult.auth.tenantId ?? tenantIdFromHeader
 
   const supabaseAdmin = createAdminClient()
   const { data: tenant, error: tenantError } = await supabaseAdmin
