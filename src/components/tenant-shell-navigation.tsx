@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -71,15 +72,20 @@ function NavigationContent({
   return (
     <>
       <div className="flex items-center gap-3 px-4 py-4">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/favicon_dark.png"
-          alt=""
-          width={34}
-          height={34}
-          className="h-8 w-8 object-contain"
-          style={{ mixBlendMode: 'multiply' }}
-        />
+        {context.tenant.logoUrl ? (
+          <Image
+            src={context.tenant.logoUrl}
+            alt={`${context.tenant.name} Logo`}
+            width={160}
+            height={48}
+            className="h-8 w-auto max-w-[120px] object-contain"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#edf8f6] text-xs font-semibold text-[#0d9488]">
+            {context.tenant.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-900">{context.tenant.name}</p>
           <p className="truncate text-xs text-slate-500">{context.tenant.slug}.boost-hive.de</p>

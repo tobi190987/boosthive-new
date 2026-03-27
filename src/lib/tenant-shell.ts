@@ -9,6 +9,7 @@ export interface TenantShellContext {
     id: string
     slug: string
     name: string
+    logoUrl: string | null
     billingCompany: string | null
     billingStreet: string | null
     billingZip: string | null
@@ -58,7 +59,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
     supabase
       .from('tenants')
       .select(
-        'id, name, slug, billing_company, billing_street, billing_zip, billing_city, billing_country, billing_vat_id, billing_onboarding_completed_at'
+        'id, name, slug, logo_url, billing_company, billing_street, billing_zip, billing_city, billing_country, billing_vat_id, billing_onboarding_completed_at'
       )
       .eq('id', tenant.id)
       .single(),
@@ -96,6 +97,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
       id: tenantRecord.id,
       slug: tenantRecord.slug,
       name: tenantRecord.name,
+      logoUrl: tenantRecord.logo_url ?? null,
       billingCompany: tenantRecord.billing_company ?? null,
       billingStreet: tenantRecord.billing_street ?? null,
       billingZip: tenantRecord.billing_zip ?? null,

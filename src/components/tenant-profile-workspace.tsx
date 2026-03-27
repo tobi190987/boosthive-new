@@ -46,6 +46,7 @@ interface TenantProfileWorkspaceProps {
   initialData: {
     role: 'admin' | 'member'
     tenantName: string
+    tenantLogoUrl: string | null
     firstName: string
     lastName: string
     avatarUrl: string | null
@@ -195,7 +196,9 @@ export function TenantProfileWorkspace({
   initialData,
 }: TenantProfileWorkspaceProps) {
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl)
+  const [tenantLogoUrl, setTenantLogoUrl] = useState(initialData.tenantLogoUrl)
   const [avatarPending, setAvatarPending] = useState(false)
+  const [tenantLogoPending, setTenantLogoPending] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [showStripeForm, setShowStripeForm] = useState(false)
   const [billing, setBilling] = useState<BillingResponse | null>(null)
@@ -207,6 +210,7 @@ export function TenantProfileWorkspace({
   const [avatarCropY, setAvatarCropY] = useState(0)
   const [avatarCropZoom, setAvatarCropZoom] = useState(1.2)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const tenantLogoInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -417,6 +421,87 @@ export function TenantProfileWorkspace({
       )
     } finally {
       setAvatarPending(false)
+    }
+  }
+
+  async function handleTenantLogoChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      setTenantLogoPending(true)
+      setError(null)
+      setSuccess(null)
+
+      if (!['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'].includes(file.type)) {
+        throw new Error('Erlaubt sind PNG, JPG, WEBP und SVG bis 2 MB.')
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error('Das Logo darf maximal 2 MB groß sein.')
+      }
+
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const response = await fetch('/api/tenant/logo', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      })
+      const payload = (await response.json().catch(() => ({}))) as {
+        logoUrl?: string | null
+        error?: string
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'Agentur-Logo konnte nicht hochgeladen werden.')
+      }
+
+      setTenantLogoUrl(payload.logoUrl ?? null)
+      setSuccess('Agentur-Logo wurde aktualisiert.')
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : 'Agentur-Logo konnte nicht hochgeladen werden.'
+      )
+    } finally {
+      setTenantLogoPending(false)
+      if (tenantLogoInputRef.current) {
+        tenantLogoInputRef.current.value = ''
+      }
+    }
+  }
+
+  async function removeTenantLogo() {
+    try {
+      setTenantLogoPending(true)
+      setError(null)
+      setSuccess(null)
+
+      const response = await fetch('/api/tenant/logo', {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string
+      }
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'Agentur-Logo konnte nicht entfernt werden.')
+      }
+
+      setTenantLogoUrl(null)
+      setSuccess('Agentur-Logo wurde entfernt.')
+    } catch (removeError) {
+      setError(
+        removeError instanceof Error
+          ? removeError.message
+          : 'Agentur-Logo konnte nicht entfernt werden.'
+      )
+    } finally {
+      setTenantLogoPending(false)
     }
   }
 
@@ -638,12 +723,12 @@ export function TenantProfileWorkspace({
           <CardTitle className="text-2xl text-slate-900">
             {mode === 'onboarding'
               ? `Willkommen bei ${initialData.tenantName}`
-              : 'Persoenliche Daten und Profilbild'}
+              : 'Persönliche Daten und Profilbild'}
           </CardTitle>
           <p className="text-sm leading-6 text-slate-600">
             {mode === 'onboarding'
-              ? 'Bitte vervollstaendige jetzt dein Profil. Vorname und Nachname sind fuer alle verpflichtend.'
-              : 'Hier kannst du deine persoenlichen Daten jederzeit aktualisieren.'}
+              ? 'Bitte vervollständige jetzt dein Profil. Vorname und Nachname sind für alle verpflichtend.'
+              : 'Hier kannst du deine persönlichen Daten jederzeit aktualisieren.'}
           </p>
         </CardHeader>
         <CardContent>
@@ -671,7 +756,7 @@ export function TenantProfileWorkspace({
                   Profilbild
                 </h2>
                 <p className="text-sm text-slate-500">
-                  Optional, aber hilfreich fuer Sidebar und Team-Kontext.
+                  Optional, aber hilfreich für Sidebar und Team-Kontext.
                 </p>
               </div>
               <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
@@ -730,10 +815,75 @@ export function TenantProfileWorkspace({
               </div>
             </section>
 
+            {isAdmin && mode !== 'onboarding' && (
+              <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="space-y-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Agentur-Logo
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    Das Logo erscheint in der Sidebar und auf den öffentlichen Auth-Seiten eures Tenants.
+                  </p>
+                </div>
+                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                  <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+                    <div className="flex h-24 w-32 items-center justify-center rounded-[24px] border border-[#eadfce] bg-white px-4 shadow-sm">
+                      {tenantLogoUrl ? (
+                        <Image
+                          src={tenantLogoUrl}
+                          alt="Agentur-Logo"
+                          width={160}
+                          height={96}
+                          className="max-h-16 w-auto object-contain"
+                          unoptimized
+                        />
+                      ) : (
+                        <div className="text-center text-sm text-slate-400">Noch kein Logo hinterlegt</div>
+                      )}
+                    </div>
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-3">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-full border-[#d8d0c3] bg-white"
+                          onClick={() => tenantLogoInputRef.current?.click()}
+                          disabled={tenantLogoPending}
+                        >
+                          {tenantLogoPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                          {tenantLogoUrl ? 'Logo ändern' : 'Logo hochladen'}
+                        </Button>
+                        {tenantLogoUrl && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-full border-[#ead4c8] bg-white text-[#9f4a24]"
+                            onClick={() => void removeTenantLogo()}
+                            disabled={tenantLogoPending}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Logo entfernen
+                          </Button>
+                        )}
+                      </div>
+                      <p className="text-sm text-slate-500">PNG, JPG, WEBP oder SVG bis 2 MB.</p>
+                      <input
+                        ref={tenantLogoInputRef}
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                        className="hidden"
+                        onChange={(event) => void handleTenantLogoChange(event)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
             <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Persoenliche Daten
+                  Persönliche Daten
                 </h2>
                 <p className="text-sm text-slate-500">
                   Diese Angaben erscheinen in deinem Profil und in der Sidebar.
@@ -765,7 +915,7 @@ export function TenantProfileWorkspace({
                       Rechnungsadresse
                     </h2>
                     <p className="text-sm text-slate-500">
-                      Diese Angaben sind fuer Admins verpflichtend.
+                      Diese Angaben sind für Admins verpflichtend.
                     </p>
                   </div>
                   <div className="grid gap-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5 md:grid-cols-2">
@@ -846,7 +996,7 @@ export function TenantProfileWorkspace({
                     <p className="text-sm text-slate-500">
                       {mode === 'onboarding'
                         ? 'Zum Abschluss des Admin-Onboardings ist eine hinterlegte Zahlungsmethode erforderlich.'
-                        : 'Zahlungsmethode fuer Abrechnung und spaeteres Abo verwalten.'}
+                        : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
                     </p>
                   </div>
                   <div className="space-y-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
@@ -881,7 +1031,7 @@ export function TenantProfileWorkspace({
                         {showStripeForm
                           ? 'Stripe-Formular ausblenden'
                           : billing?.payment_method
-                            ? 'Zahlungsmethode aendern'
+                            ? 'Zahlungsmethode ändern'
                             : 'Zahlungsmethode hinterlegen'}
                       </Button>
                     </div>
@@ -926,8 +1076,8 @@ export function TenantProfileWorkspace({
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <UserRound className="h-4 w-4" />
                 {mode === 'onboarding'
-                  ? 'Nach dem Abschluss kannst du alles spaeter im Profil aendern.'
-                  : 'Aenderungen werden sofort fuer deinen Workspace uebernommen.'}
+                  ? 'Nach dem Abschluss kannst du alles später im Profil ändern.'
+                  : 'Änderungen werden sofort für deinen Workspace übernommen.'}
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 {mode !== 'onboarding' && (

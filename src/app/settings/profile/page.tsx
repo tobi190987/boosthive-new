@@ -10,6 +10,7 @@ export default async function ProfileSettingsPage() {
       initialData={{
         role: context.membership.role,
         tenantName: context.tenant.name,
+        tenantLogoUrl: context.tenant.logoUrl,
         firstName: context.user.firstName ?? '',
         lastName: context.user.lastName ?? '',
         avatarUrl: context.user.avatarUrl,

@@ -13,8 +13,8 @@ export default async function SettingsLayout({
     <TenantAppShell
       context={context}
       eyebrow="Profil & Einstellungen"
-      title="Persoenliche Daten und Workspace-Verwaltung"
-      description="Profil, Team und die administrativen Einstellungen laufen ueber dieselbe Tenant-Shell, damit Rollen und Kontext konsistent bleiben."
+      title="Persönliche Daten und Workspace-Verwaltung"
+      description="Profil, Team und die administrativen Einstellungen laufen über dieselbe Tenant-Shell, damit Rollen und Kontext konsistent bleiben."
     >
       {children}
     </TenantAppShell>

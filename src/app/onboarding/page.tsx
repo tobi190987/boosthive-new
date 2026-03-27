@@ -15,13 +15,14 @@ export default async function OnboardingPage() {
       context={context}
       eyebrow="Onboarding"
       title="Richte dein Profil und euren Workspace ein"
-      description="Beim ersten Login sammeln wir die Pflichtdaten fuer dein Profil. Admins hinterlegen zusaetzlich Rechnungsadresse und Stripe."
+      description="Beim ersten Login sammeln wir die Pflichtdaten für dein Profil. Admins hinterlegen zusätzlich Rechnungsadresse und Stripe."
     >
       <TenantProfileWorkspace
         mode="onboarding"
         initialData={{
           role: context.membership.role,
           tenantName: context.tenant.name,
+          tenantLogoUrl: context.tenant.logoUrl,
           firstName: context.user.firstName ?? '',
           lastName: context.user.lastName ?? '',
           avatarUrl: context.user.avatarUrl,
