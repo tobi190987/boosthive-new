@@ -29,6 +29,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StripeCardForm } from '@/components/stripe-card-form'
+import { TenantLogoutButton } from '@/components/tenant-logout-button'
 import { getUserInitials } from '@/lib/profile'
 
 interface BillingResponse {
@@ -617,7 +618,7 @@ export function TenantProfileWorkspace({
               disabled={avatarPending || !avatarCropDraft}
             >
               {avatarPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-              Zuschnitt uebernehmen
+              Zuschnitt übernehmen
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -928,14 +929,19 @@ export function TenantProfileWorkspace({
                   ? 'Nach dem Abschluss kannst du alles spaeter im Profil aendern.'
                   : 'Aenderungen werden sofort fuer deinen Workspace uebernommen.'}
               </div>
-              <Button
-                type="submit"
-                className="h-[48px] rounded-xl bg-[#1dbfaa] px-6 text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
-                disabled={isSaving}
-              >
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitLabel}
-              </Button>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                {mode !== 'onboarding' && (
+                  <TenantLogoutButton className="h-[48px] rounded-xl border-[#e3daca] bg-white px-6" />
+                )}
+                <Button
+                  type="submit"
+                  className="h-[48px] rounded-xl bg-[#1dbfaa] px-6 text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
+                  disabled={isSaving}
+                >
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {submitLabel}
+                </Button>
+              </div>
             </div>
           </form>
         </CardContent>

@@ -1,5 +1,4 @@
 import { Badge } from '@/components/ui/badge'
-import { TenantLogoutButton } from '@/components/tenant-logout-button'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
 interface TenantShellHeaderProps {
@@ -7,10 +6,6 @@ interface TenantShellHeaderProps {
   eyebrow: string
   title: string
   description: string
-}
-
-function roleLabel(role: TenantShellContext['membership']['role']) {
-  return role === 'admin' ? 'Admin' : 'Member'
 }
 
 export function TenantShellHeader({
@@ -24,7 +19,7 @@ export function TenantShellHeader({
       <div className="absolute left-[-2rem] top-[-2rem] h-40 w-40 rounded-full bg-[#1dbfaa]/10 blur-3xl" />
       <div className="absolute bottom-[-3rem] right-[-1rem] h-44 w-44 rounded-full bg-[#eb6f3d]/12 blur-3xl" />
 
-      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="relative">
         <div className="max-w-3xl space-y-4">
           <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
             {eyebrow}
@@ -40,22 +35,6 @@ export function TenantShellHeader({
               {description}
             </p>
           </div>
-        </div>
-
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <div className="min-w-0 rounded-[24px] border border-white/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Eingeloggt als
-            </p>
-            <p className="mt-2 break-all text-sm font-semibold text-slate-900">{context.user.email}</p>
-          </div>
-          <div className="rounded-[24px] border border-white/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-              Rolle
-            </p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">{roleLabel(context.membership.role)}</p>
-          </div>
-          <TenantLogoutButton className="h-full rounded-[24px] border-white/80 bg-white/80 px-5 shadow-sm backdrop-blur-sm" />
         </div>
       </div>
     </section>

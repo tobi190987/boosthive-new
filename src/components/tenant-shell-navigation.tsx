@@ -8,9 +8,7 @@ import {
   ChevronRight,
   CreditCard,
   LayoutDashboard,
-  LogOut,
   Menu,
-  Settings2,
   Sparkles,
   Users2,
 } from 'lucide-react'
@@ -19,7 +17,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { TenantLogoutButton } from '@/components/tenant-logout-button'
 import { getUserDisplayName, getUserInitials } from '@/lib/profile'
 import { cn } from '@/lib/utils'
 import type { TenantShellContext } from '@/lib/tenant-shell'
@@ -50,7 +47,6 @@ function tenantNav(context: TenantShellContext) {
       ? [
           { label: 'User-Management', href: '/settings/team', icon: Users2 },
           { label: 'Abrechnung', href: '/billing', icon: CreditCard },
-          { label: 'Profil', href: '/settings/profile', icon: Settings2 },
         ]
       : []
 
@@ -186,7 +182,7 @@ function NavigationContent({
 
       <Separator className="bg-[#ebe2d5]" />
 
-      <div className="space-y-4 p-4">
+      <div className="p-4">
         <Link
           href="/settings/profile"
           onClick={onNavigate}
@@ -220,12 +216,6 @@ function NavigationContent({
             <CircleUserRound className="ml-auto h-4 w-4 text-slate-300" />
           </div>
         </Link>
-
-        <TenantLogoutButton
-          className="w-full rounded-2xl border-[#e3daca] bg-white justify-center"
-          label="Abmelden"
-          icon={<LogOut className="h-4 w-4" />}
-        />
       </div>
     </>
   )
