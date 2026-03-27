@@ -5,22 +5,70 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { CreateTenantSchema } from '@/lib/schemas/tenant'
 import crypto from 'crypto'
 
+type TenantStatusFilter = 'active' | 'inactive' | 'all'
+
+function parsePositiveInteger(value: string | null, fallback: number) {
+  if (!value) return fallback
+  const parsed = Number.parseInt(value, 10)
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback
+}
+
 /**
  * GET /api/owner/tenants
  * Alle Tenants auflisten (nur fuer Owner).
  */
-export async function GET() {
-  // Owner-Authentifizierung pruefen
+export async function GET(request: NextRequest) {
   const auth = await requireOwner()
   if ('error' in auth) return auth.error
 
+  const searchParams = request.nextUrl.searchParams
+  const query = searchParams.get('q')?.trim() ?? ''
+  const statusParam = searchParams.get('status')
+  const status: TenantStatusFilter =
+    statusParam === 'active' || statusParam === 'inactive' || statusParam === 'all'
+      ? statusParam
+      : 'all'
+  const page = parsePositiveInteger(searchParams.get('page'), 1)
+  const requestedPageSize = parsePositiveInteger(searchParams.get('pageSize'), 20)
+  const pageSize = Math.min(requestedPageSize, 50)
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
   const supabaseAdmin = createAdminClient()
 
-  const { data: tenants, error } = await supabaseAdmin
+  let countQuery = supabaseAdmin
+    .from('tenants')
+    .select('id', { count: 'exact', head: true })
+
+  let dataQuery = supabaseAdmin
     .from('tenants')
     .select('id, name, slug, status, created_at')
     .order('created_at', { ascending: false })
-    .limit(100)
+
+  if (status !== 'all') {
+    countQuery = countQuery.eq('status', status)
+    dataQuery = dataQuery.eq('status', status)
+  }
+
+  if (query.length > 0) {
+    const escapedQuery = query.replace(/[%_]/g, '\\$&')
+    const pattern = `%${escapedQuery}%`
+    countQuery = countQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    dataQuery = dataQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+  }
+
+  const [{ count, error: countError }, { data: tenants, error }] = await Promise.all([
+    countQuery,
+    dataQuery.range(from, to),
+  ])
+
+  if (countError) {
+    console.error('[GET /api/owner/tenants] Count-Fehler:', countError)
+    return NextResponse.json(
+      { error: 'Tenants konnten nicht geladen werden.' },
+      { status: 500 }
+    )
+  }
 
   if (error) {
     console.error('[GET /api/owner/tenants] DB-Fehler:', error)
@@ -30,7 +78,48 @@ export async function GET() {
     )
   }
 
-  return NextResponse.json({ tenants })
+  const tenantIds = (tenants ?? []).map((tenant) => tenant.id)
+  let memberCountMap = new Map<string, number>()
+
+  if (tenantIds.length > 0) {
+    const { data: members, error: membersError } = await supabaseAdmin
+      .from('tenant_members')
+      .select('tenant_id')
+      .in('tenant_id', tenantIds)
+      .eq('status', 'active')
+
+    if (membersError) {
+      console.error('[GET /api/owner/tenants] Member-Count-Fehler:', membersError)
+      return NextResponse.json(
+        { error: 'Tenants konnten nicht geladen werden.' },
+        { status: 500 }
+      )
+    }
+
+    memberCountMap = (members ?? []).reduce((map, member) => {
+      map.set(member.tenant_id, (map.get(member.tenant_id) ?? 0) + 1)
+      return map
+    }, new Map<string, number>())
+  }
+
+  const enrichedTenants = (tenants ?? []).map((tenant) => ({
+    ...tenant,
+    memberCount: memberCountMap.get(tenant.id) ?? 0,
+  }))
+
+  return NextResponse.json({
+    tenants: enrichedTenants,
+    pagination: {
+      page,
+      pageSize,
+      total: count ?? 0,
+      totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
+    },
+    filters: {
+      q: query,
+      status,
+    },
+  })
 }
 
 /**

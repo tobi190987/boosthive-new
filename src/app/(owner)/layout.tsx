@@ -1,4 +1,4 @@
-import { redirect } from 'next/navigation'
+import { forbidden, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { OwnerSidebar, OwnerMobileHeader } from "@/components/owner-sidebar"
@@ -26,7 +26,7 @@ export default async function OwnerLayout({
     .single()
 
   if (!admin) {
-    redirect('/owner/login')
+    forbidden()
   }
 
   return (

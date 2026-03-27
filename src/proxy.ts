@@ -89,34 +89,6 @@ const LOCAL_FALLBACK_TENANT_SLUG = 'test-tenant'
 const SUBDOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?$/
 
 // ---------------------------------------------------------------------------
-// In-Memory Tenant Cache (60s TTL)
-// ---------------------------------------------------------------------------
-
-interface CachedTenant {
-  id: string
-  slug: string
-  status: 'active' | 'inactive'
-  cachedAt: number
-}
-
-const CACHE_TTL_MS = 60_000 // 60 seconds
-const tenantCache = new Map<string, CachedTenant>()
-
-function getCachedTenant(slug: string): CachedTenant | null {
-  const entry = tenantCache.get(slug)
-  if (!entry) return null
-  if (Date.now() - entry.cachedAt > CACHE_TTL_MS) {
-    tenantCache.delete(slug)
-    return null
-  }
-  return entry
-}
-
-function setCachedTenant(tenant: CachedTenant): void {
-  tenantCache.set(tenant.slug, { ...tenant, cachedAt: Date.now() })
-}
-
-// ---------------------------------------------------------------------------
 // Supabase client for proxy (lightweight, no cookies needed)
 // ---------------------------------------------------------------------------
 
@@ -428,12 +400,6 @@ async function maybeProtectTenantRoute(
 async function resolveTenant(
   slug: string
 ): Promise<{ id: string; slug: string; status: 'active' | 'inactive' } | null> {
-  // Check cache first
-  const cached = getCachedTenant(slug)
-  if (cached) {
-    return cached
-  }
-
   try {
     const supabase = getSupabaseClient()
     const { data, error } = await supabase
@@ -446,15 +412,11 @@ async function resolveTenant(
       return null
     }
 
-    const tenant = {
+    return {
       id: data.id,
       slug: data.slug,
       status: data.status as 'active' | 'inactive',
-      cachedAt: Date.now(),
     }
-
-    setCachedTenant(tenant)
-    return tenant
   } catch (err) {
     console.error(`[Middleware] Tenant lookup failed for slug "${slug}":`, err)
     return null

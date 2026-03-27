@@ -14,7 +14,7 @@ const navItems = [
   {
     section: "SYSTEM",
     items: [
-      { label: "Dashboard", href: "/owner", icon: LayoutDashboard },
+      { label: "Dashboard", href: "/owner/dashboard", icon: LayoutDashboard },
       { label: "Agenturen", href: "/owner/tenants", icon: Building2 },
     ],
   },
@@ -29,7 +29,9 @@ function NavContent({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
 
   function isActive(href: string) {
-    if (href === "/owner") return pathname === "/owner"
+    if (href === "/owner/dashboard") {
+      return pathname === "/owner" || pathname === "/owner/dashboard"
+    }
     return pathname.startsWith(href)
   }
 
@@ -97,7 +99,7 @@ export function OwnerSidebar() {
   return (
     <aside className="hidden md:flex h-screen w-[200px] flex-col border-r border-slate-100 bg-white" aria-label="Owner Navigation">
       <div className="flex h-14 items-center px-4">
-        <Link href="/owner" className="flex items-center gap-2">
+        <Link href="/owner/dashboard" className="flex items-center gap-2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/favicon_dark.png"
@@ -131,7 +133,7 @@ export function OwnerMobileHeader() {
       >
         <Menu className="h-5 w-5" />
       </Button>
-      <Link href="/owner" className="flex items-center gap-2">
+      <Link href="/owner/dashboard" className="flex items-center gap-2">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/favicon_dark.png"
@@ -148,7 +150,7 @@ export function OwnerMobileHeader() {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[200px] p-0 flex flex-col">
           <div className="flex h-14 items-center px-4 border-b border-slate-100">
-            <Link href="/owner" onClick={() => setOpen(false)} className="flex items-center gap-2">
+            <Link href="/owner/dashboard" onClick={() => setOpen(false)} className="flex items-center gap-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src="/favicon_dark.png"
