@@ -2,7 +2,14 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { ExternalLink, Loader2, MoreHorizontal, SearchX } from 'lucide-react'
+import {
+  CirclePause,
+  ExternalLink,
+  Loader2,
+  MoreHorizontal,
+  SearchX,
+  Trash2,
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +27,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import {
@@ -43,7 +51,9 @@ export interface OwnerTenantRecord {
 interface OwnerTenantTableProps {
   tenants: OwnerTenantRecord[]
   togglingId: string | null
+  deletingId: string | null
   onToggleStatus: (tenant: OwnerTenantRecord) => Promise<void> | void
+  onDeleteTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
 }
 
 function formatDate(value: string) {
@@ -57,9 +67,12 @@ function formatDate(value: string) {
 export function OwnerTenantTable({
   tenants,
   togglingId,
+  deletingId,
   onToggleStatus,
+  onDeleteTenant,
 }: OwnerTenantTableProps) {
   const [confirmTenant, setConfirmTenant] = useState<OwnerTenantRecord | null>(null)
+  const [deleteTenant, setDeleteTenant] = useState<OwnerTenantRecord | null>(null)
 
   if (tenants.length === 0) {
     return (
@@ -91,8 +104,7 @@ export function OwnerTenantTable({
           </TableHeader>
           <TableBody>
             {tenants.map((tenant) => {
-              const nextStatus = tenant.status === 'active' ? 'inactive' : 'active'
-              const isPending = togglingId === tenant.id
+              const isPending = togglingId === tenant.id || deletingId === tenant.id
 
               return (
                 <TableRow key={tenant.id} className="border-[#f0e9df] hover:bg-[#fcfaf6]">
@@ -116,7 +128,7 @@ export function OwnerTenantTable({
                           : 'rounded-full bg-[#fff4ee] text-[#9f4f2d] hover:bg-[#fff4ee]'
                       }
                     >
-                      {tenant.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+                      {tenant.status === 'active' ? 'Aktiv' : 'Pausiert'}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-slate-500">{tenant.memberCount}</TableCell>
@@ -151,7 +163,17 @@ export function OwnerTenantTable({
                             onClick={() => setConfirmTenant(tenant)}
                             disabled={isPending}
                           >
-                            {tenant.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
+                            <CirclePause className="mr-2 h-4 w-4" />
+                            {tenant.status === 'active' ? 'Pausieren' : 'Fortsetzen'}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="cursor-pointer text-[#9f4f2d] focus:text-[#9f4f2d]"
+                            onClick={() => setDeleteTenant(tenant)}
+                            disabled={isPending}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Löschen
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -176,12 +198,12 @@ export function OwnerTenantTable({
         <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmTenant?.status === 'active' ? 'Tenant deaktivieren?' : 'Tenant aktivieren?'}
+              {confirmTenant?.status === 'active' ? 'Tenant pausieren?' : 'Tenant fortsetzen?'}
             </AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
               {confirmTenant?.status === 'active'
                 ? 'Neue Logins werden blockiert. Offene Tenant-Sessions verlieren spätestens beim nächsten Request den Zugriff auf die Subdomain.'
-                : 'Der Tenant akzeptiert danach wieder neue Logins und erscheint als aktiv.'}
+                : 'Der Tenant akzeptiert danach wieder neue Logins und erscheint wieder als aktiv.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -194,7 +216,40 @@ export function OwnerTenantTable({
                 setConfirmTenant(null)
               }}
             >
-              {confirmTenant?.status === 'active' ? 'Deaktivieren' : 'Aktivieren'}
+              {confirmTenant?.status === 'active' ? 'Pausieren' : 'Fortsetzen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={Boolean(deleteTenant)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTenant(null)
+        }}
+      >
+        <AlertDialogTrigger asChild>
+          <span className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tenant wirklich löschen?</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              {deleteTenant?.name} wird dauerhaft entfernt. Zugehörige Daten des Tenants werden
+              gelöscht und verwaiste User-Accounts werden ebenfalls bereinigt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+              onClick={async () => {
+                if (!deleteTenant) return
+                await onDeleteTenant(deleteTenant)
+                setDeleteTenant(null)
+              }}
+            >
+              Tenant löschen
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

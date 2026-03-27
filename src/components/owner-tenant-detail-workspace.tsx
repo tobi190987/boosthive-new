@@ -16,13 +16,26 @@ import {
   MapPin,
   Phone,
   ShieldCheck,
+  Trash2,
   UserRound,
+  Users2,
 } from "lucide-react"
 
 import { CreateTenantSchema } from "@/lib/schemas/tenant"
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -40,6 +53,19 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type TenantStatus = "active" | "inactive"
+type MemberRole = "admin" | "member"
+type MemberStatus = "active" | "inactive"
+
+interface TenantUserRecord {
+  memberId: string
+  userId: string
+  email: string | null
+  name: string | null
+  role: MemberRole
+  status: MemberStatus
+  invitedAt: string | null
+  joinedAt: string | null
+}
 
 interface TenantDetailRecord {
   id: string
@@ -60,6 +86,7 @@ interface TenantDetailRecord {
     name?: string | null
     email?: string | null
   } | null
+  users?: TenantUserRecord[]
 }
 
 const BasicsSchema = CreateTenantSchema.pick({
@@ -128,7 +155,29 @@ function formatDate(value: string) {
 }
 
 function statusCopy(status: TenantStatus) {
-  return status === "active" ? "Aktiv" : "Inaktiv"
+  return status === "active" ? "Aktiv" : "Pausiert"
+}
+
+function memberRoleCopy(role: MemberRole) {
+  return role === "admin" ? "Admin" : "User"
+}
+
+function memberStatusCopy(status: MemberStatus) {
+  return status === "active" ? "Aktiv" : "Pausiert"
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "Noch nicht verfügbar"
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return new Intl.DateTimeFormat("de-DE", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date)
 }
 
 async function extractPayload(response: Response) {
@@ -141,6 +190,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [apiPendingMessage, setApiPendingMessage] = useState<string | null>(null)
   const [savingSection, setSavingSection] = useState<null | "basics" | "billing" | "contact" | "admin">(null)
+  const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<TenantUserRecord | null>(null)
 
   const basicsForm = useForm<BasicsInput>({
     resolver: zodResolver(BasicsSchema),
@@ -393,6 +444,60 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
     }
   }
 
+  async function deleteUser(user: TenantUserRecord) {
+    setDeletingUserId(user.userId)
+    setServerError(null)
+
+    try {
+      const response = await fetch(`/api/owner/tenants/${tenantId}/users/${user.userId}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const payload = await extractPayload(response)
+
+      if (!response.ok) {
+        throw new Error(payload.error || "User konnte nicht gelöscht werden.")
+      }
+
+      setTenant((current) => {
+        if (!current) return current
+
+        const nextUsers = (current.users ?? []).filter((entry) => entry.userId !== user.userId)
+        const nextActiveAdmin = nextUsers.find(
+          (entry) => entry.role === "admin" && entry.status === "active"
+        )
+        const nextCurrentAdmin =
+          current.currentAdmin?.email && current.currentAdmin.email === user.email
+            ? nextActiveAdmin
+              ? {
+                  email: nextActiveAdmin.email,
+                  name: nextActiveAdmin.name,
+                }
+              : null
+            : current.currentAdmin
+
+        return {
+          ...current,
+          users: nextUsers,
+          currentAdmin: nextCurrentAdmin,
+        }
+      })
+
+      toast({
+        title: "User gelöscht",
+        description:
+          payload.authDeleted === false
+            ? "Die Tenant-Zuordnung wurde entfernt. Der Account bleibt bestehen, weil er noch an anderer Stelle genutzt wird."
+            : "Der User wurde aus der Agentur entfernt und vollständig bereinigt.",
+      })
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "User konnte nicht gelöscht werden.")
+    } finally {
+      setDeletingUserId(null)
+      setConfirmDeleteUser(null)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -524,6 +629,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           </TabsTrigger>
           <TabsTrigger value="admin" className="rounded-full px-4 py-2">
             Admin
+          </TabsTrigger>
+          <TabsTrigger value="users" className="rounded-full px-4 py-2">
+            User
           </TabsTrigger>
         </TabsList>
 
@@ -914,7 +1022,148 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </Card>
           </div>
         </TabsContent>
+
+        <TabsContent value="users" className="mt-0">
+          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+            <CardHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-[#eef7f5] p-3 text-[#0d9488]">
+                  <Users2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-slate-900">Alle User dieser Agentur</CardTitle>
+                  <p className="text-sm text-slate-500">
+                    Owner sehen hier alle Accounts inklusive Rolle, Status und Löschoption.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {tenant?.users?.length ? (
+                <div className="overflow-hidden rounded-[24px] border border-[#efe6d9]">
+                  <div className="overflow-x-auto">
+                    <div className="min-w-[760px]">
+                      <div className="grid grid-cols-[minmax(0,1.4fr)_120px_120px_180px_92px] gap-4 border-b border-[#efe6d9] bg-[#fcfaf6] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                        <p>User</p>
+                        <p>Rolle</p>
+                        <p>Status</p>
+                        <p>Seit</p>
+                        <p className="text-right">Aktion</p>
+                      </div>
+
+                      <div className="divide-y divide-[#f2eadf]">
+                        {tenant.users.map((user) => {
+                          const isPending = deletingUserId === user.userId
+
+                          return (
+                            <div
+                              key={user.memberId}
+                              className="grid grid-cols-[minmax(0,1.4fr)_120px_120px_180px_92px] gap-4 px-5 py-4 text-sm text-slate-600"
+                            >
+                              <div className="min-w-0">
+                                <p className="truncate font-semibold text-slate-900">
+                                  {user.name || user.email || "Unbekannter User"}
+                                </p>
+                                <p className="truncate text-slate-500">{user.email || user.userId}</p>
+                              </div>
+
+                              <div>
+                                <Badge
+                                  className={
+                                    user.role === "admin"
+                                      ? "rounded-full bg-[#eef4ff] text-[#3457c2] hover:bg-[#eef4ff]"
+                                      : "rounded-full bg-[#eef7f5] text-[#0d9488] hover:bg-[#eef7f5]"
+                                  }
+                                >
+                                  {memberRoleCopy(user.role)}
+                                </Badge>
+                              </div>
+
+                              <div>
+                                <Badge
+                                  className={
+                                    user.status === "active"
+                                      ? "rounded-full bg-[#eff8f2] text-[#166534] hover:bg-[#eff8f2]"
+                                      : "rounded-full bg-[#fff4ee] text-[#9f4f2d] hover:bg-[#fff4ee]"
+                                  }
+                                >
+                                  {memberStatusCopy(user.status)}
+                                </Badge>
+                              </div>
+
+                              <div className="text-slate-500">
+                                {formatDateTime(user.joinedAt || user.invitedAt)}
+                              </div>
+
+                              <div className="flex justify-end">
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-9 w-9 rounded-full text-[#b85e34] hover:bg-[#fff4ee] hover:text-[#9f4f2d]"
+                                  disabled={isPending}
+                                  onClick={() => setConfirmDeleteUser(user)}
+                                  aria-label={`User ${user.email || user.userId} löschen`}
+                                >
+                                  {isPending ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
+                  <p className="text-lg font-semibold text-slate-900">Keine User gefunden</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Für diese Agentur wurden aktuell keine zugeordneten User geladen.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
+
+      <AlertDialog
+        open={Boolean(confirmDeleteUser)}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteUser(null)
+        }}
+      >
+        <AlertDialogTrigger asChild>
+          <span className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>User wirklich löschen?</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              {confirmDeleteUser?.email || "Dieser User"} wird aus der Agentur entfernt. Wenn der
+              Account sonst nirgends mehr verwendet wird, wird er zusätzlich vollständig aus Auth und
+              den verknüpften Datensätzen entfernt.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+              onClick={async () => {
+                if (!confirmDeleteUser) return
+                await deleteUser(confirmDeleteUser)
+              }}
+            >
+              User löschen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

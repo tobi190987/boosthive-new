@@ -1,103 +1,104 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
-import { Plus, MoreHorizontal, Building2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Building2, Plus } from "lucide-react"
+import { OwnerTenantTable, type OwnerTenantRecord } from "@/components/owner-tenant-table"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-
-interface Tenant {
-  id: string
-  name: string
-  slug: string
-  status: "active" | "inactive"
-  created_at: string
-}
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function TenantsPage() {
-  const [tenants, setTenants] = useState<Tenant[]>([])
+  const [tenants, setTenants] = useState<OwnerTenantRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const fetchTenants = useCallback(async () => {
     try {
       setError(null)
-      const res = await fetch("/api/owner/tenants")
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || "Fehler beim Laden der Agenturen.")
+
+      const response = await fetch("/api/owner/tenants", {
+        credentials: "include",
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Fehler beim Laden der Agenturen.")
       }
-      const data = await res.json()
-      setTenants(data.tenants ?? data)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler.")
+
+      setTenants(payload.tenants ?? [])
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Unbekannter Fehler.")
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => {
-    fetchTenants()
+    void fetchTenants()
   }, [fetchTenants])
 
-  async function toggleStatus(tenant: Tenant) {
+  async function toggleStatus(tenant: OwnerTenantRecord) {
     const newStatus = tenant.status === "active" ? "inactive" : "active"
     setTogglingId(tenant.id)
+    setError(null)
+
     try {
-      const res = await fetch(`/api/owner/tenants/${tenant.id}`, {
+      const response = await fetch(`/api/owner/tenants/${tenant.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ status: newStatus }),
       })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || "Statusänderung fehlgeschlagen.")
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Statusänderung fehlgeschlagen.")
       }
-      setTenants((prev) =>
-        prev.map((t) => (t.id === tenant.id ? { ...t, status: newStatus } : t))
-      )
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Unbekannter Fehler.")
+
+      await fetchTenants()
+    } catch (toggleError) {
+      setError(toggleError instanceof Error ? toggleError.message : "Unbekannter Fehler.")
     } finally {
       setTogglingId(null)
     }
   }
 
-  function formatDate(dateStr: string) {
-    return new Date(dateStr).toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    })
+  async function deleteTenant(tenant: OwnerTenantRecord) {
+    setDeletingId(tenant.id)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/owner/tenants/${tenant.id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Tenant konnte nicht gelöscht werden.")
+      }
+
+      await fetchTenants()
+    } catch (deleteError) {
+      setError(deleteError instanceof Error ? deleteError.message : "Unbekannter Fehler.")
+    } finally {
+      setDeletingId(null)
+    }
   }
 
   return (
-    <div>
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+    <div className="space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Agenturen</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Verwalte alle registrierten Agenturen und deren Status.
+            Verwalte Status, Pausen und Löschungen für alle registrierten Agenturen.
           </p>
         </div>
+
         <Button asChild className="bg-teal-500 hover:bg-teal-600">
           <Link href="/owner/tenants/new">
             <Plus className="mr-2 h-4 w-4" />
@@ -106,39 +107,24 @@ export default function TenantsPage() {
         </Button>
       </div>
 
-      {/* Error */}
       {error && (
-        <Alert variant="destructive" className="mb-6">
+        <Alert variant="destructive">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      {/* Loading */}
-      {loading && (
-        <div className="rounded-xl border bg-white shadow-sm">
-          <div className="p-4 space-y-4">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-4">
-                <Skeleton className="h-5 w-40" />
-                <Skeleton className="h-5 w-32" />
-                <Skeleton className="h-5 w-16" />
-                <Skeleton className="h-5 w-24" />
-                <Skeleton className="h-5 w-8" />
-              </div>
-            ))}
-          </div>
+      {loading ? (
+        <div className="space-y-4 rounded-xl border bg-white p-5 shadow-sm">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className="h-14 rounded-xl" />
+          ))}
         </div>
-      )}
-
-      {/* Empty State */}
-      {!loading && !error && tenants.length === 0 && (
-        <div className="flex flex-col items-center justify-center rounded-xl border bg-white px-6 py-16 shadow-sm">
+      ) : tenants.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border bg-white px-6 py-16 text-center shadow-sm">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50">
             <Building2 className="h-6 w-6 text-teal-500" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Noch keine Agenturen
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900">Noch keine Agenturen</h3>
           <p className="mt-1 text-sm text-gray-500">
             Erstelle deine erste Agentur, um loszulegen.
           </p>
@@ -149,87 +135,14 @@ export default function TenantsPage() {
             </Link>
           </Button>
         </div>
-      )}
-
-      {/* Table */}
-      {!loading && tenants.length > 0 && (
-        <div className="rounded-xl border bg-white shadow-sm">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Subdomain</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Erstellt</TableHead>
-                <TableHead className="w-12">
-                  <span className="sr-only">Aktionen</span>
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {tenants.map((tenant) => (
-                <TableRow key={tenant.id} className="hover:bg-gray-50">
-                  <TableCell>
-                    <Link
-                      href={`/owner/tenants/${tenant.id}`}
-                      className="font-medium text-gray-900 transition-colors hover:text-teal-600"
-                    >
-                      {tenant.name}
-                    </Link>
-                  </TableCell>
-                  <TableCell className="text-gray-500">
-                    {tenant.slug}.boost-hive.de
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={tenant.status === "active" ? "default" : "secondary"}
-                      className={
-                        tenant.status === "active"
-                          ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-100"
-                      }
-                    >
-                      {tenant.status === "active" ? "Aktiv" : "Inaktiv"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-gray-500">
-                    {formatDate(tenant.created_at)}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          disabled={togglingId === tenant.id}
-                          aria-label={`Aktionen für ${tenant.name}`}
-                        >
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/owner/tenants/${tenant.id}`}>
-                            Details öffnen
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => toggleStatus(tenant)}
-                          disabled={togglingId === tenant.id}
-                        >
-                          {tenant.status === "active"
-                            ? "Deaktivieren"
-                            : "Aktivieren"}
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+      ) : (
+        <OwnerTenantTable
+          tenants={tenants}
+          togglingId={togglingId}
+          deletingId={deletingId}
+          onToggleStatus={toggleStatus}
+          onDeleteTenant={deleteTenant}
+        />
       )}
     </div>
   )

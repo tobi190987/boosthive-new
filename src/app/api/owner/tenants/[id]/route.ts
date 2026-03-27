@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { deleteTenantForOwner, listTenantUsers } from '@/lib/owner-tenant-management'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import {
@@ -90,17 +91,19 @@ async function loadTenantDetail(tenantId: string) {
     .maybeSingle()
 
   if (tenantError) {
-    return { tenant: null, currentAdmin: null, error: tenantError }
+    return { tenant: null, currentAdmin: null, users: [], error: tenantError }
   }
 
   if (!tenant) {
-    return { tenant: null, currentAdmin: null, error: null }
+    return { tenant: null, currentAdmin: null, users: [], error: null }
   }
 
+  const users = await listTenantUsers(supabaseAdmin, tenantId)
   const currentAdminResult = await getCurrentAdmin(tenantId)
   return {
     tenant,
     currentAdmin: currentAdminResult.data,
+    users,
     error: currentAdminResult.error,
   }
 }
@@ -121,7 +124,7 @@ export async function GET(
     return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
-  const { tenant, currentAdmin, error } = await loadTenantDetail(id)
+  const { tenant, currentAdmin, users, error } = await loadTenantDetail(id)
 
   if (error) {
     console.error(`[GET /api/owner/tenants/${id}] Laden fehlgeschlagen:`, error)
@@ -139,6 +142,7 @@ export async function GET(
     tenant: {
       ...tenant,
       currentAdmin,
+      users,
     },
   })
 }
@@ -384,4 +388,51 @@ export async function PATCH(
   }
 
   return NextResponse.json({ error: 'Unbekannter Update-Typ.' }, { status: 400 })
+}
+
+/**
+ * DELETE /api/owner/tenants/[id]
+ * Löscht einen Tenant und bereinigt verwaiste Auth-User.
+ */
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await requireOwner()
+  if ('error' in auth) return auth.error
+
+  const { id } = await params
+  if (!isUuid(id)) {
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
+  }
+
+  const supabaseAdmin = createAdminClient()
+
+  try {
+    const result = await deleteTenantForOwner(supabaseAdmin, id)
+
+    if (!result.deleted) {
+      return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
+    }
+
+    if (result.cleanupErrors.length > 0) {
+      console.error(
+        `[DELETE /api/owner/tenants/${id}] Cleanup unvollständig:`,
+        result.cleanupErrors
+      )
+    }
+
+    return NextResponse.json({
+      success: true,
+      tenant: result.tenant,
+      deletedAuthUsers: result.deletedAuthUsers,
+      cleanupErrors: result.cleanupErrors,
+    })
+  } catch (error) {
+    console.error(`[DELETE /api/owner/tenants/${id}] Löschen fehlgeschlagen:`, error)
+    return NextResponse.json(
+      { error: 'Tenant konnte nicht gelöscht werden.' },
+      { status: 500 }
+    )
+  }
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Building2, Plus, Search, Sparkles } from 'lucide-react'
@@ -74,12 +74,70 @@ export function OwnerDashboardWorkspace() {
   )
   const [page, setPage] = useState(parsePage(searchParams.get('page')))
   const [togglingId, setTogglingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   useEffect(() => {
     setQuery(searchParams.get('q') ?? '')
     setStatusFilter(parseStatusFilter(searchParams.get('status')))
     setPage(parsePage(searchParams.get('page')))
   }, [searchParams])
+
+  const rangeLabel = useMemo(() => {
+    if (pagination.total === 0) {
+      return 'Keine Eintraege'
+    }
+
+    const start = (pagination.page - 1) * pagination.pageSize + 1
+    const end = Math.min(pagination.page * pagination.pageSize, pagination.total)
+    return `${start}-${end} von ${pagination.total}`
+  }, [pagination])
+
+  const refreshTenantData = useCallback(async () => {
+    const refreshParams = new URLSearchParams({
+      status: statusFilter,
+      page: String(page),
+      pageSize: String(PAGE_SIZE),
+      ...(query.trim() ? { q: query.trim() } : {}),
+    })
+
+    const [metricsResponse, tenantsResponse] = await Promise.all([
+      fetch('/api/owner/dashboard', { credentials: 'include' }),
+      fetch(`/api/owner/tenants?${refreshParams.toString()}`, {
+        credentials: 'include',
+      }),
+    ])
+
+    const metricsPayload = await metricsResponse.json().catch(() => ({}))
+    const tenantsPayload = await tenantsResponse.json().catch(() => ({}))
+
+    if (!metricsResponse.ok) {
+      throw new Error(
+        metricsPayload.error ?? 'Owner-Dashboard-Metriken konnten nicht geladen werden.'
+      )
+    }
+
+    if (!tenantsResponse.ok) {
+      throw new Error(tenantsPayload.error ?? 'Owner-Dashboard konnte nicht geladen werden.')
+    }
+
+    setMetrics(
+      metricsPayload.metrics ?? {
+        totalTenants: 0,
+        activeTenants: 0,
+        inactiveTenants: 0,
+        totalUsers: 0,
+      }
+    )
+    setTenants(tenantsPayload.tenants ?? [])
+    setPagination(
+      tenantsPayload.pagination ?? {
+        page,
+        pageSize: PAGE_SIZE,
+        total: 0,
+        totalPages: 1,
+      }
+    )
+  }, [page, query, statusFilter])
 
   useEffect(() => {
     let isActive = true
@@ -98,53 +156,7 @@ export function OwnerDashboardWorkspace() {
       try {
         setError(null)
         setLoading(true)
-
-        const tenantParams = new URLSearchParams({
-          status: statusFilter,
-          page: String(page),
-          pageSize: String(PAGE_SIZE),
-          ...(trimmedQuery ? { q: trimmedQuery } : {}),
-        })
-
-        const [metricsResponse, tenantsResponse] = await Promise.all([
-          fetch('/api/owner/dashboard', { credentials: 'include' }),
-          fetch(`/api/owner/tenants?${tenantParams.toString()}`, {
-            credentials: 'include',
-          }),
-        ])
-
-        const metricsPayload = await metricsResponse.json().catch(() => ({}))
-        const tenantsPayload = await tenantsResponse.json().catch(() => ({}))
-
-        if (!metricsResponse.ok) {
-          throw new Error(
-            metricsPayload.error ?? 'Owner-Dashboard-Metriken konnten nicht geladen werden.'
-          )
-        }
-
-        if (!tenantsResponse.ok) {
-          throw new Error(tenantsPayload.error ?? 'Owner-Dashboard konnte nicht geladen werden.')
-        }
-
-        if (!isActive) return
-
-        setMetrics(
-          metricsPayload.metrics ?? {
-            totalTenants: 0,
-            activeTenants: 0,
-            inactiveTenants: 0,
-            totalUsers: 0,
-          }
-        )
-        setTenants(tenantsPayload.tenants ?? [])
-        setPagination(
-          tenantsPayload.pagination ?? {
-            page,
-            pageSize: PAGE_SIZE,
-            total: 0,
-            totalPages: 1,
-          }
-        )
+        await refreshTenantData()
       } catch (loadError) {
         if (!isActive) return
 
@@ -168,17 +180,7 @@ export function OwnerDashboardWorkspace() {
       isActive = false
       window.clearTimeout(timeoutId)
     }
-  }, [page, pathname, query, router, statusFilter])
-
-  const rangeLabel = useMemo(() => {
-    if (pagination.total === 0) {
-      return 'Keine Eintraege'
-    }
-
-    const start = (pagination.page - 1) * pagination.pageSize + 1
-    const end = Math.min(pagination.page * pagination.pageSize, pagination.total)
-    return `${start}-${end} von ${pagination.total}`
-  }, [pagination])
+  }, [page, pathname, query, refreshTenantData, router, statusFilter])
 
   async function handleToggleStatus(tenant: OwnerTenantRecord) {
     const nextStatus = tenant.status === 'active' ? 'inactive' : 'active'
@@ -200,38 +202,7 @@ export function OwnerDashboardWorkspace() {
         throw new Error(payload.error ?? 'Tenant-Status konnte nicht aktualisiert werden.')
       }
 
-      const refreshParams = new URLSearchParams({
-        status: statusFilter,
-        page: String(page),
-        pageSize: String(PAGE_SIZE),
-        ...(query.trim() ? { q: query.trim() } : {}),
-      })
-
-      const [metricsResponse, tenantsResponse] = await Promise.all([
-        fetch('/api/owner/dashboard', { credentials: 'include' }),
-        fetch(`/api/owner/tenants?${refreshParams.toString()}`, {
-          credentials: 'include',
-        }),
-      ])
-
-      const metricsPayload = await metricsResponse.json().catch(() => ({}))
-      const tenantsPayload = await tenantsResponse.json().catch(() => ({}))
-
-      if (metricsResponse.ok) {
-        setMetrics(metricsPayload.metrics ?? metrics)
-      }
-
-      if (tenantsResponse.ok) {
-        setTenants(tenantsPayload.tenants ?? [])
-        setPagination(
-          tenantsPayload.pagination ?? {
-            page,
-            pageSize: PAGE_SIZE,
-            total: 0,
-            totalPages: 1,
-          }
-        )
-      }
+      await refreshTenantData()
     } catch (toggleError) {
       setError(
         toggleError instanceof Error
@@ -240,6 +211,31 @@ export function OwnerDashboardWorkspace() {
       )
     } finally {
       setTogglingId(null)
+    }
+  }
+
+  async function handleDeleteTenant(tenant: OwnerTenantRecord) {
+    setDeletingId(tenant.id)
+    setError(null)
+
+    try {
+      const response = await fetch(`/api/owner/tenants/${tenant.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'Tenant konnte nicht gelöscht werden.')
+      }
+
+      await refreshTenantData()
+    } catch (deleteError) {
+      setError(
+        deleteError instanceof Error ? deleteError.message : 'Tenant konnte nicht gelöscht werden.'
+      )
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -294,7 +290,7 @@ export function OwnerDashboardWorkspace() {
               <Sparkles className="h-5 w-5 text-[#b85e34]" />
               <p className="mt-3 text-sm font-semibold text-slate-900">Metriken auf einen Blick</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Total, aktiv und inaktiv sind direkt sichtbar und sofort scanbar.
+                Total, aktiv und pausiert sind direkt sichtbar und sofort scanbar.
               </p>
             </CardContent>
           </Card>
@@ -312,7 +308,7 @@ export function OwnerDashboardWorkspace() {
               <Building2 className="h-5 w-5 text-[#1f2937]" />
               <p className="mt-3 text-sm font-semibold text-slate-900">Statuswechsel mit Klarheit</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Aktivieren und Deaktivieren passiert mit bestätigtem Owner-Intent.
+                Fortsetzen, pausieren und löschen passiert mit bestätigtem Owner-Intent.
               </p>
             </CardContent>
           </Card>
@@ -379,7 +375,7 @@ export function OwnerDashboardWorkspace() {
                     Aktiv
                   </TabsTrigger>
                   <TabsTrigger value="inactive" className="rounded-full px-4 py-2">
-                    Inaktiv
+                    Pausiert
                   </TabsTrigger>
                 </TabsList>
               </Tabs>
@@ -392,7 +388,9 @@ export function OwnerDashboardWorkspace() {
               <OwnerTenantTable
                 tenants={tenants}
                 togglingId={togglingId}
+                deletingId={deletingId}
                 onToggleStatus={handleToggleStatus}
+                onDeleteTenant={handleDeleteTenant}
               />
 
               <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-5 sm:flex-row sm:items-center sm:justify-between">
