@@ -17,6 +17,7 @@ const TENANT_DETAIL_SELECT = `
   slug,
   status,
   created_at,
+  logo_url,
   billing_company,
   billing_street,
   billing_zip,

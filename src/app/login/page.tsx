@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { LoginForm } from '@/components/login-form'
 import { getTenantContext } from '@/lib/tenant'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 interface LoginPageProps {
   searchParams: Promise<{ returnTo?: string; reason?: string }>
@@ -11,6 +12,17 @@ interface LoginPageProps {
 export default async function TenantLoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
   const tenant = await getTenantContext()
+
+  let tenantLogoUrl: string | undefined
+  if (tenant?.id) {
+    const supabaseAdmin = createAdminClient()
+    const { data } = await supabaseAdmin
+      .from('tenants')
+      .select('logo_url')
+      .eq('id', tenant.id)
+      .maybeSingle()
+    tenantLogoUrl = data?.logo_url ?? undefined
+  }
   const rawReturnTo = params.returnTo
   const returnTo = rawReturnTo?.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/dashboard'
   const notice =
@@ -22,6 +34,7 @@ export default async function TenantLoginPage({ searchParams }: LoginPageProps) 
     <AuthShell
       eyebrow="Login"
       title="Willkommen zurück"
+      tenantLogoUrl={tenantLogoUrl}
       description="Melde dich in deinem Tenant an, verwalte dein Team und starte von dort aus auch den sicheren Passwort-Reset."
       asideTitle="Recovery ohne Reibung, abgestimmt auf deinen Tenant."
       asideDescription="Der Zugang bleibt klar, ruhig und markenkonform. Von der Anmeldung bis zum Passwort-Reset führt dich derselbe BoostHive-Flow sicher durch den Prozess."

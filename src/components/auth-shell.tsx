@@ -13,6 +13,7 @@ interface AuthShellProps {
   backHref?: string
   backLabel?: string
   footer?: ReactNode
+  tenantLogoUrl?: string
   children: ReactNode
 }
 
@@ -43,6 +44,7 @@ export function AuthShell({
   backHref,
   backLabel = 'Zur Anmeldung',
   footer,
+  tenantLogoUrl,
   children,
 }: AuthShellProps) {
   return (
@@ -56,14 +58,25 @@ export function AuthShell({
           <section className="order-2 flex flex-col justify-between rounded-2xl border border-[#1e2d3d] bg-[#0f1c2e] p-6 text-white shadow-[0_20px_80px_rgba(0,0,0,0.20)] sm:p-8 lg:order-1 lg:min-h-[660px] lg:p-10">
             <div className="space-y-8">
               <div className="flex items-center gap-3">
-                <Image
-                  src="/boosthive_dark.png"
-                  alt="BoostHive Logo"
-                  width={759}
-                  height={213}
-                  priority
-                  className="h-10 w-auto object-contain"
-                />
+                {tenantLogoUrl ? (
+                  <Image
+                    src={tenantLogoUrl}
+                    alt="Agentur Logo"
+                    width={240}
+                    height={80}
+                    priority
+                    className="h-10 w-auto max-w-[200px] object-contain"
+                  />
+                ) : (
+                  <Image
+                    src="/boosthive_dark.png"
+                    alt="BoostHive Logo"
+                    width={759}
+                    height={213}
+                    priority
+                    className="h-10 w-auto object-contain"
+                  />
+                )}
               </div>
 
               <div className="space-y-4">
@@ -111,13 +124,23 @@ export function AuthShell({
               <CardHeader className="space-y-4 border-b border-slate-100 px-6 pb-5 pt-6 sm:px-8 sm:pt-8">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <Image
-                      src="/boosthive_light.png"
-                      alt="BoostHive"
-                      width={759}
-                      height={213}
-                      className="h-8 w-auto object-contain"
-                    />
+                    {tenantLogoUrl ? (
+                      <Image
+                        src={tenantLogoUrl}
+                        alt="Agentur Logo"
+                        width={240}
+                        height={80}
+                        className="h-8 w-auto max-w-[180px] object-contain"
+                      />
+                    ) : (
+                      <Image
+                        src="/boosthive_light.png"
+                        alt="BoostHive"
+                        width={759}
+                        height={213}
+                        className="h-8 w-auto object-contain"
+                      />
+                    )}
                   </div>
                   {backHref && (
                     <Link

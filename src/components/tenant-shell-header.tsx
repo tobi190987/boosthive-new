@@ -43,11 +43,11 @@ export function TenantShellHeader({
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]">
-          <div className="rounded-[24px] border border-white/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
+          <div className="min-w-0 rounded-[24px] border border-white/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               Eingeloggt als
             </p>
-            <p className="mt-2 text-sm font-semibold text-slate-900">{context.user.email}</p>
+            <p className="mt-2 break-all text-sm font-semibold text-slate-900">{context.user.email}</p>
           </div>
           <div className="rounded-[24px] border border-white/80 bg-white/80 px-4 py-3 shadow-sm backdrop-blur-sm">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">

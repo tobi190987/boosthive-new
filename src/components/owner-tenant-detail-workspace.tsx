@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
@@ -11,6 +11,7 @@ import {
   Building2,
   Copy,
   Globe,
+  ImageIcon,
   Loader2,
   Mail,
   MapPin,
@@ -19,6 +20,7 @@ import {
   Trash2,
   UserRound,
   Users2,
+  X,
 } from "lucide-react"
 
 import { CreateTenantSchema } from "@/lib/schemas/tenant"
@@ -73,6 +75,7 @@ interface TenantDetailRecord {
   slug: string
   status: TenantStatus
   created_at: string
+  logo_url?: string | null
   billing_company?: string | null
   billing_street?: string | null
   billing_zip?: string | null
@@ -192,6 +195,10 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   const [savingSection, setSavingSection] = useState<null | "basics" | "billing" | "contact" | "admin">(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<TenantUserRecord | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoFileInputRef = useRef<HTMLInputElement>(null)
 
   const basicsForm = useForm<BasicsInput>({
     resolver: zodResolver(BasicsSchema),
@@ -463,6 +470,66 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
       setServerError(error instanceof Error ? error.message : "Admin-Wechsel fehlgeschlagen.")
     } finally {
       setSavingSection(null)
+    }
+  }
+
+  function handleLogoFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setServerError("Logo darf maximal 2 MB groß sein.")
+      return
+    }
+    setLogoFile(file)
+    if (logoPreview) URL.revokeObjectURL(logoPreview)
+    setLogoPreview(URL.createObjectURL(file))
+    setServerError(null)
+  }
+
+  async function uploadLogo() {
+    if (!logoFile || !tenant) return
+    setUploadingLogo(true)
+    setServerError(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", logoFile)
+      const response = await fetch(`/api/owner/tenants/${tenantId}/logo`, {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      })
+      const payload = await extractPayload(response)
+      if (!response.ok) throw new Error(payload.error || "Logo-Upload fehlgeschlagen.")
+      setTenant((current) => current ? { ...current, logo_url: payload.logoUrl } : current)
+      setLogoFile(null)
+      if (logoPreview) URL.revokeObjectURL(logoPreview)
+      setLogoPreview(null)
+      if (logoFileInputRef.current) logoFileInputRef.current.value = ""
+      toast({ title: "Logo gespeichert", description: "Das Agentur-Logo wurde aktualisiert." })
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "Logo-Upload fehlgeschlagen.")
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
+
+  async function deleteLogo() {
+    if (!tenant?.logo_url) return
+    setUploadingLogo(true)
+    setServerError(null)
+    try {
+      const response = await fetch(`/api/owner/tenants/${tenantId}/logo`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+      const payload = await extractPayload(response)
+      if (!response.ok) throw new Error(payload.error || "Logo-Löschung fehlgeschlagen.")
+      setTenant((current) => current ? { ...current, logo_url: null } : current)
+      toast({ title: "Logo entfernt", description: "Das Agentur-Logo wurde gelöscht." })
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "Logo-Löschung fehlgeschlagen.")
+    } finally {
+      setUploadingLogo(false)
     }
   }
 
@@ -741,6 +808,106 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   </div>
                 </form>
               </Form>
+            </CardContent>
+          </Card>
+          {/* Logo-Karte */}
+          <Card className="mt-4 rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+            <CardHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-[#f5efe6] p-3 text-[#b85e34]">
+                  <ImageIcon className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-slate-900">Agentur-Logo</CardTitle>
+                  <p className="text-sm text-slate-500">
+                    Wird auf der Login-Seite dieser Subdomain angezeigt.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Aktuelles Logo */}
+              {tenant?.logo_url && !logoPreview && (
+                <div className="flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={tenant.logo_url}
+                    alt="Aktuelles Logo"
+                    className="h-14 w-auto max-w-[200px] rounded-xl border border-[#e7ddd1] object-contain p-2"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-slate-500 hover:text-red-600"
+                    disabled={uploadingLogo}
+                    onClick={deleteLogo}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Entfernen
+                  </Button>
+                </div>
+              )}
+
+              {/* Neue Datei ausgewählt */}
+              {logoPreview && (
+                <div className="flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logoPreview}
+                    alt="Logo Vorschau"
+                    className="h-14 w-auto max-w-[200px] rounded-xl border border-[#e7ddd1] object-contain p-2"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1.5 text-slate-500"
+                    onClick={() => {
+                      setLogoFile(null)
+                      if (logoPreview) URL.revokeObjectURL(logoPreview)
+                      setLogoPreview(null)
+                      if (logoFileInputRef.current) logoFileInputRef.current.value = ""
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Verwerfen
+                  </Button>
+                </div>
+              )}
+
+              {/* Upload-Fläche */}
+              {!logoPreview && (
+                <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-[#e7ddd1] px-4 py-3 text-sm text-slate-500 transition hover:border-[#b85e34]/50 hover:text-[#b85e34]"
+                >
+                  <ImageIcon className="h-4 w-4 shrink-0" />
+                  {tenant?.logo_url ? "Neues Logo hochladen" : "Logo hochladen"} · PNG, JPG, SVG · max. 2 MB
+                </button>
+              )}
+              <input
+                ref={logoFileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={handleLogoFileChange}
+              />
+
+              {logoFile && (
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    className="rounded-full bg-[#1f2937] px-5 hover:bg-[#111827]"
+                    disabled={uploadingLogo}
+                    onClick={uploadLogo}
+                  >
+                    {uploadingLogo ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Logo speichern
+                  </Button>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

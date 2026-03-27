@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { ArrowLeft, Loader2 } from "lucide-react"
+import { ArrowLeft, ImageIcon, Loader2, X } from "lucide-react"
 
 import { CreateTenantSchema, type CreateTenantInput } from "@/lib/schemas/tenant"
 import { Button } from "@/components/ui/button"
@@ -24,6 +24,9 @@ export default function NewTenantPage() {
   const router = useRouter()
   const [serverError, setServerError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
+  const [logoPreview, setLogoPreview] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const form = useForm<CreateTenantInput>({
     resolver: zodResolver(CreateTenantSchema),
@@ -35,6 +38,25 @@ export default function NewTenantPage() {
   })
 
   const slugValue = form.watch("slug")
+
+  function handleLogoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setServerError("Logo darf maximal 2 MB groß sein.")
+      return
+    }
+    setLogoFile(file)
+    setLogoPreview(URL.createObjectURL(file))
+    setServerError(null)
+  }
+
+  function removeLogo() {
+    setLogoFile(null)
+    if (logoPreview) URL.revokeObjectURL(logoPreview)
+    setLogoPreview(null)
+    if (fileInputRef.current) fileInputRef.current.value = ""
+  }
 
   async function onSubmit(data: CreateTenantInput) {
     setSubmitting(true)
@@ -50,6 +72,20 @@ export default function NewTenantPage() {
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error || "Fehler beim Erstellen der Agentur.")
+      }
+
+      const body = await res.json().catch(() => ({}))
+      const tenantId = (body.tenant as { id?: string } | undefined)?.id
+
+      // Logo hochladen falls vorhanden
+      if (logoFile && tenantId) {
+        const formData = new FormData()
+        formData.append("file", logoFile)
+        await fetch(`/api/owner/tenants/${tenantId}/logo`, {
+          method: "POST",
+          body: formData,
+        })
+        // Logo-Upload-Fehler sind non-fatal – Tenant wurde bereits erstellt
       }
 
       router.push("/owner/tenants")
@@ -154,6 +190,49 @@ export default function NewTenantPage() {
                 </FormItem>
               )}
             />
+
+            {/* Logo Upload */}
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-gray-700">
+                Logo <span className="font-normal text-gray-400">(optional)</span>
+              </p>
+              {logoPreview ? (
+                <div className="flex items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={logoPreview}
+                    alt="Logo Vorschau"
+                    className="h-12 w-auto max-w-[160px] rounded-lg border border-gray-200 object-contain p-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1.5 text-gray-500"
+                    onClick={removeLogo}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Entfernen
+                  </Button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-lg border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 transition hover:border-teal-400 hover:text-teal-600"
+                >
+                  <ImageIcon className="h-4 w-4" />
+                  PNG, JPG oder SVG · max. 2 MB
+                </button>
+              )}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/jpg,image/webp,image/svg+xml"
+                className="hidden"
+                onChange={handleLogoChange}
+              />
+            </div>
 
             <div className="flex gap-3 pt-2">
               <Button
