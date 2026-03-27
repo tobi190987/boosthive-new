@@ -1,6 +1,7 @@
 import { AuthShell } from '@/components/auth-shell'
 import { AcceptInviteForm } from '@/components/accept-invite-form'
 import { getTenantContext } from '@/lib/tenant'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 interface AcceptInvitePageProps {
   searchParams: Promise<{ token?: string }>
@@ -11,11 +12,24 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
   const tenant = await getTenantContext()
   const token = typeof params.token === 'string' && params.token.trim().length > 0 ? params.token : undefined
   const hasToken = Boolean(token)
+  let tenantLogoUrl: string | undefined
+
+  if (tenant?.id) {
+    const supabaseAdmin = createAdminClient()
+    const { data } = await supabaseAdmin
+      .from('tenants')
+      .select('logo_url')
+      .eq('id', tenant.id)
+      .maybeSingle()
+
+    tenantLogoUrl = data?.logo_url ?? undefined
+  }
 
   return (
     <AuthShell
       eyebrow="Einladung"
       title={hasToken ? 'Willkommen im Team' : 'Einladung prüfen'}
+      tenantLogoUrl={tenantLogoUrl}
       description={
         hasToken
           ? 'Lege Anzeigename und Passwort fest, um deinen Zugang zu aktivieren.'

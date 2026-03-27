@@ -88,6 +88,8 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
     }
   }, [fallbackTenantName, token])
 
+  const submitInvitation = handleSubmit(onSubmit)
+
   async function onSubmit(data: AcceptInvitationInput) {
     if (!token || !validation?.valid) {
       setServerError('Diese Einladung ist unvollständig oder bereits abgelaufen.')
@@ -194,7 +196,14 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
         </Alert>
       )}
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+      <form
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault()
+          void submitInvitation()
+        }}
+        className="space-y-5"
+      >
         <div className="space-y-2">
           <Label htmlFor="name" className="text-sm font-medium text-slate-700">
             Anzeigename
@@ -237,7 +246,10 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
         <Button
           type="submit"
           className="h-[52px] w-full rounded-[18px] bg-[#1f2937] text-white hover:bg-[#111827]"
-          disabled={isSubmitting || isValidating || !validation?.valid}
+          onClick={() => {
+            void submitInvitation()
+          }}
+          disabled={isSubmitting || isValidating}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Einladung annehmen
