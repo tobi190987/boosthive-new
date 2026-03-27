@@ -1,8 +1,8 @@
 # PROJ-6: Role-Based Access Control (RBAC)
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-03-27
 
 ## Dependencies
 - Requires: PROJ-3 (User Authentication) — Rollen werden in der Session gespeichert
@@ -86,8 +86,8 @@ _To be added by /qa_
 
 ## Deployment
 **Deployed:** 2026-03-27
-**Production URL:** https://boosthive-aoajov36r-tobis-projects-24837701.vercel.app
+**Production URL:** https://boosthive-ks4bwve4g-tobis-projects-24837701.vercel.app
 **Wildcard Domain:** https://*.boost-hive.de
 **Vercel Project:** tobis-projects-24837701/boosthive-new
-**Build:** Successful (19 app routes, Next.js 16.1.1 Turbopack)
-**DB Migration:** Pending -- `supabase/migrations/005_rbac.sql` konnte nicht automatisch gepusht werden, weil das lokale Supabase-CLI-Setup nicht mit einem Remote-Projekt verlinkt ist (`supabase link` fehlt).
+**Build:** Successful (21 app routes, Next.js 16.1.1 Turbopack)
+**DB Migration:** Applied — `005_rbac.sql` in Supabase Production ausgeführt
