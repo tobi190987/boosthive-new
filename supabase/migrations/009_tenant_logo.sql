@@ -14,7 +14,17 @@ VALUES (
 )
 ON CONFLICT (id) DO NOTHING;
 
--- Public read policy for tenant logos
-CREATE POLICY IF NOT EXISTS "Public read tenant logos"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'tenant-logos');
+-- Public read policy for tenant logos (IF NOT EXISTS workaround)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'storage'
+      AND tablename = 'objects'
+      AND policyname = 'Public read tenant logos'
+  ) THEN
+    CREATE POLICY "Public read tenant logos"
+    ON storage.objects FOR SELECT
+    USING (bucket_id = 'tenant-logos');
+  END IF;
+END $$;
