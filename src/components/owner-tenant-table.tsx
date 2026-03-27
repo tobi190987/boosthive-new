@@ -98,7 +98,12 @@ export function OwnerTenantTable({
                 <TableRow key={tenant.id} className="border-[#f0e9df] hover:bg-[#fcfaf6]">
                   <TableCell className="pl-6">
                     <div>
-                      <p className="font-medium text-slate-900">{tenant.name}</p>
+                      <Link
+                        href={`/owner/tenants/${tenant.id}`}
+                        className="font-medium text-slate-900 transition-colors hover:text-[#0d9488]"
+                      >
+                        {tenant.name}
+                      </Link>
                       <p className="text-sm text-slate-500">Tenant-ID: {tenant.id.slice(0, 8)}...</p>
                     </div>
                   </TableCell>
@@ -136,9 +141,9 @@ export function OwnerTenantTable({
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="rounded-2xl border-[#e6ddd0]">
                           <DropdownMenuItem asChild>
-                            <Link href="/owner/tenants" className="cursor-pointer">
+                            <Link href={`/owner/tenants/${tenant.id}`} className="cursor-pointer">
                               <ExternalLink className="mr-2 h-4 w-4" />
-                              Tenant-Liste oeffnen
+                              Details oeffnen
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem

@@ -1,3 +1,5 @@
+import Link from "next/link"
+
 export default function NotFoundPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-background text-foreground">
@@ -8,12 +10,12 @@ export default function NotFoundPage() {
           Diese Subdomain ist nicht registriert. Bitte überprüfe die URL oder
           kontaktiere deinen Administrator.
         </p>
-        <a
+        <Link
           href="/"
           className="inline-block mt-4 text-sm underline underline-offset-4 hover:text-primary"
         >
           Zurück zur Startseite
-        </a>
+        </Link>
       </div>
     </div>
   )

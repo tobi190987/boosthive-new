@@ -1,6 +1,6 @@
 # PROJ-13: Tenant Detail Management
 
-## Status: In Progress
+## Status: In Review
 **Created:** 2026-03-27
 **Last Updated:** 2026-03-27
 
@@ -53,107 +53,254 @@
 
 ## Tech Design (Solution Architect)
 
+### Zielbild
+
+PROJ-13 erweitert die bestehende Owner-Agenturen-Übersicht aus PROJ-8 von einer Listenansicht zu einer echten Pflegeoberfläche. Der Owner bleibt dabei immer im Owner-Kontext auf der Root-Domain. Es gibt bewusst keine Session-Impersonation und keinen Sprung in geschützte Tenant-Routen.
+
 ### Neue Seiten & Routen
 
-| Route | Typ | Beschreibung |
-|-------|-----|--------------|
-| `/owner/tenants/[id]` | Page (neu) | Detailseite für eine Agentur |
-| `GET /api/owner/tenants/[id]` | API (neu) | Alle Felder inkl. Admin-Info abrufen |
-| `PATCH /api/owner/tenants/[id]` | API (erweitern) | Basics / Billing / Kontakt / Status aktualisieren |
-| `POST /api/owner/tenants/[id]/admin` | API (neu) | Admin-Wechsel als Transaktion |
+| Route | Typ | Zweck |
+|-------|-----|-------|
+| `/owner/tenants/[id]` | Page (neu) | Detailseite für eine Agentur mit Bearbeitungsformularen |
+| `GET /api/owner/tenants/[id]` | API (neu) | Lädt Tenant-Stammdaten plus aktuellen Admin |
+| `PATCH /api/owner/tenants/[id]` | API (erweitert) | Speichert Status, Basisdaten, Rechnungsadresse oder Kontaktdaten |
+| `POST /api/owner/tenants/[id]/admin` | API (neu) | Führt den Admin-Wechsel als separaten Owner-Flow aus |
 
 ### Komponenten-Struktur
 
 ```
-TenantDetailPage (/owner/tenants/[id])
-├── TenantDetailHeader
-│   ├── Zurück-Link → /owner/tenants
-│   ├── Agentur-Name (Titel)
-│   └── Status-Badge (active / inactive)
-│
-└── Tabs (shadcn Tabs)
-    ├── Tab "Allgemein"
-    │   └── TenantBasicsForm
-    │       ├── Feld: Agentur-Name (Pflicht, min. 2 Zeichen)
-    │       ├── Feld: Subdomain-Slug (Pflicht, Format-Regex)
-    │       ├── SubdomainWarningAlert (erscheint bei Slug-Änderung)
-    │       └── Speichern-Button + Toast
-    │
-    ├── Tab "Rechnungsadresse"
-    │   └── BillingAddressForm
-    │       ├── Felder: Firmenname (Pflicht), Straße, PLZ, Stadt, Land
-    │       ├── Feld: USt-IdNr. (optional)
-    │       └── Speichern-Button + Toast
-    │
-    ├── Tab "Kontakt"
-    │   └── ContactDetailsForm
-    │       ├── Felder: Ansprechpartner, Telefon, Website (alle optional)
-    │       └── Speichern-Button + Toast
-    │
-    └── Tab "Admin"
-        ├── CurrentAdminCard (Name + E-Mail des aktuellen Admins)
-        └── AssignNewAdminForm
-            ├── E-Mail-Eingabe
-            ├── Hinweis: "Bisheriger Admin wird zu Member"
-            └── Zuweisen-Button → Einladungs-E-Mail via PROJ-4
+Owner Tenant List (/owner/tenants)
++-- Tenant table
+|   +-- Tenant name as link
+|   +-- Status action
+|   +-- Existing filters / pagination
+
+Tenant Detail Page (/owner/tenants/[id])
++-- Header
+|   +-- Back link to /owner/tenants
+|   +-- Tenant name
+|   +-- Status badge
+|   +-- Created date / tenant ID meta
+|
++-- Tabs
+|   +-- Allgemein
+|   |   +-- Name field
+|   |   +-- Subdomain field
+|   |   +-- URL change warning
+|   |   +-- Save action
+|   |
+|   +-- Rechnungsadresse
+|   |   +-- Company
+|   |   +-- Street
+|   |   +-- ZIP
+|   |   +-- City
+|   |   +-- Country
+|   |   +-- VAT ID
+|   |   +-- Save action
+|   |
+|   +-- Kontakt
+|   |   +-- Contact person
+|   |   +-- Phone
+|   |   +-- Website
+|   |   +-- Save action
+|   |
+|   +-- Admin
+|       +-- Current admin card
+|       +-- New admin email form
+|       +-- Hint that previous admin becomes member
+|       +-- Submit action
+|
++-- Toast feedback / inline validation states
 ```
 
-### Datenmodell — neue Felder in `tenants`-Tabelle
+### Datenmodell
 
-Migration `006_tenant_details.sql` — alle Spalten `nullable`, kein Breaking Change:
+Bestehende Tabellen bleiben erhalten. PROJ-13 erweitert nur die `tenants`-Tabelle um optionale Detailfelder, damit die Agentur-Stammdaten zentral gespeichert werden.
 
-**Rechnungsadresse:**
-- `billing_company` (Text, optional)
-- `billing_street` (Text, optional)
-- `billing_zip` (Text, optional)
-- `billing_city` (Text, optional)
-- `billing_country` (Text, optional)
-- `billing_vat_id` (Text, optional)
+Neue optionale Felder auf `tenants`:
+- `billing_company`
+- `billing_street`
+- `billing_zip`
+- `billing_city`
+- `billing_country`
+- `billing_vat_id`
+- `contact_person`
+- `contact_phone`
+- `contact_website`
 
-**Kontaktdaten:**
-- `contact_person` (Text, optional)
-- `contact_phone` (Text, optional)
-- `contact_website` (Text, optional)
+Zusätzlich nutzt die Detailansicht vorhandene Daten aus:
+- `tenants`: Name, Slug, Status, Erstellungsdatum
+- `tenant_members`: aktueller Admin des Tenants
+- `auth.users`: E-Mail des aktuellen Admins
 
 ### API-Design
 
 **GET `/api/owner/tenants/[id]`**
-- Alle Tenant-Felder + Admin-Info (Join auf `tenant_members` + Auth-User)
-- 404 bei unbekannter ID
+- Nutzt dieselbe Owner-Autorisierung wie die bestehende Owner-API (`requireOwner()`).
+- Liefert ein vollständiges Detailobjekt für genau einen Tenant.
+- Enthält neben den Stammdaten auch genau einen "aktuellen Admin" für die Anzeige im UI.
+- Gibt `404` zurück, wenn die Tenant-ID unbekannt ist.
 
-**PATCH `/api/owner/tenants/[id]`** — erweitert um `type`-Feld:
-- `type: "status"` → bestehender Status-Toggle
-- `type: "basics"` → Name + Slug (Unique-Check auf Slug, Format-Regex)
-- `type: "billing"` → Rechnungsadresse
-- `type: "contact"` → Kontaktdaten
-- Jeder Typ hat eigenes Zod-Schema
+**PATCH `/api/owner/tenants/[id]`**
+- Die bestehende Status-Route wird nicht ersetzt, sondern sinnvoll erweitert.
+- Der Request enthält einen kleinen Operationstyp, damit ein Endpunkt mehrere klar getrennte Formular-Speicherungen bedienen kann.
+- Unterstützte Speicherfälle:
+  - Status ändern
+  - Basisdaten ändern (Name, Slug)
+  - Rechnungsadresse ändern
+  - Kontaktdaten ändern
+- Jedes Formular bekommt eigene Validierungsregeln, damit Inline-Fehler präzise bleiben.
+- Die Slug-Prüfung nutzt dieselben Regeln wie PROJ-2: reservierte Namen, Formatregeln und Eindeutigkeit.
 
 **POST `/api/owner/tenants/[id]/admin`**
-- Input: E-Mail des neuen Admins
-- Läuft als Supabase RPC (Transaktion):
-  1. E-Mail bereits Member → Rolle zu `admin` hochstufen
-  2. E-Mail neu → Auth-User erstellen + `tenant_members` Eintrag mit `role=admin`
-  3. Bisherigen Admin → `role=member`
-  4. Einladungs-E-Mail senden
-- 409 wenn E-Mail in anderem Tenant als Admin bereits existiert
+- Bleibt absichtlich ein separater Endpunkt, weil dieser Ablauf deutlich komplexer ist als normales Formularspeichern.
+- Verantwortet genau einen fachlichen Vorgang: "Diesen Tenant einem neuen Haupt-Admin zuweisen".
+- Erwartetes Verhalten:
+  - Wenn die E-Mail bereits aktives Mitglied im Tenant ist, wird diese Person zu `admin`.
+  - Wenn die E-Mail noch kein Mitglied im Tenant ist, wird ein Benutzerzugang vorbereitet und dem Tenant als `admin` zugeordnet.
+  - Der bisherige Admin wird im selben Vorgang zu `member`.
+  - Die Einladungs-/Setup-Mail wird im Anschluss über die vorhandene Mail-Infrastruktur ausgelöst.
+
+### Admin-Wechsel als Datenfluss
+
+1. Owner öffnet den Tab "Admin" auf der Detailseite.
+2. Owner gibt die E-Mail des neuen Haupt-Admins ein.
+3. Das System prüft, ob die Person bereits im Tenant existiert oder neu angelegt werden muss.
+4. Die Rollenänderung läuft als atomarer Backend-Vorgang, damit nie zwei teilweise widersprüchliche Admin-Zustände entstehen.
+5. Nach erfolgreichem Wechsel zeigt die Oberfläche den neuen Admin sofort an.
+6. Die Mail an den neuen Admin wird über den bestehenden E-Mail-Flow versendet.
+
+### Validierung & Fehlerverhalten
+
+- Formularfehler bleiben direkt im jeweiligen Tab sichtbar.
+- Slug-Konflikte werden als `409` an das Formular zurückgegeben.
+- Reservierte Subdomains werden schon vor dem Speichern abgefangen.
+- Eine unbekannte Tenant-ID führt auf eine 404-Seite statt auf eine leere Ansicht.
+- Optionale Felder dürfen leer bleiben; nur die jeweiligen Pflichtfelder werden erzwungen.
+
+### Sicherheit
+
+- Alle Owner-Routen bleiben mit `requireOwner()` geschützt.
+- Die Detailansicht liest und schreibt ausschließlich über dedizierte Owner-APIs.
+- Es gibt keine Übernahme einer Tenant-Session und keine Nutzung von `/dashboard` im Tenant-Kontext.
+- Der Admin-Wechsel braucht einen atomaren Backend-Schritt, damit Rechtewechsel und Benutzerzuordnung konsistent bleiben.
 
 ### Tech-Entscheidungen
 
-| Entscheidung | Begründung |
+| Entscheidung | Warum das für dieses Projekt passt |
 |---|---|
-| Tabs statt separate Seiten | Alle Agentur-Daten auf einen Blick, kein unnötiges Navigieren |
-| Separate POST-Route für Admin-Wechsel | Komplexe Transaktion (2 DB-Writes + E-Mail) gehört nicht in PATCH |
-| Supabase RPC für Admin-Wechsel | Atomarität garantiert — entweder alles oder nichts |
-| `type`-Feld im PATCH-Body | Klare Trennung der Update-Operationen ohne neue Routen |
+| Detailseite unter `/owner/tenants/[id]` | Baut direkt auf PROJ-8 auf und ergänzt die bestehende Owner-Navigation statt einen neuen Bereich einzuführen |
+| Tabs statt mehrere Unterseiten | Owner können Stammdaten, Kontakt und Admin-Kontext an einem Ort pflegen |
+| Erweiterung der vorhandenen PATCH-Route | Hält die API kompakt und kompatibel mit dem bereits existierenden Status-Update |
+| Separater Endpoint für Admin-Wechsel | Trennt einfachen Formular-Content von einem risikoreicheren Rollenwechsel |
+| Atomarer Backend-Flow für Admin-Wechsel | Verhindert Zwischenzustände wie "neuer Admin gesetzt, alter Admin aber noch nicht zurückgestuft" |
+| Wiederverwendung der bestehenden Mail-Infrastruktur | Senkt Implementierungsaufwand und hält Einladungs-/Setup-Mails konsistent zu PROJ-4 und PROJ-7 |
 
 ### Abhängigkeiten
 
-Keine neuen Pakete nötig — alles bereits installiert:
-- `react-hook-form` + `zod` (Formulare & Validierung)
-- shadcn/ui: `Tabs`, `Form`, `Input`, `Alert`, `Badge`, `Card`, `Separator`, `Sonner` (alle vorhanden)
+Keine neuen Pakete erforderlich. Die bestehende Basis reicht aus:
+- `react-hook-form` und `zod` für Formulare und Inline-Validierung
+- vorhandene shadcn/ui-Bausteine für Tabs, Formulare, Hinweise, Karten und Toasts
 
 ## QA Test Results
-_To be added by /qa_
+
+**Tested:** 2026-03-27
+**App URL:** http://localhost:3000
+**Tester:** QA Engineer (AI)
+
+### Test Scope
+
+Geprueft wurden Code-Review, API-/Flow-Validierung und ein erfolgreicher Produktions-Build. Ein echter Browser-Durchlauf fuer Chrome, Firefox, Safari sowie Responsive-Checks auf 375px / 768px / 1440px konnte in dieser Session nicht ausgefuehrt werden.
+
+### Acceptance Criteria Status
+
+#### AC-1: Klick auf einen Agentur-Namen navigiert zur Detailseite
+- [x] Tenant-Namen in den Owner-Tabellen verlinken auf `/owner/tenants/[id]`.
+
+#### AC-2: Detailseite zeigt alle aktuellen Daten der Agentur
+- [x] API liefert Name, Slug, Status, Erstelldatum sowie Billing-/Kontaktfelder.
+- [x] API liefert aktuellen Admin fuer die Anzeige im UI.
+- [x] Unbekannte Tenant-IDs werden jetzt serverseitig auf eine echte 404-Seite geleitet.
+
+#### AC-3: Owner kann Agentur-Name bearbeiten
+- [x] Pflichtfeld mit Mindestlaenge ist in Frontend und Backend validiert.
+
+#### AC-4: Owner kann Subdomain-Slug bearbeiten
+- [x] Format- und Reserved-Slug-Validierung wird wiederverwendet.
+- [x] Duplicate-Slug wird serverseitig mit `409` beantwortet.
+
+#### AC-5: Warnung bei Subdomain-Aenderung
+- [x] Warnhinweis wird angezeigt, sobald der Slug vom Originalwert abweicht.
+
+#### AC-6: Rechnungsadresse speichern
+- [x] Alle geforderten Felder sind vorhanden.
+- [x] Billing-Validierung verhindert Zusatzfelder ohne Firmenname.
+
+#### AC-7: Kontaktdaten speichern
+- [x] Ansprechpartner, Telefon und Website sind vorhanden.
+- [x] Website wird server- und clientseitig validiert.
+
+#### AC-8: Neuer Admin-User kann angelegt werden
+- [x] Neuer User kann fuer unbekannte E-Mail angelegt werden.
+- [x] Rollenwechsel laeuft ueber separaten Owner-Endpoint.
+- [x] Bestehende aktive Mitglieder werden nur hochgestuft und nicht mehr durch einen unnoetigen Setup-/Recovery-Flow geschickt.
+
+#### AC-9: Bisheriger Admin bleibt erhalten und wird zu Member
+- [x] Der Rollenwechsel wird im RPC atomar als Admin-zu-Member-Umschaltung modelliert.
+
+#### AC-10: Inline-Validierung via Zod + react-hook-form
+- [x] Frontend-Formulare sind mit `react-hook-form` und Zod aufgebaut.
+- [x] API-Fehler koennen auf Feldniveau zurueck ins Formular gespielt werden.
+
+#### AC-11: Erfolgreiche Speicherungen zeigen Toast-Bestaetigung
+- [x] Globaler Toaster ist eingebunden.
+- [x] Speichern und Admin-Zuweisung triggern Toasts im UI.
+
+#### AC-12: Fehler werden als Inline-Fehler angezeigt
+- [x] API liefert `details` fuer Feldfehler.
+- [x] Slug-Konflikte und Validierungsfehler bleiben im Formular sichtbar.
+
+### Edge Cases Status
+
+#### EC-1: Subdomain bereits vergeben
+- [x] Server liefert `409` mit passender Fehlermeldung.
+
+#### EC-2: Reservierte Subdomain
+- [x] Frontend- und Backend-Validierung blockieren reservierte Slugs.
+
+#### EC-3: Neuer Admin existiert bereits in anderem Tenant
+- [x] Endpoint blockiert diesen Fall mit `409`.
+
+#### EC-4: Neuer Admin ist bereits Member dieses Tenants
+- [x] Bereits vorhandene Mitglieder werden ohne zusaetzlichen Welcome-/Recovery-Flow hochgestuft.
+
+#### EC-5: Bisheriger Admin bleibt als Member bestehen
+- [x] RPC stuft vorherige Admins auf `member` zurueck.
+
+#### EC-6: Agentur-ID existiert nicht
+- [x] Route rendert jetzt eine echte 404-Seite.
+
+#### EC-7: Inaktiver Tenant bleibt bearbeitbar
+- [x] API schreibt unabhaengig vom Tenant-Status.
+
+#### EC-8: Leere optionale Formulare
+- [x] Billing- und Kontaktfelder koennen leer gespeichert werden, solange die Pflichtlogik eingehalten wird.
+
+### Security Audit Results
+- [x] Owner-APIs sind ueber `requireOwner()` abgesichert.
+- [x] Detailansicht bleibt im Owner-Kontext und fuehrt keine Tenant-Impersonation ein.
+- [x] Slug-Validierung reduziert offensichtliche Input-Missbraeuche.
+- [ ] Nicht vollstaendig verifiziert: Rate Limiting und echte Browser-Netzwerkpruefung wurden in dieser Session nicht ausgefuehrt.
+
+### Bugs Found
+- Keine offenen funktionalen Bugs aus dem letzten QA-Lauf.
+
+### Summary
+- **Acceptance Criteria:** 12/12 bestanden
+- **Bugs Found:** 0 offen
+- **Security:** Grundlegend in Ordnung, aber ohne vollstaendigen Browser-/Rate-Limit-Test
+- **Production Ready:** YES
+- **Recommendation:** Bereit fuer den naechsten Schritt `/deploy`, sofern die Migration angewendet wurde und du noch einen echten Browser-Smoke-Test machen willst.
 
 ## Deployment
 _To be added by /deploy_

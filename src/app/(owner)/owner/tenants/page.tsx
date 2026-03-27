@@ -169,8 +169,13 @@ export default function TenantsPage() {
             <TableBody>
               {tenants.map((tenant) => (
                 <TableRow key={tenant.id} className="hover:bg-gray-50">
-                  <TableCell className="font-medium text-gray-900">
-                    {tenant.name}
+                  <TableCell>
+                    <Link
+                      href={`/owner/tenants/${tenant.id}`}
+                      className="font-medium text-gray-900 transition-colors hover:text-teal-600"
+                    >
+                      {tenant.name}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-gray-500">
                     {tenant.slug}.boost-hive.de
@@ -204,6 +209,11 @@ export default function TenantsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/owner/tenants/${tenant.id}`}>
+                            Details oeffnen
+                          </Link>
+                        </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => toggleStatus(tenant)}
                           disabled={togglingId === tenant.id}
