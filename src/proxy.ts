@@ -265,6 +265,10 @@ export async function proxy(request: NextRequest) {
 
   // ----- Root domain (no subdomain) → handle owner routes + landing page -----
   if (subdomain === null) {
+    if (isTenantProtectedPath(pathname)) {
+      return new NextResponse('Not Found', { status: 404 })
+    }
+
     // Strip any spoofed tenant headers before passing through (BUG-1 fix)
     const headers = sanitizedHeaders(request)
     const response = NextResponse.next({ request: { headers } })
