@@ -45,16 +45,3 @@ export async function createClient() {
   )
 }
 
-/**
- * Lightweight Supabase client for Middleware (Edge Runtime).
- * Does NOT use cookies — used only for tenant lookups.
- */
-export function createMiddlewareClient() {
-  // Use the base supabase-js client directly for edge-compatible tenant lookups.
-  // We import dynamically to avoid bundling issues in middleware.
-  const { createClient } = require('@supabase/supabase-js')
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
