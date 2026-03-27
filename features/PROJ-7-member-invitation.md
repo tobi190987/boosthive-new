@@ -1,6 +1,6 @@
 # PROJ-7: Member Invitation (Admin)
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-26
 
@@ -134,4 +134,12 @@ Admin-Routen gesichert via `requireTenantAdmin()` aus PROJ-6.
 - Kein echter End-to-End-Test mit Supabase/Mailtrap in dieser Session
 
 ## Deployment
-_To be added by /deploy_
+
+### Deployed: 2026-03-27
+### Commit: `3ca3450`
+### Tag: `v1.7.0-PROJ-7`
+### Production URL: `https://boost-hive.de`
+
+### Notes
+- Deploy wurde per Push auf `main` ausgeloest.
+- Die Datenbank-Migration `supabase/migrations/006_invitations.sql` muss in Supabase angewendet sein.
