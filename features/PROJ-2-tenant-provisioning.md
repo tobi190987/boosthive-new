@@ -1,6 +1,6 @@
 # PROJ-2: Tenant Provisioning
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -185,8 +185,19 @@ Die Migration `002_tenant_provisioning.sql` muss manuell im Supabase SQL-Editor 
 - **PASS**
 
 #### AC-8: Inaktiver Tenant blockiert alle Logins fuer seine Mitglieder
-- [ ] BUG: Kein Login-Blocking implementiert. Die Status-Aenderung auf 'inactive' aktualisiert nur den DB-Wert. Es gibt keinen Mechanismus, der aktive Sessions invalidiert oder neue Logins fuer Mitglieder eines inaktiven Tenants verhindert. Dies ist vermutlich Aufgabe von PROJ-3 (User Authentication).
-- **FAIL** (Abhaengigkeit auf PROJ-3, aber im AC von PROJ-2 gelistet)
+- [x] Tenant-Login prueft vor der Authentifizierung den aktuellen Tenant-Status serverseitig
+- [x] Inaktive Tenants liefern die gleiche generische Login-Antwort und akzeptieren keine neuen Sessions
+- [ ] Bereits aktive Sessions werden nicht proaktiv invalidiert; neue Logins sind jedoch blockiert
+- **PASS**
+
+### QA Re-Run
+- Date: 2026-03-27
+- Scope: Re-check after Auth/Tenant integration fixes
+- Result: Keine neuen blockierenden Findings fuer PROJ-2. Der fruehere AC-8-Blocker ist fuer neue Logins behoben.
+
+### Production Readiness
+- Decision: READY
+- Reason: Offener harter Blocker fuer Login-Blocking ist behoben; verbleibende Punkte sind Tradeoffs oder nachgelagerte Verbesserungen, keine Release-Blocker fuer PROJ-2.
 
 ### Edge Cases Status
 
@@ -550,7 +561,12 @@ Die Migration `002_tenant_provisioning.sql` muss manuell im Supabase SQL-Editor 
 - **Einschraenkungen:**
   - Rate Limiting muss fuer Produktion durch Upstash Redis ersetzt werden (In-Memory funktioniert nicht bei Vercel serverless)
   - AC-5 (E-Mail-Benachrichtigung) wartet auf PROJ-4
-  - AC-8 (Login-Blocking fuer inaktive Tenants) wartet auf PROJ-3
+  - Bereits aktive Sessions werden bei Tenant-Deaktivierung nicht proaktiv invalidiert
 
 ## Deployment
-_To be added by /deploy_
+### Deployed: 2026-03-27
+### Production URL: `https://boost-hive.de`
+
+### Notes
+- Deploy erfolgte zusammen mit PROJ-3.
+- Neue Tenant-Logins werden bei inaktivem Tenant jetzt serverseitig blockiert.

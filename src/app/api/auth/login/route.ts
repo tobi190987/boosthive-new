@@ -40,6 +40,18 @@ export async function POST(request: NextRequest) {
 
   const { email, password } = parsed.data
 
+  // 3.5 Tenant-Status pruefen: inaktive Tenants duerfen keine neuen Logins akzeptieren
+  const supabaseAdmin = createAdminClient()
+  const { data: tenant, error: tenantError } = await supabaseAdmin
+    .from('tenants')
+    .select('id, status')
+    .eq('id', tenantId)
+    .maybeSingle()
+
+  if (tenantError || !tenant || tenant.status !== 'active') {
+    return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
+  }
+
   // 4. Supabase Auth: Credentials pruefen
   const supabase = await createClient()
   const { data: authData, error: authError } =
@@ -51,7 +63,6 @@ export async function POST(request: NextRequest) {
 
   // 5. Tenant-Membership pruefen (mit Admin-Client, da RLS zu restriktiv ist
   // fuer die Mitgliedschaftspruefung eines gerade eingeloggten Users)
-  const supabaseAdmin = createAdminClient()
   const { data: membership, error: memberError } = await supabaseAdmin
     .from('tenant_members')
     .select('id, role, status')

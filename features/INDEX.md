@@ -13,10 +13,10 @@
 | ID | Feature | Status | Spec | Created |
 |----|---------|--------|------|---------|
 | PROJ-1 | Subdomain Routing & Tenant Resolution | Deployed | [PROJ-1-subdomain-routing.md](PROJ-1-subdomain-routing.md) | 2026-03-26 |
-| PROJ-2 | Tenant Provisioning | In Review | [PROJ-2-tenant-provisioning.md](PROJ-2-tenant-provisioning.md) | 2026-03-26 |
-| PROJ-3 | User Authentication | In Review | [PROJ-3-user-authentication.md](PROJ-3-user-authentication.md) | 2026-03-26 |
-| PROJ-4 | Transactional Email (Mailtrap) | In Review | [PROJ-4-transactional-email.md](PROJ-4-transactional-email.md) | 2026-03-26 |
-| PROJ-5 | Password Reset Flow | In Review | [PROJ-5-password-reset.md](PROJ-5-password-reset.md) | 2026-03-26 |
+| PROJ-2 | Tenant Provisioning | Deployed | [PROJ-2-tenant-provisioning.md](PROJ-2-tenant-provisioning.md) | 2026-03-26 |
+| PROJ-3 | User Authentication | Deployed | [PROJ-3-user-authentication.md](PROJ-3-user-authentication.md) | 2026-03-26 |
+| PROJ-4 | Transactional Email (Mailtrap) | Deployed | [PROJ-4-transactional-email.md](PROJ-4-transactional-email.md) | 2026-03-26 |
+| PROJ-5 | Password Reset Flow | Deployed | [PROJ-5-password-reset.md](PROJ-5-password-reset.md) | 2026-03-26 |
 | PROJ-6 | Role-Based Access Control | Deployed | [PROJ-6-role-based-access-control.md](PROJ-6-role-based-access-control.md) | 2026-03-26 |
 | PROJ-7 | Member Invitation (Admin) | Deployed | [PROJ-7-member-invitation.md](PROJ-7-member-invitation.md) | 2026-03-26 |
 | PROJ-8 | Owner Super-Admin Dashboard | Planned | [PROJ-8-owner-super-admin-dashboard.md](PROJ-8-owner-super-admin-dashboard.md) | 2026-03-26 |

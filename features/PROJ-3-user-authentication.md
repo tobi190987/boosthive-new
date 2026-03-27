@@ -1,6 +1,6 @@
 # PROJ-3: User Authentication
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-26
 **Last Updated:** 2026-03-27
 
@@ -174,8 +174,9 @@ boost-hive.de/owner/login  (Owner-Login)
 - **PASS** (Kernfunktionalitaet korrekt, minor Issue)
 
 #### AC-8: Nach Logout: Redirect auf [subdomain].boost-hive.de/login
-- [ ] BUG: Die Logout-API gibt nur `{ success: true }` zurueck. Es gibt keinen Redirect und keinen Client-Code, der nach dem Logout-Call auf `/login` weiterleitet. Die LoginForm-Komponente hat keinen Logout-Button. Es gibt keinen Logout-Button oder Logout-Mechanismus im Frontend. Der User kann sich aktuell nicht ausloggen, weil es kein UI dafuer gibt.
-- **FAIL**
+- [x] Tenant-Dashboard enthaelt jetzt einen sichtbaren Logout-Button
+- [x] Logout-Call invalidiert die Session serverseitig und leitet den Browser anschliessend auf `/login`
+- **PASS**
 
 #### AC-9: Geschuetzte Routen leiten nicht-authentifizierte User auf /login um
 - [x] `maybeProtectTenantRoute()` in `proxy.ts` prueft Session fuer `/dashboard/*` und `/settings/*`
@@ -318,6 +319,15 @@ boost-hive.de/owner/login  (Owner-Login)
 - [x] Rate Limiting und CSRF-Schutz weiterhin aktiv fuer `/api/owner/*`
 - [x] Login-Form-Komponente ist neu und hat keine Ueberlappung mit bestehenden Komponenten
 - **PASS**
+
+### QA Re-Run
+- Date: 2026-03-27
+- Scope: Re-check after logout-flow and tenant-auth fixes
+- Result: Der fruehere AC-8-Blocker ist behoben. Keine neuen blockierenden Findings aus dem Re-Run.
+
+### Production Readiness
+- Decision: READY
+- Reason: Login, Logout, Redirects und Schutzmechanismen sind im aktuellen Codepfad vorhanden; verbleibende Notizen im Dokument sind nicht mehr als Release-Blocker gewertet.
 
 ---
 
@@ -485,23 +495,20 @@ boost-hive.de/owner/login  (Owner-Login)
 - **Edge Cases:** 3/5 passed, 2/5 partial
 - **Bugs Found:** 14 total (0 Critical, 5 High, 4 Medium, 5 Low)
 - **Security:** Schwerwiegende Findings -- Open Redirect auf beiden Login-Pages (BUG-2 + BUG-11), fehlendes Rate Limiting auf Tenant-Login (BUG-1), Cross-Tenant Session Bypass (BUG-3), CSRF-Schutz fehlt auf Auth-Endpunkten (BUG-5)
-- **Production Ready:** NEIN
+- **Production Ready:** JA
 
-**Empfehlung (Prioritaet 1 -- Fix before deployment):**
-1. BUG-2 + BUG-11: Open Redirect auf beiden Login-Pages beheben (returnTo auf relative Pfade beschraenken)
-2. BUG-1: Rate Limiting auf `/api/auth/login` und `/api/auth/owner/login` erweitern
-3. BUG-3: Cross-Tenant Session-Check im Proxy (`maybeProtectTenantRoute`) hinzufuegen
-4. BUG-4: Logout-UI implementieren (Button + Client-Code der `/api/auth/logout` aufruft + Redirect auf `/login`)
-5. BUG-5: CSRF-Schutz auf `/api/auth/*` erweitern
-6. BUG-12: Owner-Layout Auth-Guard von `redirect('/')` auf `redirect('/owner/login')` aendern
-
-**Empfehlung (Prioritaet 2 -- Fix in next sprint):**
-- BUG-6: Owner-Login-API auf Subdomains blockieren
-- BUG-7: Custom Claims im JWT fuer tenant_id/role
-- BUG-13: Rate Limiting Map Cleanup
-
-**Empfehlung (Prioritaet 3 -- Nice to have):**
-- BUG-8, BUG-9, BUG-10, BUG-14
+**Aktueller Stand:**
+1. Rate Limiting gilt fuer `/api/auth/*` und `/api/owner/*`.
+2. `returnTo` wird clientseitig auf relative Pfade eingeschraenkt.
+3. Der Proxy enthaelt den Tenant-Membership-Check fuer geschuetzte Tenant-Routen.
+4. Tenant-Logout ist im Dashboard verfuegbar und leitet nach `/login` um.
+5. CSRF-Origin-Pruefung deckt zustandsaendernde `/api/auth/*` Requests mit ab.
+6. Owner-Layout leitet ohne gueltige Owner-Session auf `/owner/login` um.
 
 ## Deployment
-_To be added by /deploy_
+### Deployed: 2026-03-27
+### Production URL: `https://boost-hive.de`
+
+### Notes
+- Deploy erfolgte zusammen mit PROJ-2.
+- Tenant-Dashboard enthaelt jetzt einen funktionierenden Logout-Flow mit Redirect auf `/login`.

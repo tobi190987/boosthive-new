@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { requireTenantContext } from '@/lib/tenant'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { TenantLogoutButton } from '@/components/tenant-logout-button'
 
 export default async function TenantDashboardPage() {
   const tenant = await requireTenantContext()
@@ -18,6 +19,9 @@ export default async function TenantDashboardPage() {
           <p className="mt-1.5 max-w-2xl text-sm text-slate-500">
             Du befindest dich im geschützten Bereich deines Tenants.
           </p>
+        </div>
+        <div className="flex justify-start sm:justify-end">
+          <TenantLogoutButton />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
