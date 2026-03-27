@@ -3,7 +3,6 @@ import { requireTenantUser } from '@/lib/auth-guards'
 import { hasRequiredBillingDetails } from '@/lib/profile'
 import { BillingAddressSchema, ProfileUpdateSchema } from '@/lib/schemas/profile'
 import { createAdminClient } from '@/lib/supabase-admin'
-import { stripe } from '@/lib/stripe'
 
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
@@ -86,6 +85,16 @@ export async function PUT(request: NextRequest) {
 
   const input = parsed.data
   const supabaseAdmin = createAdminClient()
+  let validatedBillingAddress:
+    | {
+        billing_company: string
+        billing_street: string
+        billing_zip: string
+        billing_city: string
+        billing_country: string
+        billing_vat_id: string
+      }
+    | null = null
   const { data: existingProfile } = await supabaseAdmin
     .from('user_profiles')
     .select('avatar_url')
@@ -124,9 +133,11 @@ export async function PUT(request: NextRequest) {
       )
     }
 
+    validatedBillingAddress = billingResult.data
+
     const { error: tenantError } = await supabaseAdmin
       .from('tenants')
-      .update(billingResult.data)
+      .update(validatedBillingAddress)
       .eq('id', tenantId)
 
     if (tenantError) {
@@ -140,54 +151,66 @@ export async function PUT(request: NextRequest) {
 
   if (input.complete_onboarding) {
     if (authResult.auth.role === 'admin') {
-      const { data: tenant, error: tenantError } = await supabaseAdmin
-        .from('tenants')
-        .select(
-          'stripe_customer_id, billing_company, billing_street, billing_zip, billing_city, billing_country'
-        )
-        .eq('id', tenantId)
-        .single()
-
-      if (tenantError || !tenant) {
-        return NextResponse.json({ error: 'Tenant konnte nicht geladen werden.' }, { status: 404 })
-      }
-
-      if (!hasRequiredBillingDetails(tenant)) {
+      if (!hasRequiredBillingDetails(validatedBillingAddress)) {
         return NextResponse.json(
           { error: 'Bitte vervollstaendige zuerst die Rechnungsadresse.' },
           { status: 400 }
         )
       }
 
-      if (!tenant.stripe_customer_id) {
-        return NextResponse.json(
-          { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
-          { status: 400 }
-        )
-      }
+      if (process.env.STRIPE_SECRET_KEY) {
+        const { data: tenantStripeData, error: tenantStripeError } = await supabaseAdmin
+          .from('tenants')
+          .select('stripe_customer_id')
+          .eq('id', tenantId)
+          .maybeSingle()
 
-      let hasPaymentMethod = false
+        if (tenantStripeError) {
+          console.error(
+            '[PUT /api/tenant/profile] Stripe-Tenantdaten konnten nicht geladen werden:',
+            tenantStripeError
+          )
+          return NextResponse.json(
+            { error: 'Stripe-Status konnte nicht geprueft werden.' },
+            { status: 500 }
+          )
+        }
 
-      try {
-        const paymentMethods = await stripe.paymentMethods.list({
-          customer: tenant.stripe_customer_id,
-          type: 'card',
-          limit: 1,
-        })
-        hasPaymentMethod = paymentMethods.data.length > 0
-      } catch (stripeError) {
-        console.error('[PUT /api/tenant/profile] Stripe-Pruefung fehlgeschlagen:', stripeError)
-        return NextResponse.json(
-          { error: 'Stripe-Verbindung konnte nicht geprueft werden.' },
-          { status: 500 }
-        )
-      }
+        if (!tenantStripeData) {
+          return NextResponse.json({ error: 'Tenant konnte nicht geladen werden.' }, { status: 404 })
+        }
 
-      if (!hasPaymentMethod) {
-        return NextResponse.json(
-          { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
-          { status: 400 }
-        )
+        if (!tenantStripeData.stripe_customer_id) {
+          return NextResponse.json(
+            { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
+            { status: 400 }
+          )
+        }
+
+        let hasPaymentMethod = false
+
+        try {
+          const { stripe } = await import('@/lib/stripe')
+          const paymentMethods = await stripe.paymentMethods.list({
+            customer: tenantStripeData.stripe_customer_id,
+            type: 'card',
+            limit: 1,
+          })
+          hasPaymentMethod = paymentMethods.data.length > 0
+        } catch (stripeError) {
+          console.error('[PUT /api/tenant/profile] Stripe-Pruefung fehlgeschlagen:', stripeError)
+          return NextResponse.json(
+            { error: 'Stripe-Verbindung konnte nicht geprueft werden.' },
+            { status: 500 }
+          )
+        }
+
+        if (!hasPaymentMethod) {
+          return NextResponse.json(
+            { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
+            { status: 400 }
+          )
+        }
       }
 
       const { error: billingStatusError } = await supabaseAdmin

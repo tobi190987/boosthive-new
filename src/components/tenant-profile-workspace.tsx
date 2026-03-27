@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useForm, type FieldPath } from 'react-hook-form'
 import {
@@ -7,14 +8,24 @@ import {
   CreditCard,
   ImagePlus,
   Loader2,
+  Move,
   Trash2,
   UserRound,
+  ZoomIn,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { StripeCardForm } from '@/components/stripe-card-form'
@@ -57,8 +68,118 @@ interface ProfileFormValues {
   billing_vat_id: string
 }
 
+interface AvatarCropDraft {
+  file: File
+  previewUrl: string
+  imageWidth: number
+  imageHeight: number
+}
+
 const fieldClassName =
   'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+const AVATAR_PREVIEW_SIZE = 280
+const AVATAR_EXPORT_SIZE = 512
+const AVATAR_MIN_ZOOM = 1
+const AVATAR_MAX_ZOOM = 3
+
+function getAvatarTransform(
+  imageWidth: number,
+  imageHeight: number,
+  zoom: number,
+  xPercent: number,
+  yPercent: number,
+  viewportSize: number
+) {
+  const baseScale = Math.max(viewportSize / imageWidth, viewportSize / imageHeight)
+  const scaledWidth = imageWidth * baseScale * zoom
+  const scaledHeight = imageHeight * baseScale * zoom
+  const maxOffsetX = Math.max(0, (scaledWidth - viewportSize) / 2)
+  const maxOffsetY = Math.max(0, (scaledHeight - viewportSize) / 2)
+
+  return {
+    width: scaledWidth,
+    height: scaledHeight,
+    offsetX: (xPercent / 100) * maxOffsetX,
+    offsetY: (yPercent / 100) * maxOffsetY,
+  }
+}
+
+async function loadImageMeta(file: File) {
+  const previewUrl = URL.createObjectURL(file)
+
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new window.Image()
+      element.onload = () => resolve(element)
+      element.onerror = () => reject(new Error('Bild konnte nicht geladen werden.'))
+      element.src = previewUrl
+    })
+
+    return {
+      previewUrl,
+      imageWidth: image.naturalWidth,
+      imageHeight: image.naturalHeight,
+    }
+  } catch (error) {
+    URL.revokeObjectURL(previewUrl)
+    throw error
+  }
+}
+
+async function renderCroppedAvatar(
+  draft: AvatarCropDraft,
+  zoom: number,
+  xPercent: number,
+  yPercent: number
+) {
+  const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const element = new window.Image()
+    element.onload = () => resolve(element)
+    element.onerror = () => reject(new Error('Bild konnte nicht verarbeitet werden.'))
+    element.src = draft.previewUrl
+  })
+
+  const canvas = document.createElement('canvas')
+  canvas.width = AVATAR_EXPORT_SIZE
+  canvas.height = AVATAR_EXPORT_SIZE
+
+  const context = canvas.getContext('2d')
+  if (!context) {
+    throw new Error('Canvas-Kontext konnte nicht initialisiert werden.')
+  }
+
+  const transform = getAvatarTransform(
+    draft.imageWidth,
+    draft.imageHeight,
+    zoom,
+    xPercent,
+    yPercent,
+    AVATAR_EXPORT_SIZE
+  )
+
+  context.clearRect(0, 0, AVATAR_EXPORT_SIZE, AVATAR_EXPORT_SIZE)
+  context.imageSmoothingEnabled = true
+  context.imageSmoothingQuality = 'high'
+  context.drawImage(
+    image,
+    (AVATAR_EXPORT_SIZE - transform.width) / 2 + transform.offsetX,
+    (AVATAR_EXPORT_SIZE - transform.height) / 2 + transform.offsetY,
+    transform.width,
+    transform.height
+  )
+
+  const blob = await new Promise<Blob | null>((resolve) =>
+    canvas.toBlob((result) => resolve(result), 'image/png', 0.92)
+  )
+
+  if (!blob) {
+    throw new Error('Bild konnte nicht exportiert werden.')
+  }
+
+  return new File([blob], `${draft.file.name.replace(/\.[^.]+$/, '') || 'avatar'}.png`, {
+    type: 'image/png',
+  })
+}
 
 function formatCard(paymentMethod: BillingResponse['payment_method']) {
   if (!paymentMethod) return 'Noch keine Zahlungsmethode gespeichert'
@@ -80,6 +201,10 @@ export function TenantProfileWorkspace({
   const [billingLoading, setBillingLoading] = useState(initialData.role === 'admin')
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
+  const [avatarCropDraft, setAvatarCropDraft] = useState<AvatarCropDraft | null>(null)
+  const [avatarCropX, setAvatarCropX] = useState(0)
+  const [avatarCropY, setAvatarCropY] = useState(0)
+  const [avatarCropZoom, setAvatarCropZoom] = useState(1.2)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
@@ -134,6 +259,14 @@ export function TenantProfileWorkspace({
     void loadBilling()
   }, [initialData.role])
 
+  useEffect(() => {
+    return () => {
+      if (avatarCropDraft) {
+        URL.revokeObjectURL(avatarCropDraft.previewUrl)
+      }
+    }
+  }, [avatarCropDraft])
+
   function applyFieldErrors(details?: Record<string, string[] | undefined>) {
     if (!details) {
       return
@@ -153,9 +286,80 @@ export function TenantProfileWorkspace({
     })
   }
 
+  async function uploadAvatarFile(file: File) {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await fetch('/api/tenant/profile/avatar', {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    })
+    const payload = (await response.json().catch(() => ({}))) as {
+      avatar_url?: string | null
+      error?: string
+    }
+
+    if (!response.ok) {
+      throw new Error(payload.error ?? 'Profilbild konnte nicht hochgeladen werden.')
+    }
+
+    setAvatarUrl(payload.avatar_url ?? null)
+  }
+
   async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     if (!file) {
+      return
+    }
+
+    try {
+      setError(null)
+      setSuccess(null)
+      if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
+        throw new Error('Erlaubt sind PNG, JPG und WEBP bis 2 MB.')
+      }
+      if (file.size > 2 * 1024 * 1024) {
+        throw new Error('Das Bild darf maximal 2 MB gross sein.')
+      }
+
+      const imageMeta = await loadImageMeta(file)
+      setAvatarCropDraft({
+        file,
+        previewUrl: imageMeta.previewUrl,
+        imageWidth: imageMeta.imageWidth,
+        imageHeight: imageMeta.imageHeight,
+      })
+      setAvatarCropX(0)
+      setAvatarCropY(0)
+      setAvatarCropZoom(1.2)
+    } catch (uploadError) {
+      setError(
+        uploadError instanceof Error
+          ? uploadError.message
+          : 'Profilbild konnte nicht hochgeladen werden.'
+      )
+    } finally {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    }
+  }
+
+  function closeAvatarCropDialog() {
+    setAvatarCropDraft((current) => {
+      if (current) {
+        URL.revokeObjectURL(current.previewUrl)
+      }
+      return null
+    })
+    setAvatarCropX(0)
+    setAvatarCropY(0)
+    setAvatarCropZoom(1.2)
+  }
+
+  async function confirmAvatarCrop() {
+    if (!avatarCropDraft) {
       return
     }
 
@@ -164,25 +368,15 @@ export function TenantProfileWorkspace({
       setError(null)
       setSuccess(null)
 
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const response = await fetch('/api/tenant/profile/avatar', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      })
-      const payload = (await response.json().catch(() => ({}))) as {
-        avatar_url?: string | null
-        error?: string
-      }
-
-      if (!response.ok) {
-        throw new Error(payload.error ?? 'Profilbild konnte nicht hochgeladen werden.')
-      }
-
-      setAvatarUrl(payload.avatar_url ?? null)
+      const croppedFile = await renderCroppedAvatar(
+        avatarCropDraft,
+        avatarCropZoom,
+        avatarCropX,
+        avatarCropY
+      )
+      await uploadAvatarFile(croppedFile)
       setSuccess('Profilbild wurde aktualisiert.')
+      closeAvatarCropDialog()
     } catch (uploadError) {
       setError(
         uploadError instanceof Error
@@ -191,9 +385,6 @@ export function TenantProfileWorkspace({
       )
     } finally {
       setAvatarPending(false)
-      if (fileInputRef.current) {
-        fileInputRef.current.value = ''
-      }
     }
   }
 
@@ -282,9 +473,157 @@ export function TenantProfileWorkspace({
   const isAdmin = initialData.role === 'admin'
   const submitLabel =
     mode === 'onboarding' ? 'Onboarding abschliessen' : 'Profil speichern'
+  const avatarPreviewTransform = avatarCropDraft
+    ? getAvatarTransform(
+        avatarCropDraft.imageWidth,
+        avatarCropDraft.imageHeight,
+        avatarCropZoom,
+        avatarCropX,
+        avatarCropY,
+        AVATAR_PREVIEW_SIZE
+      )
+    : null
 
   return (
-    <div className="space-y-6">
+    <>
+      <Dialog
+        open={Boolean(avatarCropDraft)}
+        onOpenChange={(open) => {
+          if (!open) {
+            closeAvatarCropDialog()
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl rounded-[32px] border border-[#e6ddcf] bg-[#fffaf4] p-0 shadow-[0_24px_80px_rgba(68,48,24,0.22)]">
+          <DialogHeader className="px-6 pt-6">
+            <DialogTitle className="text-xl text-slate-900">Profilbild anpassen</DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-600">
+              Richte dein Bild in der runden Maske aus. Du kannst es horizontal, vertikal und per Zoom anpassen.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
+            <div className="flex justify-center">
+              <div className="relative rounded-[30px] border border-[#eadfce] bg-[radial-gradient(circle_at_top,_#fffdf9,_#f5ede1)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+                <div
+                  className="relative overflow-hidden rounded-full border-4 border-white bg-[#ede4d7] shadow-[0_16px_40px_rgba(92,63,28,0.18)]"
+                  style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
+                >
+                  {avatarCropDraft && avatarPreviewTransform && (
+                    <Image
+                      src={avatarCropDraft.previewUrl}
+                      alt="Profilbild-Vorschau"
+                      width={Math.round(avatarPreviewTransform.width)}
+                      height={Math.round(avatarPreviewTransform.height)}
+                      unoptimized
+                      className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
+                      style={{
+                        width: avatarPreviewTransform.width,
+                        height: avatarPreviewTransform.height,
+                        transform: `translate(calc(-50% + ${avatarPreviewTransform.offsetX}px), calc(-50% + ${avatarPreviewTransform.offsetY}px))`,
+                      }}
+                    />
+                  )}
+                </div>
+                <div className="pointer-events-none absolute inset-x-10 top-10 h-[280px] rounded-full ring-1 ring-black/10" />
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              <div className="rounded-[24px] border border-[#eadfce] bg-white/85 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <Move className="h-4 w-4 text-[#9c4f2c]" />
+                  Bild verschieben
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm text-slate-600">
+                      <Label htmlFor="avatar-crop-x">Links / Rechts</Label>
+                      <span>{avatarCropX}%</span>
+                    </div>
+                    <input
+                      id="avatar-crop-x"
+                      type="range"
+                      min={-100}
+                      max={100}
+                      step={1}
+                      value={avatarCropX}
+                      onChange={(event) => setAvatarCropX(Number(event.target.value))}
+                      className="h-2 w-full cursor-pointer accent-[#b85e34]"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-sm text-slate-600">
+                      <Label htmlFor="avatar-crop-y">Oben / Unten</Label>
+                      <span>{avatarCropY}%</span>
+                    </div>
+                    <input
+                      id="avatar-crop-y"
+                      type="range"
+                      min={-100}
+                      max={100}
+                      step={1}
+                      value={avatarCropY}
+                      onChange={(event) => setAvatarCropY(Number(event.target.value))}
+                      className="h-2 w-full cursor-pointer accent-[#b85e34]"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[#dceee9] bg-white/85 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
+                  <ZoomIn className="h-4 w-4 text-[#0d9488]" />
+                  Zoom
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between text-sm text-slate-600">
+                    <Label htmlFor="avatar-crop-zoom">Ausschnitt vergroessern</Label>
+                    <span>{avatarCropZoom.toFixed(1)}x</span>
+                  </div>
+                  <input
+                    id="avatar-crop-zoom"
+                    type="range"
+                    min={AVATAR_MIN_ZOOM}
+                    max={AVATAR_MAX_ZOOM}
+                    step={0.1}
+                    value={avatarCropZoom}
+                    onChange={(event) => setAvatarCropZoom(Number(event.target.value))}
+                    className="h-2 w-full cursor-pointer accent-[#0d9488]"
+                  />
+                </div>
+              </div>
+
+              <p className="text-sm leading-6 text-slate-500">
+                Der markierte runde Bereich entspricht deinem finalen Profilbild in Sidebar und Account.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="border-t border-[#eadfce] bg-white/70 px-6 py-4">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full border-[#d8d0c3] bg-white"
+              onClick={closeAvatarCropDialog}
+              disabled={avatarPending}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              onClick={() => void confirmAvatarCrop()}
+              disabled={avatarPending || !avatarCropDraft}
+            >
+              {avatarPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Zuschnitt uebernehmen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="space-y-6">
       <Card className="rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
         <CardHeader className="space-y-3">
           <div className="flex items-center gap-2">
@@ -601,6 +940,7 @@ export function TenantProfileWorkspace({
           </form>
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </>
   )
 }
