@@ -420,22 +420,44 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         throw new Error(payload.error || "Admin-Wechsel fehlgeschlagen.")
       }
 
-      setTenant((current) =>
-        current
-          ? {
-              ...current,
-              currentAdmin: payload.currentAdmin ?? {
-                email: values.email,
-                name: values.email.split("@")[0],
-              },
-            }
-          : current
-      )
+      // Tenant neu laden, damit die Users-Liste die aktualisierten Rollen zeigt
+      const refreshResponse = await fetch(`/api/owner/tenants/${tenantId}`, {
+        credentials: "include",
+      })
+      const refreshPayload = await extractPayload(refreshResponse)
+
+      if (refreshResponse.ok) {
+        const freshTenant = refreshPayload.tenant ?? refreshPayload
+        setTenant((current) =>
+          current
+            ? {
+                ...current,
+                currentAdmin: freshTenant.currentAdmin ?? payload.currentAdmin,
+                users: freshTenant.users ?? current.users,
+              }
+            : current
+        )
+      } else {
+        setTenant((current) =>
+          current
+            ? {
+                ...current,
+                currentAdmin: payload.currentAdmin ?? {
+                  email: values.email,
+                  name: values.email.split("@")[0],
+                },
+              }
+            : current
+        )
+      }
+
       adminForm.reset({ email: "" })
 
       toast({
-        title: "Neuer Admin vorbereitet",
-        description: "Die Admin-Zuweisung wurde angestossen und die Einladung wird versendet.",
+        title: payload.resent ? "Setup-Mail erneut gesendet" : "Neuer Admin vorbereitet",
+        description: payload.resent
+          ? "Eine neue Einrichtungs-E-Mail wurde an den Admin verschickt."
+          : "Die Admin-Zuweisung wurde angestossen und die Einladung wird versendet.",
       })
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Admin-Wechsel fehlgeschlagen.")
