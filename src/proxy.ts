@@ -208,8 +208,14 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const subdomain = extractSubdomain(host)
 
-  // BUG-6: Owner-API nur auf Root-Domain erlauben (nicht auf Subdomains)
-  if (subdomain !== null && pathname === '/api/auth/owner/login') {
+  // Owner-Routen und Owner-APIs sind strikt Root-Domain-only.
+  if (
+    subdomain !== null &&
+    (pathname === '/owner/login' ||
+      isOwnerProtectedPath(pathname) ||
+      pathname === '/api/auth/owner/login' ||
+      pathname.startsWith('/api/owner/'))
+  ) {
     return new NextResponse('Not Found', { status: 404 })
   }
 
