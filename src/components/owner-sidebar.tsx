@@ -97,15 +97,19 @@ export function OwnerSidebar() {
   return (
     <aside className="hidden md:flex h-screen w-[200px] flex-col border-r border-slate-100 bg-white" aria-label="Owner Navigation">
       <div className="flex h-14 items-center px-4">
-        <Link href="/owner" className="flex items-center">
-          <Image
-            src="/boosthive_dark.png"
-            alt="BoostHive"
-            width={759}
-            height={213}
-            priority
-            className="h-8 w-auto object-contain"
+        <Link href="/owner" className="flex items-center gap-2">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/favicon_dark.png"
+            alt=""
+            width={32}
+            height={32}
+            style={{ mixBlendMode: 'multiply' }}
+            className="h-8 w-8 object-contain"
           />
+          <span className="text-sm font-semibold tracking-tight">
+            <span className="text-slate-800">Boost</span><span className="text-[#0d9488]">Hive</span>
+          </span>
         </Link>
       </div>
       <NavContent />
@@ -127,27 +131,36 @@ export function OwnerMobileHeader() {
       >
         <Menu className="h-5 w-5" />
       </Button>
-      <Link href="/owner" className="flex items-center">
-        <Image
-          src="/boosthive_dark.png"
-          alt="BoostHive"
-          width={1264}
-          height={842}
-          priority
-          className="h-7 w-auto object-contain"
+      <Link href="/owner" className="flex items-center gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/favicon_dark.png"
+          alt=""
+          width={32}
+          height={32}
+          style={{ mixBlendMode: 'multiply' }}
+          className="h-8 w-8 object-contain"
         />
+        <span className="text-sm font-semibold tracking-tight">
+          <span className="text-slate-800">Boost</span><span className="text-[#0d9488]">Hive</span>
+        </span>
       </Link>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[200px] p-0 flex flex-col">
           <div className="flex h-14 items-center px-4 border-b border-slate-100">
-            <Link href="/owner" onClick={() => setOpen(false)} className="flex items-center">
-              <Image
-                src="/boosthive_dark.png"
-                alt="BoostHive"
-                width={1264}
-                height={842}
-                className="h-7 w-auto object-contain"
+            <Link href="/owner" onClick={() => setOpen(false)} className="flex items-center gap-2">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/favicon_dark.png"
+                alt=""
+                width={32}
+                height={32}
+                style={{ mixBlendMode: 'multiply' }}
+                className="h-8 w-8 object-contain"
               />
+              <span className="text-sm font-semibold tracking-tight">
+                <span className="text-slate-800">Boost</span><span className="text-[#0d9488]">Hive</span>
+              </span>
             </Link>
           </div>
           <NavContent onNavigate={() => setOpen(false)} />
