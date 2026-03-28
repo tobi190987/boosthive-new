@@ -11,15 +11,29 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
+import { toast } from "@/hooks/use-toast"
 
 type ArchivedFilter = "exclude" | "include" | "only"
 
+interface TenantSummary {
+  active: number
+  blocked: number
+  archived: number
+}
+
 export default function TenantsPage() {
   const [tenants, setTenants] = useState<OwnerTenantRecord[]>([])
+  const [summary, setSummary] = useState<TenantSummary>({
+    active: 0,
+    blocked: 0,
+    archived: 0,
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [busyTenantId, setBusyTenantId] = useState<string | null>(null)
+  const [bulkAction, setBulkAction] = useState<null | "archive" | "delete">(null)
   const [archivedFilter, setArchivedFilter] = useState<ArchivedFilter>("exclude")
+  const [selectedTenantIds, setSelectedTenantIds] = useState<string[]>([])
 
   const fetchTenants = useCallback(async () => {
     try {
@@ -35,6 +49,18 @@ export default function TenantsPage() {
       }
 
       setTenants(payload.tenants ?? [])
+      setSummary(
+        payload.summary ?? {
+          active: 0,
+          blocked: 0,
+          archived: 0,
+        }
+      )
+      setSelectedTenantIds((current) =>
+        current.filter((tenantId) =>
+          (payload.tenants ?? []).some((tenant: OwnerTenantRecord) => tenant.id === tenantId)
+        )
+      )
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Unbekannter Fehler.")
     } finally {
@@ -150,6 +176,105 @@ export default function TenantsPage() {
     }
   }
 
+  function toggleTenantSelection(tenantId: string, checked: boolean) {
+    setSelectedTenantIds((current) =>
+      checked ? Array.from(new Set([...current, tenantId])) : current.filter((id) => id !== tenantId)
+    )
+  }
+
+  function toggleVisibleSelection(checked: boolean) {
+    if (checked) {
+      setSelectedTenantIds(tenants.map((tenant) => tenant.id))
+      return
+    }
+
+    setSelectedTenantIds([])
+  }
+
+  async function archiveSelectedTenants() {
+    const tenantsToArchive = tenants.filter(
+      (tenant) => selectedTenantIds.includes(tenant.id) && !tenant.is_archived
+    )
+
+    if (tenantsToArchive.length === 0) {
+      setError("Bitte wähle mindestens eine nicht archivierte Agentur zum Archivieren aus.")
+      return
+    }
+
+    setBulkAction("archive")
+    setError(null)
+
+    const failedTenantNames: string[] = []
+
+    for (const tenant of tenantsToArchive) {
+      const response = await fetch(`/api/owner/tenants/${tenant.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ type: "archive" }),
+      })
+
+      if (!response.ok) {
+        failedTenantNames.push(tenant.name)
+      }
+    }
+
+    await fetchTenants()
+    setBulkAction(null)
+
+    if (failedTenantNames.length > 0) {
+      setError(`Einige Agenturen konnten nicht archiviert werden: ${failedTenantNames.join(", ")}.`)
+      return
+    }
+
+    setSelectedTenantIds([])
+    toast({
+      title: "Agenturen archiviert",
+      description: `${tenantsToArchive.length} Agentur${tenantsToArchive.length === 1 ? "" : "en"} archiviert.`,
+    })
+  }
+
+  async function deleteSelectedTenants() {
+    const tenantsToDelete = tenants.filter(
+      (tenant) => selectedTenantIds.includes(tenant.id) && tenant.is_archived
+    )
+
+    if (tenantsToDelete.length === 0) {
+      setError("Bitte wähle mindestens eine archivierte Agentur zum Löschen aus.")
+      return
+    }
+
+    setBulkAction("delete")
+    setError(null)
+
+    const failedTenantNames: string[] = []
+
+    for (const tenant of tenantsToDelete) {
+      const response = await fetch(`/api/owner/tenants/${tenant.id}?mode=hard`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+
+      if (!response.ok) {
+        failedTenantNames.push(tenant.name)
+      }
+    }
+
+    await fetchTenants()
+    setBulkAction(null)
+
+    if (failedTenantNames.length > 0) {
+      setError(`Einige Agenturen konnten nicht gelöscht werden: ${failedTenantNames.join(", ")}.`)
+      return
+    }
+
+    setSelectedTenantIds([])
+    toast({
+      title: "Agenturen gelöscht",
+      description: `${tenantsToDelete.length} Agentur${tenantsToDelete.length === 1 ? "" : "en"} endgültig gelöscht.`,
+    })
+  }
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -165,7 +290,7 @@ export default function TenantsPage() {
               className={archivedFilter === "exclude" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-[#e6ddd0]"}
               onClick={() => setArchivedFilter("exclude")}
             >
-              Aktivansicht
+              Nicht archiviert
             </Button>
             <Button
               type="button"
@@ -173,7 +298,7 @@ export default function TenantsPage() {
               className={archivedFilter === "include" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-[#e6ddd0]"}
               onClick={() => setArchivedFilter("include")}
             >
-              Mit Archiv
+              Alle
             </Button>
             <Button
               type="button"
@@ -181,9 +306,16 @@ export default function TenantsPage() {
               className={archivedFilter === "only" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-[#e6ddd0]"}
               onClick={() => setArchivedFilter("only")}
             >
-              Nur Archiv
+              Nur archiviert
             </Button>
           </div>
+          <p className="text-sm text-gray-500">
+            {archivedFilter === "exclude"
+              ? "Zeigt nur aktive und blockierte Agenturen. Archivierte Einträge sind ausgeblendet."
+              : archivedFilter === "include"
+                ? "Zeigt aktive, blockierte und archivierte Agenturen zusammen."
+                : "Zeigt nur Agenturen, die bereits im Archiv liegen."}
+          </p>
         </div>
 
         <Button asChild className="bg-teal-500 hover:bg-teal-600">
@@ -232,8 +364,15 @@ export default function TenantsPage() {
       ) : (
         <OwnerTenantTable
           tenants={tenants}
+          summary={summary}
+          selectedTenantIds={selectedTenantIds}
+          bulkAction={bulkAction}
           busyTenantId={busyTenantId}
           archivedFilter={archivedFilter}
+          onToggleTenantSelection={toggleTenantSelection}
+          onToggleVisibleSelection={toggleVisibleSelection}
+          onArchiveSelected={archiveSelectedTenants}
+          onDeleteSelected={deleteSelectedTenants}
           onToggleStatus={toggleStatus}
           onArchiveTenant={archiveTenant}
           onRestoreTenant={restoreTenant}

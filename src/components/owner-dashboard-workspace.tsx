@@ -96,6 +96,15 @@ export function OwnerDashboardWorkspace() {
     return `${start}-${end} von ${pagination.total}`
   }, [pagination])
 
+  const tenantSummary = useMemo(
+    () => ({
+      active: metrics.activeTenants,
+      blocked: metrics.inactiveTenants,
+      archived: tenants.filter((tenant) => tenant.is_archived).length,
+    }),
+    [metrics.activeTenants, metrics.inactiveTenants, tenants]
+  )
+
   const refreshTenantData = useCallback(async () => {
     const refreshParams = new URLSearchParams({
       status: statusFilter,
@@ -396,8 +405,15 @@ export function OwnerDashboardWorkspace() {
 
               <OwnerTenantTable
                 tenants={tenants}
+                summary={tenantSummary}
+                selectedTenantIds={[]}
+                bulkAction={null}
                 busyTenantId={togglingId ?? deletingId}
                 archivedFilter="exclude"
+                onToggleTenantSelection={() => undefined}
+                onToggleVisibleSelection={() => undefined}
+                onArchiveSelected={() => undefined}
+                onDeleteSelected={() => undefined}
                 onToggleStatus={handleToggleStatus}
                 onArchiveTenant={handleDeleteTenant}
                 onRestoreTenant={async () => undefined}

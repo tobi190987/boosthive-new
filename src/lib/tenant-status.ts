@@ -158,7 +158,7 @@ export function isBillingBlockedSubscriptionStatus(value: string | null | undefi
 export function resolveTenantStatus(source: TenantStatusSource): TenantStatusResolution {
   const baseStatus = normalizeTenantStatus(source.status)
 
-  if (source.archived_at) {
+  if (source.archived_at || baseStatus === 'archived') {
     return {
       baseStatus,
       effectiveStatus: 'archived',
@@ -295,7 +295,7 @@ export function nextOwnerToggleTenantStatus(status: string | null | undefined): 
 export function ownerToggleTenantStatusLabel(status: string | null | undefined) {
   const normalized = normalizeTenantStatus(status)
   if (normalized === 'active') return 'Pausieren'
-  if (normalized === 'inactive') return 'Fortsetzen'
+  if (normalized === 'inactive') return 'Aktivieren'
   return 'Status prüfen'
 }
 

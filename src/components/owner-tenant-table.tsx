@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import {
   Archive,
+  CirclePlay,
   CirclePause,
   ExternalLink,
   Loader2,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,8 +64,19 @@ export interface OwnerTenantRecord {
 
 interface OwnerTenantTableProps {
   tenants: OwnerTenantRecord[]
+  summary: {
+    active: number
+    blocked: number
+    archived: number
+  }
+  selectedTenantIds: string[]
+  bulkAction: 'archive' | 'delete' | null
   busyTenantId: string | null
   archivedFilter: 'exclude' | 'include' | 'only'
+  onToggleTenantSelection: (tenantId: string, checked: boolean) => void
+  onToggleVisibleSelection: (checked: boolean) => void
+  onArchiveSelected: () => Promise<void> | void
+  onDeleteSelected: () => Promise<void> | void
   onToggleStatus: (tenant: OwnerTenantRecord) => Promise<void> | void
   onArchiveTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
   onRestoreTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
@@ -80,8 +93,15 @@ function formatDate(value: string) {
 
 export function OwnerTenantTable({
   tenants,
+  summary,
+  selectedTenantIds,
+  bulkAction,
   busyTenantId,
   archivedFilter,
+  onToggleTenantSelection,
+  onToggleVisibleSelection,
+  onArchiveSelected,
+  onDeleteSelected,
   onToggleStatus,
   onArchiveTenant,
   onRestoreTenant,
@@ -91,9 +111,12 @@ export function OwnerTenantTable({
   const [archiveTenant, setArchiveTenant] = useState<OwnerTenantRecord | null>(null)
   const [restoreTenant, setRestoreTenant] = useState<OwnerTenantRecord | null>(null)
   const [deleteTenant, setDeleteTenant] = useState<OwnerTenantRecord | null>(null)
-  const activeCount = tenants.filter((tenant) => !tenant.is_archived && tenant.status === 'active').length
-  const blockedCount = tenants.filter((tenant) => !tenant.is_archived && tenant.status !== 'active').length
-  const archivedCount = tenants.filter((tenant) => tenant.is_archived).length
+  const selectedCount = selectedTenantIds.length
+  const allVisibleSelected = tenants.length > 0 && tenants.every((tenant) => selectedTenantIds.includes(tenant.id))
+  const selectedArchivedCount = tenants.filter(
+    (tenant) => selectedTenantIds.includes(tenant.id) && tenant.is_archived
+  ).length
+  const selectedNotArchivedCount = selectedCount - selectedArchivedCount
 
   if (tenants.length === 0) {
     return (
@@ -125,20 +148,72 @@ export function OwnerTenantTable({
           </div>
           <div className="flex flex-wrap gap-3">
             <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600">
-              {activeCount} aktiv
+              {summary.active} aktiv
             </div>
             <div className="rounded-full border border-[#e9ddcf] bg-[#faf5ee] px-4 py-2 text-sm text-slate-600">
-              {blockedCount} blockiert
+              {summary.blocked} blockiert
             </div>
             <div className="rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-600">
-              {archivedCount} archiviert
+              {summary.archived} archiviert
             </div>
           </div>
         </div>
 
+        {selectedCount > 0 ? (
+          <div className="flex flex-col gap-3 border-b border-[#ece2d5] bg-[#fcfaf6] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600">
+              {selectedCount} Agentur{selectedCount === 1 ? '' : 'en'} ausgewählt
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#e6ddd0]"
+                onClick={() => onToggleVisibleSelection(false)}
+              >
+                Auswahl aufheben
+              </Button>
+              <Button
+                type="button"
+                className="bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+                onClick={() => void onArchiveSelected()}
+                disabled={bulkAction !== null || selectedNotArchivedCount === 0}
+              >
+                {bulkAction === 'archive' ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Archive className="mr-2 h-4 w-4" />
+                )}
+                Ausgewählte archivieren
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#e6ddd0] text-[#9f4f2d]"
+                onClick={() => void onDeleteSelected()}
+                disabled={bulkAction !== null || selectedArchivedCount === 0}
+              >
+                {bulkAction === 'delete' ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Trash2 className="mr-2 h-4 w-4" />
+                )}
+                Ausgewählte löschen
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              <TableHead className="w-14 pl-6">
+                <Checkbox
+                  checked={allVisibleSelected}
+                  onCheckedChange={(checked) => onToggleVisibleSelection(checked === true)}
+                  aria-label="Alle sichtbaren Agenturen auswählen"
+                />
+              </TableHead>
               <TableHead className="pl-6">Tenant</TableHead>
               <TableHead>Subdomain</TableHead>
               <TableHead>Status</TableHead>
@@ -153,6 +228,13 @@ export function OwnerTenantTable({
 
               return (
                 <TableRow key={tenant.id} className="border-[#f0e9df] hover:bg-[#fcfaf6]">
+                  <TableCell className="pl-6">
+                    <Checkbox
+                      checked={selectedTenantIds.includes(tenant.id)}
+                      onCheckedChange={(checked) => onToggleTenantSelection(tenant.id, checked === true)}
+                      aria-label={`${tenant.name} auswählen`}
+                    />
+                  </TableCell>
                   <TableCell className="pl-6">
                     <div>
                       <Link
@@ -202,7 +284,11 @@ export function OwnerTenantTable({
                             onClick={() => setConfirmTenant(tenant)}
                             disabled={isPending || tenant.is_archived || !canOwnerToggleTenantStatus(tenant.status)}
                           >
-                            <CirclePause className="mr-2 h-4 w-4" />
+                            {tenant.status === 'inactive' ? (
+                              <CirclePlay className="mr-2 h-4 w-4" />
+                            ) : (
+                              <CirclePause className="mr-2 h-4 w-4" />
+                            )}
                             {ownerToggleTenantStatusLabel(tenant.status)}
                           </DropdownMenuItem>
                           {tenant.is_archived ? (
@@ -212,7 +298,7 @@ export function OwnerTenantTable({
                               disabled={isPending}
                             >
                               <RotateCcw className="mr-2 h-4 w-4" />
-                              Wiederherstellen
+                              Aktivieren
                             </DropdownMenuItem>
                           ) : (
                             <DropdownMenuItem
@@ -224,15 +310,19 @@ export function OwnerTenantTable({
                               Archivieren
                             </DropdownMenuItem>
                           )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            className="cursor-pointer text-[#9f4f2d] focus:text-[#9f4f2d]"
-                            onClick={() => setDeleteTenant(tenant)}
-                            disabled={isPending}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            {tenant.is_archived ? 'Endgültig löschen' : 'Archivieren'}
-                          </DropdownMenuItem>
+                          {tenant.is_archived ? (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="cursor-pointer text-[#9f4f2d] focus:text-[#9f4f2d]"
+                                onClick={() => setDeleteTenant(tenant)}
+                                disabled={isPending}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Endgültig löschen
+                              </DropdownMenuItem>
+                            </>
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -324,7 +414,7 @@ export function OwnerTenantTable({
         </AlertDialogTrigger>
         <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Tenant wiederherstellen?</AlertDialogTitle>
+            <AlertDialogTitle>Agentur aktivieren?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
               {restoreTenant?.name} erscheint wieder in den normalen Listen und kann danach erneut genutzt werden.
             </AlertDialogDescription>
@@ -339,7 +429,7 @@ export function OwnerTenantTable({
                 setRestoreTenant(null)
               }}
             >
-              Wiederherstellen
+              Aktivieren
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

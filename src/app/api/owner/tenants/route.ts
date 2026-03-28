@@ -135,10 +135,16 @@ export async function GET(request: NextRequest) {
       status_allows_login: resolution.allowsLogin,
       created_at: tenant.created_at as string,
       archived_at: 'archived_at' in tenant ? tenant.archived_at : null,
-      is_archived: Boolean('archived_at' in tenant && tenant.archived_at),
+      is_archived: resolution.effectiveStatus === 'archived',
       archive_reason: 'archive_reason' in tenant ? tenant.archive_reason : null,
     }
   })
+
+  const summary = {
+    active: resolvedTenants.filter((tenant) => !tenant.is_archived && tenant.status === 'active').length,
+    blocked: resolvedTenants.filter((tenant) => !tenant.is_archived && tenant.status !== 'active').length,
+    archived: resolvedTenants.filter((tenant) => tenant.is_archived).length,
+  }
 
   const archiveFilteredTenants =
     archived === 'only'
@@ -189,6 +195,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     tenants: enrichedTenants,
+    summary,
     pagination: {
       page,
       pageSize,

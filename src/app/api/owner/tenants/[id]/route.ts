@@ -43,6 +43,52 @@ function isUuid(value: string) {
   return UUID_REGEX.test(value)
 }
 
+async function updateTenantArchiveState(
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  tenantId: string,
+  values: {
+    archived_at: string | null
+    archived_by: string | null
+    archive_reason: string | null
+  }
+) {
+  let updatePayload: Record<string, string | null> = {
+    archived_at: values.archived_at,
+    archived_by: values.archived_by,
+    archive_reason: values.archive_reason,
+  }
+  const fallbackStatus = values.archived_at ? 'inactive' : 'active'
+
+  while (true) {
+    const { error } = await supabaseAdmin.from('tenants').update(updatePayload).eq('id', tenantId)
+
+    if (!error) {
+      return { error: null }
+    }
+
+    if (hasMissingTenantStatusColumnError(error, 'archived_by') && 'archived_by' in updatePayload) {
+      delete updatePayload.archived_by
+      continue
+    }
+
+    if (hasMissingTenantStatusColumnError(error, 'archive_reason') && 'archive_reason' in updatePayload) {
+      delete updatePayload.archive_reason
+      continue
+    }
+
+    if (hasMissingTenantStatusColumnError(error, 'archived_at')) {
+      const fallbackResult = await supabaseAdmin
+        .from('tenants')
+        .update({ status: fallbackStatus })
+        .eq('id', tenantId)
+
+      return { error: fallbackResult.error }
+    }
+
+    return { error }
+  }
+}
+
 function serializeTenantForOwner(tenant: Record<string, unknown>) {
   const resolution = resolveTenantStatus({
     status: typeof tenant.status === 'string' ? tenant.status : null,
@@ -61,7 +107,7 @@ function serializeTenantForOwner(tenant: Record<string, unknown>) {
     status: resolution.effectiveStatus,
     status_reason: resolution.reason,
     status_allows_login: resolution.allowsLogin,
-    is_archived: Boolean(tenant.archived_at),
+    is_archived: resolution.effectiveStatus === 'archived',
   }
 }
 
@@ -411,14 +457,11 @@ export async function PATCH(
     }
 
     const archivedAt = new Date().toISOString()
-    const { error } = await supabaseAdmin
-      .from('tenants')
-      .update({
-        archived_at: archivedAt,
-        archived_by: auth.userId,
-        archive_reason: parsed.data.archiveReason,
-      })
-      .eq('id', id)
+    const { error } = await updateTenantArchiveState(supabaseAdmin, id, {
+      archived_at: archivedAt,
+      archived_by: auth.userId,
+      archive_reason: parsed.data.archiveReason,
+    })
 
     if (error) {
       logOperationalError('owner_tenant_archive_failed', error, {
@@ -483,14 +526,11 @@ export async function PATCH(
       )
     }
 
-    const { error } = await supabaseAdmin
-      .from('tenants')
-      .update({
-        archived_at: null,
-        archived_by: null,
-        archive_reason: null,
-      })
-      .eq('id', id)
+    const { error } = await updateTenantArchiveState(supabaseAdmin, id, {
+      archived_at: null,
+      archived_by: null,
+      archive_reason: null,
+    })
 
     if (error) {
       logOperationalError('owner_tenant_restore_failed', error, {
@@ -910,13 +950,11 @@ export async function DELETE(
 
   if (mode === 'archive') {
     const archivedAt = new Date().toISOString()
-    const { error } = await supabaseAdmin
-      .from('tenants')
-      .update({
-        archived_at: archivedAt,
-        archived_by: auth.userId,
-      })
-      .eq('id', id)
+    const { error } = await updateTenantArchiveState(supabaseAdmin, id, {
+      archived_at: archivedAt,
+      archived_by: auth.userId,
+      archive_reason: null,
+    })
 
     if (error) {
       logOperationalError('owner_tenant_delete_soft_archive_failed', error, {
@@ -982,7 +1020,21 @@ export async function DELETE(
     return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
   }
 
-  if (!tenantBeforeDelete.archived_at) {
+  const isArchivedBeforeDelete =
+    resolveTenantStatus({
+      status: typeof tenantBeforeDelete.status === 'string' ? tenantBeforeDelete.status : null,
+      subscription_status:
+        typeof tenantBeforeDelete.subscription_status === 'string'
+          ? tenantBeforeDelete.subscription_status
+          : null,
+      billing_onboarding_completed_at:
+        typeof tenantBeforeDelete.billing_onboarding_completed_at === 'string'
+          ? tenantBeforeDelete.billing_onboarding_completed_at
+          : null,
+      archived_at: typeof tenantBeforeDelete.archived_at === 'string' ? tenantBeforeDelete.archived_at : null,
+    }).effectiveStatus === 'archived'
+
+  if (!isArchivedBeforeDelete) {
     return NextResponse.json(
       { error: 'Harte Löschung ist nur für bereits archivierte Tenants erlaubt.' },
       { status: 409 }
