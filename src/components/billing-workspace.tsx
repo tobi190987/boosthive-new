@@ -804,10 +804,18 @@ function ModuleCatalogCard({
   onCancel,
   onReactivate,
 }: ModuleCatalogCardProps) {
+  const [agbAccepted, setAgbAccepted] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+
   const isSubscribing = actionLoading === `module-subscribe-${mod.id}`
   const isCanceling = actionLoading === `module-cancel-${mod.id}`
   const isReactivating = actionLoading === `module-reactivate-${mod.id}`
   const isAnyActionOnThis = isSubscribing || isCanceling || isReactivating
+
+  function handleOpenChange(open: boolean) {
+    setDialogOpen(open)
+    if (!open) setAgbAccepted(false)
+  }
 
   return (
     <div className="rounded-[22px] border border-[#e6ddd0] bg-[#fffdf9] p-5 transition hover:border-[#d4c9bb]">
@@ -828,21 +836,72 @@ function ModuleCatalogCard({
         </span>
 
         {mod.status === 'not_subscribed' && (
-          <Button
-            size="sm"
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-            disabled={!hasActivePlan || isAnyActionOnThis}
-            onClick={() => void onSubscribe(mod.id)}
-          >
-            {isSubscribing ? (
-              <>
-                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                Wird gebucht...
-              </>
-            ) : (
-              'Jetzt buchen'
-            )}
-          </Button>
+          <AlertDialog open={dialogOpen} onOpenChange={handleOpenChange}>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                disabled={!hasActivePlan || isAnyActionOnThis}
+              >
+                {isSubscribing ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Wird gebucht...
+                  </>
+                ) : (
+                  'Jetzt buchen'
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-[24px]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Modul &quot;{mod.name}&quot; buchen?</AlertDialogTitle>
+                <AlertDialogDescription asChild>
+                  <div className="space-y-4">
+                    <p>
+                      Du buchst <strong>{mod.name}</strong> für{' '}
+                      <strong>{formatAmount(mod.price, mod.currency)} / 4 Wochen</strong>.
+                      Der Betrag wird anteilig zu deiner nächsten Rechnung hinzugefügt.
+                      Du erhältst eine Buchungsbestätigung per E-Mail.
+                    </p>
+                    <div className="flex items-start gap-3 rounded-2xl border border-[#e6ddd0] bg-[#fffdf9] px-4 py-3">
+                      <Checkbox
+                        id={`agb-module-${mod.id}`}
+                        checked={agbAccepted}
+                        onCheckedChange={(checked) => setAgbAccepted(checked === true)}
+                        className="mt-0.5"
+                      />
+                      <label
+                        htmlFor={`agb-module-${mod.id}`}
+                        className="text-sm leading-6 text-slate-600 cursor-pointer"
+                      >
+                        Ich habe die{' '}
+                        <a
+                          href="/agb"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[#b85e34] underline underline-offset-2 hover:text-[#9a4e2b]"
+                        >
+                          Allgemeinen Geschäftsbedingungen
+                        </a>{' '}
+                        gelesen und akzeptiere diese.
+                      </label>
+                    </div>
+                  </div>
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] disabled:opacity-50"
+                  disabled={!agbAccepted}
+                  onClick={() => { void onSubscribe(mod.id); setDialogOpen(false) }}
+                >
+                  Kostenpflichtig buchen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
         )}
 
         {mod.status === 'active' && (

@@ -60,11 +60,16 @@ export async function POST(request: NextRequest) {
 
   let stripeCustomerId = tenant.stripe_customer_id as string | null
 
+  // Fetch user email so Stripe can send invoice emails
+  const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(authResult.auth.userId)
+  const userEmail = adminUser?.email ?? undefined
+
   // Fallback: create Stripe Customer if none exists yet
   if (!stripeCustomerId) {
     try {
       const customer = await stripe.customers.create({
         name: tenant.name,
+        email: userEmail,
         metadata: {
           tenant_id: tenant.id,
           tenant_slug: tenant.slug,
@@ -89,6 +94,18 @@ export async function POST(request: NextRequest) {
         { error: 'Stripe Customer konnte nicht erstellt werden.' },
         { status: 500 }
       )
+    }
+  }
+
+  // Ensure email is set on existing customer (for invoice delivery)
+  if (stripeCustomerId && userEmail) {
+    try {
+      const existing = await stripe.customers.retrieve(stripeCustomerId)
+      if (!('deleted' in existing) && !existing.email) {
+        await stripe.customers.update(stripeCustomerId, { email: userEmail })
+      }
+    } catch {
+      // Non-fatal
     }
   }
 
