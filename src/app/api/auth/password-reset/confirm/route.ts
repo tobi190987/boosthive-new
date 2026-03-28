@@ -4,11 +4,20 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { ResetPasswordConfirmSchema } from '@/lib/schemas/auth'
 import { hashPasswordResetToken } from '@/lib/password-reset'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
+import { AUTH_RESET, checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
+import { logSecurity } from '@/lib/observability'
 
 const INVALID_TOKEN_ERROR =
   'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Reset-Link an.'
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  const rl = checkRateLimit(`auth-reset-confirm:${ip}`, AUTH_RESET)
+  if (!rl.allowed) {
+    logSecurity('rate_limit_hit', { route: 'password-reset/confirm', ip })
+    return rateLimitResponse(rl)
+  }
+
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
