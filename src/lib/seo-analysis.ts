@@ -173,47 +173,79 @@ function resolveOriginVariants(rawUrl: string) {
   return variants
 }
 
-export async function fetchPage(url: string): Promise<{ html: string } | null> {
+export async function fetchPage(url: string): Promise<{ html: string; status?: number } | { error: string; status: number } | null> {
+  const baseHeaders = {
+    'User-Agent': USER_AGENT,
+    Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+    'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Cache-Control': 'no-cache',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Sec-Fetch-User': '?1',
+    'Pragma': 'no-cache',
+  }
+
   const attempts: RequestInit[] = [
     {
-      headers: {
-        'User-Agent': USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8',
-        'Upgrade-Insecure-Requests': '1',
-      },
+      headers: baseHeaders,
       signal: AbortSignal.timeout(15_000),
       redirect: 'follow',
     },
     {
       headers: {
-        'User-Agent': USER_AGENT,
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-        'Accept-Language': 'de-DE,de;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Cache-Control': 'no-cache',
-        'Upgrade-Insecure-Requests': '1',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
+        ...baseHeaders,
+        'User-Agent':
+          'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
       },
       signal: AbortSignal.timeout(15_000),
       redirect: 'follow',
     },
   ]
 
+  let lastStatus: number | undefined
+
   for (const init of attempts) {
     try {
       const response = await fetch(url, init)
+      lastStatus = response.status
+
       if (response.ok) {
-        return { html: await response.text() }
+        return { html: await response.text(), status: response.status }
+      }
+
+      // For some blocked pages, the body still contains parseable HTML
+      const contentType = response.headers.get('content-type') ?? ''
+      if (contentType.includes('text/html')) {
+        const html = await response.text()
+        // Only use if it looks like real page content (not just an error page with minimal HTML)
+        if (html.length > 1000 && /<body/i.test(html)) {
+          return { html, status: response.status }
+        }
       }
     } catch {
       continue
     }
   }
 
+  if (lastStatus !== undefined) {
+    return { error: httpStatusLabel(lastStatus), status: lastStatus }
+  }
+
   return null
+}
+
+function httpStatusLabel(status: number): string {
+  if (status === 403) return `Zugriff verweigert (403) – die Seite blockiert automatisierte Anfragen`
+  if (status === 429) return `Zu viele Anfragen (429) – Rate Limit erreicht`
+  if (status === 404) return `Seite nicht gefunden (404)`
+  if (status === 500) return `Server-Fehler (500)`
+  if (status === 503) return `Dienst nicht verfügbar (503)`
+  if (status >= 400 && status < 500) return `HTTP ${status} – Seite nicht erreichbar`
+  if (status >= 500) return `HTTP ${status} – Server-Fehler`
+  return `HTTP ${status}`
 }
 
 export function buildPageAnalysis(url: string, html: string): SeoPageResult {

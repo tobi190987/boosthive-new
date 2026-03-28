@@ -42,9 +42,29 @@ async function analyzeInBatches(
             hasCanonical: false,
             hasOgTags: false,
             hasSchemaOrg: false,
-            issues: ['Seite nicht erreichbar'],
+            issues: ['Seite nicht erreichbar (Verbindung fehlgeschlagen)'],
             score: 0,
-            error: 'Seite nicht erreichbar',
+            error: 'Seite nicht erreichbar (Verbindung fehlgeschlagen)',
+          } satisfies SeoPageResult
+        }
+
+        if ('error' in pageResponse) {
+          return {
+            url,
+            title: '',
+            metaDescription: '',
+            h1s: [],
+            h2s: [],
+            images: { total: 0, withoutAlt: 0 },
+            wordCount: 0,
+            internalLinks: 0,
+            externalLinks: 0,
+            hasCanonical: false,
+            hasOgTags: false,
+            hasSchemaOrg: false,
+            issues: [pageResponse.error],
+            score: 0,
+            error: pageResponse.error,
           } satisfies SeoPageResult
         }
 
@@ -128,7 +148,7 @@ export async function POST(request: NextRequest) {
     const firstUrl = urlsToAnalyze[0]
     const [pages, firstHtml] = await Promise.all([
       analyzeInBatches(urlsToAnalyze, analysisId, admin, 5),
-      firstUrl ? fetchPage(firstUrl).then((result) => result?.html ?? '') : Promise.resolve(''),
+      firstUrl ? fetchPage(firstUrl).then((result) => (result && 'html' in result ? result.html : '')) : Promise.resolve(''),
     ])
 
     const technicalSeo = firstUrl ? await runTechnicalSeoCheck(firstUrl, firstHtml) : null
