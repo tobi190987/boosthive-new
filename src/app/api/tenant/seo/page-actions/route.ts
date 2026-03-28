@@ -86,8 +86,8 @@ async function generateWithClaude(input: SuggestionPayload) {
   const modelCandidates = [
     process.env.ANTHROPIC_SEO_MODEL,
     process.env.CLAUDE_MODEL,
-    'claude-sonnet-4-6',
     'claude-haiku-4-5-20251001',
+    'claude-sonnet-4-6',
   ].filter(Boolean) as string[]
   const prompt = [
     'Analysiere genau diese einzelne Seite und leite aus den konkreten Problemen individuelle Verbesserungsvorschläge ab.',
