@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/email'
+import { recordOwnerAuditLog } from '@/lib/owner-audit'
 import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { AssignTenantAdminSchema } from '@/lib/schemas/tenant'
@@ -175,6 +176,16 @@ export async function POST(
         })
       }
 
+      await recordOwnerAuditLog({
+        actorUserId: auth.userId,
+        tenantId: id,
+        targetUserId: existingUser.id,
+        eventType: 'tenant_admin_setup_resent',
+        context: {
+          email,
+        },
+      })
+
       return NextResponse.json({
         success: true,
         resent: true,
@@ -330,6 +341,17 @@ export async function POST(
     previousAdminUserId,
     email,
     createdUserId,
+  })
+  await recordOwnerAuditLog({
+    actorUserId: auth.userId,
+    tenantId: id,
+    targetUserId: newAdminUserId,
+    eventType: 'tenant_admin_reassigned',
+    context: {
+      previousAdminUserId,
+      email,
+      createdUserId,
+    },
   })
   return NextResponse.json({
     success: true,

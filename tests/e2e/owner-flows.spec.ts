@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { completeMemberOnboarding, loginAsOwner, rootUrl } from './helpers'
+import { loginAsOwner, rootUrl } from './helpers'
 import { cleanupTenant, seedTenant, type SeedResult } from './test-seed'
 
 const OWNER_SLUG = 'e2e-owner-base'
@@ -14,7 +14,10 @@ test.describe('owner flows', () => {
   let ownerSeed: SeedResult
 
   test.beforeAll(async ({ request }) => {
-    ownerSeed = await seedTenant(request, OWNER_SLUG)
+    ownerSeed = await seedTenant(request, OWNER_SLUG, {
+      billingOnboardingCompleted: true,
+      subscriptionStatus: 'active',
+    })
     await cleanupTenant(request, CREATED_SLUG)
   })
 
@@ -28,13 +31,38 @@ test.describe('owner flows', () => {
     await expect(page).toHaveURL(rootUrl('/owner/dashboard'), { timeout: 20_000 })
     await expect(page.getByText('Systemweite Tenant-Übersicht für BoostHive')).toBeVisible()
 
+    const seededRow = page.locator('tr', {
+      has: page.getByRole('link', { name: ownerSeed.tenant.name }),
+    })
+    await expect(seededRow).toBeVisible()
+    await expect(seededRow.getByText('Aktiv')).toBeVisible()
+
+    await seededRow.getByRole('button', { name: `Aktionen für ${ownerSeed.tenant.name}` }).click()
+    await page.getByRole('menuitem', { name: 'Pausieren' }).click()
+    await page.getByRole('button', { name: 'Pausieren' }).click()
+    await expect(seededRow.getByText('Pausiert')).toBeVisible()
+
+    await seededRow.getByRole('button', { name: `Aktionen für ${ownerSeed.tenant.name}` }).click()
+    await page.getByRole('menuitem', { name: 'Fortsetzen' }).click()
+    await page.getByRole('button', { name: 'Fortsetzen' }).click()
+    await expect(seededRow.getByText('Aktiv')).toBeVisible()
+
     await page.getByRole('link', { name: 'Neuer Tenant' }).click()
     await expect(page).toHaveURL(rootUrl('/owner/tenants/new'), { timeout: 20_000 })
-
-    await page.getByLabel('Agentur-Name').fill(CREATED_NAME)
-    await page.getByLabel('Subdomain-Slug').fill(CREATED_SLUG)
-    await page.getByLabel('Admin-E-Mail').fill(`admin+${CREATED_SLUG}@example.com`)
     await page.waitForLoadState('networkidle')
+
+    const agencyNameInput = page.getByLabel('Agentur-Name')
+    const slugInput = page.getByLabel('Subdomain-Slug')
+    const adminEmailInput = page.getByLabel('Admin-E-Mail')
+
+    await agencyNameInput.fill(CREATED_NAME)
+    await slugInput.fill(CREATED_SLUG)
+    await adminEmailInput.fill(`admin+${CREATED_SLUG}@example.com`)
+
+    await expect(agencyNameInput).toHaveValue(CREATED_NAME)
+    await expect(slugInput).toHaveValue(CREATED_SLUG)
+    await expect(adminEmailInput).toHaveValue(`admin+${CREATED_SLUG}@example.com`)
+
     await Promise.all([
       page.waitForResponse(
         (response) =>
@@ -49,17 +77,7 @@ test.describe('owner flows', () => {
     })
     await expect(createdRow).toBeVisible()
     await expect(createdRow.getByText(`${CREATED_SLUG}.boost-hive.de`)).toBeVisible()
-    await expect(createdRow.getByText('Aktiv')).toBeVisible()
-
-    await createdRow.getByRole('button', { name: `Aktionen für ${CREATED_NAME}` }).click()
-    await page.getByRole('menuitem', { name: 'Pausieren' }).click()
-    await page.getByRole('button', { name: 'Pausieren' }).click()
-    await expect(createdRow.getByText('Pausiert')).toBeVisible()
-
-    await createdRow.getByRole('button', { name: `Aktionen für ${CREATED_NAME}` }).click()
-    await page.getByRole('menuitem', { name: 'Fortsetzen' }).click()
-    await page.getByRole('button', { name: 'Fortsetzen' }).click()
-    await expect(createdRow.getByText('Aktiv')).toBeVisible()
+    await expect(createdRow.getByText('Setup unvollstaendig')).toBeVisible()
 
     await createdRow.getByRole('link', { name: CREATED_NAME }).click()
     await expect(page).toHaveURL(/\/owner\/tenants\/[0-9a-f-]+$/, { timeout: 20_000 })
@@ -68,8 +86,20 @@ test.describe('owner flows', () => {
     await page.getByRole('tab', { name: 'Admin' }).click()
     await expect(page.getByText('Neuen Admin zuweisen')).toBeVisible()
     await page.getByLabel('Neue Admin-E-Mail').fill(REPLACEMENT_ADMIN_EMAIL)
-    await page.getByRole('button', { name: 'Admin zuweisen' }).click()
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/owner/tenants/') &&
+          response.url().includes('/admin') &&
+          response.request().method() === 'POST'
+      ),
+      page.getByRole('button', { name: 'Admin zuweisen' }).click(),
+    ])
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes(`/api/owner/tenants/`) && response.request().method() === 'GET'
+    )
 
-    await expect(page.getByText(REPLACEMENT_ADMIN_EMAIL)).toBeVisible()
+    await expect(page.getByText(REPLACEMENT_ADMIN_EMAIL)).toBeVisible({ timeout: 15_000 })
   })
 })

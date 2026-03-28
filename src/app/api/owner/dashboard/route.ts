@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { hasMissingTenantStatusColumnError, resolveTenantStatus } from '@/lib/tenant-status'
 
 /**
  * GET /api/owner/dashboard
@@ -12,23 +13,38 @@ export async function GET() {
 
   const supabaseAdmin = createAdminClient()
 
-  const [
-    { count: totalTenants, error: totalTenantsError },
-    { count: activeTenants, error: activeTenantsError },
-    { count: inactiveTenants, error: inactiveTenantsError },
-    { data: activeMembers, error: activeMembersError },
-  ] = await Promise.all([
-    supabaseAdmin.from('tenants').select('id', { count: 'exact', head: true }),
-    supabaseAdmin.from('tenants').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-    supabaseAdmin.from('tenants').select('id', { count: 'exact', head: true }).eq('status', 'inactive'),
+  const [{ data: activeMembers, error: activeMembersError }] = await Promise.all([
     supabaseAdmin
       .from('tenant_members')
       .select('user_id')
       .eq('status', 'active'),
   ])
 
-  const error =
-    totalTenantsError || activeTenantsError || inactiveTenantsError || activeMembersError
+  let tenantsResult = await supabaseAdmin
+    .from('tenants')
+    .select('id, status, subscription_status, billing_onboarding_completed_at, archived_at')
+
+  if (hasMissingTenantStatusColumnError(tenantsResult.error, 'subscription_status')) {
+    tenantsResult = await supabaseAdmin
+      .from('tenants')
+      .select('id, status, billing_onboarding_completed_at, archived_at')
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantsResult.error, 'billing_onboarding_completed_at')) {
+    tenantsResult = await supabaseAdmin
+      .from('tenants')
+      .select('id, status, archived_at')
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantsResult.error, 'archived_at')) {
+    tenantsResult = await supabaseAdmin
+      .from('tenants')
+      .select('id, status')
+  }
+
+  const { data: tenants, error: tenantsError } = tenantsResult
+
+  const error = tenantsError || activeMembersError
 
   if (error) {
     console.error('[GET /api/owner/dashboard] Aggregationsfehler:', error)
@@ -38,6 +54,10 @@ export async function GET() {
     )
   }
 
+  const resolvedTenants = (tenants ?? []).map((tenant) => resolveTenantStatus(tenant))
+  const totalTenants = resolvedTenants.length
+  const activeTenants = resolvedTenants.filter((tenant) => tenant.effectiveStatus === 'active').length
+  const inactiveTenants = resolvedTenants.filter((tenant) => tenant.effectiveStatus !== 'active').length
   const totalUsers = new Set((activeMembers ?? []).map((member) => member.user_id)).size
 
   return NextResponse.json({

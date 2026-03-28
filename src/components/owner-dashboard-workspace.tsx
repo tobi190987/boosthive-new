@@ -16,6 +16,10 @@ import {
   OwnerTenantTable,
   type OwnerTenantRecord,
 } from '@/components/owner-tenant-table'
+import {
+  canOwnerToggleTenantStatus,
+  nextOwnerToggleTenantStatus,
+} from '@/lib/tenant-status'
 
 type StatusFilter = 'all' | 'active' | 'inactive'
 
@@ -183,7 +187,12 @@ export function OwnerDashboardWorkspace() {
   }, [page, pathname, query, refreshTenantData, router, statusFilter])
 
   async function handleToggleStatus(tenant: OwnerTenantRecord) {
-    const nextStatus = tenant.status === 'active' ? 'inactive' : 'active'
+    const nextStatus = nextOwnerToggleTenantStatus(tenant.status)
+    if (!nextStatus || !canOwnerToggleTenantStatus(tenant.status)) {
+      setError('Dieser Tenant-Status kann derzeit nicht direkt aus der Listenansicht umgeschaltet werden.')
+      return
+    }
+
     setTogglingId(tenant.id)
     setError(null)
 
@@ -290,7 +299,7 @@ export function OwnerDashboardWorkspace() {
               <Sparkles className="h-5 w-5 text-[#b85e34]" />
               <p className="mt-3 text-sm font-semibold text-slate-900">Metriken auf einen Blick</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Total, aktiv und pausiert sind direkt sichtbar und sofort scanbar.
+                Total, aktive und derzeit blockierte Agenturen bleiben schnell scanbar.
               </p>
             </CardContent>
           </Card>
@@ -308,7 +317,7 @@ export function OwnerDashboardWorkspace() {
               <Building2 className="h-5 w-5 text-[#1f2937]" />
               <p className="mt-3 text-sm font-semibold text-slate-900">Statuswechsel mit Klarheit</p>
               <p className="mt-1 text-sm leading-6 text-slate-600">
-                Fortsetzen, pausieren und löschen passiert mit bestätigtem Owner-Intent.
+                Manuelle Statuswechsel bleiben bestaetigt, richer Sperrgruende werden sauber angezeigt.
               </p>
             </CardContent>
           </Card>

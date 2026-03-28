@@ -10,6 +10,7 @@ import {
   AlertTriangle,
   ArrowLeft,
   Building2,
+  Clock3,
   Copy,
   CreditCard,
   Globe,
@@ -29,6 +30,13 @@ import {
 } from "lucide-react"
 
 import { CreateTenantSchema } from "@/lib/schemas/tenant"
+import {
+  tenantStatusBadgeClass,
+  tenantStatusDescription,
+  tenantStatusLabel,
+  tenantStatusTextClass,
+  type TenantStatus,
+} from "@/lib/tenant-status"
 import { cn } from "@/lib/utils"
 import { toast } from "@/hooks/use-toast"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
@@ -66,10 +74,30 @@ import {
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
-type TenantStatus = "active" | "inactive"
 type MemberRole = "admin" | "member"
 type MemberStatus = "active" | "inactive"
+type OwnerAuditEventType =
+  | "tenant_created"
+  | "tenant_status_updated"
+  | "tenant_basics_updated"
+  | "tenant_billing_updated"
+  | "tenant_contact_updated"
+  | "tenant_deleted"
+  | "tenant_admin_reassigned"
+  | "tenant_admin_setup_resent"
+  | "tenant_user_deleted"
+
 const BILLING_COUNTRY_OPTIONS = [{ value: "Deutschland", label: "Deutschland" }] as const
+
+type AuditValue =
+  | string
+  | number
+  | boolean
+  | null
+  | AuditValue[]
+  | {
+      [key: string]: AuditValue
+    }
 
 interface TenantUserRecord {
   memberId: string
@@ -80,6 +108,16 @@ interface TenantUserRecord {
   status: MemberStatus
   invitedAt: string | null
   joinedAt: string | null
+}
+
+interface OwnerAuditLogRecord {
+  id: string
+  actor_user_id: string | null
+  tenant_id: string | null
+  target_user_id: string | null
+  event_type: OwnerAuditEventType
+  context: AuditValue
+  created_at: string
 }
 
 interface TenantDetailRecord {
@@ -103,6 +141,7 @@ interface TenantDetailRecord {
     email?: string | null
   } | null
   users?: TenantUserRecord[]
+  auditLogs?: OwnerAuditLogRecord[]
 }
 
 const BasicsSchema = CreateTenantSchema.pick({
@@ -170,10 +209,6 @@ function formatDate(value: string) {
   })
 }
 
-function statusCopy(status: TenantStatus) {
-  return status === "active" ? "Aktiv" : "Pausiert"
-}
-
 function memberRoleCopy(role: MemberRole) {
   return role === "admin" ? "Admin" : "User"
 }
@@ -200,11 +235,117 @@ function formatDateTime(value?: string | null) {
   }).format(date)
 }
 
+function asAuditContext(value: AuditValue): Record<string, AuditValue> {
+  if (!value || Array.isArray(value) || typeof value !== "object") {
+    return {}
+  }
+
+  return value as Record<string, AuditValue>
+}
+
+function auditEventLabel(eventType: OwnerAuditEventType) {
+  switch (eventType) {
+    case "tenant_created":
+      return "Tenant angelegt"
+    case "tenant_status_updated":
+      return "Status geändert"
+    case "tenant_basics_updated":
+      return "Basisdaten aktualisiert"
+    case "tenant_billing_updated":
+      return "Rechnungsdaten aktualisiert"
+    case "tenant_contact_updated":
+      return "Kontaktdaten aktualisiert"
+    case "tenant_deleted":
+      return "Tenant gelöscht"
+    case "tenant_admin_reassigned":
+      return "Admin neu zugewiesen"
+    case "tenant_admin_setup_resent":
+      return "Admin-Setup erneut versendet"
+    case "tenant_user_deleted":
+      return "User entfernt"
+  }
+}
+
+function auditEventBadgeClass(eventType: OwnerAuditEventType) {
+  switch (eventType) {
+    case "tenant_deleted":
+      return "rounded-full bg-[#fff1ec] text-[#b85e34] hover:bg-[#fff1ec]"
+    case "tenant_admin_reassigned":
+    case "tenant_admin_setup_resent":
+      return "rounded-full bg-[#eef4ff] text-[#3457c2] hover:bg-[#eef4ff]"
+    case "tenant_created":
+    case "tenant_status_updated":
+      return "rounded-full bg-[#f5efe6] text-[#7c4b28] hover:bg-[#f5efe6]"
+    default:
+      return "rounded-full bg-[#eef7f5] text-[#0d9488] hover:bg-[#eef7f5]"
+  }
+}
+
+function formatAuditLogDescription(log: OwnerAuditLogRecord) {
+  const context = asAuditContext(log.context)
+  const status = typeof context.status === "string" ? context.status : null
+  const email = typeof context.email === "string" ? context.email : null
+  const slug = typeof context.slug === "string" ? context.slug : null
+  const name = typeof context.name === "string" ? context.name : null
+  const tenantName = typeof context.tenantName === "string" ? context.tenantName : null
+  const deletedAuthUsers = typeof context.deletedAuthUsers === "number" ? context.deletedAuthUsers : null
+  const authDeleted = typeof context.authDeleted === "boolean" ? context.authDeleted : null
+  const createdUserId = typeof context.createdUserId === "string" ? context.createdUserId : null
+  const previousAdminUserId =
+    typeof context.previousAdminUserId === "string" ? context.previousAdminUserId : null
+
+  switch (log.event_type) {
+    case "tenant_created":
+      return [name ? `Name: ${name}` : null, slug ? `Slug: ${slug}` : null, email ? `Admin: ${email}` : null]
+        .filter(Boolean)
+        .join(" • ")
+    case "tenant_status_updated":
+      return status === "active"
+        ? "Die Agentur wurde wieder aktiviert."
+        : status === "inactive"
+          ? "Die Agentur wurde pausiert."
+          : "Der Tenant-Status wurde aktualisiert."
+    case "tenant_basics_updated":
+      return [name ? `Name: ${name}` : null, slug ? `Neue Subdomain: ${slug}` : null]
+        .filter(Boolean)
+        .join(" • ")
+    case "tenant_billing_updated":
+      return "Die Rechnungsadresse oder USt-Informationen wurden angepasst."
+    case "tenant_contact_updated":
+      return "Ansprechperson, Telefonnummer oder Website wurden aktualisiert."
+    case "tenant_admin_reassigned":
+      return [
+        email ? `Neuer Admin: ${email}` : null,
+        createdUserId ? "Ein neuer Zugang wurde vorbereitet." : null,
+        previousAdminUserId ? "Der bisherige Haupt-Admin wurde zurückgestuft." : null,
+      ]
+        .filter(Boolean)
+        .join(" • ")
+    case "tenant_admin_setup_resent":
+      return email
+        ? `Die Einrichtungs-Mail wurde erneut an ${email} versendet.`
+        : "Die Einrichtungs-Mail für den Admin wurde erneut versendet."
+    case "tenant_user_deleted":
+      return authDeleted === false
+        ? "Die Tenant-Zuordnung wurde entfernt. Der Auth-Account bleibt bestehen."
+        : "Der User wurde aus Tenant und Auth entfernt."
+    case "tenant_deleted":
+      return [
+        tenantName ? `Agentur: ${tenantName}` : null,
+        deletedAuthUsers !== null ? `${deletedAuthUsers} Auth-Accounts bereinigt` : null,
+      ]
+        .filter(Boolean)
+        .join(" • ")
+    default:
+      return "Diese Owner-Aktion wurde protokolliert."
+  }
+}
+
 async function extractPayload(response: Response) {
   return response.json().catch(() => ({}))
 }
 
-const VALID_TABS = ["general", "billing", "contact", "admin", "users", "subscription"] as const
+const VALID_TABS = ["general", "billing", "contact", "admin", "users", "audit", "subscription"] as const
 
 export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   const searchParams = useSearchParams()
@@ -264,6 +405,43 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   const watchedSlug = basicsForm.watch("slug")
   const slugChanged = tenant ? watchedSlug.trim() !== tenant.slug : false
 
+  const hydrateTenant = useCallback((nextTenant: TenantDetailRecord) => {
+    setTenant(nextTenant)
+
+    basicsForm.reset({
+      name: emptyString(nextTenant.name),
+      slug: emptyString(nextTenant.slug),
+    })
+    billingForm.reset({
+      billing_company: emptyString(nextTenant.billing_company),
+      billing_street: emptyString(nextTenant.billing_street),
+      billing_zip: emptyString(nextTenant.billing_zip),
+      billing_city: emptyString(nextTenant.billing_city),
+      billing_country: emptyString(nextTenant.billing_country),
+      billing_vat_id: emptyString(nextTenant.billing_vat_id),
+    })
+    contactForm.reset({
+      contact_person: emptyString(nextTenant.contact_person),
+      contact_phone: emptyString(nextTenant.contact_phone),
+      contact_website: emptyString(nextTenant.contact_website),
+    })
+  }, [basicsForm, billingForm, contactForm])
+
+  async function refreshTenantData() {
+    const response = await fetch(`/api/owner/tenants/${tenantId}`, {
+      credentials: "include",
+    })
+    const payload = await extractPayload(response)
+
+    if (!response.ok) {
+      throw new Error(payload.error || "Tenant-Details konnten nicht geladen werden.")
+    }
+
+    const nextTenant = payload.tenant ?? payload
+    hydrateTenant(nextTenant)
+    return nextTenant as TenantDetailRecord
+  }
+
   async function copyTenantId() {
     const idToCopy = tenant?.id ?? tenantId
 
@@ -310,25 +488,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         if (!active) return
 
         const nextTenant = payload.tenant ?? payload
-        setTenant(nextTenant)
-
-        basicsForm.reset({
-          name: emptyString(nextTenant.name),
-          slug: emptyString(nextTenant.slug),
-        })
-        billingForm.reset({
-          billing_company: emptyString(nextTenant.billing_company),
-          billing_street: emptyString(nextTenant.billing_street),
-          billing_zip: emptyString(nextTenant.billing_zip),
-          billing_city: emptyString(nextTenant.billing_city),
-          billing_country: emptyString(nextTenant.billing_country),
-          billing_vat_id: emptyString(nextTenant.billing_vat_id),
-        })
-        contactForm.reset({
-          contact_person: emptyString(nextTenant.contact_person),
-          contact_phone: emptyString(nextTenant.contact_phone),
-          contact_website: emptyString(nextTenant.contact_website),
-        })
+        hydrateTenant(nextTenant)
       } catch (error) {
         if (!active) return
         setServerError(
@@ -346,7 +506,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
     return () => {
       active = false
     }
-  }, [tenantId, basicsForm, billingForm, contactForm])
+  }, [tenantId, basicsForm, billingForm, contactForm, hydrateTenant])
 
   const tenantHost = useMemo(() => {
     if (!watchedSlug) return "boost-hive.de"
@@ -416,6 +576,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               ? "Die Rechnungsadresse wurde aktualisiert."
               : "Die Kontaktdaten wurden aktualisiert.",
       })
+
+      await refreshTenantData().catch(() => undefined)
     } catch (error) {
       setServerError(error instanceof Error ? error.message : "Speichern fehlgeschlagen.")
     } finally {
@@ -454,24 +616,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         throw new Error(payload.error || "Admin-Wechsel fehlgeschlagen.")
       }
 
-      // Tenant neu laden, damit die Users-Liste die aktualisierten Rollen zeigt
-      const refreshResponse = await fetch(`/api/owner/tenants/${tenantId}`, {
-        credentials: "include",
-      })
-      const refreshPayload = await extractPayload(refreshResponse)
-
-      if (refreshResponse.ok) {
-        const freshTenant = refreshPayload.tenant ?? refreshPayload
-        setTenant((current) =>
-          current
-            ? {
-                ...current,
-                currentAdmin: freshTenant.currentAdmin ?? payload.currentAdmin,
-                users: freshTenant.users ?? current.users,
-              }
-            : current
-        )
-      } else {
+      try {
+        await refreshTenantData()
+      } catch {
         setTenant((current) =>
           current
             ? {
@@ -599,6 +746,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         }
       })
 
+      await refreshTenantData().catch(() => undefined)
+
       toast({
         title: "User gelöscht",
         description:
@@ -682,10 +831,16 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               <p
                 className={cn(
                   "mt-2 text-lg font-semibold",
-                  tenant?.status === "active" ? "text-emerald-700" : "text-[#b85e34]"
+                  tenantStatusTextClass(tenant?.status)
                 )}
               >
-                {tenant ? statusCopy(tenant.status) : "Unbekannt"}
+                {tenantStatusLabel(tenant?.status)}
+              </p>
+              <Badge className={cn("mt-2 rounded-full", tenantStatusBadgeClass(tenant?.status))}>
+                {tenantStatusLabel(tenant?.status)}
+              </Badge>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                {tenantStatusDescription(tenant?.status)}
               </p>
             </div>
             <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
@@ -778,6 +933,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           </TabsTrigger>
           <TabsTrigger value="users" className="rounded-full px-4 py-2">
             User
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="rounded-full px-4 py-2">
+            Historie
           </TabsTrigger>
           <TabsTrigger value="subscription" className="rounded-full px-4 py-2">
             Abo
@@ -1387,6 +1545,72 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   <p className="text-lg font-semibold text-slate-900">Keine User gefunden</p>
                   <p className="mt-2 text-sm leading-6 text-slate-500">
                     Für diese Agentur wurden aktuell keine zugeordneten User geladen.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="audit" className="mt-0">
+          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+            <CardHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-[#f5efe6] p-3 text-[#b85e34]">
+                  <Clock3 className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-slate-900">Owner-Historie</CardTitle>
+                  <p className="text-sm text-slate-500">
+                    Die letzten Owner-Aktionen rund um diese Agentur werden hier nachvollziehbar protokolliert.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {tenant?.auditLogs?.length ? (
+                <div className="space-y-4">
+                  {tenant.auditLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="rounded-[24px] border border-[#efe6d9] bg-[#fcfaf6] p-5"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="space-y-3">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge className={auditEventBadgeClass(log.event_type)}>
+                              {auditEventLabel(log.event_type)}
+                            </Badge>
+                            <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                              {formatDateTime(log.created_at)}
+                            </span>
+                          </div>
+                          <p className="text-sm leading-6 text-slate-700">
+                            {formatAuditLogDescription(log)}
+                          </p>
+                        </div>
+
+                        <div className="rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-slate-500 shadow-sm">
+                          <p>
+                            <span className="font-semibold text-slate-700">Actor:</span>{" "}
+                            {log.actor_user_id ?? "unbekannt"}
+                          </p>
+                          {log.target_user_id ? (
+                            <p>
+                              <span className="font-semibold text-slate-700">Target:</span>{" "}
+                              {log.target_user_id}
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
+                  <p className="text-lg font-semibold text-slate-900">Noch keine Historie vorhanden</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    Sobald Owner-Aktionen auf dieser Agentur ausgeführt werden, erscheinen sie hier chronologisch.
                   </p>
                 </div>
               )}

@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/email'
+import { recordOwnerAuditLog } from '@/lib/owner-audit'
 import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { CreateTenantSchema } from '@/lib/schemas/tenant'
 import { stripe } from '@/lib/stripe'
+import { hasMissingTenantStatusColumnError, resolveTenantStatus } from '@/lib/tenant-status'
 import crypto from 'crypto'
 
 type TenantStatusFilter = 'active' | 'inactive' | 'all'
+type TenantArchivedFilter = 'exclude' | 'include' | 'only'
 
 function parsePositiveInteger(value: string | null, fallback: number) {
   if (!value) return fallback
@@ -30,6 +33,9 @@ export async function GET(request: NextRequest) {
     statusParam === 'active' || statusParam === 'inactive' || statusParam === 'all'
       ? statusParam
       : 'all'
+  const archivedParam = searchParams.get('archived')
+  const archived: TenantArchivedFilter =
+    archivedParam === 'include' || archivedParam === 'only' ? archivedParam : 'exclude'
   const page = parsePositiveInteger(searchParams.get('page'), 1)
   const requestedPageSize = parsePositiveInteger(searchParams.get('pageSize'), 20)
   const pageSize = Math.min(requestedPageSize, 50)
@@ -37,52 +43,59 @@ export async function GET(request: NextRequest) {
   const to = from + pageSize - 1
 
   const supabaseAdmin = createAdminClient()
-
-  let countQuery = supabaseAdmin
-    .from('tenants')
-    .select('id', { count: 'exact', head: true })
-
   let dataQuery = supabaseAdmin
     .from('tenants')
-    .select('id, name, slug, status, created_at')
+    .select(
+      'id, name, slug, status, created_at, subscription_status, billing_onboarding_completed_at, archived_at, archive_reason'
+    )
     .order('created_at', { ascending: false })
-
-  if (status !== 'all') {
-    countQuery = countQuery.eq('status', status)
-    dataQuery = dataQuery.eq('status', status)
-  }
 
   if (query.length > 0) {
     const escapedQuery = query.replace(/[%_]/g, '\\$&')
     const pattern = `%${escapedQuery}%`
-    countQuery = countQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     dataQuery = dataQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
   }
 
-  const [{ count, error: countError }, { data: tenants, error }] = await Promise.all([
-    countQuery,
-    dataQuery.range(from, to),
-  ])
+  let tenantResult = await dataQuery
 
-  if (countError) {
-    logOperationalError('owner_tenant_list_count_failed', countError, {
-      ownerUserId: auth.userId,
-      query,
-      status,
-      page,
-      pageSize,
-    })
-    return NextResponse.json(
-      { error: 'Tenants konnten nicht geladen werden.' },
-      { status: 500 }
-    )
+  if (hasMissingTenantStatusColumnError(tenantResult.error, 'subscription_status')) {
+    let fallbackQuery = supabaseAdmin
+      .from('tenants')
+      .select('id, name, slug, status, created_at, billing_onboarding_completed_at')
+      .order('created_at', { ascending: false })
+
+    if (query.length > 0) {
+      const escapedQuery = query.replace(/[%_]/g, '\\$&')
+      const pattern = `%${escapedQuery}%`
+      fallbackQuery = fallbackQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    }
+
+    tenantResult = await fallbackQuery
   }
+
+  if (hasMissingTenantStatusColumnError(tenantResult.error, 'billing_onboarding_completed_at')) {
+    let fallbackQuery = supabaseAdmin
+      .from('tenants')
+      .select('id, name, slug, status, created_at')
+      .order('created_at', { ascending: false })
+
+    if (query.length > 0) {
+      const escapedQuery = query.replace(/[%_]/g, '\\$&')
+      const pattern = `%${escapedQuery}%`
+      fallbackQuery = fallbackQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    }
+
+    tenantResult = await fallbackQuery
+  }
+
+  const { data: tenants, error } = tenantResult
 
   if (error) {
     logOperationalError('owner_tenant_list_load_failed', error, {
       ownerUserId: auth.userId,
       query,
       status,
+      archived,
       page,
       pageSize,
     })
@@ -92,7 +105,39 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const tenantIds = (tenants ?? []).map((tenant) => tenant.id)
+  const resolvedTenants = (tenants ?? []).map((tenant) => {
+    const resolution = resolveTenantStatus(tenant)
+    return {
+      id: tenant.id,
+      name: tenant.name,
+      slug: tenant.slug,
+      status: resolution.effectiveStatus,
+      base_status: tenant.status,
+      status_reason: resolution.reason,
+      status_allows_login: resolution.allowsLogin,
+      created_at: tenant.created_at,
+      archived_at: 'archived_at' in tenant ? tenant.archived_at : null,
+      is_archived: Boolean('archived_at' in tenant && tenant.archived_at),
+      archive_reason: 'archive_reason' in tenant ? tenant.archive_reason : null,
+    }
+  })
+
+  const archiveFilteredTenants =
+    archived === 'only'
+      ? resolvedTenants.filter((tenant) => tenant.is_archived)
+      : archived === 'include'
+        ? resolvedTenants
+        : resolvedTenants.filter((tenant) => !tenant.is_archived)
+
+  const filteredTenants =
+    status === 'all'
+      ? archiveFilteredTenants
+      : status === 'active'
+        ? archiveFilteredTenants.filter((tenant) => tenant.status === 'active')
+        : archiveFilteredTenants.filter((tenant) => tenant.status !== 'active')
+
+  const paginatedTenants = filteredTenants.slice(from, to + 1)
+  const tenantIds = paginatedTenants.map((tenant) => tenant.id)
   let memberCountMap = new Map<string, number>()
 
   if (tenantIds.length > 0) {
@@ -119,7 +164,7 @@ export async function GET(request: NextRequest) {
     }, new Map<string, number>())
   }
 
-  const enrichedTenants = (tenants ?? []).map((tenant) => ({
+  const enrichedTenants = paginatedTenants.map((tenant) => ({
     ...tenant,
     memberCount: memberCountMap.get(tenant.id) ?? 0,
   }))
@@ -129,12 +174,13 @@ export async function GET(request: NextRequest) {
     pagination: {
       page,
       pageSize,
-      total: count ?? 0,
-      totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
+      total: filteredTenants.length,
+      totalPages: Math.max(1, Math.ceil(filteredTenants.length / pageSize)),
     },
     filters: {
       q: query,
       status,
+      archived,
     },
   })
 }
@@ -385,6 +431,18 @@ export async function POST(request: NextRequest) {
     adminEmail,
     adminUserId,
     adminUserCreated,
+  })
+  await recordOwnerAuditLog({
+    actorUserId: auth.userId,
+    tenantId: (tenant as { id?: string } | null)?.id ?? null,
+    targetUserId: adminUserId,
+    eventType: 'tenant_created',
+    context: {
+      name,
+      slug,
+      adminEmail,
+      adminUserCreated,
+    },
   })
   return NextResponse.json({ tenant }, { status: 201 })
 }

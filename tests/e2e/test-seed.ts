@@ -9,6 +9,9 @@ export interface SeedResult {
     slug: string
     name: string
   }
+  capabilities: {
+    subscriptionStatusAvailable: boolean
+  }
   users: {
     owner: {
       email: string
@@ -23,6 +26,12 @@ export interface SeedResult {
       password: string
     }
   }
+}
+
+export interface SeedTenantOptions {
+  status?: 'active' | 'inactive'
+  subscriptionStatus?: string | null
+  billingOnboardingCompleted?: boolean
 }
 
 export interface InvitationTokenResult {
@@ -54,16 +63,29 @@ export interface PasswordResetTokenResult {
   }
 }
 
-export async function seedTenant(request: APIRequestContext, slug: string) {
+export async function seedTenant(
+  request: APIRequestContext,
+  slug: string,
+  options: SeedTenantOptions = {}
+) {
   const response = await request.post(rootUrl('/api/test/e2e/seed'), {
     headers: {
       'x-e2e-token': e2eToken,
       'content-type': 'application/json',
     },
-    data: { slug },
+    data: {
+      slug,
+      status: options.status,
+      subscriptionStatus: options.subscriptionStatus,
+      billingOnboardingCompleted: options.billingOnboardingCompleted,
+    },
   })
 
-  expect(response.ok()).toBeTruthy()
+  if (!response.ok()) {
+    throw new Error(
+      `seedTenant(${slug}) fehlgeschlagen mit ${response.status()}: ${await response.text()}`
+    )
+  }
   return (await response.json()) as SeedResult
 }
 
@@ -76,7 +98,11 @@ export async function cleanupTenant(request: APIRequestContext, slug: string) {
     data: { slug },
   })
 
-  expect(response.ok()).toBeTruthy()
+  if (!response.ok()) {
+    throw new Error(
+      `cleanupTenant(${slug}) fehlgeschlagen mit ${response.status()}: ${await response.text()}`
+    )
+  }
 }
 
 export async function createInvitationToken(

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteTenantUserForOwner } from '@/lib/owner-tenant-management'
+import { recordOwnerAuditLog } from '@/lib/owner-audit'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 
@@ -41,6 +42,17 @@ export async function DELETE(
 
       return NextResponse.json({ error: 'User nicht gefunden.' }, { status: 404 })
     }
+
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      targetUserId: result.authDeleted ? null : userId,
+      eventType: 'tenant_user_deleted',
+      context: {
+        authDeleted: result.authDeleted,
+        deletedUserId: userId,
+      },
+    })
 
     return NextResponse.json({
       success: true,

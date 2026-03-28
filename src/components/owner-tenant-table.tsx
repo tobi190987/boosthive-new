@@ -38,12 +38,19 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  canOwnerToggleTenantStatus,
+  ownerToggleTenantStatusDescription,
+  ownerToggleTenantStatusLabel,
+  tenantStatusBadgeClass,
+  tenantStatusLabel,
+} from '@/lib/tenant-status'
 
 export interface OwnerTenantRecord {
   id: string
   name: string
   slug: string
-  status: 'active' | 'inactive'
+  status: string
   created_at: string
   memberCount: number
 }
@@ -74,7 +81,7 @@ export function OwnerTenantTable({
   const [confirmTenant, setConfirmTenant] = useState<OwnerTenantRecord | null>(null)
   const [deleteTenant, setDeleteTenant] = useState<OwnerTenantRecord | null>(null)
   const activeCount = tenants.filter((tenant) => tenant.status === 'active').length
-  const pausedCount = tenants.filter((tenant) => tenant.status === 'inactive').length
+  const blockedCount = tenants.filter((tenant) => tenant.status !== 'active').length
 
   if (tenants.length === 0) {
     return (
@@ -107,7 +114,7 @@ export function OwnerTenantTable({
               {activeCount} aktiv
             </div>
             <div className="rounded-full border border-[#e9ddcf] bg-[#faf5ee] px-4 py-2 text-sm text-slate-600">
-              {pausedCount} pausiert
+              {blockedCount} blockiert
             </div>
           </div>
         </div>
@@ -142,14 +149,8 @@ export function OwnerTenantTable({
                   </TableCell>
                   <TableCell className="text-slate-600">{tenant.slug}.boost-hive.de</TableCell>
                   <TableCell>
-                    <Badge
-                      className={
-                        tenant.status === 'active'
-                          ? 'rounded-full bg-[#eff8f2] text-[#166534] hover:bg-[#eff8f2]'
-                          : 'rounded-full bg-[#fff4ee] text-[#9f4f2d] hover:bg-[#fff4ee]'
-                      }
-                    >
-                      {tenant.status === 'active' ? 'Aktiv' : 'Pausiert'}
+                    <Badge className={tenantStatusBadgeClass(tenant.status)}>
+                      {tenantStatusLabel(tenant.status)}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-slate-500">{tenant.memberCount}</TableCell>
@@ -182,10 +183,10 @@ export function OwnerTenantTable({
                           <DropdownMenuItem
                             className="cursor-pointer"
                             onClick={() => setConfirmTenant(tenant)}
-                            disabled={isPending}
+                            disabled={isPending || !canOwnerToggleTenantStatus(tenant.status)}
                           >
                             <CirclePause className="mr-2 h-4 w-4" />
-                            {tenant.status === 'active' ? 'Pausieren' : 'Fortsetzen'}
+                            {ownerToggleTenantStatusLabel(tenant.status)}
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
@@ -219,12 +220,12 @@ export function OwnerTenantTable({
         <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmTenant?.status === 'active' ? 'Tenant pausieren?' : 'Tenant fortsetzen?'}
+              {confirmTenant ? `Tenant ${ownerToggleTenantStatusLabel(confirmTenant.status).toLowerCase()}?` : 'Tenant-Status aendern?'}
             </AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
-              {confirmTenant?.status === 'active'
-                ? 'Neue Logins werden blockiert. Offene Tenant-Sessions verlieren spätestens beim nächsten Request den Zugriff auf die Subdomain.'
-                : 'Der Tenant akzeptiert danach wieder neue Logins und erscheint wieder als aktiv.'}
+              {confirmTenant
+                ? ownerToggleTenantStatusDescription(confirmTenant.status)
+                : 'Diese Statusaenderung wird fuer den Tenant bestaetigt.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -237,7 +238,7 @@ export function OwnerTenantTable({
                 setConfirmTenant(null)
               }}
             >
-              {confirmTenant?.status === 'active' ? 'Pausieren' : 'Fortsetzen'}
+              {confirmTenant ? ownerToggleTenantStatusLabel(confirmTenant.status) : 'Bestaetigen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

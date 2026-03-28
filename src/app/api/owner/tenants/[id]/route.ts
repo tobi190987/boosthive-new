@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteTenantForOwner, listTenantUsers } from '@/lib/owner-tenant-management'
+import { listOwnerAuditLogsForTenant, recordOwnerAuditLog } from '@/lib/owner-audit'
 import { logAudit, logOperationalError } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -9,6 +10,7 @@ import {
   UpdateTenantContactSchema,
   UpdateTenantStatusSchema,
 } from '@/lib/schemas/tenant'
+import { hasMissingTenantStatusColumnError, resolveTenantStatus } from '@/lib/tenant-status'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -18,6 +20,8 @@ const TENANT_DETAIL_SELECT = `
   slug,
   status,
   created_at,
+  billing_onboarding_completed_at,
+  subscription_status,
   logo_url,
   billing_company,
   billing_street,
@@ -34,16 +38,36 @@ function isUuid(value: string) {
   return UUID_REGEX.test(value)
 }
 
+function serializeTenantForOwner(tenant: Record<string, unknown>) {
+  const resolution = resolveTenantStatus({
+    status: typeof tenant.status === 'string' ? tenant.status : null,
+    subscription_status:
+      typeof tenant.subscription_status === 'string' ? tenant.subscription_status : null,
+    billing_onboarding_completed_at:
+      typeof tenant.billing_onboarding_completed_at === 'string'
+        ? tenant.billing_onboarding_completed_at
+        : null,
+  })
+
+  return {
+    ...tenant,
+    base_status: tenant.status,
+    status: resolution.effectiveStatus,
+    status_reason: resolution.reason,
+    status_allows_login: resolution.allowsLogin,
+  }
+}
+
 async function getCurrentAdmin(tenantId: string) {
   const supabaseAdmin = createAdminClient()
-  const { data: adminMembership, error: adminMembershipError } = await supabaseAdmin
+  const { data: adminMemberships, error: adminMembershipError } = await supabaseAdmin
     .from('tenant_members')
     .select('user_id')
     .eq('tenant_id', tenantId)
     .eq('role', 'admin')
     .eq('status', 'active')
-    .limit(1)
-    .maybeSingle()
+    .order('joined_at', { ascending: true, nullsFirst: true })
+    .order('invited_at', { ascending: true, nullsFirst: true })
 
   if (adminMembershipError) {
     return {
@@ -52,62 +76,189 @@ async function getCurrentAdmin(tenantId: string) {
     }
   }
 
-  if (!adminMembership?.user_id) {
+  if (!adminMemberships?.length) {
     return {
       data: null,
       error: null,
     }
   }
 
-  const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
-    adminMembership.user_id
-  )
+  for (const adminMembership of adminMemberships) {
+    if (!adminMembership.user_id) {
+      continue
+    }
 
-  if (userError || !userData?.user) {
+    const { data: userData, error: userError } = await supabaseAdmin.auth.admin.getUserById(
+      adminMembership.user_id
+    )
+
+    if (userError || !userData?.user) {
+      logOperationalError('owner_tenant_detail_admin_user_missing', userError, {
+        tenantId,
+        adminUserId: adminMembership.user_id,
+      })
+      continue
+    }
+
+    const displayName =
+      (userData.user.user_metadata?.display_name as string | undefined) ??
+      (userData.user.email?.split('@')[0] ?? null)
+
     return {
-      data: null,
-      error: userError ?? new Error('Admin-User konnte nicht geladen werden.'),
+      data: {
+        id: userData.user.id,
+        name: displayName,
+        email: userData.user.email ?? null,
+      },
+      error: null,
     }
   }
 
-  const displayName =
-    (userData.user.user_metadata?.display_name as string | undefined) ??
-    (userData.user.email?.split('@')[0] ?? null)
-
   return {
-    data: {
-      id: userData.user.id,
-      name: displayName,
-      email: userData.user.email ?? null,
-    },
+    data: null,
     error: null,
   }
 }
 
 async function loadTenantDetail(tenantId: string) {
   const supabaseAdmin = createAdminClient()
-  const { data: tenant, error: tenantError } = await supabaseAdmin
+  let tenantLookup = await supabaseAdmin
     .from('tenants')
     .select(TENANT_DETAIL_SELECT)
     .eq('id', tenantId)
     .maybeSingle()
 
+  if (hasMissingTenantStatusColumnError(tenantLookup.error, 'subscription_status')) {
+    tenantLookup = await supabaseAdmin
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        created_at,
+        billing_onboarding_completed_at,
+        logo_url,
+        billing_company,
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country,
+        billing_vat_id,
+        contact_person,
+        contact_phone,
+        contact_website
+      `)
+      .eq('id', tenantId)
+      .maybeSingle()
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantLookup.error, 'billing_onboarding_completed_at')) {
+    tenantLookup = await supabaseAdmin
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        created_at,
+        logo_url,
+        billing_company,
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country,
+        billing_vat_id,
+        contact_person,
+        contact_phone,
+        contact_website
+      `)
+      .eq('id', tenantId)
+      .maybeSingle()
+  }
+
+  const { data: tenant, error: tenantError } = tenantLookup
+
   if (tenantError) {
-    return { tenant: null, currentAdmin: null, users: [], error: tenantError }
+    return { tenant: null, currentAdmin: null, users: [], auditLogs: [], error: tenantError }
   }
 
   if (!tenant) {
-    return { tenant: null, currentAdmin: null, users: [], error: null }
+    return { tenant: null, currentAdmin: null, users: [], auditLogs: [], error: null }
   }
 
   const users = await listTenantUsers(supabaseAdmin, tenantId)
   const currentAdminResult = await getCurrentAdmin(tenantId)
+  const auditLogs = await listOwnerAuditLogsForTenant(tenantId)
   return {
     tenant,
     currentAdmin: currentAdminResult.data,
     users,
+    auditLogs,
     error: currentAdminResult.error,
   }
+}
+
+async function reloadTenantRecord(
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  tenantId: string
+) {
+  let tenantLookup = await supabaseAdmin
+    .from('tenants')
+    .select(TENANT_DETAIL_SELECT)
+    .eq('id', tenantId)
+    .maybeSingle()
+
+  if (hasMissingTenantStatusColumnError(tenantLookup.error, 'subscription_status')) {
+    tenantLookup = await supabaseAdmin
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        created_at,
+        billing_onboarding_completed_at,
+        logo_url,
+        billing_company,
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country,
+        billing_vat_id,
+        contact_person,
+        contact_phone,
+        contact_website
+      `)
+      .eq('id', tenantId)
+      .maybeSingle()
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantLookup.error, 'billing_onboarding_completed_at')) {
+    tenantLookup = await supabaseAdmin
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        created_at,
+        logo_url,
+        billing_company,
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country,
+        billing_vat_id,
+        contact_person,
+        contact_phone,
+        contact_website
+      `)
+      .eq('id', tenantId)
+      .maybeSingle()
+  }
+
+  return tenantLookup
 }
 
 /**
@@ -126,7 +277,7 @@ export async function GET(
     return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
-  const { tenant, currentAdmin, users, error } = await loadTenantDetail(id)
+  const { tenant, currentAdmin, users, auditLogs, error } = await loadTenantDetail(id)
 
   if (error) {
     logOperationalError('owner_tenant_detail_load_failed', error, {
@@ -145,9 +296,10 @@ export async function GET(
 
   return NextResponse.json({
     tenant: {
-      ...tenant,
+      ...serializeTenantForOwner(tenant),
       currentAdmin,
       users,
+      auditLogs,
     },
   })
 }
@@ -191,15 +343,28 @@ export async function PATCH(
       )
     }
 
-    const { data: tenant, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('tenants')
       .update({ status: parsed.data.status })
       .eq('id', id)
-      .select(TENANT_DETAIL_SELECT)
-      .maybeSingle()
 
     if (error) {
       logOperationalError('owner_tenant_status_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        nextStatus: parsed.data.status,
+      })
+      return NextResponse.json(
+        { error: 'Tenant-Status konnte nicht aktualisiert werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    const tenant = tenantReload.data
+
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_status_reload_failed', tenantReload.error, {
         ownerUserId: auth.userId,
         tenantId: id,
         nextStatus: parsed.data.status,
@@ -228,9 +393,20 @@ export async function PATCH(
       tenantId: id,
       status: parsed.data.status,
     })
+    const serializedTenant = serializeTenantForOwner(tenant)
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_status_updated',
+      context: {
+        status: serializedTenant.status,
+        baseStatus: parsed.data.status,
+        statusReason: serializedTenant.status_reason,
+      },
+    })
     return NextResponse.json({
       tenant: {
-        ...tenant,
+        ...serializedTenant,
         currentAdmin: currentAdminResult.data,
       },
     })
@@ -276,15 +452,13 @@ export async function PATCH(
       )
     }
 
-    const { data: tenant, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('tenants')
       .update({
         name: parsed.data.name,
         slug: parsed.data.slug,
       })
       .eq('id', id)
-      .select(TENANT_DETAIL_SELECT)
-      .maybeSingle()
 
     if (error) {
       if (error.code === '23505') {
@@ -301,6 +475,22 @@ export async function PATCH(
 
       console.error(`[PATCH /api/owner/tenants/${id}] Basisdaten-Update fehlgeschlagen:`, error)
       logOperationalError('owner_tenant_basics_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        slug: parsed.data.slug,
+        name: parsed.data.name,
+      })
+      return NextResponse.json(
+        { error: 'Basisdaten konnten nicht gespeichert werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    const tenant = tenantReload.data
+
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_basics_reload_failed', tenantReload.error, {
         ownerUserId: auth.userId,
         tenantId: id,
         slug: parsed.data.slug,
@@ -330,12 +520,21 @@ export async function PATCH(
       slug: parsed.data.slug,
       name: parsed.data.name,
     })
-    return NextResponse.json({
-      tenant: {
-        ...tenant,
-        currentAdmin: currentAdminResult.data,
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_basics_updated',
+      context: {
+        name: parsed.data.name,
+        slug: parsed.data.slug,
       },
     })
+      return NextResponse.json({
+        tenant: {
+          ...serializeTenantForOwner(tenant),
+          currentAdmin: currentAdminResult.data,
+        },
+      })
   }
 
   if (operationType === 'billing') {
@@ -348,15 +547,27 @@ export async function PATCH(
     }
 
     const { type: _type, ...billingValues } = parsed.data
-    const { data: tenant, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('tenants')
       .update(billingValues)
       .eq('id', id)
-      .select(TENANT_DETAIL_SELECT)
-      .maybeSingle()
 
     if (error) {
       logOperationalError('owner_tenant_billing_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Rechnungsadresse konnte nicht gespeichert werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    const tenant = tenantReload.data
+
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_billing_reload_failed', tenantReload.error, {
         ownerUserId: auth.userId,
         tenantId: id,
       })
@@ -382,12 +593,18 @@ export async function PATCH(
       ownerUserId: auth.userId,
       tenantId: id,
     })
-    return NextResponse.json({
-      tenant: {
-        ...tenant,
-        currentAdmin: currentAdminResult.data,
-      },
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_billing_updated',
+      context: billingValues,
     })
+      return NextResponse.json({
+        tenant: {
+          ...serializeTenantForOwner(tenant),
+          currentAdmin: currentAdminResult.data,
+        },
+      })
   }
 
   if (operationType === 'contact') {
@@ -400,15 +617,27 @@ export async function PATCH(
     }
 
     const { type: _type, ...contactValues } = parsed.data
-    const { data: tenant, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('tenants')
       .update(contactValues)
       .eq('id', id)
-      .select(TENANT_DETAIL_SELECT)
-      .maybeSingle()
 
     if (error) {
       logOperationalError('owner_tenant_contact_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Kontaktdaten konnten nicht gespeichert werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    const tenant = tenantReload.data
+
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_contact_reload_failed', tenantReload.error, {
         ownerUserId: auth.userId,
         tenantId: id,
       })
@@ -434,12 +663,18 @@ export async function PATCH(
       ownerUserId: auth.userId,
       tenantId: id,
     })
-    return NextResponse.json({
-      tenant: {
-        ...tenant,
-        currentAdmin: currentAdminResult.data,
-      },
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_contact_updated',
+      context: contactValues,
     })
+      return NextResponse.json({
+        tenant: {
+          ...serializeTenantForOwner(tenant),
+          currentAdmin: currentAdminResult.data,
+        },
+      })
   }
 
   return NextResponse.json({ error: 'Unbekannter Update-Typ.' }, { status: 400 })
@@ -482,6 +717,16 @@ export async function DELETE(
       tenantId: id,
       deletedAuthUsers: result.deletedAuthUsers,
       cleanupErrors: result.cleanupErrors.length,
+    })
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_deleted',
+      context: {
+        tenantName: result.tenant.name,
+        deletedAuthUsers: result.deletedAuthUsers,
+        cleanupErrors: result.cleanupErrors.length,
+      },
     })
     return NextResponse.json({
       success: true,
