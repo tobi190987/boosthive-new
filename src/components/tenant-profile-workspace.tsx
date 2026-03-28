@@ -1046,230 +1046,6 @@ export function TenantProfileWorkspace({
               </div>
             </section>
 
-            {mode !== 'onboarding' && (
-              <>
-                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-                  <div className="space-y-2">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Login-E-Mail
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                      Diese Adresse verwendest du für den Login in deinen Workspace.
-                    </p>
-                  </div>
-                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
-                    <form
-                      className="grid gap-4 md:grid-cols-2"
-                      onSubmit={emailForm.handleSubmit(onSubmitEmail)}
-                    >
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="email">Neue E-Mail-Adresse</Label>
-                        <Input
-                          id="email"
-                          type="email"
-                          autoComplete="email"
-                          className={fieldClassName}
-                          disabled={emailForm.formState.isSubmitting}
-                          {...emailForm.register('email')}
-                        />
-                        {emailForm.formState.errors.email && (
-                          <p className="text-sm text-destructive">
-                            {emailForm.formState.errors.email.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="current_email_password">Aktuelles Passwort</Label>
-                        <div className="relative">
-                          <Input
-                            id="current_email_password"
-                            type={showCurrentEmailPassword ? 'text' : 'password'}
-                            autoComplete="current-password"
-                            className={`${fieldClassName} pr-12`}
-                            disabled={emailForm.formState.isSubmitting}
-                            {...emailForm.register('current_password')}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                            onClick={() =>
-                              setShowCurrentEmailPassword((value) => !value)
-                            }
-                            aria-label={
-                              showCurrentEmailPassword
-                                ? 'Aktuelles Passwort ausblenden'
-                                : 'Aktuelles Passwort anzeigen'
-                            }
-                          >
-                            {showCurrentEmailPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                        {emailForm.formState.errors.current_password && (
-                          <p className="text-sm text-destructive">
-                            {emailForm.formState.errors.current_password.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <p className="text-sm text-slate-500">
-                          Zur Sicherheit bestätigen wir die Änderung mit deinem aktuellen Passwort.
-                        </p>
-                        <Button
-                          type="submit"
-                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
-                          disabled={emailForm.formState.isSubmitting}
-                        >
-                          {emailForm.formState.isSubmitting ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : null}
-                          E-Mail-Adresse speichern
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
-                </section>
-
-                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-                  <div className="space-y-2">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Passwort
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                      Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
-                    </p>
-                  </div>
-                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
-                    <form
-                      className="grid gap-4 md:grid-cols-2"
-                      onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
-                    >
-                      <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="current_password">Aktuelles Passwort</Label>
-                        <div className="relative">
-                          <Input
-                            id="current_password"
-                            type={showCurrentPassword ? 'text' : 'password'}
-                            autoComplete="current-password"
-                            className={`${fieldClassName} pr-12`}
-                            disabled={passwordForm.formState.isSubmitting}
-                            {...passwordForm.register('current_password')}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                            onClick={() => setShowCurrentPassword((value) => !value)}
-                            aria-label={
-                              showCurrentPassword
-                                ? 'Aktuelles Passwort ausblenden'
-                                : 'Aktuelles Passwort anzeigen'
-                            }
-                          >
-                            {showCurrentPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                        {passwordForm.formState.errors.current_password && (
-                          <p className="text-sm text-destructive">
-                            {passwordForm.formState.errors.current_password.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="new_password">Neues Passwort</Label>
-                        <div className="relative">
-                          <Input
-                            id="new_password"
-                            type={showNewPassword ? 'text' : 'password'}
-                            autoComplete="new-password"
-                            className={`${fieldClassName} pr-12`}
-                            disabled={passwordForm.formState.isSubmitting}
-                            {...passwordForm.register('new_password')}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                            onClick={() => setShowNewPassword((value) => !value)}
-                            aria-label={
-                              showNewPassword
-                                ? 'Neues Passwort ausblenden'
-                                : 'Neues Passwort anzeigen'
-                            }
-                          >
-                            {showNewPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                        {passwordForm.formState.errors.new_password && (
-                          <p className="text-sm text-destructive">
-                            {passwordForm.formState.errors.new_password.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="confirm_password">Neues Passwort bestätigen</Label>
-                        <div className="relative">
-                          <Input
-                            id="confirm_password"
-                            type={showConfirmPassword ? 'text' : 'password'}
-                            autoComplete="new-password"
-                            className={`${fieldClassName} pr-12`}
-                            disabled={passwordForm.formState.isSubmitting}
-                            {...passwordForm.register('confirm_password')}
-                          />
-                          <button
-                            type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                            onClick={() => setShowConfirmPassword((value) => !value)}
-                            aria-label={
-                              showConfirmPassword
-                                ? 'Passwort-Bestätigung ausblenden'
-                                : 'Passwort-Bestätigung anzeigen'
-                            }
-                          >
-                            {showConfirmPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                        {passwordForm.formState.errors.confirm_password && (
-                          <p className="text-sm text-destructive">
-                            {passwordForm.formState.errors.confirm_password.message}
-                          </p>
-                        )}
-                      </div>
-                      <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <p className="text-sm text-slate-500">
-                          Das neue Passwort muss mindestens 8 Zeichen lang sein.
-                        </p>
-                        <Button
-                          type="submit"
-                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
-                          disabled={passwordForm.formState.isSubmitting}
-                        >
-                          {passwordForm.formState.isSubmitting ? (
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          ) : null}
-                          Passwort aktualisieren
-                        </Button>
-                      </div>
-                    </form>
-                  </div>
-                </section>
-              </>
-            )}
-
             {isAdmin && (
               <>
                 <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
@@ -1351,87 +1127,6 @@ export function TenantProfileWorkspace({
                   </div>
                 </section>
 
-                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-                  <div className="space-y-2">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                      Stripe
-                    </h2>
-                    <p className="text-sm text-slate-500">
-                      {mode === 'onboarding'
-                        ? 'Zum Abschluss des Admin-Onboardings ist eine hinterlegte Zahlungsmethode erforderlich.'
-                        : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
-                    </p>
-                  </div>
-                  <div className="space-y-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
-                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <CreditCard className="h-4 w-4 text-[#b85e34]" />
-                          <span className="text-sm font-semibold text-slate-900">
-                            Zahlungsmethode
-                          </span>
-                          <Badge
-                            className={
-                              billing?.payment_method
-                                ? 'rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]'
-                                : 'rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]'
-                            }
-                          >
-                            {billing?.payment_method ? 'Verbunden' : 'Fehlt'}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-slate-600">
-                          {billingLoading
-                            ? 'Stripe-Status wird geladen...'
-                            : formatCard(billing?.payment_method ?? null)}
-                        </p>
-                      </div>
-                      <Button
-                        type="button"
-                        className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-                        onClick={() => setShowStripeForm((value) => !value)}
-                      >
-                        {showStripeForm
-                          ? 'Stripe-Formular ausblenden'
-                          : billing?.payment_method
-                            ? 'Zahlungsmethode ändern'
-                            : 'Zahlungsmethode hinterlegen'}
-                      </Button>
-                    </div>
-
-                    {showStripeForm && (
-                      <div className="rounded-[24px] border border-[#e8dece] bg-white p-4">
-                        <StripeCardForm
-                          onCancel={() => setShowStripeForm(false)}
-                          onSuccess={() => {
-                            setShowStripeForm(false)
-                            setSuccess('Zahlungsmethode wurde gespeichert.')
-                            setBillingLoading(true)
-                            void fetch('/api/tenant/billing', { credentials: 'include' })
-                              .then((response) => response.json().then((payload) => ({ response, payload })))
-                              .then(({ response, payload }) => {
-                                if (!response.ok) {
-                                  throw new Error(
-                                    (payload as { error?: string }).error ??
-                                      'Stripe-Status konnte nicht aktualisiert werden.'
-                                  )
-                                }
-                                setBilling(payload as BillingResponse)
-                              })
-                              .catch((loadError: unknown) => {
-                                setError(
-                                  loadError instanceof Error
-                                    ? loadError.message
-                                    : 'Stripe-Status konnte nicht aktualisiert werden.'
-                                )
-                              })
-                              .finally(() => setBillingLoading(false))
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </section>
               </>
             )}
 
@@ -1457,6 +1152,310 @@ export function TenantProfileWorkspace({
               </div>
             </div>
           </form>
+
+          {mode !== 'onboarding' && (
+            <>
+              <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="space-y-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Login-E-Mail
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    Diese Adresse verwendest du für den Login in deinen Workspace.
+                  </p>
+                </div>
+                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                  <form
+                    className="grid gap-4 md:grid-cols-2"
+                    onSubmit={emailForm.handleSubmit(onSubmitEmail)}
+                  >
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="email">Neue E-Mail-Adresse</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        autoComplete="email"
+                        className={fieldClassName}
+                        disabled={emailForm.formState.isSubmitting}
+                        {...emailForm.register('email')}
+                      />
+                      {emailForm.formState.errors.email && (
+                        <p className="text-sm text-destructive">
+                          {emailForm.formState.errors.email.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="current_email_password">Aktuelles Passwort</Label>
+                      <div className="relative">
+                        <Input
+                          id="current_email_password"
+                          type={showCurrentEmailPassword ? 'text' : 'password'}
+                          autoComplete="current-password"
+                          className={`${fieldClassName} pr-12`}
+                          disabled={emailForm.formState.isSubmitting}
+                          {...emailForm.register('current_password')}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                          onClick={() => setShowCurrentEmailPassword((value) => !value)}
+                          aria-label={
+                            showCurrentEmailPassword
+                              ? 'Aktuelles Passwort ausblenden'
+                              : 'Aktuelles Passwort anzeigen'
+                          }
+                        >
+                          {showCurrentEmailPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {emailForm.formState.errors.current_password && (
+                        <p className="text-sm text-destructive">
+                          {emailForm.formState.errors.current_password.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <p className="text-sm text-slate-500">
+                        Zur Sicherheit bestätigen wir die Änderung mit deinem aktuellen Passwort.
+                      </p>
+                      <Button
+                        type="submit"
+                        className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                        disabled={emailForm.formState.isSubmitting}
+                      >
+                        {emailForm.formState.isSubmitting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        E-Mail-Adresse speichern
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+
+              <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                <div className="space-y-2">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    Passwort
+                  </h2>
+                  <p className="text-sm text-slate-500">
+                    Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
+                  </p>
+                </div>
+                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                  <form
+                    className="grid gap-4 md:grid-cols-2"
+                    onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
+                  >
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="current_password">Aktuelles Passwort</Label>
+                      <div className="relative">
+                        <Input
+                          id="current_password"
+                          type={showCurrentPassword ? 'text' : 'password'}
+                          autoComplete="current-password"
+                          className={`${fieldClassName} pr-12`}
+                          disabled={passwordForm.formState.isSubmitting}
+                          {...passwordForm.register('current_password')}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                          onClick={() => setShowCurrentPassword((value) => !value)}
+                          aria-label={
+                            showCurrentPassword
+                              ? 'Aktuelles Passwort ausblenden'
+                              : 'Aktuelles Passwort anzeigen'
+                          }
+                        >
+                          {showCurrentPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {passwordForm.formState.errors.current_password && (
+                        <p className="text-sm text-destructive">
+                          {passwordForm.formState.errors.current_password.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="new_password">Neues Passwort</Label>
+                      <div className="relative">
+                        <Input
+                          id="new_password"
+                          type={showNewPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          className={`${fieldClassName} pr-12`}
+                          disabled={passwordForm.formState.isSubmitting}
+                          {...passwordForm.register('new_password')}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                          onClick={() => setShowNewPassword((value) => !value)}
+                          aria-label={
+                            showNewPassword
+                              ? 'Neues Passwort ausblenden'
+                              : 'Neues Passwort anzeigen'
+                          }
+                        >
+                          {showNewPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {passwordForm.formState.errors.new_password && (
+                        <p className="text-sm text-destructive">
+                          {passwordForm.formState.errors.new_password.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm_password">Neues Passwort bestätigen</Label>
+                      <div className="relative">
+                        <Input
+                          id="confirm_password"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          autoComplete="new-password"
+                          className={`${fieldClassName} pr-12`}
+                          disabled={passwordForm.formState.isSubmitting}
+                          {...passwordForm.register('confirm_password')}
+                        />
+                        <button
+                          type="button"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                          onClick={() => setShowConfirmPassword((value) => !value)}
+                          aria-label={
+                            showConfirmPassword
+                              ? 'Passwort-Bestätigung ausblenden'
+                              : 'Passwort-Bestätigung anzeigen'
+                          }
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {passwordForm.formState.errors.confirm_password && (
+                        <p className="text-sm text-destructive">
+                          {passwordForm.formState.errors.confirm_password.message}
+                        </p>
+                      )}
+                    </div>
+                    <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
+                      <p className="text-sm text-slate-500">
+                        Das neue Passwort muss mindestens 8 Zeichen lang sein.
+                      </p>
+                      <Button
+                        type="submit"
+                        className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                        disabled={passwordForm.formState.isSubmitting}
+                      >
+                        {passwordForm.formState.isSubmitting ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : null}
+                        Passwort aktualisieren
+                      </Button>
+                    </div>
+                  </form>
+                </div>
+              </section>
+            </>
+          )}
+
+          {isAdmin && (
+            <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  Stripe
+                </h2>
+                <p className="text-sm text-slate-500">
+                  {mode === 'onboarding'
+                    ? 'Zum Abschluss des Admin-Onboardings ist eine hinterlegte Zahlungsmethode erforderlich.'
+                    : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
+                </p>
+              </div>
+              <div className="space-y-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <CreditCard className="h-4 w-4 text-[#b85e34]" />
+                      <span className="text-sm font-semibold text-slate-900">Zahlungsmethode</span>
+                      <Badge
+                        className={
+                          billing?.payment_method
+                            ? 'rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]'
+                            : 'rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]'
+                        }
+                      >
+                        {billing?.payment_method ? 'Verbunden' : 'Fehlt'}
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-slate-600">
+                      {billingLoading
+                        ? 'Stripe-Status wird geladen...'
+                        : formatCard(billing?.payment_method ?? null)}
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                    onClick={() => setShowStripeForm((value) => !value)}
+                  >
+                    {showStripeForm
+                      ? 'Stripe-Formular ausblenden'
+                      : billing?.payment_method
+                        ? 'Zahlungsmethode ändern'
+                        : 'Zahlungsmethode hinterlegen'}
+                  </Button>
+                </div>
+
+                {showStripeForm && (
+                  <div className="rounded-[24px] border border-[#e8dece] bg-white p-4">
+                    <StripeCardForm
+                      onCancel={() => setShowStripeForm(false)}
+                      onSuccess={() => {
+                        setShowStripeForm(false)
+                        setSuccess('Zahlungsmethode wurde gespeichert.')
+                        setBillingLoading(true)
+                        void fetch('/api/tenant/billing', { credentials: 'include' })
+                          .then((response) => response.json().then((payload) => ({ response, payload })))
+                          .then(({ response, payload }) => {
+                            if (!response.ok) {
+                              throw new Error(
+                                (payload as { error?: string }).error ??
+                                  'Stripe-Status konnte nicht aktualisiert werden.'
+                              )
+                            }
+                            setBilling(payload as BillingResponse)
+                          })
+                          .catch((loadError: unknown) => {
+                            setError(
+                              loadError instanceof Error
+                                ? loadError.message
+                                : 'Stripe-Status konnte nicht aktualisiert werden.'
+                            )
+                          })
+                          .finally(() => setBillingLoading(false))
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
         </CardContent>
       </Card>
       </div>

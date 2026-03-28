@@ -54,6 +54,8 @@ interface AvatarCropDraft {
   imageHeight: number
 }
 
+type OwnerProfileFormValues = Pick<ProfileUpdateInput, 'first_name' | 'last_name'>
+
 const fieldClassName =
   'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
 const AVATAR_PREVIEW_SIZE = 280
@@ -176,7 +178,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const form = useForm<ProfileUpdateInput>({
+  const form = useForm<OwnerProfileFormValues>({
     resolver: zodResolver(BaseProfileSchema),
     defaultValues: {
       first_name: initialData.firstName,
@@ -331,7 +333,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
     }
   }
 
-  async function onSubmit(values: ProfileUpdateInput) {
+  async function onSubmit(values: OwnerProfileFormValues) {
     try {
       setIsSaving(true)
       setError(null)
@@ -356,7 +358,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             return
           }
 
-          form.setError(field as keyof ProfileUpdateInput, {
+          form.setError(field as keyof OwnerProfileFormValues, {
             type: 'server',
             message: firstMessage,
           })
