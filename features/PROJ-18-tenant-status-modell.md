@@ -1,6 +1,6 @@
 # PROJ-18: Tenant Status Modell
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-28
 
@@ -18,12 +18,12 @@ Der Tenant-Status soll fachlich klarer modelliert werden. Aktuell ist `active` /
 - Als Tenant-Admin möchte ich klare Fehlermeldungen bei blockierten Zuständen sehen.
 
 ## Acceptance Criteria
-- [ ] Es gibt eine zentrale Statusdefinition für Tenants.
-- [ ] Der Status deckt mindestens `active`, `inactive`, `setup_incomplete` und einen Billing-Blocker-Zustand ab.
-- [ ] Proxy, Login, Onboarding und Owner-UI nutzen dieselbe Statuslogik.
-- [ ] Öffentliche Auth-Seiten funktionieren auch für blockierte Tenants sauber weiter, wenn fachlich gewünscht.
-- [ ] Redirect-Loops und widersprüchliche Zustände werden verhindert.
-- [ ] Owner sieht im UI den effektiven Sperrgrund.
+- [x] Es gibt eine zentrale Statusdefinition für Tenants.
+- [x] Der Status deckt mindestens `active`, `inactive`, `setup_incomplete` und einen Billing-Blocker-Zustand ab.
+- [x] Proxy, Login, Onboarding und Owner-UI nutzen dieselbe Statuslogik.
+- [x] Öffentliche Auth-Seiten funktionieren auch für blockierte Tenants sauber weiter, wenn fachlich gewünscht.
+- [x] Redirect-Loops und widersprüchliche Zustände werden verhindert.
+- [x] Owner sieht im UI den effektiven Sperrgrund.
 
 ## Edge Cases
 - Manuell gesperrter Tenant mit aktivem Stripe-Abo
@@ -40,3 +40,12 @@ Der Tenant-Status soll fachlich klarer modelliert werden. Aktuell ist `active` /
 ## Implementation Notes
 - Bestehendes `tenants.status` nicht sofort aufbrechen, sondern schrittweise erweitern
 - Owner-Lock und Billing-Block fachlich trennen, auch wenn derselbe Access-Gate genutzt wird
+
+## Deployment
+### Deployment Date: 2026-03-28
+### Deployment Status: Deployed
+
+- Preview deploy erfolgreich unter `https://boosthive-gytkg5e2c-tobis-projects-24837701.vercel.app`
+- `npm run build` lief lokal erfolgreich vor dem Deploy
+- Gezielte Status-QA lief erfolgreich mit `3 passed` und `2 skipped` in `tests/e2e/tenant-status.spec.ts`
+- Die verbleibenden Skips betreffen nur lokale Supabase-Schema-Cache-Limits fuer `billing_blocked` und `archived`

@@ -3,7 +3,8 @@ import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { LoginSchema } from '@/lib/schemas/auth'
-import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
+import { getErrorMessage, loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
+import { checkRateLimit, getClientIp, rateLimitResponse, AUTH_LOGIN } from '@/lib/rate-limit'
 
 /**
  * POST /api/auth/login
@@ -16,6 +17,14 @@ import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status
  */
 export async function POST(request: NextRequest) {
   const GENERIC_ERROR = 'Ungültige Zugangsdaten.'
+
+  // Rate Limiting: 10 requests / 15 min / IP
+  const ip = getClientIp(request)
+  const rl = checkRateLimit(`auth-login:${ip}`, AUTH_LOGIN)
+  if (!rl.allowed) {
+    logSecurity('tenant_login_rate_limited', { ip })
+    return rateLimitResponse(rl)
+  }
 
   // 1. Tenant-ID aus Header lesen (vom Proxy injiziert)
   const tenantId = request.headers.get('x-tenant-id')
@@ -57,13 +66,7 @@ export async function POST(request: NextRequest) {
       tenantStatus: tenant?.status ?? null,
       effectiveTenantStatus: tenantStatus?.effectiveStatus ?? null,
       tenantStatusReason: tenantStatus?.reason ?? null,
-      tenantError:
-        typeof tenantError === 'object' &&
-        tenantError !== null &&
-        'message' in tenantError &&
-        typeof tenantError.message === 'string'
-          ? tenantError.message
-          : null,
+      tenantError: getErrorMessage(tenantError),
     })
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }

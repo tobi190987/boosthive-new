@@ -59,6 +59,17 @@ export function hasMissingTenantStatusColumnError(error: unknown, column?: strin
   return false
 }
 
+export function getErrorMessage(error: unknown): string | null {
+  if (typeof error !== 'object' || error === null) {
+    return null
+  }
+
+  const message =
+    'message' in error && typeof error.message === 'string' ? error.message : null
+
+  return message
+}
+
 interface TenantStatusLookupResult {
   data: Record<string, unknown> | null
   error: unknown
