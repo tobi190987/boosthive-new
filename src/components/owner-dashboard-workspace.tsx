@@ -406,10 +406,13 @@ export function OwnerDashboardWorkspace() {
               <OwnerTenantTable
                 tenants={tenants}
                 summary={tenantSummary}
+                bulkEditMode={false}
                 selectedTenantIds={[]}
                 bulkAction={null}
                 busyTenantId={togglingId ?? deletingId}
                 archivedFilter="exclude"
+                onStartBulkEdit={() => undefined}
+                onCancelBulkEdit={() => undefined}
                 onToggleTenantSelection={() => undefined}
                 onToggleVisibleSelection={() => undefined}
                 onArchiveSelected={() => undefined}

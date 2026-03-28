@@ -32,6 +32,7 @@ export default function TenantsPage() {
   const [error, setError] = useState<string | null>(null)
   const [busyTenantId, setBusyTenantId] = useState<string | null>(null)
   const [bulkAction, setBulkAction] = useState<null | "archive" | "delete">(null)
+  const [bulkEditMode, setBulkEditMode] = useState(false)
   const [archivedFilter, setArchivedFilter] = useState<ArchivedFilter>("exclude")
   const [selectedTenantIds, setSelectedTenantIds] = useState<string[]>([])
 
@@ -189,6 +190,19 @@ export default function TenantsPage() {
     }
 
     setSelectedTenantIds([])
+  }
+
+  function startBulkEdit() {
+    setBulkEditMode(true)
+    setSelectedTenantIds([])
+    setError(null)
+  }
+
+  function cancelBulkEdit() {
+    setBulkEditMode(false)
+    setSelectedTenantIds([])
+    setBulkAction(null)
+    setError(null)
   }
 
   async function archiveSelectedTenants() {
@@ -365,10 +379,13 @@ export default function TenantsPage() {
         <OwnerTenantTable
           tenants={tenants}
           summary={summary}
+          bulkEditMode={bulkEditMode}
           selectedTenantIds={selectedTenantIds}
           bulkAction={bulkAction}
           busyTenantId={busyTenantId}
           archivedFilter={archivedFilter}
+          onStartBulkEdit={startBulkEdit}
+          onCancelBulkEdit={cancelBulkEdit}
           onToggleTenantSelection={toggleTenantSelection}
           onToggleVisibleSelection={toggleVisibleSelection}
           onArchiveSelected={archiveSelectedTenants}

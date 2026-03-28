@@ -69,10 +69,13 @@ interface OwnerTenantTableProps {
     blocked: number
     archived: number
   }
+  bulkEditMode: boolean
   selectedTenantIds: string[]
   bulkAction: 'archive' | 'delete' | null
   busyTenantId: string | null
   archivedFilter: 'exclude' | 'include' | 'only'
+  onStartBulkEdit: () => void
+  onCancelBulkEdit: () => void
   onToggleTenantSelection: (tenantId: string, checked: boolean) => void
   onToggleVisibleSelection: (checked: boolean) => void
   onArchiveSelected: () => Promise<void> | void
@@ -94,10 +97,13 @@ function formatDate(value: string) {
 export function OwnerTenantTable({
   tenants,
   summary,
+  bulkEditMode,
   selectedTenantIds,
   bulkAction,
   busyTenantId,
   archivedFilter,
+  onStartBulkEdit,
+  onCancelBulkEdit,
   onToggleTenantSelection,
   onToggleVisibleSelection,
   onArchiveSelected,
@@ -156,22 +162,44 @@ export function OwnerTenantTable({
             <div className="rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-600">
               {summary.archived} archiviert
             </div>
+            {bulkEditMode ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#e6ddd0] bg-white"
+                onClick={onCancelBulkEdit}
+                disabled={bulkAction !== null}
+              >
+                Bulk-Bearbeitung beenden
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-[#e6ddd0] bg-white"
+                onClick={onStartBulkEdit}
+              >
+                Mehrfach bearbeiten
+              </Button>
+            )}
           </div>
         </div>
 
-        {selectedCount > 0 ? (
+        {bulkEditMode ? (
           <div className="flex flex-col gap-3 border-b border-[#ece2d5] bg-[#fcfaf6] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-600">
-              {selectedCount} Agentur{selectedCount === 1 ? '' : 'en'} ausgewählt
+              {selectedCount > 0
+                ? `${selectedCount} Agentur${selectedCount === 1 ? '' : 'en'} ausgewählt`
+                : 'Wähle Agenturen aus, um Sammelaktionen auszuführen.'}
             </p>
             <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 variant="outline"
                 className="border-[#e6ddd0]"
-                onClick={() => onToggleVisibleSelection(false)}
+                onClick={selectedCount > 0 ? () => onToggleVisibleSelection(false) : onCancelBulkEdit}
               >
-                Auswahl aufheben
+                {selectedCount > 0 ? 'Auswahl aufheben' : 'Abbrechen'}
               </Button>
               <Button
                 type="button"
@@ -207,13 +235,15 @@ export function OwnerTenantTable({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
-              <TableHead className="w-14 pl-6">
-                <Checkbox
-                  checked={allVisibleSelected}
-                  onCheckedChange={(checked) => onToggleVisibleSelection(checked === true)}
-                  aria-label="Alle sichtbaren Agenturen auswählen"
-                />
-              </TableHead>
+              {bulkEditMode ? (
+                <TableHead className="w-14 pl-6">
+                  <Checkbox
+                    checked={allVisibleSelected}
+                    onCheckedChange={(checked) => onToggleVisibleSelection(checked === true)}
+                    aria-label="Alle sichtbaren Agenturen auswählen"
+                  />
+                </TableHead>
+              ) : null}
               <TableHead className="pl-6">Tenant</TableHead>
               <TableHead>Subdomain</TableHead>
               <TableHead>Status</TableHead>
@@ -228,13 +258,15 @@ export function OwnerTenantTable({
 
               return (
                 <TableRow key={tenant.id} className="border-[#f0e9df] hover:bg-[#fcfaf6]">
-                  <TableCell className="pl-6">
-                    <Checkbox
-                      checked={selectedTenantIds.includes(tenant.id)}
-                      onCheckedChange={(checked) => onToggleTenantSelection(tenant.id, checked === true)}
-                      aria-label={`${tenant.name} auswählen`}
-                    />
-                  </TableCell>
+                  {bulkEditMode ? (
+                    <TableCell className="pl-6">
+                      <Checkbox
+                        checked={selectedTenantIds.includes(tenant.id)}
+                        onCheckedChange={(checked) => onToggleTenantSelection(tenant.id, checked === true)}
+                        aria-label={`${tenant.name} auswählen`}
+                      />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="pl-6">
                     <div>
                       <Link
