@@ -16,6 +16,10 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>()
 
+export function resetRateLimitStore() {
+  store.clear()
+}
+
 export interface RateLimitOptions {
   /** Max requests per window */
   limit: number
