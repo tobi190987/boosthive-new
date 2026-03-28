@@ -200,9 +200,17 @@ export async function GET(request: NextRequest) {
       for (const mod of allModules) {
         if (!priceCache.has(mod.stripe_price_id)) {
           try {
-            const price = await stripe.prices.retrieve(mod.stripe_price_id)
+            const price = await stripe.prices.retrieve(mod.stripe_price_id, {
+              expand: ['tiers'],
+            })
+            // For tiered prices unit_amount is null — use first tier's unit or flat amount
+            let amount = price.unit_amount
+            if (amount === null && Array.isArray((price as any).tiers) && (price as any).tiers.length > 0) {
+              const firstTier = (price as any).tiers[0]
+              amount = firstTier.unit_amount ?? firstTier.flat_amount ?? 0
+            }
             priceCache.set(mod.stripe_price_id, {
-              amount: price.unit_amount ?? 0,
+              amount: amount ?? 0,
               currency: price.currency,
             })
           } catch {
