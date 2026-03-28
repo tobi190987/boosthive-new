@@ -35,10 +35,26 @@ export async function POST(request: NextRequest) {
     .from('tenants')
     .select('id, name, slug, stripe_customer_id')
     .eq('id', tenantId)
-    .single()
+    .maybeSingle()
 
-  if (tenantError || !tenant) {
-    console.error('[POST /api/tenant/billing/setup-intent] Tenant nicht gefunden:', tenantError)
+  if (tenantError) {
+    const isColumnMissing =
+      tenantError.code === '42703' ||
+      tenantError.code === 'PGRST204' ||
+      (typeof tenantError.message === 'string' && tenantError.message.includes('stripe_customer_id'))
+    if (isColumnMissing) {
+      console.error('[POST /api/tenant/billing/setup-intent] Stripe-Spalten fehlen — Migration 008 noch nicht angewandt:', tenantError)
+      return NextResponse.json(
+        { error: 'Stripe-Konfiguration unvollständig. Bitte wende dich an den Support.' },
+        { status: 500 }
+      )
+    }
+    console.error('[POST /api/tenant/billing/setup-intent] Datenbank-Fehler:', tenantError)
+    return NextResponse.json({ error: 'Interner Fehler. Bitte versuche es später erneut.' }, { status: 500 })
+  }
+
+  if (!tenant) {
+    console.error('[POST /api/tenant/billing/setup-intent] Tenant nicht gefunden für ID:', tenantId)
     return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
   }
 
