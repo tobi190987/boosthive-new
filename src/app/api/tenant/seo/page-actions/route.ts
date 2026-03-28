@@ -166,7 +166,6 @@ async function generateWithClaude(input: SuggestionPayload) {
         contentIdeas: string[]
       }),
       source: 'anthropic' as const,
-      debug: `Modell: ${model}`,
     } satisfies SuggestionResult
   }
 
