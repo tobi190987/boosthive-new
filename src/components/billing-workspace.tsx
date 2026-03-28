@@ -5,6 +5,8 @@ import {
   AlertTriangle,
   CheckCircle2,
   CreditCard,
+  Download,
+  FileText,
   Loader2,
   Package,
   RefreshCw,
@@ -41,6 +43,17 @@ interface ModuleRecord {
   currency: string
   status: 'active' | 'canceling' | 'canceled' | 'not_subscribed'
   current_period_end: string | null
+}
+
+interface InvoiceRecord {
+  id: string
+  number: string | null
+  amount_paid: number
+  currency: string
+  status: string | null
+  created: number
+  invoice_pdf: string | null
+  hosted_invoice_url: string | null
 }
 
 interface BillingData {
@@ -119,6 +132,7 @@ function formatAmount(amount: number, currency: string) {
 
 export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
   const [billing, setBilling] = useState<BillingData | null>(null)
+  const [invoices, setInvoices] = useState<InvoiceRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
@@ -142,6 +156,12 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
       setBilling(payload)
       setActivity('Billing-Daten erfolgreich geladen.')
+
+      // Load invoices in parallel (non-blocking)
+      fetch('/api/tenant/billing/invoices', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((data) => { if (data.invoices) setInvoices(data.invoices) })
+        .catch(() => { /* non-fatal */ })
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -376,6 +396,11 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
   const hasPaymentMethod = billing.payment_method !== null
   const status = billing.subscription_status
 
+  const activeModules = (billing.modules ?? []).filter((m) => m.status === 'active' || m.status === 'canceling')
+  const modulesTotal = activeModules.reduce((sum, m) => sum + m.price, 0)
+  const totalAmount = (billing.plan?.amount ?? 0) + modulesTotal
+  const totalCurrency = billing.plan?.currency ?? 'eur'
+
   return (
     <div className="space-y-6">
       <BillingHero tenantSlug={tenantSlug} />
@@ -421,10 +446,25 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
             {billing.plan && (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-600">Preis</span>
+                <span className="text-sm text-slate-600">Gesamtpreis</span>
                 <span className="text-sm font-semibold text-slate-900">
-                  {formatAmount(billing.plan.amount, billing.plan.currency)} / {billing.plan.interval}
+                  {formatAmount(totalAmount, totalCurrency)} / {billing.plan.interval}
                 </span>
+              </div>
+            )}
+
+            {billing.plan && modulesTotal > 0 && (
+              <div className="rounded-2xl border border-[#e6ddd0] bg-[#f7f3ed] px-4 py-3 space-y-1.5">
+                <div className="flex justify-between text-xs text-slate-500">
+                  <span>Basis-Plan</span>
+                  <span>{formatAmount(billing.plan.amount, billing.plan.currency)}</span>
+                </div>
+                {activeModules.map((m) => (
+                  <div key={m.id} className="flex justify-between text-xs text-slate-500">
+                    <span>{m.name}</span>
+                    <span>{formatAmount(m.price, m.currency)}</span>
+                  </div>
+                ))}
               </div>
             )}
 
@@ -690,6 +730,52 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         onCancel={handleModuleCancel}
         onReactivate={handleModuleReactivate}
       />
+
+      {/* ----- Invoices Section ----- */}
+      {invoices.length > 0 && (
+        <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
+              <FileText className="h-5 w-5 text-[#b85e34]" />
+              Rechnungen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-[#f1ebe3]">
+              {invoices.map((inv) => (
+                <div key={inv.id} className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {inv.number ?? inv.id}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(
+                        new Date(inv.created * 1000)
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold text-slate-900">
+                      {formatAmount(inv.amount_paid, inv.currency)}
+                    </span>
+                    {inv.invoice_pdf && (
+                      <a
+                        href={inv.invoice_pdf}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 rounded-full border border-[#ded4c7] px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#f7f3ed] transition-colors"
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                        PDF
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
