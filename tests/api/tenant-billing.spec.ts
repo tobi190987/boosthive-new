@@ -17,7 +17,7 @@ test.describe('tenant billing api', () => {
   })
 
   test.afterAll(async ({ request }) => {
-    await cleanupTestSessions(request)
+    await cleanupTestSessions(request, sessions)
   })
 
   test('Member can load module catalog from GET /api/tenant/billing without payment details', async ({

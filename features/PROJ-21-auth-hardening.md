@@ -1,6 +1,6 @@
 # PROJ-21: Auth Hardening
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-28
 
@@ -38,7 +38,11 @@ Die bestehende Auth-Strecke soll gezielt gehärtet werden. Fokus: bessere Rate L
 
 ## Implementation Notes
 - Bestehende Logik in `src/proxy.ts` und Auth-APIs weiterverwenden
-- 2FA kann in einem ersten Schritt Owner-only bleiben
+- 2FA komplett uebersprungen (nicht implementiert, kein Bedarf in MVP)
+- `src/lib/rate-limit.ts` um Presets (AUTH_LOGIN, AUTH_OWNER_LOGIN, AUTH_RESET, AUTH_INVITE) und `rateLimitResponse()` Helper erweitert
+- Rate Limiting in allen 4 Auth-Routen eingebaut: login (10/15min), owner/login (5/15min), password-reset/request (3/15min), invitations/accept (10/15min)
+- `src/lib/auth-guards.ts` um `logSecurity` Aufrufe bei 401/403 in requireTenantUser, requireRole und requireTenantAdmin erweitert
+- 429 Responses enthalten Standard-Headers: Retry-After, X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset
 
 ## Tech Design (Solution Architect)
 

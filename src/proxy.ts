@@ -121,11 +121,21 @@ async function redirectBlockedTenant(
   request: NextRequest,
   reason: 'tenant_inactive' | 'tenant_billing_blocked'
 ): Promise<NextResponse> {
-  const loginUrl = request.nextUrl.clone()
-  loginUrl.pathname = '/login'
-  loginUrl.searchParams.set('reason', reason)
+  const isApiRequest = request.nextUrl.pathname.startsWith('/api/')
+  let response: NextResponse
 
-  const response = NextResponse.redirect(loginUrl)
+  if (isApiRequest) {
+    response = NextResponse.json(
+      { error: 'Tenant ist archiviert oder aktuell gesperrt.', reason },
+      { status: 403 }
+    )
+  } else {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('reason', reason)
+    response = NextResponse.redirect(loginUrl)
+  }
+
   const supabase = createMiddlewareClient(request, response)
 
   try {

@@ -1,6 +1,6 @@
 # PROJ-22: API Authorization Tests
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-28
 
@@ -37,8 +37,13 @@ Zusätzlich zu Playwright sollen gezielte API-Tests für Auth-, Rollen- und Tena
 - Fokus auf Guards, Status und Response-Codes
 
 ## Implementation Notes
-- Kein Ersatz für Playwright, sondern Ergänzung
+- Kein Ersatz für Playwright, sondern Ergaenzung
 - Erst die sicherheitskritischen Routen abdecken, dann schrittweise erweitern
+- `playwright.config.ts` um `api-tests` Projekt erweitert (kein Browser, testDir: ./tests/api)
+- `package.json` um `test:api` Script erweitert, bestehende e2e-Scripts auf `--project=chromium` eingeschraenkt
+- Test-Helpers: `tests/api/helpers/api-client.ts` (HTTP-Hilfsfunktionen) und `tests/api/helpers/fixtures.ts` (Seed + Session-Setup)
+- Tests implementiert: owner-routes, cross-tenant, admin-routes, paused-tenant, login
+- Rate-Limit-Tests bewusst NICHT geschrieben (in-memory pro Instanz, nicht zuverlaessig testbar)
 
 ## Tech Design (Solution Architect)
 

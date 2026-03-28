@@ -3,22 +3,32 @@ import { ForgotPasswordSchema } from '@/lib/schemas/auth'
 import { sendPasswordReset } from '@/lib/email'
 import { createPasswordResetToken, buildPasswordResetUrl } from '@/lib/password-reset'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { logSecurity } from '@/lib/observability'
+import { checkRateLimit, getClientIp, rateLimitResponse, AUTH_RESET } from '@/lib/rate-limit'
 
 const GENERIC_SUCCESS_MESSAGE =
   'Wenn ein passendes Konto existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
+const INVALID_REQUEST_MESSAGE = 'Eingabe konnte nicht verarbeitet werden.'
 
 export async function POST(request: NextRequest) {
+  // Rate Limiting: 3 requests / 15 min / IP (strictest)
+  const ip = getClientIp(request)
+  const rl = checkRateLimit(`auth-reset:${ip}`, AUTH_RESET)
+  if (!rl.allowed) {
+    logSecurity('password_reset_rate_limited', { ip })
+    return rateLimitResponse(rl)
+  }
   let body: unknown
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: INVALID_REQUEST_MESSAGE }, { status: 400 })
   }
 
   const parsed = ForgotPasswordSchema.safeParse(body)
   if (!parsed.success) {
     return NextResponse.json(
-      { error: 'Validierungsfehler.', details: parsed.error.flatten().fieldErrors },
+      { error: INVALID_REQUEST_MESSAGE, details: parsed.error.flatten().fieldErrors },
       { status: 400 }
     )
   }

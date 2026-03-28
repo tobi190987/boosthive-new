@@ -1,11 +1,37 @@
 import { APIRequestContext } from '@playwright/test'
 
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000'
+const PREVIEW_ACCESS_COOKIE = 'bh_preview_access=granted'
+let testIpCounter = 10
+
+export function nextTestIp() {
+  testIpCounter += 1
+  return `203.0.113.${testIpCounter}`
+}
+
 export function rootUrl(path = '/') {
-  return `http://localhost:3000${path}`
+  return new URL(path, BASE_URL).toString()
 }
 
 export function tenantUrl(slug: string, path = '/') {
-  return `http://${slug}.localhost:3000${path}`
+  const url = new URL(path, BASE_URL)
+  url.hostname = `${slug}.${url.hostname}`
+  return url.toString()
+}
+
+export function rootOrigin() {
+  const url = new URL(BASE_URL)
+  return url.origin
+}
+
+export function tenantOrigin(slug: string) {
+  const url = new URL(BASE_URL)
+  url.hostname = `${slug}.${url.hostname}`
+  return url.origin
+}
+
+export function buildCookieHeader(cookies?: string) {
+  return cookies ? `${PREVIEW_ACCESS_COOKIE}; ${cookies}` : PREVIEW_ACCESS_COOKIE
 }
 
 /**
@@ -18,7 +44,7 @@ export async function ownerGet(
 ) {
   return request.get(rootUrl(path), {
     headers: {
-      cookie: `bh_preview_access=granted${cookies ? `; ${cookies}` : ''}`,
+      cookie: buildCookieHeader(cookies),
     },
   })
 }
@@ -35,7 +61,7 @@ export async function ownerPost(
   return request.post(rootUrl(path), {
     headers: {
       'content-type': 'application/json',
-      cookie: `bh_preview_access=granted${cookies ? `; ${cookies}` : ''}`,
+      cookie: buildCookieHeader(cookies),
     },
     ...(data !== undefined ? { data } : {}),
   })
@@ -54,7 +80,7 @@ export async function tenantGet(
   return request.get(tenantUrl(slug, path), {
     headers: {
       'x-tenant-id': tenantId,
-      cookie: `bh_preview_access=granted${cookies ? `; ${cookies}` : ''}`,
+      cookie: buildCookieHeader(cookies),
     },
   })
 }
@@ -74,7 +100,7 @@ export async function tenantPost(
     headers: {
       'content-type': 'application/json',
       'x-tenant-id': tenantId,
-      cookie: `bh_preview_access=granted${cookies ? `; ${cookies}` : ''}`,
+      cookie: buildCookieHeader(cookies),
     },
     ...(data !== undefined ? { data } : {}),
   })
@@ -93,7 +119,7 @@ export async function tenantDelete(
   return request.delete(tenantUrl(slug, path), {
     headers: {
       'x-tenant-id': tenantId,
-      cookie: `bh_preview_access=granted${cookies ? `; ${cookies}` : ''}`,
+      cookie: buildCookieHeader(cookies),
     },
   })
 }
@@ -113,7 +139,7 @@ export async function tenantPatch(
     headers: {
       'content-type': 'application/json',
       'x-tenant-id': tenantId,
-      cookie: `bh_preview_access=granted${cookies ? `; ${cookies}` : ''}`,
+      cookie: buildCookieHeader(cookies),
     },
     ...(data !== undefined ? { data } : {}),
   })
@@ -136,10 +162,9 @@ export async function loginAndGetCookies(
   const response = await request.post(url, {
     headers: {
       'content-type': 'application/json',
-      origin: options.ownerLogin
-        ? 'http://localhost:3000'
-        : `http://${slug}.localhost:3000`,
-      cookie: 'bh_preview_access=granted',
+      origin: options.ownerLogin ? rootOrigin() : tenantOrigin(slug),
+      cookie: buildCookieHeader(),
+      'x-forwarded-for': nextTestIp(),
     },
     data: { email, password },
   })

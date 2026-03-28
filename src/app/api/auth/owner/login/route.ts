@@ -3,6 +3,7 @@ import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { LoginSchema } from '@/lib/schemas/auth'
+import { checkRateLimit, getClientIp, rateLimitResponse, AUTH_OWNER_LOGIN } from '@/lib/rate-limit'
 
 /**
  * POST /api/auth/owner/login
@@ -14,6 +15,14 @@ import { LoginSchema } from '@/lib/schemas/auth'
  */
 export async function POST(request: NextRequest) {
   const GENERIC_ERROR = 'Ungültige Zugangsdaten.'
+
+  // Rate Limiting: 5 requests / 15 min / IP (stricter for owner)
+  const ip = getClientIp(request)
+  const rl = checkRateLimit(`auth-owner-login:${ip}`, AUTH_OWNER_LOGIN)
+  if (!rl.allowed) {
+    logSecurity('owner_login_rate_limited', { ip })
+    return rateLimitResponse(rl)
+  }
 
   // 1. Request-Body parsen
   let body: unknown
