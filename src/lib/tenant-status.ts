@@ -296,7 +296,7 @@ export function ownerToggleTenantStatusLabel(status: string | null | undefined) 
   const normalized = normalizeTenantStatus(status)
   if (normalized === 'active') return 'Pausieren'
   if (normalized === 'inactive') return 'Fortsetzen'
-  return 'Status pruefen'
+  return 'Status prüfen'
 }
 
 export function ownerToggleTenantStatusDescription(status: string | null | undefined) {
