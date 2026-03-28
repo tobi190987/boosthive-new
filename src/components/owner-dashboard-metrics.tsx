@@ -65,7 +65,7 @@ export function OwnerDashboardMetrics({
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Owner Metric
+                Platform Signal
               </p>
               <CardTitle className="mt-2 text-base font-semibold text-slate-900">
                 {metric.label}

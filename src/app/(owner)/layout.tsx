@@ -1,6 +1,7 @@
 import { forbidden, redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { OwnerSidebar, OwnerMobileHeader } from "@/components/owner-sidebar"
+import { OwnerSidebar, OwnerMobileHeader } from '@/components/owner-sidebar'
+import { requireOwnerShellContext } from '@/lib/owner-shell'
 
 // BUG-4: Server-seitiger Auth-Guard — unauthentifizierte und Non-Owner-User
 // werden sofort weitergeleitet, bevor HTML gerendert wird.
@@ -27,13 +28,19 @@ export default async function OwnerLayout({
     forbidden()
   }
 
+  const context = await requireOwnerShellContext()
+
   return (
-    <div className="flex flex-col md:flex-row h-screen bg-[#F8FAFB]">
-      <OwnerMobileHeader />
-      <OwnerSidebar />
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="mx-auto max-w-5xl">{children}</div>
-      </main>
+    <div className="min-h-screen bg-[#f7f2ea] text-slate-900">
+      <div className="flex min-h-screen">
+        <OwnerSidebar context={context} />
+        <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <OwnerMobileHeader context={context} />
+          <main className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl space-y-6">{children}</div>
+          </main>
+        </div>
+      </div>
     </div>
   )
 }

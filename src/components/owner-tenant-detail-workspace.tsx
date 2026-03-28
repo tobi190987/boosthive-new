@@ -1,7 +1,8 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
@@ -10,14 +11,18 @@ import {
   ArrowLeft,
   Building2,
   Copy,
+  CreditCard,
   Globe,
   ImageIcon,
   Loader2,
+  Lock,
   Mail,
   MapPin,
+  Package,
   Phone,
   ShieldCheck,
   Trash2,
+  Unlock,
   UserRound,
   Users2,
   X,
@@ -169,6 +174,10 @@ function memberStatusCopy(status: MemberStatus) {
   return status === "active" ? "Aktiv" : "Pausiert"
 }
 
+function tenantUrl(slug: string) {
+  return `https://${slug}.boost-hive.de`
+}
+
 function formatDateTime(value?: string | null) {
   if (!value) return "Noch nicht verfügbar"
 
@@ -187,7 +196,15 @@ async function extractPayload(response: Response) {
   return response.json().catch(() => ({}))
 }
 
+const VALID_TABS = ["general", "billing", "contact", "admin", "users", "subscription"] as const
+
 export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get("tab")
+  const initialTab = VALID_TABS.includes(tabParam as typeof VALID_TABS[number])
+    ? (tabParam as string)
+    : "general"
+
   const [tenant, setTenant] = useState<TenantDetailRecord | null>(null)
   const [loading, setLoading] = useState(true)
   const [serverError, setServerError] = useState<string | null>(null)
@@ -327,6 +344,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
     if (!watchedSlug) return "boost-hive.de"
     return `${watchedSlug}.boost-hive.de`
   }, [watchedSlug])
+  const activeUsers = tenant?.users?.filter((entry) => entry.status === "active").length ?? 0
+  const adminUsers = tenant?.users?.filter((entry) => entry.role === "admin" && entry.status === "active").length ?? 0
 
   async function submitPatch<T extends Record<string, unknown>>(
     type: "basics" | "billing" | "contact",
@@ -634,6 +653,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               Tenant Profile
             </Badge>
             <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+                Owner / Tenant Detail
+              </p>
               <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
                 {tenant?.name ?? "Tenant-Details"}
               </h1>
@@ -688,6 +710,33 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </div>
           </div>
         </div>
+
+        <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
+          <div className="rounded-[26px] border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+            <Globe className="h-5 w-5 text-[#b85e34]" />
+            <p className="mt-3 text-sm font-semibold text-slate-900">Subdomain und Einstieg</p>
+            <a
+              href={tenant?.slug ? tenantUrl(tenant.slug) : undefined}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-1 block break-all text-sm leading-6 text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline"
+            >
+              {tenant?.slug ? tenantUrl(tenant.slug) : tenantHost}
+            </a>
+          </div>
+          <div className="rounded-[26px] border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+            <Users2 className="h-5 w-5 text-[#0d9488]" />
+            <p className="mt-3 text-sm font-semibold text-slate-900">Aktive Nutzerbasis</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{activeUsers}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">aktive Accounts in dieser Agentur</p>
+          </div>
+          <div className="rounded-[26px] border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+            <ShieldCheck className="h-5 w-5 text-[#1f2937]" />
+            <p className="mt-3 text-sm font-semibold text-slate-900">Administrative Abdeckung</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{adminUsers}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">aktive Admins mit Zugriff auf den Tenant</p>
+          </div>
+        </div>
       </section>
 
       {serverError && tenant ? (
@@ -705,7 +754,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </Alert>
       ) : null}
 
-      <Tabs defaultValue="general" className="space-y-6">
+      <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList className="h-auto flex-wrap rounded-full bg-[#f4eee6] p-1">
           <TabsTrigger value="general" className="rounded-full px-4 py-2">
             Allgemein
@@ -721,6 +770,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           </TabsTrigger>
           <TabsTrigger value="users" className="rounded-full px-4 py-2">
             User
+          </TabsTrigger>
+          <TabsTrigger value="subscription" className="rounded-full px-4 py-2">
+            Abo
           </TabsTrigger>
         </TabsList>
 
@@ -1319,6 +1371,10 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="subscription" className="mt-0">
+          <OwnerTenantSubscriptionTab tenantId={tenantId} />
+        </TabsContent>
       </Tabs>
 
       <AlertDialog
@@ -1353,6 +1409,395 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Subscription Tab (PROJ-16)                                                */
+/* -------------------------------------------------------------------------- */
+
+interface SubscriptionDetail {
+  subscriptionStatus: string
+  subscriptionPeriodEnd: string | null
+  totalAmount: number
+  currency: string
+  accessState: string
+  ownerLockedAt: string | null
+  ownerLockReason: string | null
+  modules: {
+    id: string
+    name: string
+    status: string
+    price: number
+    currency: string
+    currentPeriodEnd: string | null
+  }[]
+}
+
+function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
+  const [data, setData] = useState<SubscriptionDetail | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [lockLoading, setLockLoading] = useState(false)
+
+  const loadBilling = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/owner/tenants/${tenantId}/billing`, {
+        credentials: "include",
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Billing-Details konnten nicht geladen werden.")
+      }
+
+      setData(payload)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Billing-Details konnten nicht geladen werden.")
+    } finally {
+      setLoading(false)
+    }
+  }, [tenantId])
+
+  useEffect(() => {
+    void loadBilling()
+  }, [loadBilling])
+
+  async function handleLock() {
+    try {
+      setLockLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/owner/tenants/${tenantId}/billing/lock`, {
+        method: "POST",
+        credentials: "include",
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Tenant konnte nicht gesperrt werden.")
+      }
+
+      await loadBilling()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tenant konnte nicht gesperrt werden.")
+    } finally {
+      setLockLoading(false)
+    }
+  }
+
+  async function handleUnlock() {
+    try {
+      setLockLoading(true)
+      setError(null)
+
+      const response = await fetch(`/api/owner/tenants/${tenantId}/billing/unlock`, {
+        method: "POST",
+        credentials: "include",
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(payload.error ?? "Tenant konnte nicht freigeschaltet werden.")
+      }
+
+      await loadBilling()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Tenant konnte nicht freigeschaltet werden.")
+    } finally {
+      setLockLoading(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-48 rounded-[28px]" />
+        <Skeleton className="h-32 rounded-[28px]" />
+      </div>
+    )
+  }
+
+  if (error && !data) {
+    return (
+      <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Fehler</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (!data) {
+    return (
+      <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
+        <CreditCard className="mx-auto h-8 w-8 text-slate-300" />
+        <p className="mt-3 text-sm font-semibold text-slate-700">Keine Billing-Daten</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Fuer diesen Tenant liegen noch keine Abo-Informationen vor.
+        </p>
+      </div>
+    )
+  }
+
+  function subStatusLabel(status: string) {
+    switch (status) {
+      case "active":
+        return "Aktiv"
+      case "past_due":
+        return "Ueberfaellig"
+      case "canceling":
+        return "In Kuendigung"
+      case "canceled":
+        return "Gekuendigt"
+      default:
+        return "Kein Abo"
+    }
+  }
+
+  function subStatusBadgeClasses(status: string) {
+    switch (status) {
+      case "active":
+        return "bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]"
+      case "past_due":
+        return "bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]"
+      case "canceling":
+        return "bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]"
+      case "canceled":
+        return "bg-[#f1f5f9] text-[#64748b] hover:bg-[#f1f5f9]"
+      default:
+        return "bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#f1f5f9]"
+    }
+  }
+
+  function accessLabel(state: string) {
+    switch (state) {
+      case "accessible":
+        return "Zugang aktiv"
+      case "manual_locked":
+        return "Manuell gesperrt"
+      case "billing_blocked":
+        return "Billing-Block"
+      default:
+        return state
+    }
+  }
+
+  function accessBadgeClasses(state: string) {
+    switch (state) {
+      case "accessible":
+        return "bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]"
+      case "manual_locked":
+        return "bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]"
+      case "billing_blocked":
+        return "bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]"
+      default:
+        return "bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#f1f5f9]"
+    }
+  }
+
+  const isLocked = data.accessState === "manual_locked"
+
+  return (
+    <div className="space-y-6">
+      {error && (
+        <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Subscription Status */}
+        <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <CardHeader className="space-y-3">
+            <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
+              <CreditCard className="h-5 w-5 text-[#0d9488]" />
+              Abo-Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Status</span>
+              <Badge className={`rounded-full ${subStatusBadgeClasses(data.subscriptionStatus)}`}>
+                {subStatusLabel(data.subscriptionStatus)}
+              </Badge>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Naechste Abrechnung</span>
+              <span className="text-sm font-semibold text-slate-900">
+                {data.subscriptionPeriodEnd
+                  ? new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(
+                      new Date(data.subscriptionPeriodEnd)
+                    )
+                  : "--"}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Gesamtbetrag / Periode</span>
+              <span className="text-sm font-semibold text-slate-900">
+                {data.totalAmount > 0
+                  ? new Intl.NumberFormat("de-DE", {
+                      style: "currency",
+                      currency: data.currency.toUpperCase(),
+                    }).format(data.totalAmount / 100)
+                  : "--"}
+              </span>
+            </div>
+
+            {data.subscriptionStatus === "past_due" && (
+              <div className="rounded-2xl bg-[#fef2f2] px-4 py-3 text-sm text-[#dc2626]">
+                <AlertTriangle className="mb-1 inline h-4 w-4" /> Die letzte Zahlung dieses
+                Tenants ist fehlgeschlagen.
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Access Override */}
+        <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <CardHeader className="space-y-3">
+            <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
+              <ShieldCheck className="h-5 w-5 text-[#b85e34]" />
+              Zugang
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">Zugangs-Status</span>
+              <Badge className={`rounded-full ${accessBadgeClasses(data.accessState)}`}>
+                {accessLabel(data.accessState)}
+              </Badge>
+            </div>
+
+            {data.ownerLockedAt && (
+              <div className="rounded-2xl bg-[#fef2f2] px-4 py-3 text-sm text-[#dc2626]">
+                <Lock className="mb-1 inline h-4 w-4" /> Manuell gesperrt am{" "}
+                {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(
+                  new Date(data.ownerLockedAt)
+                )}
+                {data.ownerLockReason && (
+                  <>
+                    <br />
+                    Grund: {data.ownerLockReason}
+                  </>
+                )}
+              </div>
+            )}
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                {isLocked ? (
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full border-[#0d9488] text-[#0d9488] hover:bg-[#edf8f6] hover:text-[#0b7c72]"
+                    disabled={lockLoading}
+                  >
+                    {lockLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Unlock className="mr-2 h-4 w-4" />
+                    )}
+                    Tenant freischalten
+                  </Button>
+                ) : (
+                  <Button
+                    variant="outline"
+                    className="w-full rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    disabled={lockLoading}
+                  >
+                    {lockLoading ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Lock className="mr-2 h-4 w-4" />
+                    )}
+                    Tenant sperren
+                  </Button>
+                )}
+              </AlertDialogTrigger>
+              <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>
+                    {isLocked ? "Tenant freischalten?" : "Tenant sperren?"}
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="leading-6">
+                    {isLocked
+                      ? "Der Tenant erhaelt wieder Zugang zur Plattform, sofern der Billing-Status dies zulässt."
+                      : "Der Tenant verliert sofort den Zugang zur Plattform, unabhaengig vom Abo-Status. Das Abo bei Stripe bleibt davon unberuehrt."}
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+                  <AlertDialogAction
+                    className={cn(
+                      "rounded-full",
+                      isLocked
+                        ? "bg-[#0d9488] text-white hover:bg-[#0b7c72]"
+                        : "bg-[#9f4f2d] text-white hover:bg-[#7c3d1d]"
+                    )}
+                    onClick={() => void (isLocked ? handleUnlock() : handleLock())}
+                  >
+                    {isLocked ? "Freischalten" : "Sperren"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Module Breakdown */}
+      <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+        <CardHeader className="space-y-3">
+          <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
+            <Package className="h-5 w-5 text-[#b85e34]" />
+            Gebuchte Module
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {data.modules.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-10 text-center">
+              <Package className="mx-auto h-8 w-8 text-slate-300" />
+              <p className="mt-3 text-sm font-semibold text-slate-700">Keine Module gebucht</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Dieser Tenant hat noch keine zusaetzlichen Module abonniert.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {data.modules.map((mod) => (
+                <div
+                  key={mod.id}
+                  className="flex items-center justify-between rounded-2xl border border-[#e6ddd0] bg-[#fffdf9] px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">{mod.name}</p>
+                    <p className="text-xs text-slate-500">
+                      {mod.status === "active"
+                        ? "Aktiv"
+                        : mod.status === "canceling"
+                          ? `Endet am ${mod.currentPeriodEnd ? new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(new Date(mod.currentPeriodEnd)) : "--"}`
+                          : "Beendet"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-slate-900">
+                      {new Intl.NumberFormat("de-DE", {
+                        style: "currency",
+                        currency: mod.currency.toUpperCase(),
+                      }).format(mod.price / 100)}
+                    </p>
+                    <p className="text-xs text-slate-500">/ 4 Wochen</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

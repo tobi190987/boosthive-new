@@ -73,6 +73,8 @@ export function OwnerTenantTable({
 }: OwnerTenantTableProps) {
   const [confirmTenant, setConfirmTenant] = useState<OwnerTenantRecord | null>(null)
   const [deleteTenant, setDeleteTenant] = useState<OwnerTenantRecord | null>(null)
+  const activeCount = tenants.filter((tenant) => tenant.status === 'active').length
+  const pausedCount = tenants.filter((tenant) => tenant.status === 'inactive').length
 
   if (tenants.length === 0) {
     return (
@@ -91,13 +93,32 @@ export function OwnerTenantTable({
   return (
     <>
       <div className="overflow-hidden rounded-[30px] border border-[#e7ddd1] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <div className="flex flex-col gap-4 border-b border-[#ece2d5] px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+              Owner Directory
+            </p>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+              Agenturen im System
+            </h2>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600">
+              {activeCount} aktiv
+            </div>
+            <div className="rounded-full border border-[#e9ddcf] bg-[#faf5ee] px-4 py-2 text-sm text-slate-600">
+              {pausedCount} pausiert
+            </div>
+          </div>
+        </div>
+
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               <TableHead className="pl-6">Tenant</TableHead>
               <TableHead>Subdomain</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Members</TableHead>
+              <TableHead>User</TableHead>
               <TableHead>Erstellt</TableHead>
               <TableHead className="pr-6 text-right">Aktionen</TableHead>
             </TableRow>

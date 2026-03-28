@@ -367,7 +367,7 @@ export function OwnerDashboardWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto rounded-full bg-[#f4eee6] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-[#f4eee6] p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
                     Alle
                   </TabsTrigger>
@@ -381,7 +381,7 @@ export function OwnerDashboardWorkspace() {
               </Tabs>
 
               <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                <p>Owner-API liefert jetzt Suche, Filter und Member-Counts serverseitig.</p>
+                <p>Suche, Filter und Member-Counts werden serverseitig konsistent fuer alle Agenturen geladen.</p>
                 <p>{rangeLabel}</p>
               </div>
 
