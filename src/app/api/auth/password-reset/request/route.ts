@@ -51,13 +51,15 @@ export async function POST(request: NextRequest) {
   if (resetError) {
     console.error(
       '[POST /api/auth/password-reset/request] RPC fehlgeschlagen:',
-      resetError
+      JSON.stringify(resetError)
     )
     return NextResponse.json(
       { error: 'Reset-Anfrage konnte nicht verarbeitet werden.' },
       { status: 500 }
     )
   }
+
+  console.log('[POST /api/auth/password-reset/request] RPC result:', JSON.stringify(resetResult))
 
   const result = resetResult as {
     created: boolean
