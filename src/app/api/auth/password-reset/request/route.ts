@@ -30,62 +30,139 @@ export async function POST(request: NextRequest) {
 
   const { rawToken, tokenHash, expiresAt } = createPasswordResetToken()
   const supabaseAdmin = createAdminClient()
+  const normalizedEmail = parsed.data.email.trim().toLowerCase()
 
-  const { data, error } = await supabaseAdmin.rpc('create_password_reset_request', {
-    p_email: parsed.data.email,
-    p_tenant_id: tenantId,
-    p_token_hash: tokenHash,
-    p_expires_at: expiresAt.toISOString(),
+  const { data: tenant, error: tenantError } = await supabaseAdmin
+    .from('tenants')
+    .select('id, name, slug')
+    .eq('id', tenantId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (tenantError) {
+    console.error('[POST /api/auth/password-reset/request] Tenant-Lookup fehlgeschlagen:', tenantError)
+    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
+  }
+
+  if (!tenant) {
+    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
+  }
+
+  const existingUserLookup = await supabaseAdmin.rpc('find_auth_user_by_email', {
+    p_email: normalizedEmail,
   })
 
-  if (error) {
-    console.error('[POST /api/auth/password-reset/request] RPC-Fehler:', error)
-    return NextResponse.json(
-      { error: 'Reset-Anfrage konnte nicht verarbeitet werden.' },
-      { status: 500 }
+  if (existingUserLookup.error) {
+    console.error(
+      '[POST /api/auth/password-reset/request] User-Lookup fehlgeschlagen:',
+      existingUserLookup.error
     )
+    return NextResponse.json({ error: 'Reset-Anfrage konnte nicht verarbeitet werden.' }, { status: 500 })
   }
 
-  if (data?.created) {
-    const resetUrl = buildPasswordResetUrl(request, rawToken)
+  const userId = existingUserLookup.data?.[0]?.id as string | undefined
+  if (!userId) {
+    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
+  }
 
-    after(async () => {
-      try {
-        await sendPasswordReset({
-          to: data.email,
-          tenantName: data.tenant_name,
-          tenantSlug: data.tenant_slug,
-          resetUrl,
-        })
+  const { data: membership, error: membershipError } = await supabaseAdmin
+    .from('tenant_members')
+    .select('id')
+    .eq('tenant_id', tenantId)
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle()
 
-        const { data: finalizeData, error: finalizeError } = await supabaseAdmin.rpc(
-          'finalize_password_reset_request',
-          {
-            p_token_id: data.token_id,
-            p_user_id: data.user_id,
-            p_tenant_id: tenantId,
-          }
-        )
+  if (membershipError) {
+    console.error(
+      '[POST /api/auth/password-reset/request] Membership-Lookup fehlgeschlagen:',
+      membershipError
+    )
+    return NextResponse.json({ error: 'Reset-Anfrage konnte nicht verarbeitet werden.' }, { status: 500 })
+  }
 
-        if (finalizeError || !finalizeData?.finalized) {
-          console.error(
-            '[POST /api/auth/password-reset/request] Token-Aktivierung fehlgeschlagen:',
-            finalizeError ?? finalizeData
-          )
-          await supabaseAdmin.rpc('cancel_password_reset_request', {
-            p_token_id: data.token_id,
-            p_tenant_id: tenantId,
-          })
-        }
-      } catch (mailError) {
-        console.error('[POST /api/auth/password-reset/request] Mailversand fehlgeschlagen:', mailError)
-        await supabaseAdmin.rpc('cancel_password_reset_request', {
-          p_token_id: data.token_id,
-          p_tenant_id: tenantId,
-        })
-      }
+  if (!membership) {
+    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
+  }
+
+  const { data: createdToken, error: createTokenError } = await supabaseAdmin
+    .from('password_reset_tokens')
+    .insert({
+      user_id: userId,
+      tenant_id: tenantId,
+      token_hash: tokenHash,
+      status: 'pending',
+      expires_at: expiresAt.toISOString(),
     })
+    .select('id')
+    .single()
+
+  if (createTokenError || !createdToken) {
+    console.error(
+      '[POST /api/auth/password-reset/request] Reset-Token konnte nicht erstellt werden:',
+      createTokenError
+    )
+    return NextResponse.json({ error: 'Reset-Anfrage konnte nicht verarbeitet werden.' }, { status: 500 })
   }
+
+  const resetUrl = buildPasswordResetUrl(request, rawToken)
+
+  after(async () => {
+    try {
+      await sendPasswordReset({
+        to: normalizedEmail,
+        tenantName: tenant.name,
+        tenantSlug: tenant.slug,
+        resetUrl,
+        token: rawToken,
+      })
+
+      const { data: finalizedToken, error: finalizeError } = await supabaseAdmin
+        .from('password_reset_tokens')
+        .update({ status: 'active' })
+        .eq('id', createdToken.id)
+        .eq('tenant_id', tenantId)
+        .eq('user_id', userId)
+        .eq('status', 'pending')
+        .select('id')
+        .maybeSingle()
+
+      if (finalizeError || !finalizedToken) {
+        console.error(
+          '[POST /api/auth/password-reset/request] Token-Aktivierung fehlgeschlagen:',
+          finalizeError
+        )
+        await supabaseAdmin
+          .from('password_reset_tokens')
+          .update({ status: 'invalidated' })
+          .eq('id', createdToken.id)
+          .eq('tenant_id', tenantId)
+        return
+      }
+
+      const { error: invalidateOldTokensError } = await supabaseAdmin
+        .from('password_reset_tokens')
+        .update({ status: 'invalidated' })
+        .eq('tenant_id', tenantId)
+        .eq('user_id', userId)
+        .neq('id', createdToken.id)
+        .in('status', ['pending', 'active'])
+
+      if (invalidateOldTokensError) {
+        console.error(
+          '[POST /api/auth/password-reset/request] Ältere Reset-Tokens konnten nicht invalidiert werden:',
+          invalidateOldTokensError
+        )
+      }
+    } catch (mailError) {
+      console.error('[POST /api/auth/password-reset/request] Mailversand fehlgeschlagen:', mailError)
+      await supabaseAdmin
+        .from('password_reset_tokens')
+        .update({ status: 'invalidated' })
+        .eq('id', createdToken.id)
+        .eq('tenant_id', tenantId)
+    }
+  })
 
   return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
 }
