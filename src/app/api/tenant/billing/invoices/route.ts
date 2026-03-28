@@ -42,22 +42,26 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Fetch paid + open invoices (no status filter = all finalized)
     const stripeInvoices = await stripe.invoices.list({
       customer: tenant.stripe_customer_id,
       limit: 12,
-      status: 'paid',
     })
 
-    const invoices = stripeInvoices.data.map((inv) => ({
-      id: inv.id,
-      number: inv.number,
-      amount_paid: inv.amount_paid,
-      currency: inv.currency,
-      status: inv.status,
-      created: inv.created,
-      invoice_pdf: inv.invoice_pdf,
-      hosted_invoice_url: inv.hosted_invoice_url,
-    }))
+    const invoices = stripeInvoices.data
+      .filter((inv) => inv.status === 'paid' || inv.status === 'open')
+      .map((inv) => ({
+        id: inv.id,
+        number: inv.number,
+        amount_due: inv.amount_due,
+        amount_paid: inv.amount_paid,
+        currency: inv.currency,
+        status: inv.status,
+        created: inv.created,
+        due_date: inv.due_date,
+        invoice_pdf: inv.invoice_pdf,
+        hosted_invoice_url: inv.hosted_invoice_url,
+      }))
 
     return NextResponse.json({ invoices })
   } catch (err) {

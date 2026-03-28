@@ -48,10 +48,12 @@ interface ModuleRecord {
 interface InvoiceRecord {
   id: string
   number: string | null
+  amount_due: number
   amount_paid: number
   currency: string
   status: string | null
   created: number
+  due_date: number | null
   invoice_pdf: string | null
   hosted_invoice_url: string | null
 }
@@ -742,36 +744,59 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
           </CardHeader>
           <CardContent>
             <div className="divide-y divide-[#f1ebe3]">
-              {invoices.map((inv) => (
-                <div key={inv.id} className="flex items-center justify-between py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {inv.number ?? inv.id}
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      {new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(
-                        new Date(inv.created * 1000)
-                      )}
-                    </p>
+              {invoices.map((inv) => {
+                const isPaid = inv.status === 'paid'
+                const displayAmount = isPaid ? inv.amount_paid : inv.amount_due
+                const dateLabel = isPaid
+                  ? new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date(inv.created * 1000))
+                  : inv.due_date
+                    ? `Fällig am ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date(inv.due_date * 1000))}`
+                    : 'Ausstehend'
+
+                return (
+                  <div key={inv.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {inv.number ?? 'Ausstehende Rechnung'}
+                        </p>
+                        {!isPaid && (
+                          <span className="rounded-full bg-[#fff8ed] px-2 py-0.5 text-[11px] font-medium text-[#b85e34]">
+                            Offen
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500">{dateLabel}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-semibold text-slate-900">
+                        {formatAmount(displayAmount, inv.currency)}
+                      </span>
+                      {inv.invoice_pdf ? (
+                        <a
+                          href={inv.invoice_pdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-full border border-[#ded4c7] px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#f7f3ed] transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          PDF
+                        </a>
+                      ) : inv.hosted_invoice_url ? (
+                        <a
+                          href={inv.hosted_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-full border border-[#ded4c7] px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#f7f3ed] transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Ansehen
+                        </a>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="text-sm font-semibold text-slate-900">
-                      {formatAmount(inv.amount_paid, inv.currency)}
-                    </span>
-                    {inv.invoice_pdf && (
-                      <a
-                        href={inv.invoice_pdf}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 rounded-full border border-[#ded4c7] px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-[#f7f3ed] transition-colors"
-                      >
-                        <Download className="h-3.5 w-3.5" />
-                        PDF
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
