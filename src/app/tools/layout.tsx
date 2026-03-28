@@ -16,6 +16,7 @@ export default async function ToolsLayout({ children }: { children: ReactNode })
       eyebrow="Tools"
       title="Tools"
       description="Nutze KI-gestützte Marketing-Tools für deinen Workspace."
+      showHeader={false}
     >
       {children}
     </TenantAppShell>

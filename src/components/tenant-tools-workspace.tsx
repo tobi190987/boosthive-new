@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
   FileSearch,
   Globe,
   Image as ImageIcon,
+  Info,
   Link2,
   Loader2,
   Lock,
@@ -64,6 +66,13 @@ interface PageActionResult {
   debug?: string
 }
 
+interface CriticalProblemFilter {
+  key: string
+  label: string
+  count: number
+  matches: (page: SeoPageResult) => boolean
+}
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString('de-DE', {
     day: '2-digit',
@@ -110,6 +119,99 @@ function technicalBadge(ok: boolean) {
     : 'border-red-200 bg-red-50 text-red-700'
 }
 
+function formatCrawlModeLabel(crawlMode: SeoCrawlMode) {
+  if (crawlMode === 'single') return 'einzelne Seite'
+  if (crawlMode === 'multiple') return 'mehrere Seiten'
+  return 'gesamte Domain'
+}
+
+function decodeHtmlEntities(text: string) {
+  const namedEntities: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+    ndash: '–',
+    mdash: '—',
+    hellip: '…',
+    laquo: '«',
+    raquo: '»',
+    copy: '©',
+    reg: '®',
+    trade: '™',
+  }
+
+  return text.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (entity, value: string) => {
+    const normalized = value.toLowerCase()
+
+    if (normalized.startsWith('#x')) {
+      const codePoint = Number.parseInt(normalized.slice(2), 16)
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity
+    }
+
+    if (normalized.startsWith('#')) {
+      const codePoint = Number.parseInt(normalized.slice(1), 10)
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity
+    }
+
+    return namedEntities[normalized] ?? entity
+  })
+}
+
+function sanitizeSeoText(text: string) {
+  return decodeHtmlEntities(text).replace(/\s+/g, ' ').trim()
+}
+
+function getAnalysisHref(analysisId: string) {
+  return `/tools/seo-analyse/${analysisId}`
+}
+
+function extractHostname(rawUrl: string | null | undefined) {
+  if (!rawUrl) return null
+
+  try {
+    return new URL(rawUrl).hostname.replace(/^www\./, '')
+  } catch {
+    return rawUrl
+  }
+}
+
+function getTechnicalCheckDescription(label: string) {
+  const descriptions: Record<string, string> = {
+    HTTPS: 'Prüft, ob die Seite verschlüsselt per HTTPS ausgeliefert wird.',
+    'Viewport Meta':
+      'Wichtig für saubere Darstellung und korrekte Skalierung auf mobilen Geräten.',
+    'Charset definiert':
+      'Legt die Zeichenkodierung fest, damit Umlaute und Sonderzeichen korrekt erscheinen.',
+    'Favicon vorhanden':
+      'Hilft bei Wiedererkennbarkeit in Browser-Tabs, Bookmarks und Suchergebnissen.',
+    'Strukturierte Daten':
+      'Schema-Markup erleichtert Suchmaschinen das Verstehen der Seiteninhalte.',
+    'Hreflang Tags':
+      'Zeigt Suchmaschinen die passenden Sprach- oder Länderversionen einer Seite.',
+    'Robots Meta':
+      'Steuert, ob und wie Suchmaschinen die Seite indexieren oder Links verfolgen sollen.',
+  }
+
+  return descriptions[label] ?? ''
+}
+
+function getLighthouseScoreDescription(label: string) {
+  const descriptions: Record<string, string> = {
+    Performance:
+      'Bewertet Ladegeschwindigkeit, Stabilität und Reaktionsfähigkeit der Seite.',
+    Accessibility:
+      'Prüft, wie gut die Seite für Menschen mit Einschränkungen nutzbar ist.',
+    'Best Practices':
+      'Bewertet technische Qualitätsstandards wie Sicherheit, saubere Implementierung und moderne Web-Standards.',
+    SEO: 'Prüft grundlegende technische und inhaltliche Voraussetzungen für gute Auffindbarkeit in Suchmaschinen.',
+  }
+
+  return descriptions[label] ?? ''
+}
+
 function MarkdownInsights({ text }: { text: string }) {
   const lines = text.split('\n')
 
@@ -142,6 +244,75 @@ function MarkdownInsights({ text }: { text: string }) {
           <p key={`${line}-${index}`} className="text-sm leading-6 text-slate-600">
             {line}
           </p>
+        )
+      })}
+    </div>
+  )
+}
+
+function CriticalProblemList({
+  filters,
+  activeFilterKey,
+  onSelect,
+}: {
+  filters: CriticalProblemFilter[]
+  activeFilterKey: string | null
+  onSelect: (filterKey: string | null) => void
+}) {
+  if (filters.length === 0) {
+    return <MarkdownInsights text="- Keine kritischen Muster erkannt." />
+  }
+
+  return (
+    <div className="space-y-2.5">
+      {filters.map((filter) => {
+        const isActive = filter.key === activeFilterKey
+
+        return (
+          <button
+            key={filter.key}
+            type="button"
+            onClick={() => onSelect(isActive ? null : filter.key)}
+            className={cn(
+              'group flex w-full items-center justify-between gap-3 rounded-[22px] border px-3.5 py-3 text-left transition',
+              isActive
+                ? 'border-[#d7efe9] bg-[linear-gradient(135deg,#f2fbf8_0%,#e7f7f2_100%)] text-[#0d7d72]'
+                : 'border-[#ead9cb] bg-[linear-gradient(135deg,#fffaf6_0%,#fff3eb_100%)] text-slate-800 hover:border-[#d9c0ad] hover:bg-[linear-gradient(135deg,#fff7f1_0%,#ffefe4_100%)]'
+            )}
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <div
+                className={cn(
+                  'mt-0.5 flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[18px] border',
+                  isActive
+                    ? 'border-[#bde3dc] bg-white text-[#0d9488]'
+                    : 'border-[#efd8c7] bg-white/80 text-[#b85e34]'
+                )}
+              >
+                <AlertCircle className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className={cn('text-sm font-semibold', isActive ? 'text-[#0f766e]' : 'text-slate-900')}>
+                  {filter.label}
+                </p>
+                {isActive ? (
+                  <p className="mt-0.5 text-[11px] leading-4.5 text-[#0d7d72]/80">
+                    Aktiv. Im Detailbereich siehst du jetzt zuerst genau diese Seiten.
+                  </p>
+                ) : null}
+              </div>
+            </div>
+            <div
+              className={cn(
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
+                isActive
+                  ? 'border-[#bde3dc] bg-white text-[#0d9488]'
+                  : 'border-[#e6d6c8] bg-white/80 text-slate-400 group-hover:text-slate-600'
+              )}
+            >
+              <ArrowRight className={cn('h-4 w-4 transition-transform', isActive && 'rotate-90')} />
+            </div>
+          </button>
         )
       })}
     </div>
@@ -199,6 +370,8 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
   const [actionsLoading, setActionsLoading] = useState(false)
   const tone = scoreTone(page.score)
   const { toast } = useToast()
+  const pageTitle = sanitizeSeoText(page.title)
+  const pageMetaDescription = sanitizeSeoText(page.metaDescription)
 
   const generateActions = async () => {
     try {
@@ -211,8 +384,8 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
         credentials: 'include',
         body: JSON.stringify({
           url: page.url,
-          title: page.title,
-          metaDescription: page.metaDescription,
+          title: pageTitle,
+          metaDescription: pageMetaDescription,
           h1s: page.h1s,
           wordCount: page.wordCount,
           issues: page.issues,
@@ -264,7 +437,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-slate-900">
-                {page.title || 'Kein Title vorhanden'}
+                {pageTitle || 'Kein Title vorhanden'}
               </p>
               <p className="truncate text-xs text-slate-500">{page.url}</p>
             </div>
@@ -293,7 +466,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
                 Title
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                {page.title || 'Nicht vorhanden'}
+                {pageTitle || 'Nicht vorhanden'}
               </p>
             </div>
             <div className="rounded-2xl bg-[#f7f3ed] p-4">
@@ -302,7 +475,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
                 Meta Description
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                {page.metaDescription || 'Nicht vorhanden'}
+                {pageMetaDescription || 'Nicht vorhanden'}
               </p>
             </div>
             <div className="rounded-2xl bg-[#f7f3ed] p-4">
@@ -313,6 +486,16 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
               <p className="mt-2 text-sm leading-6 text-slate-700">
                 H1: {page.h1s.length} · H2: {page.h2s.length}
               </p>
+              <div className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+                <p>
+                  <span className="font-medium text-slate-900">H1:</span>{' '}
+                  {page.h1s.length > 0 ? page.h1s.join(' | ') : 'Nicht vorhanden'}
+                </p>
+                <p>
+                  <span className="font-medium text-slate-900">H2:</span>{' '}
+                  {page.h2s.length > 0 ? page.h2s.join(' | ') : 'Nicht vorhanden'}
+                </p>
+              </div>
             </div>
             <div className="rounded-2xl bg-[#f7f3ed] p-4">
               <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
@@ -406,14 +589,16 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                     Neuer Title
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{actions.improvedTitle}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {sanitizeSeoText(actions.improvedTitle)}
+                  </p>
                 </div>
                 <div className="rounded-2xl bg-white p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
                     Neue Meta Description
                   </p>
                   <p className="mt-2 text-sm leading-6 text-slate-700">
-                    {actions.improvedMetaDescription}
+                    {sanitizeSeoText(actions.improvedMetaDescription)}
                   </p>
                 </div>
                 <div className="rounded-2xl bg-white p-4">
@@ -446,17 +631,31 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
 }
 
 function SeoResultsView({
-  result,
   analysisId,
+  result,
+  tenantName,
+  tenantSlug,
+  tenantLogoUrl,
+  createdAt,
+  sourceUrl,
+  crawlMode,
   onBack,
 }: {
-  result: SeoAnalysisResult
   analysisId: string
+  result: SeoAnalysisResult
+  tenantName: string
+  tenantSlug: string
+  tenantLogoUrl: string | null
+  createdAt?: string | null
+  sourceUrl?: string | null
+  crawlMode?: SeoCrawlMode | null
   onBack: () => void
 }) {
   const tone = scoreTone(result.overallScore)
   const [detailsPage, setDetailsPage] = useState(1)
-  const criticalProblems = extractInsightSection(result.aiInsights, 'Kritische Probleme')
+  const [activeProblemFilterKey, setActiveProblemFilterKey] = useState<string | null>(null)
+  const printRef = useRef<HTMLDivElement | null>(null)
+  const { toast } = useToast()
   const recommendations = extractInsightSection(result.aiInsights, 'Handlungsempfehlungen')
   const sortedPages = useMemo(
     () =>
@@ -470,11 +669,124 @@ function SeoResultsView({
       }),
     [result.pages]
   )
-  const totalDetailPages = Math.max(1, Math.ceil(sortedPages.length / DETAIL_PAGE_SIZE))
-  const paginatedPages = sortedPages.slice(
+  const criticalProblemFilters = useMemo<CriticalProblemFilter[]>(
+    () =>
+      [
+        {
+          key: 'missing-meta-description',
+          label: `${result.pages.filter((page) => !page.metaDescription).length} Seiten ohne Meta-Description`,
+          count: result.pages.filter((page) => !page.metaDescription).length,
+          matches: (page: SeoPageResult) => !page.metaDescription,
+        },
+        {
+          key: 'invalid-h1-structure',
+          label: `${result.pages.filter((page) => page.h1s.length !== 1).length} Seiten mit fehlerhafter H1-Struktur`,
+          count: result.pages.filter((page) => page.h1s.length !== 1).length,
+          matches: (page: SeoPageResult) => page.h1s.length !== 1,
+        },
+        {
+          key: 'missing-alt-text',
+          label: `${result.pages.filter((page) => page.images.withoutAlt > 0).length} Seiten mit fehlenden Alt-Texten`,
+          count: result.pages.filter((page) => page.images.withoutAlt > 0).length,
+          matches: (page: SeoPageResult) => page.images.withoutAlt > 0,
+        },
+        {
+          key: 'missing-title',
+          label: `${result.pages.filter((page) => !page.title).length} Seiten ohne Title`,
+          count: result.pages.filter((page) => !page.title).length,
+          matches: (page: SeoPageResult) => !page.title,
+        },
+      ].filter((filter) => filter.count > 0),
+    [result.pages]
+  )
+  const activeProblemFilter =
+    criticalProblemFilters.find((filter) => filter.key === activeProblemFilterKey) ?? null
+  const matchingPages = activeProblemFilter
+    ? sortedPages.filter((page) => activeProblemFilter.matches(page))
+    : sortedPages
+  const hiddenPagesCount = activeProblemFilter ? sortedPages.length - matchingPages.length : 0
+  const totalDetailPages = Math.max(1, Math.ceil(matchingPages.length / DETAIL_PAGE_SIZE))
+  const paginatedPages = matchingPages.slice(
     (detailsPage - 1) * DETAIL_PAGE_SIZE,
     detailsPage * DETAIL_PAGE_SIZE
   )
+  const handleProblemFilterSelect = useCallback((filterKey: string | null) => {
+    setActiveProblemFilterKey(filterKey)
+    setDetailsPage(1)
+  }, [setDetailsPage])
+
+  const handleExportPdf = useCallback(() => {
+    if (!printRef.current) {
+      toast({
+        title: 'PDF konnte nicht vorbereitet werden',
+        description: 'Der Report ist gerade noch nicht verfügbar.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
+      .map((node) => node.outerHTML)
+      .join('')
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.className = 'fixed right-0 top-0 h-0 w-0 border-0 opacity-0'
+    document.body.appendChild(frame)
+
+    const html = `<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <base href="${window.location.origin}" />
+    <title>SEO-Analyse ${tenantSlug}-${analysisId.slice(0, 8)}</title>
+    ${styles}
+    <style>
+      @page { size: A4; margin: 14mm 12mm; }
+      html, body { background: #ffffff; }
+      body {
+        margin: 0;
+        color: #0f172a;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .print-avoid-break {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
+    </style>
+  </head>
+  <body>
+    ${printRef.current.innerHTML}
+  </body>
+</html>`
+
+    const printWindow = frame.contentWindow
+    if (!printWindow) {
+      frame.remove()
+      toast({
+        title: 'PDF konnte nicht vorbereitet werden',
+        description: 'Das Druckfenster konnte nicht initialisiert werden.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    const cleanup = () => {
+      window.setTimeout(() => {
+        frame.remove()
+      }, 1000)
+    }
+
+    printWindow.document.open()
+    printWindow.document.write(html)
+    printWindow.document.close()
+
+    window.setTimeout(() => {
+      printWindow.focus()
+      printWindow.print()
+      cleanup()
+    }, 500)
+  }, [analysisId, tenantSlug, toast])
 
   return (
     <div className="space-y-6">
@@ -488,9 +800,28 @@ function SeoResultsView({
           <ArrowLeft className="h-4 w-4" />
           Zur Übersicht
         </Button>
-        <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">
-          Analyse-ID: {analysisId.slice(0, 8)}
-        </Badge>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleExportPdf}
+          className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
+        >
+          PDF speichern
+        </Button>
+      </div>
+
+      <div className="pointer-events-none fixed left-[-10000px] top-0 w-[210mm] opacity-0">
+        <div ref={printRef}>
+          <SeoReportContent
+            result={result}
+            tenantName={tenantName}
+            tenantSlug={tenantSlug}
+            tenantLogoUrl={tenantLogoUrl}
+            createdAt={createdAt}
+            sourceUrl={sourceUrl}
+            crawlMode={crawlMode}
+          />
+        </div>
       </div>
 
       <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
@@ -554,8 +885,10 @@ function SeoResultsView({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <MarkdownInsights
-              text={criticalProblems || '- Keine kritischen Muster erkannt.'}
+            <CriticalProblemList
+              filters={criticalProblemFilters}
+              activeFilterKey={activeProblemFilterKey}
+              onSelect={handleProblemFilterSelect}
             />
           </CardContent>
         </Card>
@@ -594,14 +927,34 @@ function SeoResultsView({
                   ['Accessibility', result.technicalSeo.lighthouseScores.accessibility],
                   ['Best Practices', result.technicalSeo.lighthouseScores.bestPractices],
                   ['SEO', result.technicalSeo.lighthouseScores.seo],
-                ].map(([label, value]) => (
-                  <div key={label} className="rounded-2xl bg-[#f7f3ed] p-4">
-                    <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                      {label}
-                    </p>
-                    <p className="mt-2 text-2xl font-semibold text-slate-900">{value ?? '—'}</p>
-                  </div>
-                ))}
+                ].map(([label, value]) => {
+                  const description = getLighthouseScoreDescription(String(label))
+
+                  return (
+                    <div key={String(label)} className="rounded-2xl bg-[#f7f3ed] p-4">
+                      <div className="flex items-center gap-2">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                          {String(label)}
+                        </p>
+                        {description ? (
+                          <div className="group/info relative">
+                            <button
+                              type="button"
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                              aria-label={`Erklärung zu ${String(label)}`}
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-56 -translate-x-1/2 rounded-xl border border-[#ded4c7] bg-white px-3 py-2 text-xs font-normal normal-case tracking-normal text-slate-700 opacity-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
+                              {description}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                      <p className="mt-2 text-2xl font-semibold text-slate-900">{value ?? '—'}</p>
+                    </div>
+                  )
+                })}
               </div>
             ) : (
               <Alert className="rounded-[24px] border-[#e6ddd0] bg-[#f7f3ed]">
@@ -615,26 +968,46 @@ function SeoResultsView({
             )}
 
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-              {result.technicalSeo.checks.map((check) => (
-                <div
-                  key={check.label}
-                  className={cn(
-                    'rounded-2xl border px-4 py-3 text-sm',
-                    check.ok
-                      ? 'border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72]'
-                      : 'border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32]'
-                  )}
-                >
-                  <div className="flex items-center gap-2 font-medium">
-                    {check.ok ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4" />
+              {result.technicalSeo.checks.map((check) => {
+                const description = check.description ?? getTechnicalCheckDescription(check.label)
+
+                return (
+                  <div
+                    key={check.label}
+                    className={cn(
+                      'rounded-2xl border px-4 py-3 text-sm',
+                      check.ok
+                        ? 'border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72]'
+                        : 'border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32]'
                     )}
-                    {check.label}
+                  >
+                    <div className="flex items-center gap-2 font-medium">
+                      {check.ok ? (
+                        <CheckCircle2 className="h-4 w-4" />
+                      ) : (
+                        <AlertCircle className="h-4 w-4" />
+                      )}
+                      <span>{check.label}</span>
+                      {description ? (
+                        <div className="relative ml-auto">
+                          <div className="group/info relative flex">
+                            <button
+                              type="button"
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-current/70 transition hover:text-current focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/30"
+                              aria-label={`Erklärung zu ${check.label}`}
+                            >
+                              <Info className="h-3.5 w-3.5" />
+                            </button>
+                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] right-0 z-20 w-56 rounded-xl border border-[#ded4c7] bg-white px-3 py-2 text-xs font-normal leading-5 text-slate-700 opacity-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
+                              {description}
+                            </div>
+                          </div>
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -643,16 +1016,36 @@ function SeoResultsView({
       <div className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-          <h2 className="text-lg font-semibold text-slate-950">Seiten im Detail</h2>
-          <p className="text-sm text-slate-500">
-            Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.
-          </p>
+            <h2 className="text-lg font-semibold text-slate-950">Seiten im Detail</h2>
+            <p className="text-sm text-slate-500">
+              {activeProblemFilter
+                ? `Gefiltert nach: ${activeProblemFilter.label}. Diese Seiten stehen jetzt zuerst im Fokus.`
+                : 'Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.'}
+            </p>
           </div>
           <Badge className="rounded-full bg-[#f7f3ed] text-slate-600 hover:bg-[#f7f3ed]">
             {(detailsPage - 1) * DETAIL_PAGE_SIZE + 1}-
-            {Math.min(detailsPage * DETAIL_PAGE_SIZE, sortedPages.length)} von {sortedPages.length}
+            {Math.min(detailsPage * DETAIL_PAGE_SIZE, matchingPages.length)} von {matchingPages.length}
           </Badge>
         </div>
+        {activeProblemFilter ? (
+          <div className="flex flex-wrap items-center gap-3 rounded-[24px] border border-[#d7efe9] bg-[#edf8f6] px-4 py-3 text-sm text-[#0d7d72]">
+            <span>{activeProblemFilter.label}</span>
+            {hiddenPagesCount > 0 ? (
+              <span className="text-[#0f766e]">
+                {hiddenPagesCount} weitere Seiten sind aktuell ausgeblendet.
+              </span>
+            ) : null}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => handleProblemFilterSelect(null)}
+              className="rounded-full border-[#bde3dc] bg-white text-[#0d7d72] hover:bg-white"
+            >
+              Filter zurücksetzen
+            </Button>
+          </div>
+        ) : null}
         {paginatedPages.map((page) => (
           <PageResultCard key={page.url} page={page} />
         ))}
@@ -715,13 +1108,293 @@ function SeoResultsView({
   )
 }
 
+function SeoReportContent({
+  result,
+  tenantName,
+  tenantSlug,
+  tenantLogoUrl,
+  createdAt,
+  sourceUrl,
+  crawlMode,
+}: {
+  result: SeoAnalysisResult
+  tenantName: string
+  tenantSlug: string
+  tenantLogoUrl: string | null
+  createdAt?: string | null
+  sourceUrl?: string | null
+  crawlMode?: SeoCrawlMode | null
+}) {
+  const tone = scoreTone(result.overallScore)
+  const criticalProblems = extractInsightSection(result.aiInsights, 'Kritische Probleme')
+  const recommendations = extractInsightSection(result.aiInsights, 'Handlungsempfehlungen')
+  const printablePages = [...result.pages].sort((left, right) => {
+    const leftError = Boolean(left.error)
+    const rightError = Boolean(right.error)
+    if (leftError && !rightError) return 1
+    if (!leftError && rightError) return -1
+    if (leftError && rightError) return 0
+    return left.score - right.score
+  })
+
+  return (
+    <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-slate-900">
+      <section className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-[linear-gradient(135deg,#fffaf2_0%,#f6efe5_52%,#edf6f4_100%)] p-8">
+        <div className="flex items-start justify-between gap-6">
+          <div className="space-y-4">
+            <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
+              SEO-Analyse Report
+            </Badge>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+                {tenantName} / {tenantSlug}
+              </p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+                SEO-Analyse
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+                Sauber aufbereiteter Report mit Prioritäten, technischen Checks und den
+                wichtigsten Problemseiten.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex shrink-0 items-center justify-end">
+            {tenantLogoUrl ? (
+              <img
+                src={tenantLogoUrl}
+                alt={`${tenantName} Logo`}
+                className="max-h-16 max-w-[180px] object-contain"
+              />
+            ) : (
+              <div className="rounded-2xl border border-[#ded4c7] bg-white px-4 py-3 text-right">
+                <p className="text-sm font-semibold text-slate-900">{tenantName}</p>
+                <p className="text-xs text-slate-500">Agentur Branding</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-6 grid gap-3 md:grid-cols-3">
+          <div className="rounded-2xl bg-white/90 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Domain
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">
+              {extractHostname(sourceUrl) ?? 'Nicht verfügbar'}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white/90 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Crawl-Modus
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">
+              {crawlMode ? formatCrawlModeLabel(crawlMode) : 'Nicht verfügbar'}
+            </p>
+          </div>
+          <div className="rounded-2xl bg-white/90 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Erstellt am
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">
+              {createdAt ? formatDate(createdAt) : 'Nicht verfügbar'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-5 xl:grid-cols-[180px_1fr] xl:items-start">
+        <div className="print-avoid-break flex items-start justify-center xl:justify-start">
+          <div
+            className={cn(
+              'flex h-32 w-32 flex-col items-center justify-center rounded-full border-8',
+              tone.bg
+            )}
+          >
+            <span className={cn('text-4xl font-bold', tone.text)}>{result.overallScore}</span>
+            <span className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+              {scoreLabel(result.overallScore)}
+            </span>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-3">
+          <div className="print-avoid-break rounded-2xl bg-[#f7f3ed] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Seiten
+            </p>
+            <p className="mt-2 text-xl font-semibold text-slate-900">{result.totalPages}</p>
+          </div>
+          <div className="print-avoid-break rounded-2xl bg-[#edf8f6] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Erreichbar
+            </p>
+            <p className="mt-2 text-xl font-semibold text-slate-900">
+              {result.pages.filter((page) => !page.error).length}
+            </p>
+          </div>
+          <div className="print-avoid-break rounded-2xl bg-[#fff1e8] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+              Kritisch
+            </p>
+            <p className="mt-2 text-xl font-semibold text-slate-900">
+              {result.pages.filter((page) => page.score < 60 || page.error).length}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-6 grid gap-4 xl:grid-cols-2">
+        <Card className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-[#fffdf9] shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
+              <AlertCircle className="h-5 w-5 text-[#b85e34]" />
+              Kritische Probleme
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MarkdownInsights text={criticalProblems || '- Keine kritischen Muster erkannt.'} />
+          </CardContent>
+        </Card>
+
+        <Card className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-[#fffdf9] shadow-none">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
+              <Sparkles className="h-5 w-5 text-[#b85e34]" />
+              Handlungsempfehlungen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MarkdownInsights
+              text={
+                recommendations ||
+                '- Aktuell vor allem Feinschliff und Priorisierung der Seiten mit mittlerem Score sinnvoll.'
+              }
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      {result.technicalSeo ? (
+        <section className="mt-6">
+          <Card className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-white shadow-none">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-3 text-base text-slate-950">
+                <Zap className="h-5 w-5 text-[#0d9488]" />
+                Technisches SEO
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                {result.technicalSeo.checks.map((check) => {
+                  const description = check.description ?? getTechnicalCheckDescription(check.label)
+
+                  return (
+                    <div
+                      key={check.label}
+                      className={cn(
+                        'print-avoid-break rounded-2xl border px-4 py-3 text-sm',
+                        check.ok
+                          ? 'border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72]'
+                          : 'border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32]'
+                      )}
+                    >
+                      <div className="flex items-center gap-2 font-medium">
+                        {check.ok ? (
+                          <CheckCircle2 className="h-4 w-4" />
+                        ) : (
+                          <AlertCircle className="h-4 w-4" />
+                        )}
+                        <span>{check.label}</span>
+                      </div>
+                      {description ? (
+                        <p className="mt-2 text-xs leading-5 text-current/80">{description}</p>
+                      ) : null}
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </section>
+      ) : null}
+
+      <section className="mt-6 space-y-4">
+        <div className="print-avoid-break">
+          <h2 className="text-lg font-semibold text-slate-950">Seiten im Detail</h2>
+          <p className="text-sm text-slate-500">
+            Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.
+          </p>
+        </div>
+        {printablePages.map((page) => (
+          <Card
+            key={page.url}
+            className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-white shadow-none"
+          >
+            <CardHeader>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base text-slate-950">
+                    {sanitizeSeoText(page.title) || extractHostname(page.url) || 'Seite'}
+                  </CardTitle>
+                  <p className="mt-1 break-all text-sm text-slate-500">{page.url}</p>
+                </div>
+                <Badge className={cn('rounded-full', scoreTone(page.score).badge)}>
+                  Score {page.score}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-2xl bg-[#f7f3ed] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Title
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {sanitizeSeoText(page.title) || 'Kein Title gefunden'}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-[#f7f3ed] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Meta Description
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {sanitizeSeoText(page.metaDescription) || 'Keine Meta Description gefunden'}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-[#f7f3ed] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Headlines
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {page.h1s.length} H1 / {page.h2s.length} H2
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-[#f7f3ed] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Content
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {page.wordCount} Wörter, {page.images.total} Bilder, {page.images.withoutAlt}{' '}
+                    ohne Alt
+                  </p>
+                </div>
+              </div>
+              <IssueList issues={page.issues} />
+            </CardContent>
+          </Card>
+        ))}
+      </section>
+    </div>
+  )
+}
+
 function AnalysisHistoryRow({
   analysis,
-  onOpen,
+  href,
   onDelete,
 }: {
   analysis: SeoAnalysisSummary
-  onOpen: () => void
+  href: string
   onDelete: () => void
 }) {
   const progress =
@@ -755,7 +1428,7 @@ function AnalysisHistoryRow({
                 {analysis.config.urls[0] ?? 'SEO Analyse'}
               </p>
               <Badge className="rounded-full bg-[#f7f3ed] text-slate-600 hover:bg-[#f7f3ed]">
-                {analysis.config.crawlMode}
+                {formatCrawlModeLabel(analysis.config.crawlMode)}
               </Badge>
               {analysis.status === 'running' && (
                 <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">
@@ -795,13 +1468,8 @@ function AnalysisHistoryRow({
 
         <div className="flex items-center gap-2">
           {(analysis.status === 'done' || analysis.status === 'running') && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={onOpen}
-              className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
-            >
-              {analysis.status === 'running' ? 'Live-Ansicht' : 'Öffnen'}
+            <Button asChild variant="outline" className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white">
+              <Link href={href}>{analysis.status === 'running' ? 'Live-Ansicht' : 'Öffnen'}</Link>
             </Button>
           )}
           <Button
@@ -870,14 +1538,27 @@ function useSitemapEstimate(urlInput: string, enabled: boolean) {
   return { estimate, loading, hasSitemap }
 }
 
-function SeoAnalysisWorkspace() {
+function SeoAnalysisWorkspace({
+  tenantName,
+  tenantSlug,
+  tenantLogoUrl,
+  initialAnalysisId,
+}: {
+  tenantName: string
+  tenantSlug: string
+  tenantLogoUrl: string | null
+  initialAnalysisId?: string
+}) {
+  const router = useRouter()
   const [view, setView] = useState<View>({ type: 'list' })
   const [analyses, setAnalyses] = useState<SeoAnalysisSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [detailLoading, setDetailLoading] = useState(Boolean(initialAnalysisId))
   const [urlInput, setUrlInput] = useState('')
   const [crawlMode, setCrawlMode] = useState<SeoCrawlMode>('single')
+  const isMountedRef = useRef(true)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const { estimate, loading: estimateLoading, hasSitemap } = useSitemapEstimate(
     urlInput,
@@ -901,6 +1582,14 @@ function SeoAnalysisWorkspace() {
     }
   }, [])
 
+  useEffect(() => {
+    isMountedRef.current = true
+
+    return () => {
+      isMountedRef.current = false
+    }
+  }, [])
+
   const stopPolling = useCallback(() => {
     if (pollRef.current) {
       clearInterval(pollRef.current)
@@ -920,11 +1609,13 @@ function SeoAnalysisWorkspace() {
 
     if (data.status === 'running') {
       setView({ type: 'running', analysisId })
+      setDetailLoading(false)
       return
     }
 
     if (data.result) {
       setView({ type: 'results', analysisId, result: data.result as SeoAnalysisResult })
+      setDetailLoading(false)
     }
   }, [])
 
@@ -998,13 +1689,55 @@ function SeoAnalysisWorkspace() {
         return
       }
 
+      if (initialAnalysisId && pending.analysisId !== initialAnalysisId) {
+        return
+      }
+
       setView({ type: 'running', analysisId: pending.analysisId })
       setSubmitting(true)
       startPolling(pending.analysisId)
     } catch {
       localStorage.removeItem(STORAGE_KEY)
     }
-  }, [startPolling])
+  }, [initialAnalysisId, startPolling])
+
+  useEffect(() => {
+    if (!initialAnalysisId) return
+
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        const pending = JSON.parse(raw) as { analysisId?: string }
+        if (pending.analysisId === initialAnalysisId) {
+          setDetailLoading(false)
+          return
+        }
+      }
+    } catch {
+      // Ignore malformed local storage state and continue with remote loading.
+    }
+
+    let cancelled = false
+
+    void openAnalysis(initialAnalysisId)
+      .catch((openError) => {
+        if (cancelled) return
+        setError(
+          openError instanceof Error
+            ? openError.message
+            : 'Analyse konnte nicht geladen werden.'
+        )
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setDetailLoading(false)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [initialAnalysisId, openAnalysis])
 
   useEffect(() => () => stopPolling(), [stopPolling])
 
@@ -1031,9 +1764,10 @@ function SeoAnalysisWorkspace() {
       setAnalyses((current) => current.filter((analysis) => analysis.id !== analysisId))
       if (view.type !== 'list' && view.analysisId === analysisId) {
         setView({ type: 'list' })
+        router.push('/tools/seo-analyse')
       }
     },
-    [view]
+    [router, view]
   )
 
   const handleSubmit = useCallback(async () => {
@@ -1078,6 +1812,7 @@ function SeoAnalysisWorkspace() {
     )
 
     startPolling(analysisId)
+    router.push(getAnalysisHref(analysisId))
 
     try {
       const response = await fetch('/api/tenant/seo/analyze', {
@@ -1102,27 +1837,48 @@ function SeoAnalysisWorkspace() {
       const result = (await response.json()) as SeoAnalysisResult
       stopPolling()
       localStorage.removeItem(STORAGE_KEY)
+      if (!isMountedRef.current) return
       setSubmitting(false)
       setView({ type: 'results', analysisId, result })
       void loadAnalyses()
     } catch (submitError) {
       stopPolling()
       localStorage.removeItem(STORAGE_KEY)
+      if (!isMountedRef.current) return
       setSubmitting(false)
       setView({ type: 'list' })
       setError(submitError instanceof Error ? submitError.message : 'Analyse fehlgeschlagen.')
       void loadAnalyses()
     }
-  }, [crawlMode, loadAnalyses, startPolling, stopPolling, urlInput])
+  }, [crawlMode, loadAnalyses, router, startPolling, stopPolling, urlInput])
 
   if (view.type === 'results') {
+    const analysisSummary = analyses.find((analysis) => analysis.id === view.analysisId) ?? null
+
     return (
       <SeoResultsView
         key={view.analysisId}
         analysisId={view.analysisId}
         result={view.result}
-        onBack={() => setView({ type: 'list' })}
+        tenantName={tenantName}
+        tenantSlug={tenantSlug}
+        tenantLogoUrl={tenantLogoUrl}
+        createdAt={analysisSummary?.createdAt ?? null}
+        sourceUrl={analysisSummary?.config.urls[0] ?? null}
+        crawlMode={analysisSummary?.config.crawlMode ?? null}
+        onBack={() => router.push('/tools/seo-analyse')}
       />
+    )
+  }
+
+  if (detailLoading) {
+    return (
+      <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Analyse wird geladen
+        </CardContent>
+      </Card>
     )
   }
 
@@ -1159,7 +1915,31 @@ function SeoAnalysisWorkspace() {
           <Button
             type="button"
             variant="outline"
-            onClick={() => setView({ type: 'list' })}
+            onClick={() => router.push('/tools/seo-analyse')}
+            className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Zurück zum Verlauf
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (initialAnalysisId) {
+    return (
+      <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-slate-950">Analyse nicht verfügbar</h2>
+            <p className="max-w-2xl text-sm leading-7 text-slate-600">
+              Diese SEO-Analyse konnte nicht geladen werden oder gehört nicht zu deinem Tenant.
+            </p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push('/tools/seo-analyse')}
             className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -1371,15 +2151,7 @@ function SeoAnalysisWorkspace() {
             <AnalysisHistoryRow
               key={analysis.id}
               analysis={analysis}
-              onOpen={() => {
-                void openAnalysis(analysis.id).catch((openError) => {
-                  setError(
-                    openError instanceof Error
-                      ? openError.message
-                      : 'Analyse konnte nicht geladen werden.'
-                  )
-                })
-              }}
+              href={getAnalysisHref(analysis.id)}
               onDelete={() => {
                 void handleDelete(analysis.id).catch((deleteError) => {
                   setError(
@@ -1400,16 +2172,29 @@ function SeoAnalysisWorkspace() {
 export function TenantToolsWorkspace({
   role,
   activeModuleCodes,
+  tenantName,
+  tenantSlug,
+  tenantLogoUrl,
+  initialAnalysisId,
 }: {
   role: WorkspaceRole
   activeModuleCodes: string[]
+  tenantName: string
+  tenantSlug: string
+  tenantLogoUrl: string | null
+  initialAnalysisId?: string
 }) {
   const seoEnabled = activeModuleCodes.includes('seo_analyse')
 
   return (
     <div className="space-y-6">
       {seoEnabled ? (
-        <SeoAnalysisWorkspace />
+        <SeoAnalysisWorkspace
+          tenantName={tenantName}
+          tenantSlug={tenantSlug}
+          tenantLogoUrl={tenantLogoUrl}
+          initialAnalysisId={initialAnalysisId}
+        />
       ) : (
         <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
