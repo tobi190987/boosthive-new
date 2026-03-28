@@ -1397,7 +1397,7 @@ export function TenantProfileWorkspace({
                     onClick={() => setShowStripeForm((value) => !value)}
                   >
                     {showStripeForm
-                      ? 'Stripe-Formular ausblenden'
+                      ? 'Formular ausblenden'
                       : billing?.payment_method
                         ? 'Zahlungsmethode ändern'
                         : 'Zahlungsmethode hinterlegen'}
