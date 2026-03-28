@@ -3,6 +3,7 @@ import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/e
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { CreateTenantSchema } from '@/lib/schemas/tenant'
+import { stripe } from '@/lib/stripe'
 import crypto from 'crypto'
 
 type TenantStatusFilter = 'active' | 'inactive' | 'all'
@@ -277,6 +278,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { error: 'Tenant konnte nicht erstellt werden.' },
       { status: 500 }
+    )
+  }
+
+  // 5. Stripe Customer erstellen und stripe_customer_id speichern
+  try {
+    const tenantData = tenant as { id: string; name: string; slug: string }
+    const customer = await stripe.customers.create({
+      name,
+      metadata: {
+        tenant_id: tenantData.id,
+        tenant_slug: slug,
+      },
+    })
+
+    const { error: stripeUpdateError } = await supabaseAdmin
+      .from('tenants')
+      .update({ stripe_customer_id: customer.id })
+      .eq('id', tenantData.id)
+
+    if (stripeUpdateError) {
+      console.error(
+        '[POST /api/owner/tenants] stripe_customer_id konnte nicht gespeichert werden:',
+        stripeUpdateError
+      )
+    }
+  } catch (stripeError) {
+    // Non-fatal: Tenant wurde erstellt, Stripe Customer wird beim ersten Billing-Zugriff als Fallback erstellt
+    console.error(
+      '[POST /api/owner/tenants] Stripe Customer Erstellung fehlgeschlagen (non-fatal):',
+      stripeError
     )
   }
 

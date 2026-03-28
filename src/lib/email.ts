@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { renderInvitationEmail } from '@/emails/invitation'
 import { renderPasswordResetEmail } from '@/emails/password-reset'
+import { renderPaymentFailedEmail } from '@/emails/payment-failed'
 import { renderWelcomeEmail } from '@/emails/welcome'
 
 interface SendPasswordResetOptions {
@@ -17,6 +18,12 @@ interface SendWelcomeOptions {
   tenantName: string
   tenantSlug: string
   setupUrl: string
+}
+
+interface SendPaymentFailedOptions {
+  to: string
+  tenantName: string
+  tenantSlug: string
 }
 
 interface SendInvitationOptions {
@@ -218,6 +225,25 @@ export async function sendPasswordReset({
     text,
     category: 'password-reset',
     tokenForLogs: token,
+  })
+}
+
+export async function sendPaymentFailed({
+  to,
+  tenantName,
+  tenantSlug,
+}: SendPaymentFailedOptions): Promise<void> {
+  const billingUrl = buildTenantUrl(tenantSlug, '/billing')
+  const { subject, html, text } = renderPaymentFailedEmail({ tenantName, billingUrl })
+
+  await sendEmail({
+    to,
+    tenantName,
+    tenantSlug,
+    subject,
+    html,
+    text,
+    category: 'payment-failed',
   })
 }
 

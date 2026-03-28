@@ -76,16 +76,34 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Plan info (static for now — single Basis-Plan)
-  const plan =
-    subscriptionStatus !== 'none'
-      ? {
+  // Plan info — loaded dynamically from Stripe so price changes are reflected automatically
+  let plan: { name: string; amount: number; currency: string; interval: string } | null = null
+  if (subscriptionStatus !== 'none') {
+    const priceId = process.env.STRIPE_BASIS_PLAN_PRICE_ID
+    if (priceId) {
+      try {
+        const price = await stripe.prices.retrieve(priceId)
+        const rec = price.recurring
+        const intervalLabel = rec
+          ? rec.interval_count === 4 && rec.interval === 'week'
+            ? '4 Wochen'
+            : `${rec.interval_count} ${rec.interval}`
+          : '4 Wochen'
+        plan = {
           name: 'Basis-Plan',
-          amount: 4900, // 49.00 EUR in cents — adjust if needed
-          currency: 'eur',
-          interval: '4 Wochen',
+          amount: price.unit_amount ?? 4900,
+          currency: price.currency,
+          interval: intervalLabel,
         }
-      : null
+      } catch (priceError) {
+        console.error('[GET /api/tenant/billing] Stripe Preis-Abfrage fehlgeschlagen:', priceError)
+        // Fall back to static values so the UI still renders
+        plan = { name: 'Basis-Plan', amount: 4900, currency: 'eur', interval: '4 Wochen' }
+      }
+    } else {
+      plan = { name: 'Basis-Plan', amount: 4900, currency: 'eur', interval: '4 Wochen' }
+    }
+  }
 
   return NextResponse.json({
     subscription_status: subscriptionStatus,
