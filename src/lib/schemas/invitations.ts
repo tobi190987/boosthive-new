@@ -10,7 +10,6 @@ export const CreateInvitationSchema = z.object({
 export const AcceptInvitationSchema = z
   .object({
     token: z.string().min(1, 'Einladungstoken fehlt.'),
-    name: z.string().min(2, 'Bitte gib einen Anzeigenamen mit mindestens 2 Zeichen ein.'),
     password: z.string().min(8, 'Passwort muss mindestens 8 Zeichen lang sein.'),
   })
 

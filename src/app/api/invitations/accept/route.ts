@@ -120,9 +120,6 @@ export async function POST(request: NextRequest) {
     const { error: updateUserError } = await supabaseAdmin.auth.admin.updateUserById(existingUser.id, {
       password: parsed.data.password,
       email_confirm: true,
-      user_metadata: {
-        display_name: parsed.data.name,
-      },
       app_metadata: {
         tenant_id: tenantId,
         role: invitation.role,
@@ -138,9 +135,6 @@ export async function POST(request: NextRequest) {
       email: invitation.email,
       password: parsed.data.password,
       email_confirm: true,
-      user_metadata: {
-        display_name: parsed.data.name,
-      },
       app_metadata: {
         tenant_id: tenantId,
         role: invitation.role,
@@ -185,10 +179,8 @@ export async function POST(request: NextRequest) {
   const { error: invitationUpdateError } = await supabaseAdmin
     .from('tenant_invitations')
     .update({
-      claimed_at: nowIso,
       accepted_at: nowIso,
       accepted_user_id: userId,
-      accepted_name: parsed.data.name,
     })
     .eq('tenant_id', tenantId)
     .eq('id', invitation.id)

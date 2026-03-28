@@ -32,7 +32,7 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
       tenantLogoUrl={tenantLogoUrl}
       description={
         hasToken
-          ? 'Lege Anzeigename und Passwort fest, um deinen Zugang zu aktivieren.'
+          ? 'Lege dein Passwort fest, um deinen Zugang zu aktivieren.'
           : 'Dieser Link wirkt unvollständig. Fordere bei einem Admin eine neue Einladung an.'
       }
       asideTitle="Onboarding für neue Teammitglieder."

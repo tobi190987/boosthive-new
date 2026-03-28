@@ -8,10 +8,8 @@ import { CheckCircle2, Eye, EyeOff, Loader2, ShieldCheck, UserRoundPlus } from '
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   AcceptInvitationFormSchema,
-  AcceptInvitationSchema,
   type AcceptInvitationFormInput,
   type AcceptInvitationInput,
 } from '@/lib/schemas/invitations'
@@ -46,7 +44,6 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
   } = useForm<AcceptInvitationFormInput>({
     resolver: zodResolver(AcceptInvitationFormSchema),
     defaultValues: {
-      name: '',
       password: '',
     },
   })
@@ -150,7 +147,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
           <UserRoundPlus className="h-5 w-5 text-[#b85e34]" />
           <p className="mt-3 text-sm font-semibold text-slate-900">Onboarding direkt im Link</p>
           <p className="mt-1 text-sm leading-6 text-slate-600">
-            Anzeigename und Passwort lassen sich in einem Schritt setzen.
+            Das Passwort wird direkt beim ersten Einstieg gesetzt.
           </p>
         </div>
         <div className="rounded-[22px] border border-[#d7eadf] bg-[#eff8f2] p-4">
@@ -207,23 +204,9 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
         className="space-y-5"
       >
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-            Anzeigename
-          </Label>
-          <Input
-            id="name"
-            placeholder="Max Muster"
-            className={fieldClassName}
-            disabled={isSubmitting}
-            {...register('name')}
-          />
-          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700">
             Passwort
-          </Label>
+          </label>
           <div className="relative">
             <Input
               id="password"
