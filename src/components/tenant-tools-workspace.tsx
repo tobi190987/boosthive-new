@@ -461,9 +461,12 @@ function SeoResultsView({
   const sortedPages = useMemo(
     () =>
       [...result.pages].sort((left, right) => {
-        const leftScore = left.error ? -1 : left.score
-        const rightScore = right.error ? -1 : right.score
-        return leftScore - rightScore
+        const leftError = Boolean(left.error)
+        const rightError = Boolean(right.error)
+        if (leftError && !rightError) return 1
+        if (!leftError && rightError) return -1
+        if (leftError && rightError) return 0
+        return left.score - right.score
       }),
     [result.pages]
   )
