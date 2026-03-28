@@ -888,7 +888,11 @@ export function TenantProfileWorkspace({
             </div>
           )}
 
-          <form onSubmit={handleSubmit((values) => void onSubmit(values))} className="space-y-8">
+          <form
+            id="tenant-profile-form"
+            onSubmit={handleSubmit((values) => void onSubmit(values))}
+            className="space-y-8"
+          >
             <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -1130,253 +1134,234 @@ export function TenantProfileWorkspace({
               </>
             )}
 
-            <div className="flex flex-col gap-3 border-t border-[#efe5d8] pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2 text-sm text-slate-500">
-                <UserRound className="h-4 w-4" />
-                {mode === 'onboarding'
-                  ? 'Nach dem Abschluss kannst du alles später im Profil ändern.'
-                  : 'Änderungen werden sofort für deinen Workspace übernommen.'}
-              </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                {mode !== 'onboarding' && (
-                  <TenantLogoutButton className="h-[48px] rounded-xl border-[#e3daca] bg-white px-6" />
-                )}
-                <Button
-                  type="submit"
-                  className="h-[48px] rounded-xl bg-[#1dbfaa] px-6 text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
-                  disabled={isSaving}
-                >
-                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {submitLabel}
-                </Button>
-              </div>
-            </div>
           </form>
 
           {mode !== 'onboarding' && (
             <>
-              <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <div className="space-y-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Login-E-Mail
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Diese Adresse verwendest du für den Login in deinen Workspace.
-                  </p>
-                </div>
-                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
-                  <form
-                    className="grid gap-4 md:grid-cols-2"
-                    onSubmit={emailForm.handleSubmit(onSubmitEmail)}
-                  >
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="email">Neue E-Mail-Adresse</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        autoComplete="email"
-                        className={fieldClassName}
-                        disabled={emailForm.formState.isSubmitting}
-                        {...emailForm.register('email')}
-                      />
-                      {emailForm.formState.errors.email && (
-                        <p className="text-sm text-destructive">
-                          {emailForm.formState.errors.email.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="current_email_password">Aktuelles Passwort</Label>
-                      <div className="relative">
+              <div className="space-y-10 pt-8">
+                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Login-E-Mail
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Diese Adresse verwendest du für den Login in deinen Workspace.
+                    </p>
+                  </div>
+                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                    <form
+                      className="grid gap-4 md:grid-cols-2"
+                      onSubmit={emailForm.handleSubmit(onSubmitEmail)}
+                    >
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="email">Neue E-Mail-Adresse</Label>
                         <Input
-                          id="current_email_password"
-                          type={showCurrentEmailPassword ? 'text' : 'password'}
-                          autoComplete="current-password"
-                          className={`${fieldClassName} pr-12`}
+                          id="email"
+                          type="email"
+                          autoComplete="email"
+                          className={fieldClassName}
                           disabled={emailForm.formState.isSubmitting}
-                          {...emailForm.register('current_password')}
+                          {...emailForm.register('email')}
                         />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                          onClick={() => setShowCurrentEmailPassword((value) => !value)}
-                          aria-label={
-                            showCurrentEmailPassword
-                              ? 'Aktuelles Passwort ausblenden'
-                              : 'Aktuelles Passwort anzeigen'
-                          }
-                        >
-                          {showCurrentEmailPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                        {emailForm.formState.errors.email && (
+                          <p className="text-sm text-destructive">
+                            {emailForm.formState.errors.email.message}
+                          </p>
+                        )}
                       </div>
-                      {emailForm.formState.errors.current_password && (
-                        <p className="text-sm text-destructive">
-                          {emailForm.formState.errors.current_password.message}
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="current_email_password">Aktuelles Passwort</Label>
+                        <div className="relative">
+                          <Input
+                            id="current_email_password"
+                            type={showCurrentEmailPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={emailForm.formState.isSubmitting}
+                            {...emailForm.register('current_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowCurrentEmailPassword((value) => !value)}
+                            aria-label={
+                              showCurrentEmailPassword
+                                ? 'Aktuelles Passwort ausblenden'
+                                : 'Aktuelles Passwort anzeigen'
+                            }
+                          >
+                            {showCurrentEmailPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {emailForm.formState.errors.current_password && (
+                          <p className="text-sm text-destructive">
+                            {emailForm.formState.errors.current_password.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <p className="text-sm text-slate-500">
+                          Zur Sicherheit bestätigen wir die Änderung mit deinem aktuellen Passwort.
                         </p>
-                      )}
-                    </div>
-                    <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <p className="text-sm text-slate-500">
-                        Zur Sicherheit bestätigen wir die Änderung mit deinem aktuellen Passwort.
-                      </p>
-                      <Button
-                        type="submit"
-                        className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
-                        disabled={emailForm.formState.isSubmitting}
-                      >
-                        {emailForm.formState.isSubmitting ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        E-Mail-Adresse speichern
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              </section>
+                        <Button
+                          type="submit"
+                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                          disabled={emailForm.formState.isSubmitting}
+                        >
+                          {emailForm.formState.isSubmitting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
+                          E-Mail-Adresse speichern
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </section>
 
-              <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
-                <div className="space-y-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    Passwort
-                  </h2>
-                  <p className="text-sm text-slate-500">
-                    Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
-                  </p>
-                </div>
-                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
-                  <form
-                    className="grid gap-4 md:grid-cols-2"
-                    onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
-                  >
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="current_password">Aktuelles Passwort</Label>
-                      <div className="relative">
-                        <Input
-                          id="current_password"
-                          type={showCurrentPassword ? 'text' : 'password'}
-                          autoComplete="current-password"
-                          className={`${fieldClassName} pr-12`}
-                          disabled={passwordForm.formState.isSubmitting}
-                          {...passwordForm.register('current_password')}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                          onClick={() => setShowCurrentPassword((value) => !value)}
-                          aria-label={
-                            showCurrentPassword
-                              ? 'Aktuelles Passwort ausblenden'
-                              : 'Aktuelles Passwort anzeigen'
-                          }
-                        >
-                          {showCurrentPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Passwort
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
+                    </p>
+                  </div>
+                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                    <form
+                      className="grid gap-4 md:grid-cols-2"
+                      onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
+                    >
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="current_password">Aktuelles Passwort</Label>
+                        <div className="relative">
+                          <Input
+                            id="current_password"
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={passwordForm.formState.isSubmitting}
+                            {...passwordForm.register('current_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowCurrentPassword((value) => !value)}
+                            aria-label={
+                              showCurrentPassword
+                                ? 'Aktuelles Passwort ausblenden'
+                                : 'Aktuelles Passwort anzeigen'
+                            }
+                          >
+                            {showCurrentPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordForm.formState.errors.current_password && (
+                          <p className="text-sm text-destructive">
+                            {passwordForm.formState.errors.current_password.message}
+                          </p>
+                        )}
                       </div>
-                      {passwordForm.formState.errors.current_password && (
-                        <p className="text-sm text-destructive">
-                          {passwordForm.formState.errors.current_password.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="new_password">Neues Passwort</Label>
-                      <div className="relative">
-                        <Input
-                          id="new_password"
-                          type={showNewPassword ? 'text' : 'password'}
-                          autoComplete="new-password"
-                          className={`${fieldClassName} pr-12`}
-                          disabled={passwordForm.formState.isSubmitting}
-                          {...passwordForm.register('new_password')}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                          onClick={() => setShowNewPassword((value) => !value)}
-                          aria-label={
-                            showNewPassword
-                              ? 'Neues Passwort ausblenden'
-                              : 'Neues Passwort anzeigen'
-                          }
-                        >
-                          {showNewPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                      <div className="space-y-2">
+                        <Label htmlFor="new_password">Neues Passwort</Label>
+                        <div className="relative">
+                          <Input
+                            id="new_password"
+                            type={showNewPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={passwordForm.formState.isSubmitting}
+                            {...passwordForm.register('new_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowNewPassword((value) => !value)}
+                            aria-label={
+                              showNewPassword
+                                ? 'Neues Passwort ausblenden'
+                                : 'Neues Passwort anzeigen'
+                            }
+                          >
+                            {showNewPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordForm.formState.errors.new_password && (
+                          <p className="text-sm text-destructive">
+                            {passwordForm.formState.errors.new_password.message}
+                          </p>
+                        )}
                       </div>
-                      {passwordForm.formState.errors.new_password && (
-                        <p className="text-sm text-destructive">
-                          {passwordForm.formState.errors.new_password.message}
-                        </p>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="confirm_password">Neues Passwort bestätigen</Label>
-                      <div className="relative">
-                        <Input
-                          id="confirm_password"
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          autoComplete="new-password"
-                          className={`${fieldClassName} pr-12`}
-                          disabled={passwordForm.formState.isSubmitting}
-                          {...passwordForm.register('confirm_password')}
-                        />
-                        <button
-                          type="button"
-                          className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
-                          onClick={() => setShowConfirmPassword((value) => !value)}
-                          aria-label={
-                            showConfirmPassword
-                              ? 'Passwort-Bestätigung ausblenden'
-                              : 'Passwort-Bestätigung anzeigen'
-                          }
-                        >
-                          {showConfirmPassword ? (
-                            <EyeOff className="h-4 w-4" />
-                          ) : (
-                            <Eye className="h-4 w-4" />
-                          )}
-                        </button>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm_password">Neues Passwort bestätigen</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirm_password"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={passwordForm.formState.isSubmitting}
+                            {...passwordForm.register('confirm_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowConfirmPassword((value) => !value)}
+                            aria-label={
+                              showConfirmPassword
+                                ? 'Passwort-Bestätigung ausblenden'
+                                : 'Passwort-Bestätigung anzeigen'
+                            }
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordForm.formState.errors.confirm_password && (
+                          <p className="text-sm text-destructive">
+                            {passwordForm.formState.errors.confirm_password.message}
+                          </p>
+                        )}
                       </div>
-                      {passwordForm.formState.errors.confirm_password && (
-                        <p className="text-sm text-destructive">
-                          {passwordForm.formState.errors.confirm_password.message}
+                      <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <p className="text-sm text-slate-500">
+                          Das neue Passwort muss mindestens 8 Zeichen lang sein.
                         </p>
-                      )}
-                    </div>
-                    <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <p className="text-sm text-slate-500">
-                        Das neue Passwort muss mindestens 8 Zeichen lang sein.
-                      </p>
-                      <Button
-                        type="submit"
-                        className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
-                        disabled={passwordForm.formState.isSubmitting}
-                      >
-                        {passwordForm.formState.isSubmitting ? (
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        ) : null}
-                        Passwort aktualisieren
-                      </Button>
-                    </div>
-                  </form>
-                </div>
-              </section>
+                        <Button
+                          type="submit"
+                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                          disabled={passwordForm.formState.isSubmitting}
+                        >
+                          {passwordForm.formState.isSubmitting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
+                          Passwort aktualisieren
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </section>
+              </div>
             </>
           )}
 
           {isAdmin && (
-            <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+            <section className="grid gap-6 pt-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Stripe
@@ -1456,6 +1441,29 @@ export function TenantProfileWorkspace({
               </div>
             </section>
           )}
+
+          <div className="mt-10 flex flex-col gap-3 border-t border-[#efe5d8] pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <UserRound className="h-4 w-4" />
+              {mode === 'onboarding'
+                ? 'Nach dem Abschluss kannst du alles später im Profil ändern.'
+                : 'Änderungen werden sofort für deinen Workspace übernommen.'}
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              {mode !== 'onboarding' && (
+                <TenantLogoutButton className="h-[48px] rounded-xl border-[#e3daca] bg-white px-6" />
+              )}
+              <Button
+                type="submit"
+                form="tenant-profile-form"
+                className="h-[48px] rounded-xl bg-[#1dbfaa] px-6 text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
+                disabled={isSaving}
+              >
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {submitLabel}
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
       </div>

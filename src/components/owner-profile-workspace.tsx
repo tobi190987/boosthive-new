@@ -10,6 +10,7 @@ import {
   EyeOff,
   ImagePlus,
   Loader2,
+  LogOut,
   Move,
   Trash2,
   ZoomIn,
@@ -166,6 +167,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl)
   const [avatarPending, setAvatarPending] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [avatarCropDraft, setAvatarCropDraft] = useState<AvatarCropDraft | null>(null)
@@ -240,6 +242,16 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
     }
 
     setAvatarUrl(payload.avatar_url ?? null)
+  }
+
+  async function handleLogout() {
+    try {
+      setIsLoggingOut(true)
+      await fetch('/api/auth/logout', { method: 'POST' })
+      window.location.href = '/owner/login'
+    } finally {
+      setIsLoggingOut(false)
+    }
   }
 
   async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -669,7 +681,11 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
               </div>
             )}
 
-            <form onSubmit={form.handleSubmit((values) => void onSubmit(values))} className="space-y-8">
+            <form
+              id="owner-profile-form"
+              onSubmit={form.handleSubmit((values) => void onSubmit(values))}
+              className="space-y-8"
+            >
               <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-2">
                   <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
@@ -762,16 +778,6 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                 </div>
               </section>
 
-              <div className="flex justify-end">
-                <Button
-                  type="submit"
-                  className="rounded-full bg-[#1f2937] px-6 text-white hover:bg-[#111827]"
-                  disabled={isSaving}
-                >
-                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                  Profil speichern
-                </Button>
-              </div>
             </form>
           </CardContent>
         </Card>
@@ -931,6 +937,38 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </form>
           </CardContent>
         </Card>
+
+        <div className="mt-10 flex flex-col gap-3 border-t border-[#efe5d8] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm text-slate-500">
+            <AlertCircle className="h-4 w-4" />
+            Änderungen werden sofort für deinen Owner-Zugang übernommen.
+          </div>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button
+              type="button"
+              variant="outline"
+              className="h-[48px] rounded-xl border-[#e3daca] bg-white px-6"
+              onClick={() => void handleLogout()}
+              disabled={isLoggingOut}
+            >
+              {isLoggingOut ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="mr-2 h-4 w-4" />
+              )}
+              Abmelden
+            </Button>
+            <Button
+              type="submit"
+              form="owner-profile-form"
+              className="h-[48px] rounded-xl bg-[#1f2937] px-6 text-white hover:bg-[#111827]"
+              disabled={isSaving}
+            >
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Profil speichern
+            </Button>
+          </div>
+        </div>
       </div>
     </>
   )
