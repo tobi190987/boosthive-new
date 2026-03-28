@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase'
 import { isOnboardingComplete } from '@/lib/profile'
 import { requireTenantContext } from '@/lib/tenant'
+import { getActiveModuleCodes } from '@/lib/module-access'
 
 export type TenantShellRole = 'admin' | 'member'
 
@@ -32,6 +33,7 @@ export interface TenantShellContext {
   onboarding: {
     isComplete: boolean
   }
+  activeModuleCodes: string[]
 }
 
 /**
@@ -55,6 +57,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
     { data: tenantRecord, error: tenantError },
     { data: membership, error: membershipError },
     { data: profile },
+    activeModuleCodes,
   ] = await Promise.all([
     supabase
       .from('tenants')
@@ -75,6 +78,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
       .select('first_name, last_name, avatar_url')
       .eq('user_id', user.id)
       .maybeSingle(),
+    getActiveModuleCodes(tenant.id),
   ])
 
   if (tenantError || !tenantRecord) {
@@ -120,5 +124,6 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
     onboarding: {
       isComplete: onboardingComplete,
     },
+    activeModuleCodes,
   }
 }

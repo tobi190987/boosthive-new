@@ -1,15 +1,5 @@
-import { TenantToolsWorkspace } from '@/components/tenant-tools-workspace'
-import { getActiveModuleCodes } from '@/lib/module-access'
-import { requireTenantShellContext } from '@/lib/tenant-shell'
+import { redirect } from 'next/navigation'
 
-export default async function ToolsPage() {
-  const context = await requireTenantShellContext()
-  const activeModuleCodes = await getActiveModuleCodes(context.tenant.id)
-
-  return (
-    <TenantToolsWorkspace
-      role={context.membership.role}
-      activeModuleCodes={activeModuleCodes}
-    />
-  )
+export default function ToolsPage() {
+  redirect('/tools/seo-analyse')
 }
