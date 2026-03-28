@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/email'
+import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { CreateTenantSchema } from '@/lib/schemas/tenant'
@@ -64,7 +65,13 @@ export async function GET(request: NextRequest) {
   ])
 
   if (countError) {
-    console.error('[GET /api/owner/tenants] Count-Fehler:', countError)
+    logOperationalError('owner_tenant_list_count_failed', countError, {
+      ownerUserId: auth.userId,
+      query,
+      status,
+      page,
+      pageSize,
+    })
     return NextResponse.json(
       { error: 'Tenants konnten nicht geladen werden.' },
       { status: 500 }
@@ -72,7 +79,13 @@ export async function GET(request: NextRequest) {
   }
 
   if (error) {
-    console.error('[GET /api/owner/tenants] DB-Fehler:', error)
+    logOperationalError('owner_tenant_list_load_failed', error, {
+      ownerUserId: auth.userId,
+      query,
+      status,
+      page,
+      pageSize,
+    })
     return NextResponse.json(
       { error: 'Tenants konnten nicht geladen werden.' },
       { status: 500 }
@@ -90,7 +103,10 @@ export async function GET(request: NextRequest) {
       .eq('status', 'active')
 
     if (membersError) {
-      console.error('[GET /api/owner/tenants] Member-Count-Fehler:', membersError)
+      logOperationalError('owner_tenant_list_member_count_failed', membersError, {
+        ownerUserId: auth.userId,
+        tenantIds,
+      })
       return NextResponse.json(
         { error: 'Tenants konnten nicht geladen werden.' },
         { status: 500 }
@@ -164,6 +180,10 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (existingTenant) {
+    logSecurity('owner_tenant_create_slug_conflict', {
+      ownerUserId: auth.userId,
+      slug,
+    })
     return NextResponse.json(
       { error: `Die Subdomain "${slug}" ist bereits vergeben.` },
       { status: 409 }
@@ -193,7 +213,11 @@ export async function POST(request: NextRequest) {
       (createUserError as { status?: number }).status === 422
 
     if (!isDuplicate) {
-      console.error('[POST /api/owner/tenants] User-Erstellung fehlgeschlagen:', createUserError)
+      logOperationalError('owner_tenant_create_admin_user_failed', createUserError, {
+        ownerUserId: auth.userId,
+        slug,
+        adminEmail,
+      })
       return NextResponse.json(
         { error: 'Admin-User konnte nicht erstellt werden.' },
         { status: 500 }
@@ -206,7 +230,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (existingUserLookup.error || !existingUserLookup.data?.[0]?.id) {
-      console.error('[POST /api/owner/tenants] Lookup für bestehenden User fehlgeschlagen:', existingUserLookup.error)
+      logOperationalError('owner_tenant_create_existing_user_lookup_failed', existingUserLookup.error, {
+        ownerUserId: auth.userId,
+        slug,
+        adminEmail,
+      })
       return NextResponse.json(
         { error: `Ein User mit der E-Mail "${adminEmail}" existiert bereits im System.` },
         { status: 409 }
@@ -253,7 +281,13 @@ export async function POST(request: NextRequest) {
   )
 
   if (rpcError) {
-    console.error('[POST /api/owner/tenants] RPC-Fehler:', rpcError)
+    logOperationalError('owner_tenant_create_rpc_failed', rpcError, {
+      ownerUserId: auth.userId,
+      slug,
+      adminEmail,
+      adminUserId,
+      adminUserCreated,
+    })
 
     // Rollback: nur neu erstellten Auth-User löschen (nicht wiederverwendete bestehende User)
     if (adminUserCreated) {
@@ -343,5 +377,14 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  logAudit('owner_tenant_created', {
+    ownerUserId: auth.userId,
+    tenantId: (tenant as { id?: string } | null)?.id ?? null,
+    slug,
+    name,
+    adminEmail,
+    adminUserId,
+    adminUserCreated,
+  })
   return NextResponse.json({ tenant }, { status: 201 })
 }

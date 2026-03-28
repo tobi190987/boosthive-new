@@ -10,6 +10,10 @@ export interface SeedResult {
     name: string
   }
   users: {
+    owner: {
+      email: string
+      password: string
+    }
     admin: {
       email: string
       password: string

@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { buildTenantUrl, overrideActionLinkRedirect, sendWelcome } from '@/lib/email'
+import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { AssignTenantAdminSchema } from '@/lib/schemas/tenant'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -51,7 +52,10 @@ export async function POST(
     .maybeSingle()
 
   if (tenantError) {
-    console.error('[POST /api/owner/tenants/[id]/admin] Tenant-Lookup fehlgeschlagen:', tenantError)
+    logOperationalError('owner_tenant_admin_tenant_lookup_failed', tenantError, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
     return NextResponse.json({ error: 'Tenant konnte nicht geladen werden.' }, { status: 500 })
   }
 
@@ -71,10 +75,10 @@ export async function POST(
     .maybeSingle()
 
   if (currentAdminMembershipError) {
-    console.error(
-      '[POST /api/owner/tenants/[id]/admin] Aktueller Admin konnte nicht geladen werden:',
-      currentAdminMembershipError
-    )
+    logOperationalError('owner_tenant_admin_current_admin_lookup_failed', currentAdminMembershipError, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
     return NextResponse.json({ error: 'Admin-Wechsel konnte nicht vorbereitet werden.' }, { status: 500 })
   }
 
@@ -83,10 +87,11 @@ export async function POST(
   })
 
   if (existingUserLookup.error) {
-    console.error(
-      '[POST /api/owner/tenants/[id]/admin] User-Lookup fehlgeschlagen:',
-      existingUserLookup.error
-    )
+    logOperationalError('owner_tenant_admin_user_lookup_failed', existingUserLookup.error, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      email,
+    })
     return NextResponse.json({ error: 'Admin-Wechsel konnte nicht vorbereitet werden.' }, { status: 500 })
   }
 
@@ -103,14 +108,22 @@ export async function POST(
       .maybeSingle()
 
     if (membershipError) {
-      console.error(
-        '[POST /api/owner/tenants/[id]/admin] Membership-Prüfung fehlgeschlagen:',
-        membershipError
-      )
+      logOperationalError('owner_tenant_admin_membership_check_failed', membershipError, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        email,
+        existingUserId: existingUser.id,
+      })
       return NextResponse.json({ error: 'Admin-Wechsel konnte nicht vorbereitet werden.' }, { status: 500 })
     }
 
     if (!membership) {
+      logSecurity('owner_tenant_admin_cross_tenant_conflict', {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        email,
+        existingUserId: existingUser.id,
+      })
       return NextResponse.json(
         {
           error:
@@ -185,10 +198,11 @@ export async function POST(
     })
 
     if (createUserResult.error || !createUserResult.data.user) {
-      console.error(
-        '[POST /api/owner/tenants/[id]/admin] User-Erstellung fehlgeschlagen:',
-        createUserResult.error
-      )
+      logOperationalError('owner_tenant_admin_create_user_failed', createUserResult.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        email,
+      })
       return NextResponse.json({ error: 'Neuer Admin-User konnte nicht erstellt werden.' }, { status: 500 })
     }
 
@@ -205,7 +219,13 @@ export async function POST(
   )
 
   if (assignmentError) {
-    console.error('[POST /api/owner/tenants/[id]/admin] RPC-Fehler:', assignmentError)
+    logOperationalError('owner_tenant_admin_assignment_failed', assignmentError, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      email,
+      newAdminUserId,
+      createdUserId,
+    })
 
     if (createdUserId) {
       const { error: rollbackError } = await supabaseAdmin.auth.admin.deleteUser(createdUserId)
@@ -240,10 +260,12 @@ export async function POST(
   )
 
   if (newAdminClaimError) {
-    console.error(
-      '[POST /api/owner/tenants/[id]/admin] Claim-Update für neuen Admin fehlgeschlagen:',
-      newAdminClaimError
-    )
+    logOperationalError('owner_tenant_admin_new_claim_update_failed', newAdminClaimError, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      newAdminUserId,
+      email,
+    })
   }
 
   if (previousAdminUserId && previousAdminUserId !== newAdminUserId) {
@@ -258,10 +280,12 @@ export async function POST(
     )
 
     if (previousAdminClaimError) {
-      console.error(
-        '[POST /api/owner/tenants/[id]/admin] Claim-Update für bisherigen Admin fehlgeschlagen:',
-        previousAdminClaimError
-      )
+      logOperationalError('owner_tenant_admin_previous_claim_update_failed', previousAdminClaimError, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        previousAdminUserId,
+        newAdminUserId,
+      })
     }
   }
 
@@ -299,6 +323,14 @@ export async function POST(
     }
   }
 
+  logAudit('owner_tenant_admin_reassigned', {
+    ownerUserId: auth.userId,
+    tenantId: id,
+    newAdminUserId,
+    previousAdminUserId,
+    email,
+    createdUserId,
+  })
   return NextResponse.json({
     success: true,
     currentAdmin: {

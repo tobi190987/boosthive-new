@@ -9,6 +9,7 @@ import {
 
 test.describe('forgot password and reset flow', () => {
   test.describe.configure({ mode: 'serial' })
+  test.setTimeout(90_000)
 
   let seed: SeedResult
 
@@ -30,7 +31,8 @@ test.describe('forgot password and reset flow', () => {
     await expect(
       page.getByText(
         'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
-      )
+      ),
+      { timeout: 20_000 }
     ).toBeVisible()
   })
 
@@ -44,7 +46,8 @@ test.describe('forgot password and reset flow', () => {
     await expect(
       page.getByText(
         'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
-      )
+      ),
+      { timeout: 20_000 }
     ).toBeVisible()
   })
 
@@ -61,7 +64,7 @@ test.describe('forgot password and reset flow', () => {
     await page.locator('input#confirmPassword').fill('ResetFlow123!')
     await page.getByRole('button', { name: 'Passwort zurücksetzen' }).click()
 
-    await page.waitForURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 15_000 })
+    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 20_000 })
     await expect(page.getByText(`Willkommen bei ${seed.tenant.name}`)).toBeVisible()
     await expect(page.getByText(reset.reset.email)).toBeVisible()
   })

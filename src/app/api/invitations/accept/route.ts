@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { AcceptInvitationSchema } from '@/lib/schemas/invitations'
 import { deriveInvitationStatus, hashInvitationToken } from '@/lib/invitations'
 import { createClient } from '@/lib/supabase'
@@ -26,6 +27,7 @@ function tenantNameFromInvitation(invitation: InvitationRecord) {
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
+    logSecurity('invitation_accept_missing_tenant_header')
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
   }
 
@@ -55,11 +57,14 @@ export async function POST(request: NextRequest) {
     .maybeSingle<InvitationRecord>()
 
   if (invitationError) {
-    console.error('[POST /api/invitations/accept] Einladung konnte nicht geladen werden:', invitationError)
+    logOperationalError('invitation_accept_load_failed', invitationError, {
+      tenantId,
+    })
     return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
   }
 
   if (!invitation) {
+    logSecurity('invitation_accept_invalid_token', { tenantId })
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
   }
 
@@ -77,6 +82,12 @@ export async function POST(request: NextRequest) {
 
   const invitationStatus = deriveInvitationStatus(invitation)
   if (invitationStatus !== 'pending') {
+    logSecurity('invitation_accept_non_pending_token', {
+      tenantId,
+      invitationId: invitation.id,
+      invitationStatus,
+      email: invitation.email,
+    })
     return NextResponse.json({ error: INVALID_TOKEN_ERROR }, { status: 400 })
   }
 
@@ -85,7 +96,11 @@ export async function POST(request: NextRequest) {
   })
 
   if (existingUserLookup.error) {
-    console.error('[POST /api/invitations/accept] User-Lookup fehlgeschlagen:', existingUserLookup.error)
+    logOperationalError('invitation_accept_user_lookup_failed', existingUserLookup.error, {
+      tenantId,
+      invitationId: invitation.id,
+      email: invitation.email,
+    })
     return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
   }
 
@@ -101,11 +116,21 @@ export async function POST(request: NextRequest) {
       .maybeSingle()
 
     if (membershipError) {
-      console.error('[POST /api/invitations/accept] Membership-Prüfung fehlgeschlagen:', membershipError)
+      logOperationalError('invitation_accept_membership_check_failed', membershipError, {
+        tenantId,
+        invitationId: invitation.id,
+        existingUserId: existingUser.id,
+      })
       return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
     }
 
     if (activeMembership) {
+      logSecurity('invitation_accept_existing_membership_conflict', {
+        tenantId,
+        invitationId: invitation.id,
+        existingUserId: existingUser.id,
+        email: invitation.email,
+      })
       const name = tenantNameFromInvitation(invitation)
       return NextResponse.json(
         { error: `User ist bereits Mitglied von "${name ?? 'diesem Tenant'}".` },
@@ -127,7 +152,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (updateUserError) {
-      console.error('[POST /api/invitations/accept] User-Update fehlgeschlagen:', updateUserError)
+      logOperationalError('invitation_accept_existing_user_update_failed', updateUserError, {
+        tenantId,
+        invitationId: invitation.id,
+        userId: existingUser.id,
+      })
       return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
     }
   } else {
@@ -147,7 +176,11 @@ export async function POST(request: NextRequest) {
       })
 
       if (retryLookup.error || !retryLookup.data?.[0]?.id) {
-        console.error('[POST /api/invitations/accept] User-Anlage fehlgeschlagen:', createUserResult.error)
+        logOperationalError('invitation_accept_user_create_failed', createUserResult.error, {
+          tenantId,
+          invitationId: invitation.id,
+          email: invitation.email,
+        })
         return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
       }
 
@@ -172,7 +205,11 @@ export async function POST(request: NextRequest) {
   )
 
   if (memberUpsertError) {
-    console.error('[POST /api/invitations/accept] Membership-Upsert fehlgeschlagen:', memberUpsertError)
+    logOperationalError('invitation_accept_membership_upsert_failed', memberUpsertError, {
+      tenantId,
+      invitationId: invitation.id,
+      userId,
+    })
     return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
   }
 
@@ -188,7 +225,11 @@ export async function POST(request: NextRequest) {
     .is('revoked_at', null)
 
   if (invitationUpdateError) {
-    console.error('[POST /api/invitations/accept] Einladung konnte nicht finalisiert werden:', invitationUpdateError)
+    logOperationalError('invitation_accept_finalize_failed', invitationUpdateError, {
+      tenantId,
+      invitationId: invitation.id,
+      userId,
+    })
     const { data: finalizedInvitation, error: finalizedInvitationError } = await supabaseAdmin
       .from('tenant_invitations')
       .select('id, email, role, accepted_at, revoked_at, expires_at, tenants(name, slug)')
@@ -197,10 +238,11 @@ export async function POST(request: NextRequest) {
       .maybeSingle<InvitationRecord>()
 
     if (finalizedInvitationError) {
-      console.error(
-        '[POST /api/invitations/accept] Einladung konnte nach Finalisierungsfehler nicht erneut geladen werden:',
-        finalizedInvitationError
-      )
+      logOperationalError('invitation_accept_finalize_reload_failed', finalizedInvitationError, {
+        tenantId,
+        invitationId: invitation.id,
+        userId,
+      })
       return NextResponse.json({ error: 'Einladung konnte nicht angenommen werden.' }, { status: 500 })
     }
 
@@ -218,7 +260,12 @@ export async function POST(request: NextRequest) {
   })
 
   if (signInError) {
-    console.error('[POST /api/invitations/accept] Auto-Login fehlgeschlagen:', signInError)
+    logOperationalError('invitation_accept_auto_login_failed', signInError, {
+      tenantId,
+      invitationId: invitation.id,
+      userId,
+      email: invitation.email,
+    })
     return NextResponse.json(
       { error: 'Einladung angenommen, aber der Auto-Login ist fehlgeschlagen.' },
       { status: 500 }
@@ -230,7 +277,12 @@ export async function POST(request: NextRequest) {
   })
 
   if (claimUpdateError) {
-    console.error('[POST /api/invitations/accept] Claim-Update fehlgeschlagen:', claimUpdateError)
+    logOperationalError('invitation_accept_claim_update_failed', claimUpdateError, {
+      tenantId,
+      invitationId: invitation.id,
+      userId,
+      role: invitation.role,
+    })
     await supabase.auth.signOut()
     return NextResponse.json(
       { error: 'Einladung angenommen, aber die Sitzung konnte nicht vorbereitet werden.' },
@@ -240,7 +292,12 @@ export async function POST(request: NextRequest) {
 
   const { error: refreshError } = await supabase.auth.refreshSession()
   if (refreshError) {
-    console.error('[POST /api/invitations/accept] Session-Refresh fehlgeschlagen:', refreshError)
+    logOperationalError('invitation_accept_session_refresh_failed', refreshError, {
+      tenantId,
+      invitationId: invitation.id,
+      userId,
+      role: invitation.role,
+    })
     await supabase.auth.signOut()
     return NextResponse.json(
       { error: 'Einladung angenommen, aber die Sitzung konnte nicht aktualisiert werden.' },
@@ -248,6 +305,13 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  logAudit('invitation_accepted', {
+    tenantId,
+    invitationId: invitation.id,
+    userId,
+    email: invitation.email,
+    role: invitation.role,
+  })
   return NextResponse.json({
     success: true,
     redirectTo: '/dashboard',

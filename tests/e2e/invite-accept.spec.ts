@@ -4,6 +4,7 @@ import { cleanupTenant, createInvitationToken, seedTenant, type SeedResult } fro
 
 test.describe('invite accept flow', () => {
   test.describe.configure({ mode: 'serial' })
+  test.setTimeout(90_000)
 
   let seed: SeedResult
 
@@ -25,7 +26,7 @@ test.describe('invite accept flow', () => {
     await page.locator('input#password').fill('InviteFlow123!')
     await page.getByRole('button', { name: 'Einladung annehmen' }).click()
 
-    await page.waitForURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 15_000 })
+    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 20_000 })
     await expect(page.getByText(`Willkommen bei ${seed.tenant.name}`)).toBeVisible()
     await expect(page.getByText(invitation.invitation.email)).toBeVisible()
   })

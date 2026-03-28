@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { logSecurity } from '@/lib/observability'
 import { createClient } from '@/lib/supabase'
 
 /**
@@ -19,6 +20,9 @@ export async function requireOwner(): Promise<
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
+    logSecurity('owner_access_unauthenticated', {
+      authError: authError?.message ?? null,
+    })
     return {
       error: NextResponse.json(
         { error: 'Nicht authentifiziert. Bitte einloggen.' },
@@ -35,6 +39,10 @@ export async function requireOwner(): Promise<
     .single()
 
   if (adminError || !admin) {
+    logSecurity('owner_access_forbidden', {
+      userId: user.id,
+      adminError: adminError?.message ?? null,
+    })
     return {
       error: NextResponse.json(
         { error: 'Zugriff verweigert. Nur Plattform-Owner haben Zugang.' },

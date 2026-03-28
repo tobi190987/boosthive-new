@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { deleteTenantForOwner, listTenantUsers } from '@/lib/owner-tenant-management'
+import { logAudit, logOperationalError } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import {
@@ -128,7 +129,10 @@ export async function GET(
   const { tenant, currentAdmin, users, error } = await loadTenantDetail(id)
 
   if (error) {
-    console.error(`[GET /api/owner/tenants/${id}] Laden fehlgeschlagen:`, error)
+    logOperationalError('owner_tenant_detail_load_failed', error, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
     return NextResponse.json(
       { error: 'Tenant-Details konnten nicht geladen werden.' },
       { status: 500 }
@@ -195,7 +199,11 @@ export async function PATCH(
       .maybeSingle()
 
     if (error) {
-      console.error(`[PATCH /api/owner/tenants/${id}] Status-Update fehlgeschlagen:`, error)
+      logOperationalError('owner_tenant_status_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        nextStatus: parsed.data.status,
+      })
       return NextResponse.json(
         { error: 'Tenant-Status konnte nicht aktualisiert werden.' },
         { status: 500 }
@@ -208,12 +216,18 @@ export async function PATCH(
 
     const currentAdminResult = await getCurrentAdmin(id)
     if (currentAdminResult.error) {
-      console.error(
-        `[PATCH /api/owner/tenants/${id}] Admin-Info nach Status-Update fehlgeschlagen:`,
-        currentAdminResult.error
-      )
+      logOperationalError('owner_tenant_status_admin_reload_failed', currentAdminResult.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        nextStatus: parsed.data.status,
+      })
     }
 
+    logAudit('owner_tenant_status_updated', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      status: parsed.data.status,
+    })
     return NextResponse.json({
       tenant: {
         ...tenant,
@@ -239,7 +253,11 @@ export async function PATCH(
       .maybeSingle()
 
     if (conflictingTenantError) {
-      console.error(`[PATCH /api/owner/tenants/${id}] Slug-Prüfung fehlgeschlagen:`, conflictingTenantError)
+      logOperationalError('owner_tenant_slug_conflict_check_failed', conflictingTenantError, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        slug: parsed.data.slug,
+      })
       return NextResponse.json(
         { error: 'Tenant konnte nicht aktualisiert werden.' },
         { status: 500 }
@@ -282,6 +300,12 @@ export async function PATCH(
       }
 
       console.error(`[PATCH /api/owner/tenants/${id}] Basisdaten-Update fehlgeschlagen:`, error)
+      logOperationalError('owner_tenant_basics_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+        slug: parsed.data.slug,
+        name: parsed.data.name,
+      })
       return NextResponse.json(
         { error: 'Basisdaten konnten nicht gespeichert werden.' },
         { status: 500 }
@@ -294,12 +318,18 @@ export async function PATCH(
 
     const currentAdminResult = await getCurrentAdmin(id)
     if (currentAdminResult.error) {
-      console.error(
-        `[PATCH /api/owner/tenants/${id}] Admin-Info nach Basisdaten-Update fehlgeschlagen:`,
-        currentAdminResult.error
-      )
+      logOperationalError('owner_tenant_basics_admin_reload_failed', currentAdminResult.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
     }
 
+    logAudit('owner_tenant_basics_updated', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      slug: parsed.data.slug,
+      name: parsed.data.name,
+    })
     return NextResponse.json({
       tenant: {
         ...tenant,
@@ -326,7 +356,10 @@ export async function PATCH(
       .maybeSingle()
 
     if (error) {
-      console.error(`[PATCH /api/owner/tenants/${id}] Billing-Update fehlgeschlagen:`, error)
+      logOperationalError('owner_tenant_billing_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
       return NextResponse.json(
         { error: 'Rechnungsadresse konnte nicht gespeichert werden.' },
         { status: 500 }
@@ -339,12 +372,16 @@ export async function PATCH(
 
     const currentAdminResult = await getCurrentAdmin(id)
     if (currentAdminResult.error) {
-      console.error(
-        `[PATCH /api/owner/tenants/${id}] Admin-Info nach Billing-Update fehlgeschlagen:`,
-        currentAdminResult.error
-      )
+      logOperationalError('owner_tenant_billing_admin_reload_failed', currentAdminResult.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
     }
 
+    logAudit('owner_tenant_billing_updated', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
     return NextResponse.json({
       tenant: {
         ...tenant,
@@ -371,7 +408,10 @@ export async function PATCH(
       .maybeSingle()
 
     if (error) {
-      console.error(`[PATCH /api/owner/tenants/${id}] Kontakt-Update fehlgeschlagen:`, error)
+      logOperationalError('owner_tenant_contact_update_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
       return NextResponse.json(
         { error: 'Kontaktdaten konnten nicht gespeichert werden.' },
         { status: 500 }
@@ -384,12 +424,16 @@ export async function PATCH(
 
     const currentAdminResult = await getCurrentAdmin(id)
     if (currentAdminResult.error) {
-      console.error(
-        `[PATCH /api/owner/tenants/${id}] Admin-Info nach Kontakt-Update fehlgeschlagen:`,
-        currentAdminResult.error
-      )
+      logOperationalError('owner_tenant_contact_admin_reload_failed', currentAdminResult.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
     }
 
+    logAudit('owner_tenant_contact_updated', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
     return NextResponse.json({
       tenant: {
         ...tenant,
@@ -427,12 +471,18 @@ export async function DELETE(
     }
 
     if (result.cleanupErrors.length > 0) {
-      console.error(
-        `[DELETE /api/owner/tenants/${id}] Cleanup unvollständig:`,
-        result.cleanupErrors
-      )
+      logOperationalError('owner_tenant_delete_cleanup_incomplete', result.cleanupErrors, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
     }
 
+    logAudit('owner_tenant_deleted', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      deletedAuthUsers: result.deletedAuthUsers,
+      cleanupErrors: result.cleanupErrors.length,
+    })
     return NextResponse.json({
       success: true,
       tenant: result.tenant,
@@ -440,7 +490,10 @@ export async function DELETE(
       cleanupErrors: result.cleanupErrors,
     })
   } catch (error) {
-    console.error(`[DELETE /api/owner/tenants/${id}] Löschen fehlgeschlagen:`, error)
+    logOperationalError('owner_tenant_delete_failed', error, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
     return NextResponse.json(
       { error: 'Tenant konnte nicht gelöscht werden.' },
       { status: 500 }

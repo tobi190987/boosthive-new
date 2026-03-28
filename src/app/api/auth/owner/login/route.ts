@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { LoginSchema } from '@/lib/schemas/auth'
@@ -39,6 +40,7 @@ export async function POST(request: NextRequest) {
     await supabase.auth.signInWithPassword({ email, password })
 
   if (authError || !authData.user) {
+    logSecurity('owner_login_invalid_credentials', { email })
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
@@ -52,6 +54,11 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (adminError || !admin) {
+    logSecurity('owner_login_non_owner_blocked', {
+      userId: authData.user.id,
+      email,
+      adminError: adminError?.message ?? null,
+    })
     // User existiert, ist aber kein Owner -> Logout + generischer Fehler
     await supabase.auth.signOut()
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
@@ -74,18 +81,31 @@ export async function POST(request: NextRequest) {
     })
 
     if (claimError) {
-      console.error('[POST /api/auth/owner/login] Claim-Update fehlgeschlagen:', claimError)
+      logOperationalError('owner_login_claim_update_failed', claimError, {
+        userId: authData.user.id,
+        email,
+      })
     } else {
       const { error: refreshError } = await supabase.auth.refreshSession()
       if (refreshError) {
-        console.error('[POST /api/auth/owner/login] Session-Refresh fehlgeschlagen:', refreshError)
+        logOperationalError('owner_login_session_refresh_failed', refreshError, {
+          userId: authData.user.id,
+          email,
+        })
       }
     }
   } catch (claimSetupError) {
-    console.error('[POST /api/auth/owner/login] Admin-Client für Claim-Setup nicht verfügbar:', claimSetupError)
+    logOperationalError('owner_login_claim_setup_unavailable', claimSetupError, {
+      userId: authData.user.id,
+      email,
+    })
   }
 
   // 6. Erfolg — Session-Cookie wurde bereits von Supabase SSR gesetzt
+  logAudit('owner_login_succeeded', {
+    userId: authData.user.id,
+    email: authData.user.email,
+  })
   return NextResponse.json({
     user: {
       id: authData.user.id,

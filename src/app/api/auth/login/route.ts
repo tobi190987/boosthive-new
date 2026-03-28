@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { LoginSchema } from '@/lib/schemas/auth'
@@ -18,6 +19,7 @@ export async function POST(request: NextRequest) {
   // 1. Tenant-ID aus Header lesen (vom Proxy injiziert)
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
+    logSecurity('tenant_login_missing_tenant_header')
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
@@ -49,6 +51,12 @@ export async function POST(request: NextRequest) {
     .maybeSingle()
 
   if (tenantError || !tenant || tenant.status !== 'active') {
+    logSecurity('tenant_login_blocked_inactive_tenant', {
+      tenantId,
+      email,
+      tenantStatus: tenant?.status ?? null,
+      tenantError: tenantError?.message ?? null,
+    })
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
@@ -58,6 +66,10 @@ export async function POST(request: NextRequest) {
     await supabase.auth.signInWithPassword({ email, password })
 
   if (authError || !authData.user) {
+    logSecurity('tenant_login_invalid_credentials', {
+      tenantId,
+      email,
+    })
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
 
@@ -71,6 +83,12 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (memberError || !membership) {
+    logSecurity('tenant_login_cross_tenant_blocked', {
+      tenantId,
+      userId: authData.user.id,
+      email,
+      memberError: memberError?.message ?? null,
+    })
     // User existiert, ist aber kein Mitglied dieses Tenants -> Logout + generischer Fehler
     await supabase.auth.signOut()
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
@@ -78,6 +96,12 @@ export async function POST(request: NextRequest) {
 
   // 6. Status prüfen (inaktive Accounts -> generischer Fehler, kein Info Leak)
   if (membership.status !== 'active') {
+    logSecurity('tenant_login_blocked_inactive_membership', {
+      tenantId,
+      userId: authData.user.id,
+      email,
+      membershipStatus: membership.status,
+    })
     await supabase.auth.signOut()
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }
@@ -87,7 +111,12 @@ export async function POST(request: NextRequest) {
     app_metadata: { tenant_id: tenantId, role: membership.role },
   })
   if (claimError) {
-    console.error('[POST /api/auth/login] Claim-Update fehlgeschlagen:', claimError)
+    logOperationalError('tenant_login_claim_update_failed', claimError, {
+      tenantId,
+      userId: authData.user.id,
+      email,
+      role: membership.role,
+    })
     await supabase.auth.signOut()
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 })
   }
@@ -95,12 +124,23 @@ export async function POST(request: NextRequest) {
   // Session neu erstellen damit neue Claims sofort im JWT enthalten sind
   const { error: refreshError } = await supabase.auth.refreshSession()
   if (refreshError) {
-    console.error('[POST /api/auth/login] Session-Refresh fehlgeschlagen:', refreshError)
+    logOperationalError('tenant_login_session_refresh_failed', refreshError, {
+      tenantId,
+      userId: authData.user.id,
+      email,
+      role: membership.role,
+    })
     await supabase.auth.signOut()
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 500 })
   }
 
   // 8. Erfolg — Session-Cookie wurde bereits von Supabase SSR gesetzt
+  logAudit('tenant_login_succeeded', {
+    tenantId,
+    userId: authData.user.id,
+    email: authData.user.email,
+    role: membership.role,
+  })
   return NextResponse.json({
     user: {
       id: authData.user.id,

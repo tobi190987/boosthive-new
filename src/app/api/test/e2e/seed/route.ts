@@ -97,12 +97,22 @@ export async function POST(request: NextRequest) {
 
   const supabaseAdmin = createAdminClient()
   const tenantName = `E2E ${slug}`
+  const ownerEmail = `owner+${slug}@example.com`
   const adminEmail = `admin+${slug}@example.com`
   const memberEmail = `member+${slug}@example.com`
   const password = `Pw-${slug}-123!`
 
+  const ownerUserId = await ensureUser(ownerEmail, password)
   const adminUserId = await ensureUser(adminEmail, password)
   const memberUserId = await ensureUser(memberEmail, password)
+
+  const { error: ownerUpsertError } = await supabaseAdmin
+    .from('platform_admins')
+    .upsert({ user_id: ownerUserId }, { onConflict: 'user_id' })
+
+  if (ownerUpsertError) {
+    throw ownerUpsertError
+  }
 
   let tenantId: string
   const existingTenant = await supabaseAdmin
@@ -217,6 +227,7 @@ export async function POST(request: NextRequest) {
       name: tenantName,
     },
     users: {
+      owner: { email: ownerEmail, password },
       admin: { email: adminEmail, password },
       member: { email: memberEmail, password },
     },
@@ -251,20 +262,26 @@ export async function DELETE(request: NextRequest) {
   }
 
   const tenantId = tenantLookup.data?.id
+  const ownerEmail = `owner+${slug}@example.com`
   const adminEmail = `admin+${slug}@example.com`
   const memberEmail = `member+${slug}@example.com`
-  const userIds = (await Promise.all([findUserIdByEmail(adminEmail), findUserIdByEmail(memberEmail)])).filter(
-    (value): value is string => Boolean(value)
-  )
+  const ownerUserId = await findUserIdByEmail(ownerEmail)
+  const userIds = (
+    await Promise.all([findUserIdByEmail(adminEmail), findUserIdByEmail(memberEmail)])
+  ).filter((value): value is string => Boolean(value))
   const inviteeEmail = `invitee+${slug}@example.com`
   const inviteeUserId = await findUserIdByEmail(inviteeEmail)
-  const allUserIds = [...userIds, ...(inviteeUserId ? [inviteeUserId] : [])]
+  const allUserIds = [...userIds, ...(inviteeUserId ? [inviteeUserId] : []), ...(ownerUserId ? [ownerUserId] : [])]
 
   if (tenantId) {
     await supabaseAdmin.from('tenant_invitations').delete().eq('tenant_id', tenantId)
     await supabaseAdmin.from('password_reset_tokens').delete().eq('tenant_id', tenantId)
     await supabaseAdmin.from('tenant_members').delete().eq('tenant_id', tenantId)
     await supabaseAdmin.from('tenants').delete().eq('id', tenantId)
+  }
+
+  if (ownerUserId) {
+    await supabaseAdmin.from('platform_admins').delete().eq('user_id', ownerUserId)
   }
 
   if (allUserIds.length > 0) {

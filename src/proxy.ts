@@ -205,8 +205,25 @@ const OWNER_PROTECTED_PREFIXES = ['/owner']
 // Public paths that never require auth (even under protected prefixes)
 const PUBLIC_PATHS = ['/login', '/owner/login', '/api/', '/_next/', '/favicon.ico']
 
+const INACTIVE_TENANT_ALLOWED_PREFIXES = [
+  '/login',
+  '/forgot-password',
+  '/reset-password',
+  '/accept-invite',
+  '/api/auth/login',
+  '/api/auth/password-reset/',
+  '/api/invitations/',
+  '/api/auth/email-link',
+]
+
 function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p))
+}
+
+function isInactiveTenantAllowedPath(pathname: string): boolean {
+  return INACTIVE_TENANT_ALLOWED_PREFIXES.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix)
+  )
 }
 
 function isTenantProtectedPath(pathname: string): boolean {
@@ -355,7 +372,7 @@ export async function proxy(request: NextRequest) {
       return maybeProtectTenantRoute(request, response, pathname, 'local-dev-fallback')
     }
 
-    if (tenant.status === 'inactive') {
+    if (tenant.status === 'inactive' && !isInactiveTenantAllowedPath(pathname)) {
       return redirectInactiveTenant(request)
     }
 
@@ -375,7 +392,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(url, { status: 404 })
   }
 
-  if (tenant.status === 'inactive') {
+  if (tenant.status === 'inactive' && !isInactiveTenantAllowedPath(pathname)) {
     return redirectInactiveTenant(request)
   }
 

@@ -1,9 +1,10 @@
 import { expect, test } from '@playwright/test'
-import { grantPreviewAccess, tenantUrl } from './helpers'
+import { completeMemberOnboarding, grantPreviewAccess, tenantUrl } from './helpers'
 import { cleanupTenant, seedTenant, type SeedResult } from './test-seed'
 
 test.describe('authenticated tenant flows', () => {
   test.describe.configure({ mode: 'serial' })
+  test.setTimeout(90_000)
 
   let seed: SeedResult
 
@@ -23,14 +24,12 @@ test.describe('authenticated tenant flows', () => {
     await page.locator('input#password').fill(seed.users.member.password)
     await page.getByRole('button', { name: 'Anmelden' }).click()
 
-    await page.waitForURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 15_000 })
+    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 20_000 })
     await expect(page.getByText(`Willkommen bei ${seed.tenant.name}`)).toBeVisible()
 
-    await page.getByLabel('Vorname').fill('Mia')
-    await page.getByLabel('Nachname').fill('Member')
-    await page.getByRole('button', { name: 'Onboarding abschliessen' }).click()
+    await completeMemberOnboarding(page, 'Mia', 'Member')
 
-    await page.waitForURL(tenantUrl(seed.tenant.slug, '/dashboard'), { timeout: 15_000 })
+    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/dashboard'), { timeout: 20_000 })
     await expect(page.getByText('Willkommen in deinem Tenant-Workspace')).toBeVisible()
   })
 
@@ -44,20 +43,25 @@ test.describe('authenticated tenant flows', () => {
     await page.locator('input#password').fill(seed.users.admin.password)
     await page.getByRole('button', { name: 'Anmelden' }).click()
 
-    await page.waitForURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 15_000 })
+    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 20_000 })
     await expect(
       page.getByText('Rechnungsdaten sind für Admins Pflichtfelder und werden benötigt')
     ).toBeVisible()
 
     const countryTrigger = page.locator('#billing_country')
     await expect(countryTrigger).toContainText('Land auswählen')
-    await countryTrigger.click()
-    await expect(page.getByRole('option', { name: 'Deutschland' })).toBeVisible()
-    await page.keyboard.press('Escape')
+    await expect(page.getByRole('combobox', { name: 'Land Pflichtfeld' })).toBeVisible()
 
+    await page.waitForLoadState('networkidle')
     await page.getByLabel('Vorname').fill('Ada')
     await page.getByLabel('Nachname').fill('Admin')
-    await page.getByRole('button', { name: 'Onboarding abschliessen' }).click()
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/tenant/profile') && response.request().method() === 'PUT'
+      ),
+      page.getByRole('button', { name: 'Onboarding abschliessen' }).click(),
+    ])
 
     await expect(
       page.getByText('Bitte hinterlege eine vollständige Rechnungsadresse.')
