@@ -1,11 +1,11 @@
-import { TenantProfileWorkspace } from '@/components/tenant-profile-workspace'
+import { SettingsProfileWorkspace } from '@/components/settings-profile-workspace'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 
 export default async function ProfileSettingsPage() {
   const context = await requireTenantShellContext()
 
   return (
-    <TenantProfileWorkspace
+    <SettingsProfileWorkspace
       mode="settings"
       initialData={{
         role: context.membership.role,
