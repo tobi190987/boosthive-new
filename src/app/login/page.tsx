@@ -2,8 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { AuthShell } from '@/components/auth-shell'
 import { LoginForm } from '@/components/login-form'
+import { getTenantLogoUrl } from '@/lib/tenant-branding'
 import { getTenantContext } from '@/lib/tenant'
-import { createAdminClient } from '@/lib/supabase-admin'
 
 interface LoginPageProps {
   searchParams: Promise<{ returnTo?: string; reason?: string }>
@@ -12,17 +12,7 @@ interface LoginPageProps {
 export default async function TenantLoginPage({ searchParams }: LoginPageProps) {
   const params = await searchParams
   const tenant = await getTenantContext()
-
-  let tenantLogoUrl: string | undefined
-  if (tenant?.id) {
-    const supabaseAdmin = createAdminClient()
-    const { data } = await supabaseAdmin
-      .from('tenants')
-      .select('logo_url')
-      .eq('id', tenant.id)
-      .maybeSingle()
-    tenantLogoUrl = data?.logo_url ?? undefined
-  }
+  const tenantLogoUrl = await getTenantLogoUrl()
   const rawReturnTo = params.returnTo
   const returnTo = rawReturnTo?.startsWith('/') && !rawReturnTo.startsWith('//') ? rawReturnTo : '/dashboard'
   const notice =

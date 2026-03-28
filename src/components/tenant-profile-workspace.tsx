@@ -87,6 +87,24 @@ interface AvatarCropDraft {
   imageHeight: number
 }
 
+function RequiredLabel({
+  htmlFor,
+  children,
+}: {
+  htmlFor: string
+  children: string
+}) {
+  return (
+    <Label htmlFor={htmlFor} className="flex items-center gap-1.5">
+      <span>{children}</span>
+      <span aria-hidden="true" className="text-[#c2410c]">
+        *
+      </span>
+      <span className="sr-only">Pflichtfeld</span>
+    </Label>
+  )
+}
+
 const fieldClassName =
   'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
 const AVATAR_PREVIEW_SIZE = 280
@@ -1058,12 +1076,17 @@ export function TenantProfileWorkspace({
                       Rechnungsadresse
                     </h2>
                     <p className="text-sm text-slate-500">
-                      Diese Angaben sind für Admins verpflichtend.
+                      Diese Angaben sind für Admins verpflichtend. Mit * markierte Felder müssen ausgefüllt werden.
                     </p>
                   </div>
                   <div className="grid gap-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5 md:grid-cols-2">
+                    {mode === 'onboarding' && (
+                      <div className="md:col-span-2 rounded-2xl border border-[#f1d4b7] bg-[#fff4ea] px-4 py-3 text-sm text-[#8c4a19]">
+                        Rechnungsdaten sind für Admins Pflichtfelder und werden benötigt, bevor das Onboarding abgeschlossen werden kann.
+                      </div>
+                    )}
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="billing_company">Firma</Label>
+                      <RequiredLabel htmlFor="billing_company">Firma</RequiredLabel>
                       <Input
                         id="billing_company"
                         className={fieldClassName}
@@ -1076,7 +1099,7 @@ export function TenantProfileWorkspace({
                       )}
                     </div>
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="billing_street">Strasse und Hausnummer</Label>
+                      <RequiredLabel htmlFor="billing_street">Straße und Hausnummer</RequiredLabel>
                       <Input
                         id="billing_street"
                         className={fieldClassName}
@@ -1089,21 +1112,21 @@ export function TenantProfileWorkspace({
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="billing_zip">PLZ</Label>
+                      <RequiredLabel htmlFor="billing_zip">PLZ</RequiredLabel>
                       <Input id="billing_zip" className={fieldClassName} {...register('billing_zip')} />
                       {errors.billing_zip && (
                         <p className="text-sm text-destructive">{errors.billing_zip.message}</p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="billing_city">Stadt</Label>
+                      <RequiredLabel htmlFor="billing_city">Stadt</RequiredLabel>
                       <Input id="billing_city" className={fieldClassName} {...register('billing_city')} />
                       {errors.billing_city && (
                         <p className="text-sm text-destructive">{errors.billing_city.message}</p>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="billing_country">Land</Label>
+                      <RequiredLabel htmlFor="billing_country">Land</RequiredLabel>
                       <Input
                         id="billing_country"
                         className={fieldClassName}

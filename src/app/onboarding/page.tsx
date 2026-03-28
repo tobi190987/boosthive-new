@@ -15,7 +15,7 @@ export default async function OnboardingPage() {
       context={context}
       eyebrow="Onboarding"
       title="Richte dein Profil und euren Workspace ein"
-      description="Beim ersten Login sammeln wir die Pflichtdaten für dein Profil. Admins hinterlegen zusätzlich Rechnungsadresse und Stripe."
+      description="Beim ersten Login sammeln wir die Pflichtdaten für dein Profil. Admins hinterlegen zusätzlich die verpflichtenden Rechnungsdaten und Stripe."
     >
       <TenantProfileWorkspace
         mode="onboarding"

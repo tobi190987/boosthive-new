@@ -69,7 +69,7 @@ export const UpdateTenantBillingSchema = z
     ),
     billing_street: OptionalTrimmedString(
       120,
-      'Strasse darf maximal 120 Zeichen lang sein.'
+      'Straße darf maximal 120 Zeichen lang sein.'
     ),
     billing_zip: OptionalTrimmedString(20, 'PLZ darf maximal 20 Zeichen lang sein.'),
     billing_city: OptionalTrimmedString(80, 'Stadt darf maximal 80 Zeichen lang sein.'),

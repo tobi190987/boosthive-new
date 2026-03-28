@@ -126,7 +126,7 @@ export async function PUT(request: NextRequest) {
     if (!billingResult.success) {
       return NextResponse.json(
         {
-          error: 'Bitte hinterlege eine vollstaendige Rechnungsadresse.',
+          error: 'Bitte hinterlege eine vollständige Rechnungsadresse.',
           details: billingResult.error.flatten().fieldErrors,
         },
         { status: 400 }
@@ -153,7 +153,7 @@ export async function PUT(request: NextRequest) {
     if (authResult.auth.role === 'admin') {
       if (!hasRequiredBillingDetails(validatedBillingAddress)) {
         return NextResponse.json(
-          { error: 'Bitte vervollstaendige zuerst die Rechnungsadresse.' },
+          { error: 'Bitte vervollständige zuerst die Rechnungsadresse.' },
           { status: 400 }
         )
       }
@@ -192,8 +192,8 @@ export async function PUT(request: NextRequest) {
           }
 
           if (!hasPaymentMethod) {
-            return NextResponse.json(
-              { error: 'Bitte hinterlege zuerst eine Zahlungsmethode fuer Stripe.' },
+          return NextResponse.json(
+              { error: 'Bitte hinterlege zuerst eine Zahlungsmethode für Stripe.' },
               { status: 400 }
             )
           }

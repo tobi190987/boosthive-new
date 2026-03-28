@@ -17,7 +17,7 @@ export const BaseProfileSchema = z.object({
 
 export const BillingAddressSchema = z.object({
   billing_company: trimmedRequired('Firma'),
-  billing_street: trimmedRequired('Strasse'),
+  billing_street: trimmedRequired('Straße'),
   billing_zip: trimmedRequired('PLZ'),
   billing_city: trimmedRequired('Stadt'),
   billing_country: trimmedRequired('Land'),
@@ -26,7 +26,7 @@ export const BillingAddressSchema = z.object({
 
 export const ProfileUpdateSchema = BaseProfileSchema.extend({
   billing_company: trimmedOptional('Firma', 120).optional(),
-  billing_street: trimmedOptional('Strasse', 120).optional(),
+  billing_street: trimmedOptional('Straße', 120).optional(),
   billing_zip: trimmedOptional('PLZ', 20).optional(),
   billing_city: trimmedOptional('Stadt', 80).optional(),
   billing_country: trimmedOptional('Land', 80).optional(),

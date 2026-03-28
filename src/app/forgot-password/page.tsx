@@ -1,22 +1,11 @@
 import { AuthShell } from '@/components/auth-shell'
 import { ForgotPasswordForm } from '@/components/forgot-password-form'
+import { getTenantLogoUrl } from '@/lib/tenant-branding'
 import { getTenantContext } from '@/lib/tenant'
-import { createAdminClient } from '@/lib/supabase-admin'
 
 export default async function ForgotPasswordPage() {
   const tenant = await getTenantContext()
-  let tenantLogoUrl: string | undefined
-
-  if (tenant?.id) {
-    const supabaseAdmin = createAdminClient()
-    const { data } = await supabaseAdmin
-      .from('tenants')
-      .select('logo_url')
-      .eq('id', tenant.id)
-      .maybeSingle()
-
-    tenantLogoUrl = data?.logo_url ?? undefined
-  }
+  const tenantLogoUrl = await getTenantLogoUrl()
 
   return (
     <AuthShell

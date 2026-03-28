@@ -105,7 +105,7 @@ const BasicsSchema = CreateTenantSchema.pick({
 const BillingSchema = z
   .object({
     billing_company: z.string().trim().max(120, "Firmenname darf maximal 120 Zeichen lang sein."),
-    billing_street: z.string().trim().max(120, "Strasse darf maximal 120 Zeichen lang sein."),
+    billing_street: z.string().trim().max(120, "Straße darf maximal 120 Zeichen lang sein."),
     billing_zip: z.string().trim().max(20, "PLZ darf maximal 20 Zeichen lang sein."),
     billing_city: z.string().trim().max(80, "Stadt darf maximal 80 Zeichen lang sein."),
     billing_country: z.string().trim().max(80, "Land darf maximal 80 Zeichen lang sein."),
@@ -1007,9 +1007,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       name="billing_street"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Strasse und Hausnummer</FormLabel>
+                          <FormLabel>Straße und Hausnummer</FormLabel>
                           <FormControl>
-                            <Input {...field} placeholder="Musterstrasse 12" />
+                            <Input {...field} placeholder="Musterstraße 12" />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
