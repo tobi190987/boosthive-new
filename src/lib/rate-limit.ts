@@ -7,6 +7,8 @@
  * a shared store (e.g. Vercel KV / Redis) would be needed.
  */
 
+import { NextResponse } from 'next/server'
+
 interface RateLimitEntry {
   count: number
   resetAt: number
@@ -14,18 +16,40 @@ interface RateLimitEntry {
 
 const store = new Map<string, RateLimitEntry>()
 
-interface RateLimitOptions {
+export interface RateLimitOptions {
   /** Max requests per window */
   limit: number
   /** Window duration in milliseconds */
   windowMs: number
 }
 
-interface RateLimitResult {
+export interface RateLimitResult {
   allowed: boolean
   remaining: number
   resetAt: number
+  /** The limit that was applied (for response headers) */
+  limit: number
 }
+
+// ---------------------------------------------------------------------------
+// Presets for auth routes
+// ---------------------------------------------------------------------------
+
+/** Tenant login: 10 requests / 15 min / IP */
+export const AUTH_LOGIN: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
+
+/** Owner login: 5 requests / 15 min / IP (stricter) */
+export const AUTH_OWNER_LOGIN: RateLimitOptions = { limit: 5, windowMs: 15 * 60 * 1000 }
+
+/** Password reset request: 3 requests / 15 min / IP (strictest) */
+export const AUTH_RESET: RateLimitOptions = { limit: 3, windowMs: 15 * 60 * 1000 }
+
+/** Invitation accept: 10 requests / 15 min / IP */
+export const AUTH_INVITE: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
+
+// ---------------------------------------------------------------------------
+// Core
+// ---------------------------------------------------------------------------
 
 export function checkRateLimit(key: string, options: RateLimitOptions): RateLimitResult {
   const now = Date.now()
@@ -33,15 +57,39 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
 
   if (!entry || now > entry.resetAt) {
     store.set(key, { count: 1, resetAt: now + options.windowMs })
-    return { allowed: true, remaining: options.limit - 1, resetAt: now + options.windowMs }
+    return { allowed: true, remaining: options.limit - 1, resetAt: now + options.windowMs, limit: options.limit }
   }
 
   if (entry.count >= options.limit) {
-    return { allowed: false, remaining: 0, resetAt: entry.resetAt }
+    return { allowed: false, remaining: 0, resetAt: entry.resetAt, limit: options.limit }
   }
 
   entry.count++
-  return { allowed: true, remaining: options.limit - entry.count, resetAt: entry.resetAt }
+  return { allowed: true, remaining: options.limit - entry.count, resetAt: entry.resetAt, limit: options.limit }
+}
+
+// ---------------------------------------------------------------------------
+// Response helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a 429 Too Many Requests response with standard rate limit headers.
+ */
+export function rateLimitResponse(result: RateLimitResult): NextResponse {
+  const retryAfterSeconds = Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000))
+
+  return NextResponse.json(
+    { error: 'Zu viele Anfragen. Bitte versuche es spaeter erneut.' },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': String(retryAfterSeconds),
+        'X-RateLimit-Limit': String(result.limit),
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': String(Math.ceil(result.resetAt / 1000)),
+      },
+    }
+  )
 }
 
 /**
