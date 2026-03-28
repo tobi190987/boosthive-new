@@ -6,11 +6,13 @@ import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 const BASIS_PLAN_PRICE_ID = process.env.STRIPE_BASIS_PLAN_PRICE_ID
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * POST /api/tenant/billing/subscribe
- * Starts a Basis-Plan subscription for the tenant.
- * The tenant must already have a Stripe Customer and a default payment method
- * (set up via the SetupIntent / Card Element flow).
+ * Starts a Basis-Plan subscription including at least one module.
+ * All items are created in a single Stripe subscription call.
+ * Body: { module_ids: string[] }  — at least one required
  */
 export async function POST(request: NextRequest) {
   if (!BASIS_PLAN_PRICE_ID) {
@@ -40,6 +42,23 @@ export async function POST(request: NextRequest) {
   const authResult = await requireTenantAdmin(tenantId)
   if ('error' in authResult) return authResult.error
 
+  // Parse and validate body
+  let moduleIds: string[] = []
+  try {
+    const body = await request.json()
+    moduleIds = Array.isArray(body?.module_ids) ? body.module_ids : []
+  } catch {
+    return NextResponse.json({ error: 'Ungültiger Request-Body.' }, { status: 400 })
+  }
+
+  moduleIds = moduleIds.filter((id) => UUID_REGEX.test(id))
+  if (moduleIds.length === 0) {
+    return NextResponse.json(
+      { error: 'Mindestens ein Modul muss ausgewählt werden.' },
+      { status: 400 }
+    )
+  }
+
   const supabaseAdmin = createAdminClient()
 
   const { data: tenant, error: tenantError } = await supabaseAdmin
@@ -60,7 +79,6 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Prevent double subscription
   const currentStatus = tenant.subscription_status as string | null
   if (currentStatus === 'active' || currentStatus === 'canceling') {
     return NextResponse.json(
@@ -69,8 +87,25 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // Load selected modules
+  const { data: selectedModules, error: modulesError } = await supabaseAdmin
+    .from('modules')
+    .select('id, code, name, stripe_price_id, is_active')
+    .in('id', moduleIds)
+
+  if (modulesError || !selectedModules || selectedModules.length === 0) {
+    return NextResponse.json({ error: 'Module konnten nicht geladen werden.' }, { status: 400 })
+  }
+
+  const inactiveModule = selectedModules.find((m) => !m.is_active)
+  if (inactiveModule) {
+    return NextResponse.json(
+      { error: `Modul "${inactiveModule.name}" ist aktuell nicht buchbar.` },
+      { status: 400 }
+    )
+  }
+
   try {
-    // Ensure a default payment method is set on the customer
     const paymentMethods = await stripe.paymentMethods.list({
       customer: stripeCustomerId,
       type: 'card',
@@ -85,31 +120,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Set as default for invoices
     await stripe.customers.update(stripeCustomerId, {
-      invoice_settings: {
-        default_payment_method: defaultPm.id,
-      },
+      invoice_settings: { default_payment_method: defaultPm.id },
     })
 
-    // Create subscription
+    // Create subscription with Basis-Plan + all selected modules in one call
     const subscription = await stripe.subscriptions.create({
       customer: stripeCustomerId,
-      items: [{ price: BASIS_PLAN_PRICE_ID }],
+      items: [
+        { price: BASIS_PLAN_PRICE_ID },
+        ...selectedModules.map((m) => ({
+          price: m.stripe_price_id,
+          metadata: { module_id: m.id, module_code: m.code },
+        })),
+      ],
       default_payment_method: defaultPm.id,
-      metadata: {
-        tenant_id: tenantId,
-      },
+      metadata: { tenant_id: tenantId },
     })
 
-    // In Stripe SDK v21, current_period_end lives on the subscription item
-    const periodEnd = subscription.items.data[0]?.current_period_end ?? null
-    const periodEndISO = periodEnd
-      ? new Date(periodEnd * 1000).toISOString()
-      : null
+    const basisItem = subscription.items.data.find((i) => i.price.id === BASIS_PLAN_PRICE_ID)
+    const periodEnd = basisItem?.current_period_end ?? subscription.items.data[0]?.current_period_end ?? null
+    const periodEndISO = periodEnd ? new Date(periodEnd * 1000).toISOString() : null
 
-    // Update tenant in DB immediately so re-subscriptions take effect without
-    // waiting for the async invoice.payment_succeeded webhook.
+    // Update tenant
     const { error: updateError } = await supabaseAdmin
       .from('tenants')
       .update({
@@ -121,11 +154,39 @@ export async function POST(request: NextRequest) {
       .eq('id', tenantId)
 
     if (updateError) {
-      console.error(
-        '[POST /api/tenant/billing/subscribe] DB-Update fehlgeschlagen:',
-        updateError
+      console.error('[POST /api/tenant/billing/subscribe] DB-Update fehlgeschlagen:', updateError)
+    }
+
+    // Upsert each module into tenant_modules
+    for (const mod of selectedModules) {
+      const stripeItem = subscription.items.data.find(
+        (i) => i.metadata?.module_id === mod.id
       )
-      // Subscription was created in Stripe — the webhook will eventually sync the state
+      const itemPeriodEnd = stripeItem?.current_period_end
+        ? new Date(stripeItem.current_period_end * 1000).toISOString()
+        : periodEndISO
+
+      const { error: upsertError } = await supabaseAdmin
+        .from('tenant_modules')
+        .upsert(
+          {
+            tenant_id: tenantId,
+            module_id: mod.id,
+            stripe_subscription_item_id: stripeItem?.id ?? null,
+            status: 'active',
+            cancel_at_period_end: false,
+            current_period_end: itemPeriodEnd,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'tenant_id,module_id' }
+        )
+
+      if (upsertError) {
+        console.error(
+          `[POST /api/tenant/billing/subscribe] Modul-Upsert fehlgeschlagen (${mod.code}):`,
+          upsertError
+        )
+      }
     }
 
     return NextResponse.json({

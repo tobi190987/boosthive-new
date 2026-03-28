@@ -179,7 +179,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
     void loadBilling()
   }, [loadBilling])
 
-  async function handleSubscribe() {
+  async function handleSubscribe(selectedModuleIds: string[]) {
     try {
       setActionLoading('subscribe')
       setError(null)
@@ -187,6 +187,8 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
       const response = await fetch('/api/tenant/billing/subscribe', {
         method: 'POST',
         credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ module_ids: selectedModuleIds }),
       })
       const payload = await response.json().catch(() => ({}))
 
@@ -563,46 +565,15 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         </CardHeader>
         <CardContent>
           {status === 'none' && (
-            <div className="space-y-5">
-              <p className="text-sm leading-6 text-slate-600">
-                Du hast noch kein aktives Abo. Abonniere den Basis-Plan, um alle Funktionen
-                freizuschalten und Module buchen zu können.
-              </p>
-              <div className="flex items-start gap-3">
-                <Checkbox
-                  id="agb-accept"
-                  checked={agbAccepted}
-                  onCheckedChange={(checked) => setAgbAccepted(checked === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="agb-accept" className="text-sm leading-6 text-slate-600 cursor-pointer">
-                  Ich habe die{' '}
-                  <a href="/agb" target="_blank" rel="noopener noreferrer" className="text-[#b85e34] underline underline-offset-2 hover:text-[#9a4e2b]">
-                    Allgemeinen Geschäftsbedingungen
-                  </a>{' '}
-                  gelesen und akzeptiere diese.
-                </label>
-              </div>
-              <Button
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-                disabled={!hasPaymentMethod || !agbAccepted || actionLoading === 'subscribe'}
-                onClick={() => void handleSubscribe()}
-              >
-                {actionLoading === 'subscribe' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird gestartet...
-                  </>
-                ) : (
-                  'Basis-Plan für 29 € abonnieren'
-                )}
-              </Button>
-              {!hasPaymentMethod && (
-                <p className="text-xs text-slate-500">
-                  Bitte hinterlege zuerst eine Zahlungsmethode.
-                </p>
-              )}
-            </div>
+            <SubscribeWithModules
+              modules={billing.modules ?? []}
+              planAmount={billing.plan?.amount ?? 2900}
+              planCurrency={billing.plan?.currency ?? 'eur'}
+              planInterval={billing.plan?.interval ?? '4 Wochen'}
+              hasPaymentMethod={hasPaymentMethod}
+              isLoading={actionLoading === 'subscribe'}
+              onSubscribe={handleSubscribe}
+            />
           )}
 
           {status === 'active' && (
@@ -694,44 +665,30 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
           )}
 
           {status === 'canceled' && (
-            <div className="space-y-4">
-              <p className="text-sm leading-6 text-slate-600">
-                Dein Abo wurde gekuendigt. Um die Plattform wieder zu nutzen, kannst du ein
-                neues Abo abschliessen.
-              </p>
-              <Button
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-                disabled={!hasPaymentMethod || actionLoading === 'subscribe'}
-                onClick={() => void handleSubscribe()}
-              >
-                {actionLoading === 'subscribe' ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Wird gestartet...
-                  </>
-                ) : (
-                  'Erneut abonnieren'
-                )}
-              </Button>
-              {!hasPaymentMethod && (
-                <p className="text-xs text-slate-500">
-                  Bitte hinterlege zuerst eine Zahlungsmethode.
-                </p>
-              )}
-            </div>
+            <SubscribeWithModules
+              modules={billing.modules ?? []}
+              planAmount={billing.plan?.amount ?? 2900}
+              planCurrency={billing.plan?.currency ?? 'eur'}
+              planInterval={billing.plan?.interval ?? '4 Wochen'}
+              hasPaymentMethod={hasPaymentMethod}
+              isLoading={actionLoading === 'subscribe'}
+              onSubscribe={handleSubscribe}
+            />
           )}
         </CardContent>
       </Card>
 
-      {/* ----- Module Catalog Section ----- */}
-      <ModuleSection
-        modules={billing.modules ?? []}
-        subscriptionStatus={status}
-        actionLoading={actionLoading}
-        onSubscribe={handleModuleSubscribe}
-        onCancel={handleModuleCancel}
-        onReactivate={handleModuleReactivate}
-      />
+      {/* ----- Module Catalog Section (only when subscription is active) ----- */}
+      {(status === 'active' || status === 'canceling') && (
+        <ModuleSection
+          modules={billing.modules ?? []}
+          subscriptionStatus={status}
+          actionLoading={actionLoading}
+          onSubscribe={handleModuleSubscribe}
+          onCancel={handleModuleCancel}
+          onReactivate={handleModuleReactivate}
+        />
+      )}
 
       {/* ----- Invoices Section ----- */}
       {invoices.length > 0 && (
@@ -801,6 +758,177 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
           </CardContent>
         </Card>
       )}
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Subscribe With Modules                                                     */
+/* -------------------------------------------------------------------------- */
+
+interface SubscribeWithModulesProps {
+  modules: ModuleRecord[]
+  planAmount: number
+  planCurrency: string
+  planInterval: string
+  hasPaymentMethod: boolean
+  isLoading: boolean
+  onSubscribe: (moduleIds: string[]) => void
+}
+
+function SubscribeWithModules({
+  modules,
+  planAmount,
+  planCurrency,
+  planInterval,
+  hasPaymentMethod,
+  isLoading,
+  onSubscribe,
+}: SubscribeWithModulesProps) {
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
+  const [agbAccepted, setAgbAccepted] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
+
+  function toggleModule(id: string) {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const selectedModules = modules.filter((m) => selectedIds.includes(m.id))
+  const modulesTotal = selectedModules.reduce((sum, m) => sum + m.price, 0)
+  const total = planAmount + modulesTotal
+  const canSubscribe = hasPaymentMethod && selectedIds.length > 0
+
+  function handleOpenChange(open: boolean) {
+    setDialogOpen(open)
+    if (!open) setAgbAccepted(false)
+  }
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm leading-6 text-slate-600">
+        Wähle mindestens ein Modul aus, das du zusammen mit dem Basis-Plan abonnieren möchtest.
+      </p>
+
+      {/* Module selection */}
+      <div className="space-y-2">
+        {modules.map((mod) => {
+          const selected = selectedIds.includes(mod.id)
+          return (
+            <button
+              key={mod.id}
+              type="button"
+              onClick={() => toggleModule(mod.id)}
+              className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                selected
+                  ? 'border-[#1f2937] bg-[#f7f3ed]'
+                  : 'border-[#e6ddd0] bg-[#fffdf9] hover:border-[#d4c9bb]'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                  selected ? 'border-[#1f2937] bg-[#1f2937]' : 'border-[#c9bfb5]'
+                }`}>
+                  {selected && (
+                    <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                      <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-semibold text-slate-900">{mod.name}</p>
+                  <p className="text-xs text-slate-500">{mod.description}</p>
+                </div>
+                <span className="shrink-0 text-sm font-semibold text-slate-900">
+                  {formatAmount(mod.price, mod.currency)}
+                  <span className="font-normal text-slate-400"> / {planInterval}</span>
+                </span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Price breakdown */}
+      {selectedIds.length > 0 && (
+        <div className="rounded-2xl border border-[#e6ddd0] bg-[#f7f3ed] px-4 py-3 space-y-1.5">
+          <div className="flex justify-between text-xs text-slate-500">
+            <span>Basis-Plan</span>
+            <span>{formatAmount(planAmount, planCurrency)}</span>
+          </div>
+          {selectedModules.map((m) => (
+            <div key={m.id} className="flex justify-between text-xs text-slate-500">
+              <span>{m.name}</span>
+              <span>{formatAmount(m.price, m.currency)}</span>
+            </div>
+          ))}
+          <div className="flex justify-between border-t border-[#e0d6ca] pt-1.5 text-sm font-semibold text-slate-900">
+            <span>Gesamt</span>
+            <span>{formatAmount(total, planCurrency)} / {planInterval}</span>
+          </div>
+        </div>
+      )}
+
+      {!hasPaymentMethod && (
+        <p className="text-xs text-slate-500">Bitte hinterlege zuerst eine Zahlungsmethode.</p>
+      )}
+      {selectedIds.length === 0 && (
+        <p className="text-xs text-slate-500">Bitte wähle mindestens ein Modul aus.</p>
+      )}
+
+      <AlertDialog open={dialogOpen} onOpenChange={handleOpenChange}>
+        <AlertDialogTrigger asChild>
+          <Button
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            disabled={!canSubscribe || isLoading}
+          >
+            {isLoading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Wird gestartet...
+              </>
+            ) : (
+              `Jetzt abonnieren${selectedIds.length > 0 ? ` · ${formatAmount(total, planCurrency)}` : ''}`
+            )}
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-[24px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Abo kostenpflichtig abschließen?</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>Du buchst den Basis-Plan inkl. {selectedModules.map(m => m.name).join(', ')} für <strong>{formatAmount(total, planCurrency)} / {planInterval}</strong>.</p>
+                <div className="flex items-start gap-3 rounded-2xl border border-[#e6ddd0] bg-[#fffdf9] px-4 py-3">
+                  <Checkbox
+                    id="agb-subscribe"
+                    checked={agbAccepted}
+                    onCheckedChange={(checked) => setAgbAccepted(checked === true)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="agb-subscribe" className="text-sm leading-6 text-slate-600 cursor-pointer">
+                    Ich habe die{' '}
+                    <a href="/agb" target="_blank" rel="noopener noreferrer" className="text-[#b85e34] underline underline-offset-2 hover:text-[#9a4e2b]">
+                      Allgemeinen Geschäftsbedingungen
+                    </a>{' '}
+                    gelesen und akzeptiere diese.
+                  </label>
+                </div>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              disabled={!agbAccepted}
+              onClick={() => { onSubscribe(selectedIds); setDialogOpen(false) }}
+            >
+              Kostenpflichtig buchen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
