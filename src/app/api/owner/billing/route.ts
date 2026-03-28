@@ -13,6 +13,16 @@ import {
 } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase-admin'
 
+interface OwnerBillingTenantRow {
+  id: string
+  name: string
+  slug: string
+  status: string | null
+  subscription_status?: string | null
+  subscription_period_end?: string | null
+  owner_locked_at?: string | null
+}
+
 function parsePositiveInteger(value: string | null, fallback: number) {
   if (!value) return fallback
   const parsed = Number.parseInt(value, 10)
@@ -245,7 +255,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const paginatedTenants = tenants ?? []
+    const paginatedTenants = (tenants ?? []) as unknown as OwnerBillingTenantRow[]
     const tenantIds = paginatedTenants.map((tenant) => tenant.id as string)
 
     let basePlanAmount = 4900
