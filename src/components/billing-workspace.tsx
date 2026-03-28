@@ -25,6 +25,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { Checkbox } from '@/components/ui/checkbox'
 import { StripeCardForm } from '@/components/stripe-card-form'
 
 /* -------------------------------------------------------------------------- */
@@ -122,6 +123,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showCardForm, setShowCardForm] = useState(false)
+  const [agbAccepted, setAgbAccepted] = useState(false)
   const [activity, setActivity] = useState('Lade Billing-Daten...')
 
   const loadBilling = useCallback(async () => {
@@ -519,14 +521,29 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         </CardHeader>
         <CardContent>
           {status === 'none' && (
-            <div className="space-y-4">
+            <div className="space-y-5">
               <p className="text-sm leading-6 text-slate-600">
                 Du hast noch kein aktives Abo. Abonniere den Basis-Plan, um alle Funktionen
                 freizuschalten und Module buchen zu können.
               </p>
+              <div className="flex items-start gap-3">
+                <Checkbox
+                  id="agb-accept"
+                  checked={agbAccepted}
+                  onCheckedChange={(checked) => setAgbAccepted(checked === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="agb-accept" className="text-sm leading-6 text-slate-600 cursor-pointer">
+                  Ich habe die{' '}
+                  <a href="/agb" target="_blank" rel="noopener noreferrer" className="text-[#b85e34] underline underline-offset-2 hover:text-[#9a4e2b]">
+                    Allgemeinen Geschäftsbedingungen
+                  </a>{' '}
+                  gelesen und akzeptiere diese.
+                </label>
+              </div>
               <Button
                 className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-                disabled={!hasPaymentMethod || actionLoading === 'subscribe'}
+                disabled={!hasPaymentMethod || !agbAccepted || actionLoading === 'subscribe'}
                 onClick={() => void handleSubscribe()}
               >
                 {actionLoading === 'subscribe' ? (
@@ -535,7 +552,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                     Wird gestartet...
                   </>
                 ) : (
-                  'Basis-Plan abonnieren'
+                  'Basis-Plan für 29 € abonnieren'
                 )}
               </Button>
               {!hasPaymentMethod && (
