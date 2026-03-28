@@ -56,12 +56,20 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 type TenantStatus = "active" | "inactive"
 type MemberRole = "admin" | "member"
 type MemberStatus = "active" | "inactive"
+const BILLING_COUNTRY_OPTIONS = [{ value: "Deutschland", label: "Deutschland" }] as const
 
 interface TenantUserRecord {
   memberId: string
@@ -1047,9 +1055,23 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Land</FormLabel>
-                          <FormControl>
-                            <Input {...field} placeholder="Deutschland" />
-                          </FormControl>
+                          <Select
+                            value={field.value === "Deutschland" ? field.value : ""}
+                            onValueChange={field.onChange}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Land auswählen" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {BILLING_COUNTRY_OPTIONS.map((country) => (
+                                <SelectItem key={country.value} value={country.value}>
+                                  {country.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <FormMessage />
                         </FormItem>
                       )}

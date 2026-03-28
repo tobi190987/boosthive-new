@@ -31,6 +31,13 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { StripeCardForm } from '@/components/stripe-card-form'
 import { TenantLogoutButton } from '@/components/tenant-logout-button'
 import { getUserInitials } from '@/lib/profile'
@@ -107,6 +114,7 @@ function RequiredLabel({
 
 const fieldClassName =
   'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+const billingCountryOptions = [{ value: 'Deutschland', label: 'Deutschland' }] as const
 const AVATAR_PREVIEW_SIZE = 280
 const AVATAR_EXPORT_SIZE = 512
 const AVATAR_MIN_ZOOM = 1
@@ -247,7 +255,9 @@ export function TenantProfileWorkspace({
   const {
     register,
     handleSubmit,
+    setValue,
     setError: setFieldError,
+    watch,
     formState: { errors },
   } = useForm<ProfileFormValues>({
     defaultValues: {
@@ -257,7 +267,8 @@ export function TenantProfileWorkspace({
       billing_street: initialData.billingStreet,
       billing_zip: initialData.billingZip,
       billing_city: initialData.billingCity,
-      billing_country: initialData.billingCountry,
+      billing_country:
+        initialData.billingCountry === 'Deutschland' ? initialData.billingCountry : '',
       billing_vat_id: initialData.billingVatId,
     },
   })
@@ -714,6 +725,7 @@ export function TenantProfileWorkspace({
   }
 
   const isAdmin = initialData.role === 'admin'
+  const billingCountry = watch('billing_country')
   const submitLabel =
     mode === 'onboarding' ? 'Onboarding abschliessen' : 'Profil speichern'
   const avatarPreviewTransform = avatarCropDraft
@@ -1127,11 +1139,27 @@ export function TenantProfileWorkspace({
                     </div>
                     <div className="space-y-2">
                       <RequiredLabel htmlFor="billing_country">Land</RequiredLabel>
-                      <Input
-                        id="billing_country"
-                        className={fieldClassName}
-                        {...register('billing_country')}
-                      />
+                      <Select
+                        value={billingCountry || undefined}
+                        onValueChange={(value) => {
+                          setValue('billing_country', value, {
+                            shouldDirty: true,
+                            shouldTouch: true,
+                            shouldValidate: true,
+                          })
+                        }}
+                      >
+                        <SelectTrigger id="billing_country" className={fieldClassName}>
+                          <SelectValue placeholder="Land auswählen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {billingCountryOptions.map((country) => (
+                            <SelectItem key={country.value} value={country.value}>
+                              {country.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       {errors.billing_country && (
                         <p className="text-sm text-destructive">
                           {errors.billing_country.message}
