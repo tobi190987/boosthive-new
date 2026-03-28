@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { dispatchAnalyticsWorker } from '@/lib/visibility-analytics'
 
 /**
  * PROJ-12: AI Visibility Background Worker
@@ -17,8 +18,8 @@ const workerSchema = z.object({
   analysis_id: z.string().uuid('Ungueltige analysis_id.'),
 })
 
-// Timeout: 10 minutes maximum
-const WORKER_TIMEOUT_MS = 10 * 60 * 1000
+// Keep the internal timeout below Vercel's hard execution limit to avoid stuck "running" jobs.
+const WORKER_TIMEOUT_MS = 270 * 1000
 
 // Retry config for OpenRouter rate limits
 const MAX_RETRIES = 3
@@ -230,8 +231,12 @@ export async function POST(request: NextRequest) {
         actual_cost: totalCost,
         error_log: errorLog,
         completed_at: new Date().toISOString(),
+        analytics_status: 'pending',
+        analytics_error_message: null,
       })
       .eq('id', analysis_id)
+
+    await dispatchAnalyticsWorker(analysis_id)
 
     // Trigger next queued analysis for this tenant (if any)
     await triggerNextQueued(admin, analysis.tenant_id, workerSecret)
@@ -250,8 +255,8 @@ export async function POST(request: NextRequest) {
 // Helper functions
 // ---------------------------------------------------------------------------
 
-function buildPrompt(keyword: string, subjectName: string): string {
-  return `Welche Anbieter, Tools oder Marken würdest du für "${keyword}" empfehlen? Nenne die Top 5 mit kurzer Begründung. Berücksichtige dabei besonders Anbieter wie ${subjectName}.`
+function buildPrompt(keyword: string, _subjectName: string): string {
+  return `Welche Anbieter, Tools oder Marken würdest du für "${keyword}" empfehlen? Nenne die Top 5 mit kurzer Begründung und bleibe dabei möglichst neutral.`
 }
 
 function analyzeBrandMention(

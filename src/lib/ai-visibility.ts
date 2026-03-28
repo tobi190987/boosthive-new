@@ -65,6 +65,9 @@ export interface AnalysisError {
 
 // ─── Analyse-Status-Polling ───────────────────────────────────
 export interface AnalysisStatusResponse {
+  project_id: string
+  models: string[]
+  iterations: number
   status: AnalysisStatus
   progress_done: number
   progress_total: number

@@ -57,6 +57,21 @@ export const OWNER_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
 /** Owner billing mutations: 20 requests / min / IP */
 export const OWNER_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
 
+/** Visibility project/analysis reads: 60 requests / min / tenant+IP */
+export const VISIBILITY_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** Visibility project mutations: 20 requests / min / tenant+IP */
+export const VISIBILITY_PROJECT_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
+
+/** Visibility analysis starts: 10 requests / 15 min / tenant+IP */
+export const VISIBILITY_ANALYSIS_START: RateLimitOptions = {
+  limit: 10,
+  windowMs: 15 * 60 * 1000,
+}
+
+/** Visibility estimate calls: 30 requests / 15 min / tenant+IP */
+export const VISIBILITY_ESTIMATE: RateLimitOptions = { limit: 30, windowMs: 15 * 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------

@@ -172,6 +172,7 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
     return (
       <AnalysisProgressView
         analysisId={view.analysisId}
+        onOpenProgress={(analysisId) => goToProgress(view.projectId, analysisId)}
         onBack={() => goToDetail(view.projectId)}
       />
     )
@@ -1301,15 +1302,17 @@ function AnalysisRow({
 
 interface AnalysisProgressViewProps {
   analysisId: string
+  onOpenProgress: (analysisId: string) => void
   onBack: () => void
 }
 
-function AnalysisProgressView({ analysisId, onBack }: AnalysisProgressViewProps) {
+function AnalysisProgressView({ analysisId, onOpenProgress, onBack }: AnalysisProgressViewProps) {
   const { toast } = useToast()
   const [status, setStatus] = useState<AnalysisStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [cancelling, setCancelling] = useState(false)
+  const [retrying, setRetrying] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const fetchStatus = useCallback(async () => {
@@ -1371,6 +1374,39 @@ function AnalysisProgressView({ analysisId, onBack }: AnalysisProgressViewProps)
       })
     } finally {
       setCancelling(false)
+    }
+  }
+
+  async function handleRetry() {
+    if (!status || retrying) return
+    setRetrying(true)
+    try {
+      const res = await fetch('/api/tenant/visibility/analyses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          project_id: status.project_id,
+          models: status.models,
+          iterations: status.iterations,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `Fehler ${res.status}`)
+      }
+
+      const { analysis } = await res.json()
+      toast({ title: 'Analyse erneut gestartet' })
+      onOpenProgress(analysis.id)
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description:
+          err instanceof Error ? err.message : 'Analyse konnte nicht erneut gestartet werden.',
+        variant: 'destructive',
+      })
+    } finally {
+      setRetrying(false)
     }
   }
 
@@ -1511,9 +1547,23 @@ function AnalysisProgressView({ analysisId, onBack }: AnalysisProgressViewProps)
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Analyse fehlgeschlagen</AlertTitle>
           <AlertDescription>
-            Die Analyse konnte nicht vollständig abgeschlossen werden. Prüfe das Fehler-Log unten.
+            Die Analyse konnte nicht vollständig abgeschlossen werden. Prüfe das Fehler-Log unten
+            oder starte sie mit denselben Einstellungen erneut.
           </AlertDescription>
         </Alert>
+      )}
+
+      {isFailed && (
+        <div className="flex justify-end">
+          <Button
+            onClick={handleRetry}
+            disabled={retrying}
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+          >
+            {retrying && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+            Analyse erneut starten
+          </Button>
+        </div>
       )}
 
       {/* ── Fehler-Log ─────────────────────────────────────── */}

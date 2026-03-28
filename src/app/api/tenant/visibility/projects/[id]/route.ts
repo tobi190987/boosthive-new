@@ -3,6 +3,13 @@ import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  VISIBILITY_PROJECT_WRITE,
+  VISIBILITY_READ,
+} from '@/lib/rate-limit'
 
 const updateProjectSchema = z.object({
   brand_name: z.string().min(1).max(200).optional(),
@@ -25,6 +32,9 @@ export async function GET(
 ) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`visibility-project-read:${tenantId}:${getClientIp(request)}`, VISIBILITY_READ)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
@@ -54,6 +64,12 @@ export async function PUT(
 ) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(
+    `visibility-project-write:${tenantId}:${getClientIp(request)}`,
+    VISIBILITY_PROJECT_WRITE
+  )
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
@@ -109,6 +125,12 @@ export async function DELETE(
 ) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(
+    `visibility-project-delete:${tenantId}:${getClientIp(request)}`,
+    VISIBILITY_PROJECT_WRITE
+  )
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error

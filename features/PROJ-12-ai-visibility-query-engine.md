@@ -197,7 +197,7 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 - [x] Website-URL ist optional mit URL-Validierung
 - [x] Bis zu 3 Wettbewerber (Name + URL) -- Frontend und Backend limits stimmen ueberein
 - [x] 1-10 Keywords -- Frontend und Backend limits stimmen ueberein
-- [ ] BUG-1: CRITICAL -- API gibt flaches Objekt/Array zurueck, Frontend erwartet verschachteltes `{ project: ... }` bzw. `{ projects: [...] }`. Projekte werden nie geladen.
+- [x] API und Frontend verwenden konsistente Response-Formate (`{ project }`, `{ projects }`), Projekte laden korrekt.
 
 #### AC-2: KI-Modell-Auswahl (GPT-4o, Claude 3.5, Gemini 1.5 Pro, Perplexity)
 - [x] Alle 4 Modelle sind in AI_MODELS konfiguriert
@@ -206,11 +206,11 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 
 #### AC-3: Iterative Queries (5-10 pro Keyword pro Modell, Default 5)
 - [x] UI erlaubt 5-10 Iterationen mit Default 5
-- [ ] BUG-2: MEDIUM -- Zod-Schema in analyses/route.ts erlaubt Iterationen von 1-10 statt 5-10 wie in der Spec. Ein direkter API-Call kann somit Werte 1-4 setzen, die die UI nicht anbietet.
+- [x] Backend validiert Iterationen jetzt ebenfalls auf 5-10 und entspricht damit der UI und Spec.
 
 #### AC-4: Persona-Simulation (natuerliche Nutzeranfrage)
 - [x] buildPrompt() erzeugt deutsche natuerliche Anfrage mit Keyword und Subject
-- [ ] BUG-3: MEDIUM -- Prompt enthaelt "Beruecksichtige dabei besonders Anbieter wie [Brand]" -- das beeinflusst das KI-Modell aktiv, den Brand haeufiger zu nennen, was die Objektivitaet der Sichtbarkeitsmessung verfaelscht.
+- [x] Prompt ist auf eine neutrale Formulierung umgestellt, um die Sichtbarkeitsmessung nicht aktiv zu verzerren.
 
 #### AC-5: Asynchrone Verarbeitung (Pending -> Running -> Done/Failed)
 - [x] Worker setzt Status korrekt: pending -> running -> done/failed
@@ -236,7 +236,7 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 #### AC-9: Maximale Analyse-Laufzeit (Timeout nach 10 Minuten)
 - [x] WORKER_TIMEOUT_MS = 10 * 60 * 1000 implementiert
 - [x] Bei Timeout wird Status auf "failed" gesetzt mit Error-Message
-- [ ] BUG-4: LOW -- maxDuration = 300 (5 Min) auf Vercel, aber interner Timeout ist 10 Min. Auf Vercel wird die Funktion nach 5 Min gekillt, bevor der 10-Min-Timeout greift. Analyse bleibt dann im Status "running" haengen.
+- [x] Interner Worker-Timeout liegt jetzt unter der Vercel-Laufzeitgrenze, damit Jobs nicht als `running` haengen bleiben.
 
 #### AC-10: Alle Daten strikt tenant-isoliert (RLS)
 - [x] RLS auf allen 3 Tabellen aktiv (SELECT via tenant_members JOIN)
@@ -249,7 +249,7 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 #### EC-1: OpenRouter API nicht erreichbar
 - [x] Fehler werden pro Query protokolliert
 - [x] Exponentielles Backoff bei 429 Rate Limits (3 Retries, 2s Base)
-- [ ] BUG-5: LOW -- Kein expliziter Retry-Button in der UI fuer fehlgeschlagene Analysen. User muss eine komplett neue Analyse starten.
+- [x] Fehlgeschlagene Analysen koennen direkt aus der Progress-Ansicht mit denselben Einstellungen erneut gestartet werden.
 
 #### EC-2: Brand-Name zu generisch
 - [x] Warnung wird angezeigt wenn Name <= 4 Zeichen und keine URL angegeben
@@ -261,7 +261,7 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 #### EC-4: Parallele Analysen (Max. 2 gleichzeitig)
 - [x] MAX_CONCURRENT_ANALYSES = 2 implementiert
 - [x] Status "queued" wenn Limit erreicht
-- [ ] BUG-6: MEDIUM -- Queued-Analysen werden nie automatisch gestartet. Es gibt keinen Mechanismus (Cron, Queue-Worker, Post-Completion-Trigger), der queued-Analysen aufnimmt, wenn ein Running-Job fertig ist.
+- [x] Queued-Analysen werden nach Abschluss eines Jobs automatisch ueber `triggerNextQueued()` aufgenommen.
 
 #### EC-5: Rate-Limit bei OpenRouter
 - [x] Exponentielles Backoff implementiert (2s, 4s, 8s)
@@ -274,7 +274,7 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 
 #### EC-7: Analyse-Job haengt / Timeout
 - [x] 10-Min-Timeout implementiert, setzt Status auf "failed"
-- [ ] BUG-4 (siehe oben): Vercel maxDuration kollidiert mit internem Timeout
+- [x] Interner Worker-Timeout liegt unter der Vercel-Laufzeitgrenze und verhindert haengende `running`-Jobs.
 
 ### Security Audit Results
 
@@ -286,8 +286,8 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 - [x] Analyse-Start prueft ob Projekt zum Tenant gehoert
 
 #### Worker-Endpoint Security
-- [ ] BUG-7: HIGH -- Worker-Endpoint (/api/tenant/visibility/worker) hat nur optionale Secret-Authentifizierung. Wenn VISIBILITY_WORKER_SECRET nicht gesetzt ist, kann JEDER externe Akteur beliebige analysis_ids verarbeiten lassen. Zwar muss die analysis_id in der DB existieren, aber ein Angreifer koennte durch Brute-Force oder Side-Channel eine gueltige ID finden und den Worker triggern. Die .env.local.example kommentiert den Key als "Optional".
-- [ ] BUG-8: MEDIUM -- Worker-Endpoint fuehrt keine Tenant-spezifische Auth durch. Obwohl er die analysis_id aus der DB laedt (was den tenant_id implizit einschraenkt), prueft er nicht, ob der Caller berechtigt ist. Es ist ein interner Endpoint, aber oeffentlich erreichbar.
+- [x] Worker-Endpoint fail-closed: ohne `VISIBILITY_WORKER_SECRET` startet der Worker nicht.
+- [x] Worker-Aufrufe sind ueber verpflichtenden Secret-Header abgesichert; direkte User-Authentifizierung ist fuer den internen Trigger-Flow nicht erforderlich.
 
 #### Input Validation
 - [x] Alle Endpoints verwenden Zod-Validierung
@@ -306,102 +306,25 @@ Tenant-Limit (max. 2 gleichzeitige Analysen): DB-Zählung laufender Jobs vor dem
 - [x] Raw Results werden nur an authentifizierte Tenant-Members zurueckgegeben
 
 #### Rate Limiting
-- [ ] BUG-9: MEDIUM -- Keine Rate-Limits auf den API-Endpunkten. Ein authentifizierter User kann unbegrenzt Projekte und Analysen erstellen, was zu hohen OpenRouter-Kosten fuehren kann (DoS auf Kosten des Plattformbetreibers).
+- [x] Visibility-API-Endpunkte sind ueber tenant- und IP-basierte Rate-Limits abgesichert (Reads, Projekt-Mutationen, Analyse-Starts, Kostenschaetzung).
 
 ### Cross-Browser & Responsive Testing
-- Konnte nicht durchgefuehrt werden, da BUG-1 (Daten-Mismatch) das Feature komplett blockiert. Projekte werden nie geladen, daher ist die gesamte UI nicht testbar.
+- Die urspruengliche UI-Blockade durch das API-Daten-Mismatch ist behoben. Eine erneute manuelle Cross-Browser-Abnahme steht separat noch aus.
 
 ### Bugs Found
 
-#### BUG-1: API-Response-Format stimmt nicht mit Frontend ueberein
-- **Severity:** Critical
-- **Steps to Reproduce:**
-  1. Navigiere zu /tools/ai-visibility (mit gebuchtem Modul)
-  2. Die Projektliste wird geladen
-  3. Expected: Projekte werden angezeigt
-  4. Actual: Leere Liste, weil API ein flat Array zurueckgibt, Frontend aber `data.projects` erwartet (wird zu `undefined`, Fallback `[]`)
-- **Betroffene Stellen:**
-  - `GET /projects` -> API: `json(enriched)`, Frontend: `data.projects ?? []`
-  - `POST /projects` -> API: `json(data)`, Frontend: `const { project } = await res.json()`
-  - `GET /projects/[id]` -> API: `json(data)`, Frontend: `projectData.project`
-  - `GET /analyses` -> API: `json(data ?? [])`, Frontend: `analysesData.analyses ?? []`
-  - `POST /analyses` -> API: `json(analysis)`, Frontend: `const { analysis } = await res.json()`
-- **Priority:** Fix before deployment -- Feature ist komplett nicht funktionsfaehig
+Zum aktuellen Stand sind die urspruenglich dokumentierten Bugs 1-9 behoben.
 
-#### BUG-2: Iterations-Minimum weicht von Spec ab
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Sende direkten API-Call: POST /api/tenant/visibility/analyses mit iterations: 1
-  2. Expected: Validation Error (Spec sagt 5-10)
-  3. Actual: Wird akzeptiert (Zod erlaubt 1-10)
-- **Priority:** Fix in next sprint
-
-#### BUG-3: Prompt beeinflusst KI-Antwort zugunsten des Brands
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Analyse starten mit Brand "Mustermann GmbH"
-  2. Prompt enthaelt: "Beruecksichtige dabei besonders Anbieter wie Mustermann GmbH"
-  3. Expected: Neutrale Abfrage, die misst ob KI den Brand organisch kennt
-  4. Actual: KI wird aktiv aufgefordert, den Brand zu beruecksichtigen
-- **Priority:** Fix in next sprint -- verfaelscht die Kernmetrik des Tools
-
-#### BUG-4: Vercel maxDuration vs. interner Timeout Konflikt
-- **Severity:** Low
-- **Steps to Reproduce:**
-  1. Starte Analyse mit vielen Keywords/Modellen (z.B. 10 Keywords x 4 Modelle x 10 Iterationen x 4 Subjects = 1600 Queries)
-  2. Expected: Timeout nach 10 Min mit Status "failed"
-  3. Actual: Vercel killt die Funktion nach 5 Min (maxDuration=300s), Analyse bleibt im Status "running" haengen
-- **Priority:** Fix in next sprint
-
-#### BUG-5: Kein Retry fuer fehlgeschlagene Analysen
-- **Severity:** Low
-- **Steps to Reproduce:**
-  1. Analyse schlaegt fehl (z.B. durch Timeout)
-  2. Expected: Retry-Button um die gleiche Analyse erneut zu starten
-  3. Actual: User muss manuell eine neue Analyse erstellen
-- **Priority:** Nice to have
-
-#### BUG-6: Queued-Analysen werden nie automatisch gestartet
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Starte 3 Analysen schnell hintereinander
-  2. Analyse 3 bekommt Status "queued"
-  3. Analyse 1 wird fertig (Status "done")
-  4. Expected: Analyse 3 wird automatisch aus der Queue geholt und gestartet
-  5. Actual: Analyse 3 bleibt fuer immer im Status "queued"
-- **Priority:** Fix before deployment -- Feature ist versprochen aber nicht implementiert
-
-#### BUG-7: Worker-Endpoint ohne verpflichtende Authentifizierung
-- **Severity:** High
-- **Steps to Reproduce:**
-  1. Setze VISIBILITY_WORKER_SECRET nicht (oder leer)
-  2. Sende POST an /api/tenant/visibility/worker mit gueltiger analysis_id
-  3. Expected: 401 Unauthorized
-  4. Actual: Worker verarbeitet die Analyse (beliebiger externer Caller)
-- **Priority:** Fix before deployment
-
-#### BUG-8: Worker-Endpoint prueft keinen Tenant-Kontext
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Worker laedt Analyse und Projekt direkt aus DB ohne x-tenant-id Header-Pruefung
-  2. Expected: Worker sollte nur von internen Calls erreichbar sein oder Tenant verifizieren
-  3. Actual: Jeder mit Worker-Secret (oder ohne, falls nicht gesetzt) kann beliebige Analysen triggern
-- **Priority:** Fix in next sprint (wird durch BUG-7 Fix teilweise entschaerft)
-
-#### BUG-9: Keine Rate-Limits auf API-Endpunkten
-- **Severity:** Medium
-- **Steps to Reproduce:**
-  1. Erstelle 100 Projekte und starte je eine Analyse per Script
-  2. Expected: Rate-Limit greift nach N Requests
-  3. Actual: Alle Requests werden akzeptiert, OpenRouter-Kosten steigen unkontrolliert
-- **Priority:** Fix in next sprint
+Offene Restpunkte fuer Folgeprojekte:
+- Ergebnis-/Reporting-Ansicht fuer abgeschlossene Analysen ist noch nicht Teil von PROJ-12 und wird spaeter in PROJ-24 abgedeckt.
+- Eine erneute manuelle Cross-Browser- und Responsive-Abnahme ist sinnvoll, wurde nach den letzten Fixes aber noch nicht neu dokumentiert.
 
 ### Summary
-- **Acceptance Criteria:** 7/10 passed (BUG-1 blockiert Feature komplett, BUG-2 und BUG-3 sind Abweichungen, BUG-4 betrifft Timeout-Verhalten)
-- **Bugs Found:** 9 total (1 critical, 1 high, 4 medium, 3 low)
-- **Security:** Issues found (BUG-7: Worker ohne verpflichtende Auth, BUG-9: keine Rate-Limits)
-- **Production Ready:** NEIN
-- **Recommendation:** BUG-1 (API-Response-Mismatch) und BUG-6 (Queue-Mechanismus) und BUG-7 (Worker-Auth) muessen zwingend vor dem Deployment behoben werden. Ohne BUG-1 ist das Feature komplett nicht nutzbar. BUG-7 ist ein Sicherheitsrisiko.
+- **Acceptance Criteria:** Kernanforderungen fuer Query Engine, Background Processing, Retry, Queueing und Tenant-Isolation sind erfuellt.
+- **Bugs Found:** Die urspruenglich dokumentierten Bugs 1-9 sind behoben; aktuell keine offenen Blocker innerhalb des PROJ-12-Scope dokumentiert.
+- **Security:** Kein offener kritischer Befund in der aktuellen Implementierung dokumentiert.
+- **Production Ready:** JA fuer den Query-Engine-Scope, mit separatem Ausbau der Ergebnis-/Reporting-Oberflaechen in Folgeprojekten.
+- **Recommendation:** PROJ-12 kann als deployed gefuehrt werden. Als naechster sinnvoller Schritt folgen Analytics/Reporting in PROJ-23 und PROJ-24.
 
 ## Deployment
 _To be added by /deploy_

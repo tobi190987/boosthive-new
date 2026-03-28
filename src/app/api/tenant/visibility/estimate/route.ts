@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
+import { checkRateLimit, getClientIp, rateLimitResponse, VISIBILITY_ESTIMATE } from '@/lib/rate-limit'
 
 const estimateSchema = z.object({
   keywords: z.array(z.string().min(1)).min(1).max(10),
   models: z.array(z.string().min(1)).min(1),
-  iterations: z.number().int().min(1).max(10),
+  iterations: z.number().int().min(5).max(10),
   competitor_count: z.number().int().min(0).max(3).optional().default(0),
 })
 
@@ -19,6 +20,9 @@ const SECONDS_PER_QUERY = 3
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`visibility-estimate:${tenantId}:${getClientIp(request)}`, VISIBILITY_ESTIMATE)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error

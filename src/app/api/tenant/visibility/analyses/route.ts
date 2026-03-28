@@ -3,6 +3,13 @@ import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  VISIBILITY_ANALYSIS_START,
+  VISIBILITY_READ,
+} from '@/lib/rate-limit'
 
 const MAX_CONCURRENT_ANALYSES = 2
 
@@ -19,6 +26,9 @@ const createAnalysisSchema = z.object({
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`visibility-analyses-read:${tenantId}:${getClientIp(request)}`, VISIBILITY_READ)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
@@ -47,6 +57,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(
+    `visibility-analyses-start:${tenantId}:${getClientIp(request)}`,
+    VISIBILITY_ANALYSIS_START
+  )
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
