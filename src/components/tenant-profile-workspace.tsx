@@ -54,6 +54,15 @@ import {
   type PasswordChangeInput,
 } from '@/lib/schemas/auth'
 
+interface BillingModule {
+  id: string
+  name: string
+  description: string
+  price: number
+  currency: string
+  status: string
+}
+
 interface BillingResponse {
   payment_method: {
     brand: string
@@ -61,6 +70,7 @@ interface BillingResponse {
     exp_month: number
     exp_year: number
   } | null
+  modules?: BillingModule[]
 }
 
 interface ProfileSubmitResponse extends ApiFormPayload {
@@ -262,6 +272,7 @@ export function TenantProfileWorkspace({
   const [showStripeForm, setShowStripeForm] = useState(false)
   const [billing, setBilling] = useState<BillingResponse | null>(null)
   const [billingLoading, setBillingLoading] = useState(initialData.role === 'admin')
+  const [selectedModuleIds, setSelectedModuleIds] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [avatarCropDraft, setAvatarCropDraft] = useState<AvatarCropDraft | null>(null)
@@ -560,10 +571,17 @@ export function TenantProfileWorkspace({
       setIsSaving(true)
       clearFeedback()
 
+      const isAdminOnboarding = mode === 'onboarding' && initialData.role === 'admin'
       const fallbackError =
         mode === 'onboarding'
           ? 'Onboarding konnte nicht abgeschlossen werden.'
           : 'Profil konnte nicht gespeichert werden.'
+
+      // Validate module selection for admin onboarding
+      if (isAdminOnboarding && selectedModuleIds.length === 0) {
+        setError('Bitte wähle mindestens ein Modul aus.')
+        return
+      }
 
       const { response, payload } = await fetchJson<ProfileSubmitResponse>('/api/tenant/profile', {
         method: 'PUT',
@@ -578,6 +596,20 @@ export function TenantProfileWorkspace({
       if (!response.ok) {
         applyServerFieldErrors(setFieldError, payload?.details)
         throw new Error(getPayloadError(payload, fallbackError))
+      }
+
+      // For admin onboarding: create Stripe subscription with selected modules
+      if (isAdminOnboarding) {
+        const subscribeResponse = await fetch('/api/tenant/billing/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ module_ids: selectedModuleIds }),
+        })
+        const subscribePayload = await subscribeResponse.json().catch(() => ({}))
+        if (!subscribeResponse.ok) {
+          throw new Error(subscribePayload.error ?? 'Abo konnte nicht erstellt werden.')
+        }
       }
 
       if (mode === 'onboarding' && payload?.redirectTo) {
@@ -1361,11 +1393,11 @@ export function TenantProfileWorkspace({
             <section className="grid gap-6 pt-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
-                  Stripe
+                  Abrechnung
                 </h2>
                 <p className="text-sm text-slate-500">
                   {mode === 'onboarding'
-                    ? 'Zum Abschluss des Admin-Onboardings ist eine hinterlegte Zahlungsmethode erforderlich.'
+                    ? 'Hinterlege deine Zahlungsmethode und wähle mindestens ein Modul aus, das du abonnieren möchtest.'
                     : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
                 </p>
               </div>
@@ -1414,6 +1446,69 @@ export function TenantProfileWorkspace({
                         void refreshBillingStatus()
                       }}
                     />
+                  </div>
+                )}
+
+                {/* Module selection — only during onboarding */}
+                {mode === 'onboarding' && (billing?.modules ?? []).length > 0 && (
+                  <div className="space-y-3 border-t border-[#efe5d8] pt-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-semibold text-slate-900">Module auswählen</span>
+                      <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8] text-[11px]">
+                        Pflichtfeld
+                      </Badge>
+                    </div>
+                    <p className="text-xs text-slate-500">
+                      Mindestens ein Modul ist erforderlich. Der Basis-Plan (29 €) ist immer inklusive.
+                    </p>
+                    <div className="space-y-2">
+                      {(billing?.modules ?? []).map((mod) => {
+                        const selected = selectedModuleIds.includes(mod.id)
+                        return (
+                          <button
+                            key={mod.id}
+                            type="button"
+                            onClick={() =>
+                              setSelectedModuleIds((prev) =>
+                                prev.includes(mod.id)
+                                  ? prev.filter((x) => x !== mod.id)
+                                  : [...prev, mod.id]
+                              )
+                            }
+                            className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
+                              selected
+                                ? 'border-[#1f2937] bg-[#f7f3ed]'
+                                : 'border-[#e6ddd0] bg-white hover:border-[#d4c9bb]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div
+                                className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
+                                  selected ? 'border-[#1f2937] bg-[#1f2937]' : 'border-[#c9bfb5]'
+                                }`}
+                              >
+                                {selected && (
+                                  <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
+                                    <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                  </svg>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-sm font-semibold text-slate-900">{mod.name}</p>
+                                <p className="text-xs text-slate-500">{mod.description}</p>
+                              </div>
+                              <span className="shrink-0 text-sm font-semibold text-slate-900">
+                                {new Intl.NumberFormat('de-DE', {
+                                  style: 'currency',
+                                  currency: mod.currency.toUpperCase(),
+                                }).format(mod.price / 100)}
+                                <span className="font-normal text-slate-400"> / 4 Wo.</span>
+                              </span>
+                            </div>
+                          </button>
+                        )
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
