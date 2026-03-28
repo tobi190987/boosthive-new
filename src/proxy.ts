@@ -231,6 +231,7 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname === '/impressum' ||
     pathname === '/datenschutz' ||
     pathname === '/reset-password' ||
+    (IS_LOCAL && pathname.startsWith('/api/test/')) ||
     pathname === '/api/auth/email-link' ||
     pathname === '/api/auth/password-reset/confirm' ||
     pathname.startsWith('/api/access') ||
