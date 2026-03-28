@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
 
   if (existingMembership) {
     return NextResponse.json(
-      { error: 'User ist bereits Mitglied in diesem Tenant.' },
+      { error: `User ist bereits Mitglied von "${tenant.name}".` },
       { status: 409 }
     )
   }

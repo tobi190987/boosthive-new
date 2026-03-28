@@ -106,8 +106,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (activeMembership) {
+      const name = tenantNameFromInvitation(invitation)
       return NextResponse.json(
-        { error: 'User ist bereits Mitglied in diesem Tenant.' },
+        { error: `User ist bereits Mitglied von "${name ?? 'diesem Tenant'}".` },
         { status: 409 }
       )
     }

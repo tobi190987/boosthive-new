@@ -32,135 +32,88 @@ export async function POST(request: NextRequest) {
   const supabaseAdmin = createAdminClient()
   const normalizedEmail = parsed.data.email.trim().toLowerCase()
 
-  const { data: tenant, error: tenantError } = await supabaseAdmin
-    .from('tenants')
-    .select('id, name, slug')
-    .eq('id', tenantId)
-    .eq('status', 'active')
-    .maybeSingle()
+  // create_password_reset_request (SECURITY DEFINER) handles:
+  // 1. Tenant-Validierung (aktiv, slug)
+  // 2. User-Lookup in auth.users
+  // 3. Membership-Prüfung
+  // 4. Token-Insert (status 'pending')
+  // Alles atomar in einer DB-Transaktion.
+  const { data: resetResult, error: resetError } = await supabaseAdmin.rpc(
+    'create_password_reset_request',
+    {
+      p_email: normalizedEmail,
+      p_tenant_id: tenantId,
+      p_token_hash: tokenHash,
+      p_expires_at: expiresAt.toISOString(),
+    }
+  )
 
-  if (tenantError) {
-    console.error('[POST /api/auth/password-reset/request] Tenant-Lookup fehlgeschlagen:', tenantError)
-    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
-  }
-
-  if (!tenant) {
-    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
-  }
-
-  const existingUserLookup = await supabaseAdmin.rpc('find_auth_user_by_email', {
-    p_email: normalizedEmail,
-  })
-
-  if (existingUserLookup.error) {
+  if (resetError) {
     console.error(
-      '[POST /api/auth/password-reset/request] User-Lookup fehlgeschlagen:',
-      existingUserLookup.error
+      '[POST /api/auth/password-reset/request] RPC fehlgeschlagen:',
+      resetError
     )
-    return NextResponse.json({ error: 'Reset-Anfrage konnte nicht verarbeitet werden.' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Reset-Anfrage konnte nicht verarbeitet werden.' },
+      { status: 500 }
+    )
   }
 
-  const userId = existingUserLookup.data?.[0]?.id as string | undefined
-  if (!userId) {
+  const result = resetResult as {
+    created: boolean
+    token_id?: string
+    user_id?: string
+    email?: string
+    tenant_slug?: string
+    tenant_name?: string
+  } | null
+
+  if (!result?.created) {
+    // E-Mail nicht gefunden oder kein aktives Mitglied → generische Erfolgsmeldung
     return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
   }
 
-  const { data: membership, error: membershipError } = await supabaseAdmin
-    .from('tenant_members')
-    .select('id')
-    .eq('tenant_id', tenantId)
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .maybeSingle()
-
-  if (membershipError) {
-    console.error(
-      '[POST /api/auth/password-reset/request] Membership-Lookup fehlgeschlagen:',
-      membershipError
-    )
-    return NextResponse.json({ error: 'Reset-Anfrage konnte nicht verarbeitet werden.' }, { status: 500 })
-  }
-
-  if (!membership) {
-    return NextResponse.json({ success: true, message: GENERIC_SUCCESS_MESSAGE })
-  }
-
-  const { data: createdToken, error: createTokenError } = await supabaseAdmin
-    .from('password_reset_tokens')
-    .insert({
-      user_id: userId,
-      tenant_id: tenantId,
-      token_hash: tokenHash,
-      status: 'pending',
-      expires_at: expiresAt.toISOString(),
-    })
-    .select('id')
-    .single()
-
-  if (createTokenError || !createdToken) {
-    console.error(
-      '[POST /api/auth/password-reset/request] Reset-Token konnte nicht erstellt werden:',
-      createTokenError
-    )
-    return NextResponse.json({ error: 'Reset-Anfrage konnte nicht verarbeitet werden.' }, { status: 500 })
-  }
-
+  const tokenId = result.token_id!
+  const userId = result.user_id!
+  const tenantName = result.tenant_name ?? ''
+  const tenantSlug = result.tenant_slug ?? ''
   const resetUrl = buildPasswordResetUrl(request, rawToken)
 
   after(async () => {
     try {
       await sendPasswordReset({
         to: normalizedEmail,
-        tenantName: tenant.name,
-        tenantSlug: tenant.slug,
+        tenantName,
+        tenantSlug,
         resetUrl,
         token: rawToken,
       })
 
-      const { data: finalizedToken, error: finalizeError } = await supabaseAdmin
-        .from('password_reset_tokens')
-        .update({ status: 'active' })
-        .eq('id', createdToken.id)
-        .eq('tenant_id', tenantId)
-        .eq('user_id', userId)
-        .eq('status', 'pending')
-        .select('id')
-        .maybeSingle()
+      const { data: finalizeResult, error: finalizeError } = await supabaseAdmin.rpc(
+        'finalize_password_reset_request',
+        {
+          p_token_id: tokenId,
+          p_user_id: userId,
+          p_tenant_id: tenantId,
+        }
+      )
 
-      if (finalizeError || !finalizedToken) {
+      if (finalizeError || !(finalizeResult as { finalized?: boolean } | null)?.finalized) {
         console.error(
           '[POST /api/auth/password-reset/request] Token-Aktivierung fehlgeschlagen:',
           finalizeError
         )
-        await supabaseAdmin
-          .from('password_reset_tokens')
-          .update({ status: 'invalidated' })
-          .eq('id', createdToken.id)
-          .eq('tenant_id', tenantId)
-        return
-      }
-
-      const { error: invalidateOldTokensError } = await supabaseAdmin
-        .from('password_reset_tokens')
-        .update({ status: 'invalidated' })
-        .eq('tenant_id', tenantId)
-        .eq('user_id', userId)
-        .neq('id', createdToken.id)
-        .in('status', ['pending', 'active'])
-
-      if (invalidateOldTokensError) {
-        console.error(
-          '[POST /api/auth/password-reset/request] Ältere Reset-Tokens konnten nicht invalidiert werden:',
-          invalidateOldTokensError
-        )
+        await supabaseAdmin.rpc('cancel_password_reset_request', {
+          p_token_id: tokenId,
+          p_tenant_id: tenantId,
+        })
       }
     } catch (mailError) {
       console.error('[POST /api/auth/password-reset/request] Mailversand fehlgeschlagen:', mailError)
-      await supabaseAdmin
-        .from('password_reset_tokens')
-        .update({ status: 'invalidated' })
-        .eq('id', createdToken.id)
-        .eq('tenant_id', tenantId)
+      await supabaseAdmin.rpc('cancel_password_reset_request', {
+        p_token_id: tokenId,
+        p_tenant_id: tenantId,
+      })
     }
   })
 
