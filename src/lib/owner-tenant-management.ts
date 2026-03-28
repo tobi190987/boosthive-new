@@ -248,7 +248,7 @@ export async function deleteTenantForOwner(supabaseAdmin: SupabaseClient, tenant
     .from('tenants')
     .delete()
     .eq('id', tenantId)
-    .select('id, name')
+    .select('id, name, slug')
     .maybeSingle()
 
   if (tenantDeleteError) {

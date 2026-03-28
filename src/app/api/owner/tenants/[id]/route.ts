@@ -1011,10 +1011,12 @@ export async function DELETE(
     })
     await recordOwnerAuditLog({
       actorUserId: auth.userId,
-      tenantId: id,
+      tenantId: null,
       eventType: 'tenant_deleted',
       context: {
+        deletedTenantId: result.tenant.id,
         tenantName: result.tenant.name,
+        tenantSlug: result.tenant.slug,
         deletedAuthUsers: result.deletedAuthUsers,
         cleanupErrors: result.cleanupErrors.length,
       },

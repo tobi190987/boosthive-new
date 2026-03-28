@@ -5,6 +5,7 @@ import { deriveInvitationStatus, hashInvitationToken } from '@/lib/invitations'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
+import { checkRateLimit, getClientIp, rateLimitResponse, AUTH_INVITE } from '@/lib/rate-limit'
 
 const INVALID_TOKEN_ERROR =
   'Der Einladungslink ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.'
@@ -26,6 +27,14 @@ function tenantNameFromInvitation(invitation: InvitationRecord) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate Limiting: 10 requests / 15 min / IP
+  const ip = getClientIp(request)
+  const rl = checkRateLimit(`auth-invite:${ip}`, AUTH_INVITE)
+  if (!rl.allowed) {
+    logSecurity('invitation_accept_rate_limited', { ip })
+    return rateLimitResponse(rl)
+  }
+
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
     logSecurity('invitation_accept_missing_tenant_header')

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 import {
+  Archive,
   AlertTriangle,
   ArrowLeft,
   Building2,
@@ -21,6 +22,7 @@ import {
   MapPin,
   Package,
   Phone,
+  RotateCcw,
   ShieldCheck,
   Trash2,
   Unlock,
@@ -79,6 +81,8 @@ type MemberStatus = "active" | "inactive"
 type OwnerAuditEventType =
   | "tenant_created"
   | "tenant_status_updated"
+  | "tenant_archived"
+  | "tenant_restored"
   | "tenant_basics_updated"
   | "tenant_billing_updated"
   | "tenant_contact_updated"
@@ -126,6 +130,9 @@ interface TenantDetailRecord {
   slug: string
   status: TenantStatus
   created_at: string
+  is_archived?: boolean
+  archived_at?: string | null
+  archive_reason?: string | null
   logo_url?: string | null
   billing_company?: string | null
   billing_street?: string | null
@@ -249,6 +256,10 @@ function auditEventLabel(eventType: OwnerAuditEventType) {
       return "Tenant angelegt"
     case "tenant_status_updated":
       return "Status geändert"
+    case "tenant_archived":
+      return "Tenant archiviert"
+    case "tenant_restored":
+      return "Tenant wiederhergestellt"
     case "tenant_basics_updated":
       return "Basisdaten aktualisiert"
     case "tenant_billing_updated":
@@ -270,6 +281,10 @@ function auditEventBadgeClass(eventType: OwnerAuditEventType) {
   switch (eventType) {
     case "tenant_deleted":
       return "rounded-full bg-[#fff1ec] text-[#b85e34] hover:bg-[#fff1ec]"
+    case "tenant_archived":
+      return "rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100"
+    case "tenant_restored":
+      return "rounded-full bg-[#eef7f5] text-[#0d9488] hover:bg-[#eef7f5]"
     case "tenant_admin_reassigned":
     case "tenant_admin_setup_resent":
       return "rounded-full bg-[#eef4ff] text-[#3457c2] hover:bg-[#eef4ff]"
@@ -288,6 +303,7 @@ function formatAuditLogDescription(log: OwnerAuditLogRecord) {
   const slug = typeof context.slug === "string" ? context.slug : null
   const name = typeof context.name === "string" ? context.name : null
   const tenantName = typeof context.tenantName === "string" ? context.tenantName : null
+  const archiveReason = typeof context.archiveReason === "string" ? context.archiveReason : null
   const deletedAuthUsers = typeof context.deletedAuthUsers === "number" ? context.deletedAuthUsers : null
   const authDeleted = typeof context.authDeleted === "boolean" ? context.authDeleted : null
   const createdUserId = typeof context.createdUserId === "string" ? context.createdUserId : null
@@ -305,6 +321,12 @@ function formatAuditLogDescription(log: OwnerAuditLogRecord) {
         : status === "inactive"
           ? "Die Agentur wurde pausiert."
           : "Der Tenant-Status wurde aktualisiert."
+    case "tenant_archived":
+      return archiveReason
+        ? `Der Tenant wurde archiviert. Grund: ${archiveReason}`
+        : "Der Tenant wurde archiviert und aus der Standardansicht entfernt."
+    case "tenant_restored":
+      return "Der Tenant wurde wieder in die aktive Verwaltung zurückgeführt."
     case "tenant_basics_updated":
       return [name ? `Name: ${name}` : null, slug ? `Neue Subdomain: ${slug}` : null]
         .filter(Boolean)
@@ -348,6 +370,7 @@ async function extractPayload(response: Response) {
 const VALID_TABS = ["general", "billing", "contact", "admin", "users", "audit", "subscription"] as const
 
 export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
+  const router = useRouter()
   const searchParams = useSearchParams()
   const tabParam = searchParams.get("tab")
   const initialTab = VALID_TABS.includes(tabParam as typeof VALID_TABS[number])
@@ -359,6 +382,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [apiPendingMessage, setApiPendingMessage] = useState<string | null>(null)
   const [savingSection, setSavingSection] = useState<null | "basics" | "billing" | "contact" | "admin">(null)
+  const [lifecycleAction, setLifecycleAction] = useState<null | "archive" | "restore" | "hard-delete">(null)
   const [deletingUserId, setDeletingUserId] = useState<string | null>(null)
   const [confirmDeleteUser, setConfirmDeleteUser] = useState<TenantUserRecord | null>(null)
   const [logoFile, setLogoFile] = useState<File | null>(null)
@@ -514,6 +538,58 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   }, [watchedSlug])
   const activeUsers = tenant?.users?.filter((entry) => entry.status === "active").length ?? 0
   const adminUsers = tenant?.users?.filter((entry) => entry.role === "admin" && entry.status === "active").length ?? 0
+
+  async function runLifecycleAction(action: "archive" | "restore" | "hard-delete") {
+    setLifecycleAction(action)
+    setServerError(null)
+
+    try {
+      const response = await fetch(
+        action === "hard-delete"
+          ? `/api/owner/tenants/${tenantId}?mode=hard`
+          : `/api/owner/tenants/${tenantId}`,
+        {
+          method: action === "hard-delete" ? "DELETE" : "PATCH",
+          headers: action === "hard-delete" ? undefined : { "Content-Type": "application/json" },
+          credentials: "include",
+          body:
+            action === "archive"
+              ? JSON.stringify({ type: "archive" })
+              : action === "restore"
+                ? JSON.stringify({ type: "restore" })
+                : undefined,
+        }
+      )
+      const payload = await extractPayload(response)
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Aktion fehlgeschlagen.")
+      }
+
+      if (action === "hard-delete") {
+        toast({
+          title: "Tenant endgültig gelöscht",
+          description: "Die Agentur wurde dauerhaft aus dem System entfernt.",
+        })
+        router.push("/owner/tenants")
+        router.refresh()
+        return
+      }
+
+      await refreshTenantData()
+      toast({
+        title: action === "archive" ? "Tenant archiviert" : "Tenant wiederhergestellt",
+        description:
+          action === "archive"
+            ? "Die Agentur wurde aus der Standardansicht entfernt und neue Logins sind blockiert."
+            : "Die Agentur ist wieder sichtbar und kann normal verwaltet werden.",
+      })
+    } catch (error) {
+      setServerError(error instanceof Error ? error.message : "Aktion fehlgeschlagen.")
+    } finally {
+      setLifecycleAction(null)
+    }
+  }
 
   async function submitPatch<T extends Record<string, unknown>>(
     type: "basics" | "billing" | "contact",
@@ -917,6 +993,17 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </Alert>
       ) : null}
 
+      {tenant?.is_archived ? (
+        <Alert className="rounded-[24px] border-slate-200 bg-slate-50 text-slate-700">
+          <Archive className="h-4 w-4" />
+          <AlertTitle>Dieser Tenant ist archiviert</AlertTitle>
+          <AlertDescription>
+            Neue Logins und geschützte Bereiche sind blockiert. Owner können den Tenant hier prüfen,
+            wiederherstellen oder bewusst endgültig löschen.
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <Tabs defaultValue={initialTab} className="space-y-6">
         <TabsList className="h-auto flex-wrap rounded-full bg-[#f4eee6] p-1">
           <TabsTrigger value="general" className="rounded-full px-4 py-2">
@@ -1126,6 +1213,167 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   </Button>
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          <Card className="mt-4 rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+            <CardHeader className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                  <Archive className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-xl text-slate-900">Archivierung & Lebenszyklus</CardTitle>
+                  <p className="text-sm text-slate-500">
+                    Archivierte Tenants verschwinden aus der Standardansicht, bleiben für Support aber wiederherstellbar.
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-5">
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-[#ece2d5] bg-[#fcfaf6] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Archivstatus</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {tenant?.is_archived ? "Archiviert" : "Aktiv sichtbar"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[#ece2d5] bg-[#fcfaf6] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Archiviert am</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900">
+                    {tenant?.archived_at ? formatDateTime(tenant.archived_at) : "Noch nicht archiviert"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-[#ece2d5] bg-[#fcfaf6] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Archivgrund</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                    {tenant?.archive_reason || "Kein Grund hinterlegt"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-[24px] border border-[#ece2d5] bg-[#fffaf3] p-5">
+                <p className="text-sm font-semibold text-slate-900">
+                  {tenant?.is_archived
+                    ? "Der Tenant liegt aktuell im Archiv."
+                    : "Dieser Tenant ist aktuell im normalen Betrieb sichtbar."}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">
+                  {tenant?.is_archived
+                    ? "Wiederherstellen bringt den Tenant zurück in Listen und erlaubt wieder reguläre Nutzung. Eine harte Löschung ist nur hier als separater, bewusster Schritt möglich."
+                    : "Archivieren blendet den Tenant in Owner-Listen standardmäßig aus und blockiert neue Logins, ohne Stammdaten oder Audit-Historie zu verlieren."}
+                </p>
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                {tenant?.is_archived ? (
+                  <>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          className="rounded-full bg-[#0d9488] px-5 hover:bg-[#0b7c72]"
+                          disabled={lifecycleAction !== null}
+                        >
+                          {lifecycleAction === "restore" ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="mr-2 h-4 w-4" />
+                          )}
+                          Wiederherstellen
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tenant wiederherstellen?</AlertDialogTitle>
+                          <AlertDialogDescription className="leading-6">
+                            {tenant.name} erscheint danach wieder in den normalen Owner-Listen und kann erneut genutzt werden.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="rounded-full bg-[#0d9488] text-white hover:bg-[#0b7c72]"
+                            onClick={() => void runLifecycleAction("restore")}
+                          >
+                            Wiederherstellen
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          disabled={lifecycleAction !== null}
+                        >
+                          {lifecycleAction === "hard-delete" ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="mr-2 h-4 w-4" />
+                          )}
+                          Endgültig löschen
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Tenant endgültig löschen?</AlertDialogTitle>
+                          <AlertDialogDescription className="leading-6">
+                            Dieser Schritt entfernt {tenant.name} dauerhaft. Zugehörige Daten des Tenants und verwaiste Auth-Accounts werden bereinigt.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+                          <AlertDialogAction
+                            className="rounded-full bg-[#9f4f2d] text-white hover:bg-[#7c3d1d]"
+                            onClick={() => void runLifecycleAction("hard-delete")}
+                          >
+                            Endgültig löschen
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </>
+                ) : (
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-full border-[#9f4f2d] text-[#9f4f2d] hover:bg-[#fff3ee] hover:text-[#7c3d1d]"
+                        disabled={lifecycleAction !== null}
+                      >
+                        {lifecycleAction === "archive" ? (
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        ) : (
+                          <Archive className="mr-2 h-4 w-4" />
+                        )}
+                        Tenant archivieren
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Tenant archivieren?</AlertDialogTitle>
+                        <AlertDialogDescription className="leading-6">
+                          {tenant?.name ?? "Dieser Tenant"} wird aus der Standardansicht entfernt. Neue Logins und geschützte Bereiche werden blockiert, eine spätere Wiederherstellung bleibt aber möglich.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+                        <AlertDialogAction
+                          className="rounded-full bg-[#9f4f2d] text-white hover:bg-[#7c3d1d]"
+                          onClick={() => void runLifecycleAction("archive")}
+                        >
+                          Archivieren
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

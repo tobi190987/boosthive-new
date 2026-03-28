@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { resetRateLimitStore } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const E2E_TOKEN = process.env.E2E_TEST_HELPER_TOKEN ?? 'local-e2e-token'
@@ -175,6 +176,8 @@ export async function POST(request: NextRequest) {
   if (denied) return denied
 
   try {
+    resetRateLimitStore()
+
     let body: SeedBody | null = null
     try {
       body = (await request.json()) as SeedBody
@@ -326,6 +329,7 @@ export async function POST(request: NextRequest) {
     await resetTenantState(tenantId)
 
     const now = new Date().toISOString()
+    const onboardingCompletedAt = billingOnboardingCompleted ? now : null
     const { error: membersError } = await supabaseAdmin.from('tenant_members').upsert(
       [
         {
@@ -335,7 +339,7 @@ export async function POST(request: NextRequest) {
           status: 'active',
           invited_at: now,
           joined_at: now,
-          onboarding_completed_at: null,
+          onboarding_completed_at: onboardingCompletedAt,
         },
         {
           user_id: memberUserId,
@@ -344,7 +348,7 @@ export async function POST(request: NextRequest) {
           status: 'active',
           invited_at: now,
           joined_at: now,
-          onboarding_completed_at: null,
+          onboarding_completed_at: onboardingCompletedAt,
         },
       ],
       { onConflict: 'user_id,tenant_id' }
@@ -358,14 +362,14 @@ export async function POST(request: NextRequest) {
       [
         {
           user_id: adminUserId,
-          first_name: null,
-          last_name: null,
+          first_name: billingOnboardingCompleted ? 'Ada' : null,
+          last_name: billingOnboardingCompleted ? 'Admin' : null,
           avatar_url: null,
         },
         {
           user_id: memberUserId,
-          first_name: null,
-          last_name: null,
+          first_name: billingOnboardingCompleted ? 'Mia' : null,
+          last_name: billingOnboardingCompleted ? 'Member' : null,
           avatar_url: null,
         },
       ],
@@ -406,6 +410,8 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   const denied = isAllowed(request)
   if (denied) return denied
+
+  resetRateLimitStore()
 
   let body: SeedBody | null = null
   try {

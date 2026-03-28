@@ -3,10 +3,12 @@
 import Link from 'next/link'
 import { useState } from 'react'
 import {
+  Archive,
   CirclePause,
   ExternalLink,
   Loader2,
   MoreHorizontal,
+  RotateCcw,
   SearchX,
   Trash2,
 } from 'lucide-react'
@@ -53,14 +55,19 @@ export interface OwnerTenantRecord {
   status: string
   created_at: string
   memberCount: number
+  is_archived: boolean
+  archived_at?: string | null
+  archive_reason?: string | null
 }
 
 interface OwnerTenantTableProps {
   tenants: OwnerTenantRecord[]
-  togglingId: string | null
-  deletingId: string | null
+  busyTenantId: string | null
+  archivedFilter: 'exclude' | 'include' | 'only'
   onToggleStatus: (tenant: OwnerTenantRecord) => Promise<void> | void
-  onDeleteTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
+  onArchiveTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
+  onRestoreTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
+  onHardDeleteTenant: (tenant: OwnerTenantRecord) => Promise<void> | void
 }
 
 function formatDate(value: string) {
@@ -73,15 +80,20 @@ function formatDate(value: string) {
 
 export function OwnerTenantTable({
   tenants,
-  togglingId,
-  deletingId,
+  busyTenantId,
+  archivedFilter,
   onToggleStatus,
-  onDeleteTenant,
+  onArchiveTenant,
+  onRestoreTenant,
+  onHardDeleteTenant,
 }: OwnerTenantTableProps) {
   const [confirmTenant, setConfirmTenant] = useState<OwnerTenantRecord | null>(null)
+  const [archiveTenant, setArchiveTenant] = useState<OwnerTenantRecord | null>(null)
+  const [restoreTenant, setRestoreTenant] = useState<OwnerTenantRecord | null>(null)
   const [deleteTenant, setDeleteTenant] = useState<OwnerTenantRecord | null>(null)
-  const activeCount = tenants.filter((tenant) => tenant.status === 'active').length
-  const blockedCount = tenants.filter((tenant) => tenant.status !== 'active').length
+  const activeCount = tenants.filter((tenant) => !tenant.is_archived && tenant.status === 'active').length
+  const blockedCount = tenants.filter((tenant) => !tenant.is_archived && tenant.status !== 'active').length
+  const archivedCount = tenants.filter((tenant) => tenant.is_archived).length
 
   if (tenants.length === 0) {
     return (
@@ -89,11 +101,13 @@ export function OwnerTenantTable({
         <div className="mb-4 rounded-full bg-[#f5efe6] p-4 text-[#b85e34]">
           <SearchX className="h-6 w-6" />
         </div>
-        <h3 className="text-lg font-semibold text-slate-900">Keine Tenants im aktuellen Filter</h3>
-        <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
-          Passe Suche oder Statusfilter an, um weitere Agenturen zu sehen.
-        </p>
-      </div>
+          <h3 className="text-lg font-semibold text-slate-900">Keine Tenants im aktuellen Filter</h3>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+            {archivedFilter === 'only'
+              ? 'Im Archiv ist aktuell kein Tenant sichtbar.'
+              : 'Passe Suche oder Filter an, um weitere Agenturen zu sehen.'}
+          </p>
+        </div>
     )
   }
 
@@ -116,6 +130,9 @@ export function OwnerTenantTable({
             <div className="rounded-full border border-[#e9ddcf] bg-[#faf5ee] px-4 py-2 text-sm text-slate-600">
               {blockedCount} blockiert
             </div>
+            <div className="rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-600">
+              {archivedCount} archiviert
+            </div>
           </div>
         </div>
 
@@ -132,7 +149,7 @@ export function OwnerTenantTable({
           </TableHeader>
           <TableBody>
             {tenants.map((tenant) => {
-              const isPending = togglingId === tenant.id || deletingId === tenant.id
+              const isPending = busyTenantId === tenant.id
 
               return (
                 <TableRow key={tenant.id} className="border-[#f0e9df] hover:bg-[#fcfaf6]">
@@ -183,11 +200,30 @@ export function OwnerTenantTable({
                           <DropdownMenuItem
                             className="cursor-pointer"
                             onClick={() => setConfirmTenant(tenant)}
-                            disabled={isPending || !canOwnerToggleTenantStatus(tenant.status)}
+                            disabled={isPending || tenant.is_archived || !canOwnerToggleTenantStatus(tenant.status)}
                           >
                             <CirclePause className="mr-2 h-4 w-4" />
                             {ownerToggleTenantStatusLabel(tenant.status)}
                           </DropdownMenuItem>
+                          {tenant.is_archived ? (
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => setRestoreTenant(tenant)}
+                              disabled={isPending}
+                            >
+                              <RotateCcw className="mr-2 h-4 w-4" />
+                              Wiederherstellen
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => setArchiveTenant(tenant)}
+                              disabled={isPending}
+                            >
+                              <Archive className="mr-2 h-4 w-4" />
+                              Archivieren
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             className="cursor-pointer text-[#9f4f2d] focus:text-[#9f4f2d]"
@@ -195,7 +231,7 @@ export function OwnerTenantTable({
                             disabled={isPending}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            Löschen
+                            {tenant.is_archived ? 'Endgültig löschen' : 'Archivieren über Löschen'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -245,6 +281,71 @@ export function OwnerTenantTable({
       </AlertDialog>
 
       <AlertDialog
+        open={Boolean(archiveTenant)}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTenant(null)
+        }}
+      >
+        <AlertDialogTrigger asChild>
+          <span className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tenant archivieren?</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              {archiveTenant?.name} verschwindet aus der Standardansicht und neue Logins werden blockiert.
+              Eine Wiederherstellung bleibt später möglich.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+              onClick={async () => {
+                if (!archiveTenant) return
+                await onArchiveTenant(archiveTenant)
+                setArchiveTenant(null)
+              }}
+            >
+              Archivieren
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={Boolean(restoreTenant)}
+        onOpenChange={(open) => {
+          if (!open) setRestoreTenant(null)
+        }}
+      >
+        <AlertDialogTrigger asChild>
+          <span className="hidden" />
+        </AlertDialogTrigger>
+        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Tenant wiederherstellen?</AlertDialogTitle>
+            <AlertDialogDescription className="leading-6">
+              {restoreTenant?.name} erscheint wieder in den normalen Listen und kann danach erneut genutzt werden.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+            <AlertDialogAction
+              className="rounded-full bg-[#0d9488] hover:bg-[#0b7c72]"
+              onClick={async () => {
+                if (!restoreTenant) return
+                await onRestoreTenant(restoreTenant)
+                setRestoreTenant(null)
+              }}
+            >
+              Wiederherstellen
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
         open={Boolean(deleteTenant)}
         onOpenChange={(open) => {
           if (!open) setDeleteTenant(null)
@@ -255,10 +356,13 @@ export function OwnerTenantTable({
         </AlertDialogTrigger>
         <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
           <AlertDialogHeader>
-            <AlertDialogTitle>Tenant wirklich löschen?</AlertDialogTitle>
+            <AlertDialogTitle>
+              {deleteTenant?.is_archived ? 'Tenant endgültig löschen?' : 'Tenant archivieren?'}
+            </AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
-              {deleteTenant?.name} wird dauerhaft entfernt. Zugehörige Daten des Tenants werden
-              gelöscht und verwaiste User-Accounts werden ebenfalls bereinigt.
+              {deleteTenant?.is_archived
+                ? `${deleteTenant?.name} wird dauerhaft entfernt. Zugehörige Daten des Tenants werden gelöscht und verwaiste User-Accounts werden ebenfalls bereinigt.`
+                : `${deleteTenant?.name} wird standardmäßig archiviert statt sofort entfernt. Für eine harte Löschung muss der Tenant zuerst im Archiv liegen.`}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -267,11 +371,15 @@ export function OwnerTenantTable({
               className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
               onClick={async () => {
                 if (!deleteTenant) return
-                await onDeleteTenant(deleteTenant)
+                if (deleteTenant.is_archived) {
+                  await onHardDeleteTenant(deleteTenant)
+                } else {
+                  await onArchiveTenant(deleteTenant)
+                }
                 setDeleteTenant(null)
               }}
             >
-              Tenant löschen
+              {deleteTenant?.is_archived ? 'Endgültig löschen' : 'Archivieren'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

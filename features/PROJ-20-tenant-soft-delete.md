@@ -1,6 +1,6 @@
 # PROJ-20: Tenant Soft Delete
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-28
 
@@ -18,11 +18,11 @@ Tenants sollen standardmäßig nicht sofort hart gelöscht, sondern archiviert w
 - Als Plattformbetreiber möchte ich echte Löschungen nur bewusst und nachvollziehbar durchführen.
 
 ## Acceptance Criteria
-- [ ] Tenants können archiviert statt sofort gelöscht werden.
-- [ ] Archivierte Tenants erscheinen standardmäßig nicht in normalen Listen.
-- [ ] Owner kann archivierte Tenants filtern und wiederherstellen.
-- [ ] Harte Löschung ist nur noch ein separater, expliziter Schritt.
-- [ ] Audit-Log erfasst Archivierung, Wiederherstellung und endgültige Löschung.
+- [x] Tenants können archiviert statt sofort gelöscht werden.
+- [x] Archivierte Tenants erscheinen standardmäßig nicht in normalen Listen.
+- [x] Owner kann archivierte Tenants filtern und wiederherstellen.
+- [x] Harte Löschung ist nur noch ein separater, expliziter Schritt.
+- [x] Audit-Log erfasst Archivierung, Wiederherstellung und endgültige Löschung.
 
 ## Edge Cases
 - Archivierter Tenant mit aktiver Subscription
@@ -170,3 +170,37 @@ Die Umsetzung sollte in drei Schritten erfolgen:
 1. Datenmodell und Owner-Filter ergänzen
 2. Zugriffsschutz für archivierte Tenants zentral in Proxy, Auth und Tenant-APIs verankern
 3. Audit, Wiederherstellung und UX-Hinweise für Billing, Einladungen und Sonderfälle abrunden
+
+---
+
+## QA Test Results
+
+**Tested:** 2026-03-28
+**Status:** Ready mit Rest-Risiken ausserhalb von PROJ-20
+
+### Acceptance Criteria Status
+- [x] Tenants können archiviert statt sofort gelöscht werden.
+- [x] Archivierte Tenants erscheinen standardmäßig nicht in normalen Listen.
+- [x] Owner kann archivierte Tenants filtern und wiederherstellen.
+- [x] Harte Löschung ist nur noch ein separater, expliziter Schritt.
+- [x] Audit-Log erfasst Archivierung, Wiederherstellung und endgültige Löschung.
+
+### Findings
+- Keine offenen PROJ-20-spezifischen Findings nach der Nachprüfung.
+
+### Test Notes
+- Code Review der Soft-Delete-Flows in Owner-API, Proxy, Tenant-Guards und Owner-UI erneut durchgeführt.
+- Nachprüfung des früheren Delete-Audit-Bugs: Hard Delete schreibt den Audit-Eintrag jetzt ohne FK auf einen bereits gelöschten Tenant und legt stattdessen `deletedTenantId`, `tenantName` und `tenantSlug` im Kontext ab.
+- `npx tsc --noEmit` geprüft: keine neuen `PROJ-20`-Fehler, aber weiterhin bestehende Fremdfehler in `tests/e2e/password-reset.spec.ts`.
+- `npx playwright test tests/e2e/tenant-status.spec.ts` bleibt als vollständiger End-to-End-Beleg lokal blockiert, weil das bestehende E2E-Seeding aktuell an einer `platform_admins`-/`users`-Foreign-Key-Konstellation scheitert.
+
+### Recommendation
+- PROJ-20 ist aus QA-Sicht freigabefähig.
+- Für höhere Sicherheit vor Deployment wäre zusätzlich sinnvoll, das bestehende E2E-Seeding zu reparieren und den Tenant-Status-Spec danach einmal vollständig grün laufen zu lassen.
+
+---
+
+## Deployment
+
+**Status:** ✅ Deployed
+**Deployed:** 2026-03-28

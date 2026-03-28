@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
+import { logSecurity } from '@/lib/observability'
 
 export type AppRole = 'owner' | 'admin' | 'member'
 
@@ -21,6 +22,10 @@ export async function requireTenantUser(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
+    logSecurity('tenant_user_access_unauthenticated', {
+      tenantId: tenantIdFromHeader,
+      authError: authError?.message ?? null,
+    })
     return {
       error: NextResponse.json(
         { error: 'Nicht authentifiziert. Bitte einloggen.' },
@@ -38,6 +43,10 @@ export async function requireTenantUser(
     .maybeSingle()
 
   if (!membership) {
+    logSecurity('tenant_user_access_forbidden', {
+      userId: user.id,
+      tenantId: tenantIdFromHeader,
+    })
     return {
       error: NextResponse.json(
         { error: 'Zugriff verweigert. Keine aktive Tenant-Mitgliedschaft.' },
@@ -51,6 +60,11 @@ export async function requireTenantUser(
     tenantStatusResult.data ? resolveTenantStatus(tenantStatusResult.data) : null
 
   if (tenantStatusResult.error || !tenantStatus || tenantStatus.blocksProtectedAppAccess) {
+    logSecurity('tenant_user_access_blocked_tenant_status', {
+      userId: user.id,
+      tenantId: tenantIdFromHeader,
+      effectiveStatus: tenantStatus?.effectiveStatus ?? null,
+    })
     return {
       error: NextResponse.json(
         { error: 'Tenant ist archiviert oder aktuell gesperrt.' },
@@ -86,6 +100,10 @@ export async function requireRole(
   } = await supabase.auth.getUser()
 
   if (authError || !user) {
+    logSecurity('role_access_unauthenticated', {
+      allowedRoles,
+      authError: authError?.message ?? null,
+    })
     return {
       error: NextResponse.json(
         { error: 'Nicht authentifiziert. Bitte einloggen.' },
@@ -129,6 +147,11 @@ export async function requireRole(
   }
 
   if (!role || !allowedRoles.includes(role)) {
+    logSecurity('role_access_forbidden', {
+      userId: user.id,
+      resolvedRole: role,
+      allowedRoles,
+    })
     return {
       error: NextResponse.json(
         { error: 'Zugriff verweigert. Unzureichende Berechtigung.' },
@@ -162,6 +185,11 @@ export async function requireTenantAdmin(
   }
 
   if (authResult.auth.role !== 'admin') {
+    logSecurity('tenant_admin_access_forbidden', {
+      userId: authResult.auth.userId,
+      tenantId: tenantIdFromHeader,
+      actualRole: authResult.auth.role,
+    })
     return {
       error: NextResponse.json(
         { error: 'Zugriff verweigert. Unzureichende Berechtigung.' },

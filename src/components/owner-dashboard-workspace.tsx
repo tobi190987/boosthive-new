@@ -396,10 +396,12 @@ export function OwnerDashboardWorkspace() {
 
               <OwnerTenantTable
                 tenants={tenants}
-                togglingId={togglingId}
-                deletingId={deletingId}
+                busyTenantId={togglingId ?? deletingId}
+                archivedFilter="exclude"
                 onToggleStatus={handleToggleStatus}
-                onDeleteTenant={handleDeleteTenant}
+                onArchiveTenant={handleDeleteTenant}
+                onRestoreTenant={async () => undefined}
+                onHardDeleteTenant={handleDeleteTenant}
               />
 
               <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-5 sm:flex-row sm:items-center sm:justify-between">
