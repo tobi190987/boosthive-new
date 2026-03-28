@@ -231,7 +231,7 @@ export function OwnerTenantTable({
                             disabled={isPending}
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
-                            {tenant.is_archived ? 'Endgültig löschen' : 'Archivieren über Löschen'}
+                            {tenant.is_archived ? 'Endgültig löschen' : 'Archivieren'}
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
