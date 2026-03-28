@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantAdmin } from '@/lib/auth-guards'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * POST /api/tenant/billing/modules/[moduleId]/cancel
@@ -15,9 +18,24 @@ export async function POST(
   { params }: { params: Promise<{ moduleId: string }> }
 ) {
   const { moduleId } = await params
+  if (!UUID_REGEX.test(moduleId)) {
+    return NextResponse.json({ error: 'Ungueltige Modul-ID.' }, { status: 400 })
+  }
+
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+  }
+
+  const rl = checkRateLimit(`module-cancel:${tenantId}:${getClientIp(request)}`, {
+    limit: 10,
+    windowMs: 60_000,
+  })
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Zu viele Anfragen. Bitte warte einen Moment.' },
+      { status: 429 }
+    )
   }
 
   const authResult = await requireTenantAdmin(tenantId)

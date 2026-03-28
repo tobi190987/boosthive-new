@@ -76,6 +76,11 @@ function parseSubscriptionFilter(value: string | null): SubscriptionFilter {
   return valid.includes(value as SubscriptionFilter) ? (value as SubscriptionFilter) : 'all'
 }
 
+function parseAccessFilter(value: string | null): AccessFilter {
+  const valid: AccessFilter[] = ['all', 'accessible', 'manual_locked', 'billing_blocked']
+  return valid.includes(value as AccessFilter) ? (value as AccessFilter) : 'all'
+}
+
 function parsePage(value: string | null) {
   const parsed = Number.parseInt(value ?? '1', 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : 1
@@ -217,11 +222,15 @@ export function OwnerBillingWorkspace() {
   const [subFilter, setSubFilter] = useState<SubscriptionFilter>(
     parseSubscriptionFilter(searchParams.get('subscriptionStatus'))
   )
+  const [accessFilter, setAccessFilter] = useState<AccessFilter>(
+    parseAccessFilter(searchParams.get('access'))
+  )
   const [page, setPage] = useState(parsePage(searchParams.get('page')))
 
   useEffect(() => {
     setQuery(searchParams.get('q') ?? '')
     setSubFilter(parseSubscriptionFilter(searchParams.get('subscriptionStatus')))
+    setAccessFilter(parseAccessFilter(searchParams.get('access')))
     setPage(parsePage(searchParams.get('page')))
   }, [searchParams])
 
@@ -243,6 +252,7 @@ export function OwnerBillingWorkspace() {
       })
       if (query.trim()) params.set('q', query.trim())
       if (subFilter !== 'all') params.set('subscriptionStatus', subFilter)
+      if (accessFilter !== 'all') params.set('access', accessFilter)
 
       const response = await fetch(`/api/owner/billing?${params.toString()}`, {
         credentials: 'include',
@@ -269,12 +279,13 @@ export function OwnerBillingWorkspace() {
     } finally {
       setLoading(false)
     }
-  }, [page, query, subFilter])
+  }, [accessFilter, page, query, subFilter])
 
   useEffect(() => {
     const params = new URLSearchParams()
     if (query.trim()) params.set('q', query.trim())
     if (subFilter !== 'all') params.set('subscriptionStatus', subFilter)
+    if (accessFilter !== 'all') params.set('access', accessFilter)
     if (page > 1) params.set('page', String(page))
 
     router.replace(params.toString() ? `${pathname}?${params.toString()}` : pathname, {
@@ -286,7 +297,7 @@ export function OwnerBillingWorkspace() {
     }, 250)
 
     return () => window.clearTimeout(timeoutId)
-  }, [page, pathname, query, subFilter, router, loadData])
+  }, [accessFilter, page, pathname, query, subFilter, router, loadData])
 
   return (
     <div className="space-y-8">
@@ -414,6 +425,29 @@ export function OwnerBillingWorkspace() {
                   </TabsTrigger>
                   <TabsTrigger value="none" className="rounded-full px-4 py-2">
                     Kein Abo
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+
+              <Tabs
+                value={accessFilter}
+                onValueChange={(value) => {
+                  setAccessFilter(value as AccessFilter)
+                  setPage(1)
+                }}
+              >
+                <TabsList className="h-auto flex-wrap rounded-full bg-[#eef4f2] p-1">
+                  <TabsTrigger value="all" className="rounded-full px-4 py-2">
+                    Alle Zugaenge
+                  </TabsTrigger>
+                  <TabsTrigger value="accessible" className="rounded-full px-4 py-2">
+                    Aktiv
+                  </TabsTrigger>
+                  <TabsTrigger value="manual_locked" className="rounded-full px-4 py-2">
+                    Manuell gesperrt
+                  </TabsTrigger>
+                  <TabsTrigger value="billing_blocked" className="rounded-full px-4 py-2">
+                    Billing-Block
                   </TabsTrigger>
                 </TabsList>
               </Tabs>

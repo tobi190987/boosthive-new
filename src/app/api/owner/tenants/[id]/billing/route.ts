@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/owner-auth'
+import {
+  normalizeSubscriptionDisplayStatus,
+  resolveOwnerBillingAccessState,
+} from '@/lib/owner-billing'
+import { checkRateLimit, getClientIp, OWNER_READ, rateLimitResponse } from '@/lib/rate-limit'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -10,9 +15,14 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Only accessible by platform owners.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rl = checkRateLimit(`owner-tenant-billing:${getClientIp(request)}`, OWNER_READ)
+  if (!rl.allowed) {
+    return rateLimitResponse(rl)
+  }
+
   const auth = await requireOwner()
   if ('error' in auth) return auth.error
 
@@ -37,20 +47,14 @@ export async function GET(
     return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
   }
 
-  const subStatus = (tenant.subscription_status as string) || 'none'
+  const rawSubscriptionStatus = (tenant.subscription_status as string | null | undefined) ?? null
+  const displaySubStatus = normalizeSubscriptionDisplayStatus(rawSubscriptionStatus)
   const isOwnerLocked = tenant.owner_locked_at != null
-  const tenantStatus = tenant.status as string
-
-  // Determine access state
-  let accessState = 'accessible'
-  if (isOwnerLocked || tenantStatus === 'inactive') {
-    accessState = 'manual_locked'
-  } else if (['past_due', 'canceled', 'unpaid'].includes(subStatus)) {
-    accessState = 'billing_blocked'
-  }
-
-  let displaySubStatus = subStatus
-  if (subStatus === 'inactive') displaySubStatus = 'none'
+  const accessState = resolveOwnerBillingAccessState({
+    status: (tenant.status as string | null | undefined) ?? null,
+    subscription_status: rawSubscriptionStatus,
+    owner_locked_at: (tenant.owner_locked_at as string | null | undefined) ?? null,
+  })
 
   // Load base plan price
   let basePlanAmount = 4900
@@ -126,7 +130,7 @@ export async function GET(
 
   // Calculate total amount
   const activeModules = moduleDetails.filter((m) => m.status === 'active' || m.status === 'canceling')
-  const hasActiveSub = ['active', 'canceling', 'past_due'].includes(subStatus)
+  const hasActiveSub = ['active', 'canceling', 'past_due'].includes(rawSubscriptionStatus ?? '')
   const modulesTotal = activeModules.reduce((sum, m) => sum + m.price, 0)
   const totalAmount = hasActiveSub ? basePlanAmount + modulesTotal : 0
 

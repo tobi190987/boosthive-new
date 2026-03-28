@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireTenantAdmin } from '@/lib/auth-guards'
+import { requireTenantUser } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
@@ -11,7 +11,8 @@ function isMissingColumnError(error: { code?: string; message?: string } | null 
 /**
  * GET /api/tenant/billing
  * Returns the current billing / subscription state for the tenant.
- * Only accessible by tenant admins.
+ * Accessible by tenant members, but only admins receive payment-method details
+ * and mutable billing context. Members get the module catalog for dashboard gating.
  */
 export async function GET(request: NextRequest) {
   const tenantIdFromHeader = request.headers.get('x-tenant-id')
@@ -31,9 +32,10 @@ export async function GET(request: NextRequest) {
     )
   }
 
-  const authResult = await requireTenantAdmin(tenantIdFromHeader)
+  const authResult = await requireTenantUser(tenantIdFromHeader)
   if ('error' in authResult) return authResult.error
   const tenantId = authResult.auth.tenantId ?? tenantIdFromHeader
+  const isAdmin = authResult.auth.role === 'admin'
 
   const supabaseAdmin = createAdminClient()
 
@@ -70,6 +72,7 @@ export async function GET(request: NextRequest) {
       subscription_period_end: null,
       payment_method: null,
       plan: null,
+      modules: [],
     })
   }
 
@@ -90,7 +93,7 @@ export async function GET(request: NextRequest) {
   else if (dbStatus === 'past_due') subscriptionStatus = 'past_due'
   else if (dbStatus === 'canceled') subscriptionStatus = 'canceled'
 
-  // Load payment method from Stripe if customer exists
+  // Load payment method from Stripe only for admins.
   let paymentMethod: {
     brand: string
     last4: string
@@ -98,7 +101,7 @@ export async function GET(request: NextRequest) {
     exp_year: number
   } | null = null
 
-  if (tenant.stripe_customer_id) {
+  if (isAdmin && tenant.stripe_customer_id) {
     try {
       const paymentMethods = await stripe.paymentMethods.list({
         customer: tenant.stripe_customer_id,
@@ -121,9 +124,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // Plan info — loaded dynamically from Stripe so price changes are reflected automatically
+  // Plan info is only shown in the admin billing workspace.
   let plan: { name: string; amount: number; currency: string; interval: string } | null = null
-  if (subscriptionStatus !== 'none') {
+  if (isAdmin && subscriptionStatus !== 'none') {
     const priceId = process.env.STRIPE_BASIS_PLAN_PRICE_ID
     if (priceId) {
       try {
@@ -232,8 +235,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     subscription_status: subscriptionStatus,
     subscription_period_end: tenant.subscription_period_end ?? null,
-    payment_method: paymentMethod,
-    plan,
+    payment_method: isAdmin ? paymentMethod : null,
+    plan: isAdmin ? plan : null,
     modules,
   })
 }

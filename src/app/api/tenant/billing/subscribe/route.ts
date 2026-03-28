@@ -108,15 +108,15 @@ export async function POST(request: NextRequest) {
       ? new Date(periodEnd * 1000).toISOString()
       : null
 
-    // Update tenant in DB — set is_active:true immediately so re-subscriptions
-    // take effect without waiting for the async invoice.payment_succeeded webhook.
+    // Update tenant in DB immediately so re-subscriptions take effect without
+    // waiting for the async invoice.payment_succeeded webhook.
     const { error: updateError } = await supabaseAdmin
       .from('tenants')
       .update({
         stripe_subscription_id: subscription.id,
         subscription_status: 'active',
         subscription_period_end: periodEndISO,
-        is_active: true,
+        status: 'active',
       })
       .eq('id', tenantId)
 

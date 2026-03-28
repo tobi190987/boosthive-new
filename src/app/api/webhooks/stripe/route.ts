@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
-import { sendPaymentFailed } from '@/lib/email'
+import { sendOwnerPastDueNotification, sendPaymentFailed } from '@/lib/email'
 import { createAdminClient } from '@/lib/supabase-admin'
 import type Stripe from 'stripe'
 
@@ -179,10 +179,11 @@ async function handleSubscriptionUpdated(
     stripe_subscription_id: subscription.id,
   }
   if (subscription.status === 'unpaid' || subscription.status === 'canceled') {
-    updateData.is_active = false
+    updateData.status = 'inactive'
+  } else if (!isOwnerLocked && (subscriptionStatus === 'active' || subscriptionStatus === 'canceling')) {
+    updateData.status = 'active'
   }
-  // Do NOT set is_active=true if tenant is owner-locked
-  // (invoice.payment_succeeded handler also checks this)
+  // Do NOT auto-reactivate manually locked tenants.
 
   const { error } = await supabase
     .from('tenants')
@@ -197,6 +198,10 @@ async function handleSubscriptionUpdated(
     throw error
   }
 
+  // PROJ-15: Sync module items after subscription update
+  if (existingTenant?.id) {
+    await syncModuleItems(supabase, existingTenant.id, subscription)
+  }
 }
 
 async function handleSubscriptionDeleted(
@@ -208,6 +213,13 @@ async function handleSubscriptionDeleted(
       ? subscription.customer
       : subscription.customer.id
 
+  // Load tenant ID before update (needed for module sync)
+  const { data: tenant } = await supabase
+    .from('tenants')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle()
+
   // BUG-3 fix: deactivate tenant access when subscription is fully deleted
   // BUG-7 fix: use 'canceled' (not 'inactive') to match frontend expectations
   const { error } = await supabase
@@ -216,7 +228,7 @@ async function handleSubscriptionDeleted(
       subscription_status: 'canceled',
       stripe_subscription_id: null,
       subscription_period_end: null,
-      is_active: false,
+      status: 'inactive',
     })
     .eq('stripe_customer_id', customerId)
 
@@ -226,6 +238,11 @@ async function handleSubscriptionDeleted(
       error
     )
     throw error
+  }
+
+  // PROJ-15: Sync module items — subscription deleted means all modules are gone
+  if (tenant?.id) {
+    await syncModuleItems(supabase, tenant.id, subscription)
   }
 }
 
@@ -286,6 +303,8 @@ async function handleInvoicePaymentFailed(
         }
       }
 
+      // PROJ-16: Notify all platform owners about past_due tenant
+      await sendOwnerPastDueNotification(supabase, tenant.name, tenant.slug, tenant.id)
     }
   } catch (emailError) {
     // Non-fatal: log but don't fail the webhook
@@ -317,11 +336,9 @@ async function handleInvoicePaymentSucceeded(
 
   const isOwnerLocked = lockedTenant?.owner_locked_at != null
 
-  // BUG-4 fix: also restore is_active=true when payment succeeds after grace period
-  // But skip is_active restoration if tenant is owner-locked
   const updatePayload: Record<string, unknown> = { subscription_status: 'active' }
   if (!isOwnerLocked) {
-    updatePayload.is_active = true
+    updatePayload.status = 'active'
   }
 
   const { error } = await supabase
@@ -428,12 +445,12 @@ async function syncModuleItems(
         )
     }
 
-    // Mark modules no longer in Stripe as canceled (only from 'active', not 'canceling')
+    // Mark modules no longer present in Stripe as canceled.
     const { data: currentBookings } = await supabase
       .from('tenant_modules')
       .select('id, module_id, status')
       .eq('tenant_id', tenantId)
-      .in('status', ['active'])
+      .in('status', ['active', 'canceling'])
 
     if (currentBookings) {
       const toCancel = currentBookings.filter(

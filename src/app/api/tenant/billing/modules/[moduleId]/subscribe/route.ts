@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * POST /api/tenant/billing/modules/[moduleId]/subscribe
  * Adds a module as a new Subscription Item to the tenant's existing subscription.
@@ -14,6 +16,10 @@ export async function POST(
   { params }: { params: Promise<{ moduleId: string }> }
 ) {
   const { moduleId } = await params
+  if (!UUID_REGEX.test(moduleId)) {
+    return NextResponse.json({ error: 'Ungueltige Modul-ID.' }, { status: 400 })
+  }
+
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })

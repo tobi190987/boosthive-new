@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { recordOwnerAuditLog } from '@/lib/owner-audit'
+import { checkRateLimit, getClientIp, OWNER_WRITE, rateLimitResponse } from '@/lib/rate-limit'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -11,9 +12,14 @@ const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
  * Reactivates the tenant only if the billing state allows it.
  */
 export async function POST(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rl = checkRateLimit(`owner-tenant-billing-unlock:${getClientIp(request)}`, OWNER_WRITE)
+  if (!rl.allowed) {
+    return rateLimitResponse(rl)
+  }
+
   const auth = await requireOwner()
   if ('error' in auth) return auth.error
 

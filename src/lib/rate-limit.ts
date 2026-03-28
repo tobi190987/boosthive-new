@@ -51,6 +51,12 @@ export const AUTH_RESET: RateLimitOptions = { limit: 3, windowMs: 15 * 60 * 1000
 /** Invitation accept: 10 requests / 15 min / IP */
 export const AUTH_INVITE: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
 
+/** Owner billing overview/detail reads: 60 requests / min / IP */
+export const OWNER_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** Owner billing mutations: 20 requests / min / IP */
+export const OWNER_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------
