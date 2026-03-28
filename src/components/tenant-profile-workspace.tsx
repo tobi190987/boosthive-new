@@ -3,9 +3,12 @@
 import Image from 'next/image'
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { useForm, type FieldPath } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import {
   AlertCircle,
   CreditCard,
+  Eye,
+  EyeOff,
   ImagePlus,
   Loader2,
   Move,
@@ -31,6 +34,12 @@ import { Label } from '@/components/ui/label'
 import { StripeCardForm } from '@/components/stripe-card-form'
 import { TenantLogoutButton } from '@/components/tenant-logout-button'
 import { getUserInitials } from '@/lib/profile'
+import {
+  EmailChangeSchema,
+  PasswordChangeSchema,
+  type EmailChangeInput,
+  type PasswordChangeInput,
+} from '@/lib/schemas/auth'
 
 interface BillingResponse {
   payment_method: {
@@ -44,7 +53,8 @@ interface BillingResponse {
 interface TenantProfileWorkspaceProps {
   mode: 'onboarding' | 'settings'
   initialData: {
-    role: 'admin' | 'member'
+    role: 'admin' | 'member' | 'owner'
+    email: string
     tenantName: string
     tenantLogoUrl: string | null
     firstName: string
@@ -209,6 +219,10 @@ export function TenantProfileWorkspace({
   const [avatarCropX, setAvatarCropX] = useState(0)
   const [avatarCropY, setAvatarCropY] = useState(0)
   const [avatarCropZoom, setAvatarCropZoom] = useState(1.2)
+  const [showCurrentEmailPassword, setShowCurrentEmailPassword] = useState(false)
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const tenantLogoInputRef = useRef<HTMLInputElement>(null)
 
@@ -227,6 +241,23 @@ export function TenantProfileWorkspace({
       billing_city: initialData.billingCity,
       billing_country: initialData.billingCountry,
       billing_vat_id: initialData.billingVatId,
+    },
+  })
+
+  const emailForm = useForm<EmailChangeInput>({
+    resolver: zodResolver(EmailChangeSchema),
+    defaultValues: {
+      email: initialData.email,
+      current_password: '',
+    },
+  })
+
+  const passwordForm = useForm<PasswordChangeInput>({
+    resolver: zodResolver(PasswordChangeSchema),
+    defaultValues: {
+      current_password: '',
+      new_password: '',
+      confirm_password: '',
     },
   })
 
@@ -553,6 +584,114 @@ export function TenantProfileWorkspace({
       )
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  async function onSubmitEmail(values: EmailChangeInput) {
+    try {
+      setError(null)
+      setSuccess(null)
+
+      const response = await fetch('/api/auth/account', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          type: 'email',
+          ...values,
+        }),
+      })
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        email?: string
+        error?: string
+        details?: Record<string, string[] | undefined>
+        message?: string
+      }
+
+      if (!response.ok) {
+        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
+          const firstMessage = messages?.[0]
+          if (!firstMessage) {
+            return
+          }
+
+          emailForm.setError(field as keyof EmailChangeInput, {
+            type: 'server',
+            message: firstMessage,
+          })
+        })
+
+        throw new Error(payload.error ?? 'E-Mail-Adresse konnte nicht aktualisiert werden.')
+      }
+
+      emailForm.reset({
+        email: payload.email ?? values.email,
+        current_password: '',
+      })
+      setShowCurrentEmailPassword(false)
+      setSuccess(payload.message ?? 'Deine E-Mail-Adresse wurde aktualisiert.')
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'E-Mail-Adresse konnte nicht aktualisiert werden.'
+      )
+    }
+  }
+
+  async function onSubmitPassword(values: PasswordChangeInput) {
+    try {
+      setError(null)
+      setSuccess(null)
+
+      const response = await fetch('/api/auth/account', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          type: 'password',
+          ...values,
+        }),
+      })
+
+      const payload = (await response.json().catch(() => ({}))) as {
+        error?: string
+        details?: Record<string, string[] | undefined>
+        message?: string
+      }
+
+      if (!response.ok) {
+        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
+          const firstMessage = messages?.[0]
+          if (!firstMessage) {
+            return
+          }
+
+          passwordForm.setError(field as keyof PasswordChangeInput, {
+            type: 'server',
+            message: firstMessage,
+          })
+        })
+
+        throw new Error(payload.error ?? 'Passwort konnte nicht aktualisiert werden.')
+      }
+
+      passwordForm.reset({
+        current_password: '',
+        new_password: '',
+        confirm_password: '',
+      })
+      setShowCurrentPassword(false)
+      setShowNewPassword(false)
+      setShowConfirmPassword(false)
+      setSuccess(payload.message ?? 'Dein Passwort wurde aktualisiert.')
+    } catch (submitError) {
+      setError(
+        submitError instanceof Error
+          ? submitError.message
+          : 'Passwort konnte nicht aktualisiert werden.'
+      )
     }
   }
 
@@ -906,6 +1045,230 @@ export function TenantProfileWorkspace({
                 </div>
               </div>
             </section>
+
+            {mode !== 'onboarding' && (
+              <>
+                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Login-E-Mail
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Diese Adresse verwendest du für den Login in deinen Workspace.
+                    </p>
+                  </div>
+                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                    <form
+                      className="grid gap-4 md:grid-cols-2"
+                      onSubmit={emailForm.handleSubmit(onSubmitEmail)}
+                    >
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="email">Neue E-Mail-Adresse</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          autoComplete="email"
+                          className={fieldClassName}
+                          disabled={emailForm.formState.isSubmitting}
+                          {...emailForm.register('email')}
+                        />
+                        {emailForm.formState.errors.email && (
+                          <p className="text-sm text-destructive">
+                            {emailForm.formState.errors.email.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="current_email_password">Aktuelles Passwort</Label>
+                        <div className="relative">
+                          <Input
+                            id="current_email_password"
+                            type={showCurrentEmailPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={emailForm.formState.isSubmitting}
+                            {...emailForm.register('current_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() =>
+                              setShowCurrentEmailPassword((value) => !value)
+                            }
+                            aria-label={
+                              showCurrentEmailPassword
+                                ? 'Aktuelles Passwort ausblenden'
+                                : 'Aktuelles Passwort anzeigen'
+                            }
+                          >
+                            {showCurrentEmailPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {emailForm.formState.errors.current_password && (
+                          <p className="text-sm text-destructive">
+                            {emailForm.formState.errors.current_password.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <p className="text-sm text-slate-500">
+                          Zur Sicherheit bestätigen wir die Änderung mit deinem aktuellen Passwort.
+                        </p>
+                        <Button
+                          type="submit"
+                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                          disabled={emailForm.formState.isSubmitting}
+                        >
+                          {emailForm.formState.isSubmitting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
+                          E-Mail-Adresse speichern
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </section>
+
+                <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+                  <div className="space-y-2">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                      Passwort
+                    </h2>
+                    <p className="text-sm text-slate-500">
+                      Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
+                    </p>
+                  </div>
+                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                    <form
+                      className="grid gap-4 md:grid-cols-2"
+                      onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
+                    >
+                      <div className="space-y-2 md:col-span-2">
+                        <Label htmlFor="current_password">Aktuelles Passwort</Label>
+                        <div className="relative">
+                          <Input
+                            id="current_password"
+                            type={showCurrentPassword ? 'text' : 'password'}
+                            autoComplete="current-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={passwordForm.formState.isSubmitting}
+                            {...passwordForm.register('current_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowCurrentPassword((value) => !value)}
+                            aria-label={
+                              showCurrentPassword
+                                ? 'Aktuelles Passwort ausblenden'
+                                : 'Aktuelles Passwort anzeigen'
+                            }
+                          >
+                            {showCurrentPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordForm.formState.errors.current_password && (
+                          <p className="text-sm text-destructive">
+                            {passwordForm.formState.errors.current_password.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="new_password">Neues Passwort</Label>
+                        <div className="relative">
+                          <Input
+                            id="new_password"
+                            type={showNewPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={passwordForm.formState.isSubmitting}
+                            {...passwordForm.register('new_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowNewPassword((value) => !value)}
+                            aria-label={
+                              showNewPassword
+                                ? 'Neues Passwort ausblenden'
+                                : 'Neues Passwort anzeigen'
+                            }
+                          >
+                            {showNewPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordForm.formState.errors.new_password && (
+                          <p className="text-sm text-destructive">
+                            {passwordForm.formState.errors.new_password.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="confirm_password">Neues Passwort bestätigen</Label>
+                        <div className="relative">
+                          <Input
+                            id="confirm_password"
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            className={`${fieldClassName} pr-12`}
+                            disabled={passwordForm.formState.isSubmitting}
+                            {...passwordForm.register('confirm_password')}
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            onClick={() => setShowConfirmPassword((value) => !value)}
+                            aria-label={
+                              showConfirmPassword
+                                ? 'Passwort-Bestätigung ausblenden'
+                                : 'Passwort-Bestätigung anzeigen'
+                            }
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4" />
+                            ) : (
+                              <Eye className="h-4 w-4" />
+                            )}
+                          </button>
+                        </div>
+                        {passwordForm.formState.errors.confirm_password && (
+                          <p className="text-sm text-destructive">
+                            {passwordForm.formState.errors.confirm_password.message}
+                          </p>
+                        )}
+                      </div>
+                      <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
+                        <p className="text-sm text-slate-500">
+                          Das neue Passwort muss mindestens 8 Zeichen lang sein.
+                        </p>
+                        <Button
+                          type="submit"
+                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                          disabled={passwordForm.formState.isSubmitting}
+                        >
+                          {passwordForm.formState.isSubmitting ? (
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          ) : null}
+                          Passwort aktualisieren
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
+                </section>
+              </>
+            )}
 
             {isAdmin && (
               <>
