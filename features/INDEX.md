@@ -26,14 +26,14 @@
 | PROJ-12 | AI Visibility Tool | Planned | [PROJ-12-ai-visibility.md](PROJ-12-ai-visibility.md) | 2026-03-26 |
 | PROJ-13 | Tenant Detail Management | Deployed | [PROJ-13-tenant-detail-management.md](PROJ-13-tenant-detail-management.md) | 2026-03-27 |
 | PROJ-14 | Stripe Setup & Basis-Abo | Deployed | [PROJ-14-stripe-basis-abo.md](PROJ-14-stripe-basis-abo.md) | 2026-03-27 |
-| PROJ-15 | Modul-Buchung & Verwaltung | In Progress | [PROJ-15-modul-buchung.md](PROJ-15-modul-buchung.md) | 2026-03-27 |
-| PROJ-16 | Owner Billing-Übersicht | In Progress | [PROJ-16-owner-billing-uebersicht.md](PROJ-16-owner-billing-uebersicht.md) | 2026-03-27 |
+| PROJ-15 | Modul-Buchung & Verwaltung | In Review | [PROJ-15-modul-buchung.md](PROJ-15-modul-buchung.md) | 2026-03-27 |
+| PROJ-16 | Owner Billing-Übersicht | In Review | [PROJ-16-owner-billing-uebersicht.md](PROJ-16-owner-billing-uebersicht.md) | 2026-03-27 |
 | PROJ-17 | Owner Audit Log | Planned | [PROJ-17-owner-audit-log.md](PROJ-17-owner-audit-log.md) | 2026-03-28 |
 | PROJ-18 | Tenant Status Modell | Planned | [PROJ-18-tenant-status-modell.md](PROJ-18-tenant-status-modell.md) | 2026-03-28 |
 | PROJ-19 | Profile & Onboarding Refactor | Planned | [PROJ-19-profile-onboarding-refactor.md](PROJ-19-profile-onboarding-refactor.md) | 2026-03-28 |
 | PROJ-20 | Tenant Soft Delete | Planned | [PROJ-20-tenant-soft-delete.md](PROJ-20-tenant-soft-delete.md) | 2026-03-28 |
-| PROJ-21 | Auth Hardening | Planned | [PROJ-21-auth-hardening.md](PROJ-21-auth-hardening.md) | 2026-03-28 |
-| PROJ-22 | API Authorization Tests | Planned | [PROJ-22-api-authorization-tests.md](PROJ-22-api-authorization-tests.md) | 2026-03-28 |
+| PROJ-21 | Auth Hardening | In Progress | [PROJ-21-auth-hardening.md](PROJ-21-auth-hardening.md) | 2026-03-28 |
+| PROJ-22 | API Authorization Tests | In Progress | [PROJ-22-api-authorization-tests.md](PROJ-22-api-authorization-tests.md) | 2026-03-28 |
 
 <!-- Add features above this line -->
 

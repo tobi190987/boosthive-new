@@ -1,6 +1,6 @@
 # PROJ-21: Auth Hardening
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-28
 
@@ -39,3 +39,61 @@ Die bestehende Auth-Strecke soll gezielt gehärtet werden. Fokus: bessere Rate L
 ## Implementation Notes
 - Bestehende Logik in `src/proxy.ts` und Auth-APIs weiterverwenden
 - 2FA kann in einem ersten Schritt Owner-only bleiben
+
+## Tech Design (Solution Architect)
+
+### Ist-Zustand Analyse
+
+| Bereich | Status |
+|---------|--------|
+| `checkRateLimit` auf Billing-Routen | ✅ vorhanden |
+| `checkRateLimit` auf Auth-Routen (Login, Reset, Invite) | ❌ fehlt komplett |
+| Owner-Login Rate Limit | ❌ fehlt |
+| `logSecurity` in `owner-auth.ts` | ✅ vorhanden |
+| `logSecurity` in `auth-guards.ts` | ❌ fehlt |
+| Session-Trennung Owner vs. Tenant (DB-basiert) | ✅ funktioniert bereits |
+| 2FA für Owner | ❌ fehlt |
+
+### Komponenten-Übersicht
+
+```
+Auth Hardening
++-- Rate Limiting (Erweiterung bestehender rate-limit.ts)
+|   +-- /api/auth/login                    →  10 Versuche / 15 Min / IP
+|   +-- /api/auth/owner/login              →  5 Versuche / 15 Min / IP (strenger)
+|   +-- /api/auth/password-reset/request   →  3 Versuche / 15 Min / IP (strengst)
+|   +-- /api/invitations/accept            →  10 Versuche / 15 Min / IP
++-- Security Logging (Erweiterung bestehender observability.ts)
+|   +-- auth-guards.ts: logSecurity bei 401/403
+|   +-- Alle Auth-Routen: logSecurity bei Rate Limit Hit
++-- Owner 2FA (Phase 2 — optional)
+|   +-- Enrollment-Seite: /owner/settings/security
+|   +-- TOTP via Supabase Auth (eingebaut, kein extra Package)
+|   +-- Middleware-Check nach Owner-Login
++-- Session-Trennung (Review)
+    +-- Bestehende DB-basierte Trennung bleibt (ist bereits sicher)
+    +-- Tenant-Status-Check in requireTenantUser bleibt (blockt pausierten Tenant)
+```
+
+### Datenmodell
+
+Kein neues Datenbankschema nötig. Bestehende Tabellen:
+- `platform_admins` → Owner-Erkennung
+- `tenant_members` + `status` Feld → Mitgliedschaft + Sperrung
+- `tenants` → Tenant-Status (pausiert/gesperrt/archiviert)
+- Supabase Auth TOTP → für 2FA eingebaut, kein eigenes Schema
+
+Rate Limit Store bleibt **in-memory** (wie bisher, gilt pro Serverless-Instanz).
+
+### Tech-Entscheidungen
+
+| Entscheidung | Warum |
+|---|---|
+| In-memory Rate Limit beibehalten | Kein neues Package, kein Redis — reicht für MVP |
+| Supabase nativer TOTP für 2FA | In Supabase Auth eingebaut, kein Drittanbieter nötig |
+| DB-basierte Session-Trennung beibehalten | `requireOwner` und `requireTenantUser` sind DB-isoliert |
+| 2FA als Phase 2 | Rate Limiting + Logging hat höheren ROI und schnellere Umsetzung |
+
+### Neue Dependencies
+
+Keine. Alle Änderungen nutzen bestehende Infrastruktur.
