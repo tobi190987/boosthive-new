@@ -21,6 +21,7 @@ export default async function OnboardingPage() {
         mode="onboarding"
         initialData={{
           role: context.membership.role,
+          email: context.user.email,
           tenantName: context.tenant.name,
           tenantLogoUrl: context.tenant.logoUrl,
           firstName: context.user.firstName ?? '',
