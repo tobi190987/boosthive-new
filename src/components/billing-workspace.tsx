@@ -582,13 +582,13 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                         Wird gekuendigt...
                       </>
                     ) : (
-                      'Abo kuendigen'
+                      'Abo kündigen'
                     )}
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="rounded-[24px]">
                   <AlertDialogHeader>
-                    <AlertDialogTitle>Abo wirklich kuendigen?</AlertDialogTitle>
+                    <AlertDialogTitle>Abo wirklich kündigen?</AlertDialogTitle>
                     <AlertDialogDescription>
                       Dein Zugang bleibt bis zum Ende der aktuellen Abrechnungsperiode
                       ({formatDate(billing.subscription_period_end)}) bestehen. Danach verlierst
@@ -601,7 +601,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                       className="rounded-full bg-red-600 text-white hover:bg-red-700"
                       onClick={() => void handleCancel()}
                     >
-                      Ja, kuendigen
+                      Ja, kündigen
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>

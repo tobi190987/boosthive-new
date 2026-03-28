@@ -132,10 +132,17 @@ export async function GET(request: NextRequest) {
       try {
         const price = await stripe.prices.retrieve(priceId)
         const rec = price.recurring
+        const intervalUnitDe = (unit: string) => {
+          if (unit === 'day') return 'Tag'
+          if (unit === 'week') return 'Woche'
+          if (unit === 'month') return 'Monat'
+          if (unit === 'year') return 'Jahr'
+          return unit
+        }
         const intervalLabel = rec
           ? rec.interval_count === 4 && rec.interval === 'week'
             ? '4 Wochen'
-            : `${rec.interval_count} ${rec.interval}`
+            : `${rec.interval_count} ${intervalUnitDe(rec.interval)}`
           : '4 Wochen'
         plan = {
           name: 'Basis-Plan',
