@@ -3,6 +3,10 @@ import { requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 
+function isMissingColumnError(error: { code?: string; message?: string } | null | undefined) {
+  return error?.code === '42703'
+}
+
 /**
  * GET /api/tenant/billing
  * Returns the current billing / subscription state for the tenant.
@@ -10,6 +14,7 @@ import { stripe } from '@/lib/stripe'
  */
 export async function GET(request: NextRequest) {
   const tenantIdFromHeader = request.headers.get('x-tenant-id')
+  const tenantSlugFromHeader = request.headers.get('x-tenant-slug')
   if (!tenantIdFromHeader) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
   }
@@ -20,13 +25,41 @@ export async function GET(request: NextRequest) {
 
   const supabaseAdmin = createAdminClient()
 
-  const { data: tenant, error: tenantError } = await supabaseAdmin
+  let { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
     .select(
       'stripe_customer_id, stripe_subscription_id, subscription_status, subscription_period_end'
     )
     .eq('id', tenantId)
-    .single()
+    .maybeSingle()
+
+  // Local dev can inject fallback tenant IDs for arbitrary *.localhost hosts.
+  // If that happens, prefer resolving the real tenant by the verified slug header.
+  if ((!tenant || tenantError) && tenantSlugFromHeader) {
+    const fallbackLookup = await supabaseAdmin
+      .from('tenants')
+      .select(
+        'stripe_customer_id, stripe_subscription_id, subscription_status, subscription_period_end'
+      )
+      .eq('slug', tenantSlugFromHeader)
+      .maybeSingle()
+
+    tenant = fallbackLookup.data
+    tenantError = fallbackLookup.error
+  }
+
+  if (isMissingColumnError(tenantError)) {
+    console.warn(
+      '[GET /api/tenant/billing] Stripe-/Subscription-Spalten fehlen lokal. Liefere Fallback-Billingstatus.'
+    )
+
+    return NextResponse.json({
+      subscription_status: 'none',
+      subscription_period_end: null,
+      payment_method: null,
+      plan: null,
+    })
+  }
 
   if (tenantError || !tenant) {
     console.error('[GET /api/tenant/billing] Tenant nicht gefunden:', tenantError)

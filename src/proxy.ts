@@ -66,7 +66,10 @@ const STATE_CHANGING_METHODS = new Set(['POST', 'PATCH', 'PUT', 'DELETE'])
 
 function isAllowedOrigin(origin: string): boolean {
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'boost-hive.de'
-  if (origin === 'http://localhost:3000') return true
+  const localDomain = process.env.LOCAL_DOMAIN ?? 'localhost'
+
+  if (origin === `http://${localDomain}:3000`) return true
+  if (origin.startsWith('http://') && origin.endsWith(`.${localDomain}:3000`)) return true
   if (origin === `https://${rootDomain}`) return true
   if (origin === `https://www.${rootDomain}`) return true
   // Alle Subdomains erlauben (z.B. agentur.boost-hive.de)
