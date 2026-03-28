@@ -11,6 +11,7 @@ export interface SeoTechnicalCheck {
   label: string
   ok: boolean
   value?: string
+  description?: string
 }
 
 export interface SeoTechnicalResult {
@@ -69,11 +70,46 @@ const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
 function stripHtml(text: string) {
-  return text.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()
+  return decodeHtmlEntities(text.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim()
+}
+
+function decodeHtmlEntities(text: string) {
+  const namedEntities: Record<string, string> = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+    ndash: '–',
+    mdash: '—',
+    hellip: '…',
+    laquo: '«',
+    raquo: '»',
+    copy: '©',
+    reg: '®',
+    trade: '™',
+  }
+
+  return text.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (entity, value: string) => {
+    const normalized = value.toLowerCase()
+
+    if (normalized.startsWith('#x')) {
+      const codePoint = Number.parseInt(normalized.slice(2), 16)
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity
+    }
+
+    if (normalized.startsWith('#')) {
+      const codePoint = Number.parseInt(normalized.slice(1), 10)
+      return Number.isFinite(codePoint) ? String.fromCodePoint(codePoint) : entity
+    }
+
+    return namedEntities[normalized] ?? entity
+  })
 }
 
 function extractTitle(html: string) {
-  return html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? ''
+  return decodeHtmlEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.trim() ?? '')
 }
 
 function extractMetaDescription(html: string) {
@@ -84,7 +120,7 @@ function extractMetaDescription(html: string) {
     /<meta[^>]+content=["']([^"']*)["'][^>]+name=["']description["']/i
   )
 
-  return (firstMatch?.[1] ?? secondMatch?.[1] ?? '').trim()
+  return decodeHtmlEntities((firstMatch?.[1] ?? secondMatch?.[1] ?? '').trim())
 }
 
 function extractHeadings(html: string, level: 'h1' | 'h2') {
@@ -336,13 +372,41 @@ export function buildPageAnalysis(url: string, html: string): SeoPageResult {
 
 export async function runTechnicalSeoCheck(url: string, html: string): Promise<SeoTechnicalResult> {
   const checks: SeoTechnicalCheck[] = [
-    { label: 'HTTPS', ok: url.startsWith('https://') },
-    { label: 'Viewport Meta', ok: /<meta[^>]+name=["']viewport["']/i.test(html) },
-    { label: 'Charset definiert', ok: /<meta[^>]+charset/i.test(html) },
-    { label: 'Favicon vorhanden', ok: /<link[^>]+rel=["'][^"']*icon[^"']*["']/i.test(html) },
-    { label: 'Strukturierte Daten', ok: /application\/ld\+json/i.test(html) },
-    { label: 'Hreflang Tags', ok: /hreflang=/i.test(html) },
-    { label: 'Robots Meta', ok: /<meta[^>]+name=["']robots["']/i.test(html) },
+    {
+      label: 'HTTPS',
+      ok: url.startsWith('https://'),
+      description: 'Prüft, ob die Seite verschlüsselt per HTTPS ausgeliefert wird.',
+    },
+    {
+      label: 'Viewport Meta',
+      ok: /<meta[^>]+name=["']viewport["']/i.test(html),
+      description: 'Wichtig für saubere Darstellung und korrekte Skalierung auf mobilen Geräten.',
+    },
+    {
+      label: 'Charset definiert',
+      ok: /<meta[^>]+charset/i.test(html),
+      description: 'Legt die Zeichenkodierung fest, damit Umlaute und Sonderzeichen korrekt erscheinen.',
+    },
+    {
+      label: 'Favicon vorhanden',
+      ok: /<link[^>]+rel=["'][^"']*icon[^"']*["']/i.test(html),
+      description: 'Hilft bei Wiedererkennbarkeit in Browser-Tabs, Bookmarks und Suchergebnissen.',
+    },
+    {
+      label: 'Strukturierte Daten',
+      ok: /application\/ld\+json/i.test(html),
+      description: 'Schema-Markup erleichtert Suchmaschinen das Verstehen der Seiteninhalte.',
+    },
+    {
+      label: 'Hreflang Tags',
+      ok: /hreflang=/i.test(html),
+      description: 'Zeigt Suchmaschinen die passenden Sprach- oder Länderversionen einer Seite.',
+    },
+    {
+      label: 'Robots Meta',
+      ok: /<meta[^>]+name=["']robots["']/i.test(html),
+      description: 'Steuert, ob und wie Suchmaschinen die Seite indexieren oder Links verfolgen sollen.',
+    },
   ]
 
   let lighthouseScores: SeoLighthouseScores | null = null
