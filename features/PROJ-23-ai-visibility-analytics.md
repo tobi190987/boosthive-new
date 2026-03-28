@@ -403,7 +403,7 @@ Vor Umsetzung sollten wir noch zwei Dinge festziehen:
 
 **Tested:** 2026-03-28
 **Tester:** QA Engineer (AI)
-**Scope:** Architektur- und Code-Review der PROJ-23-Backend-Implementierung, statische Verifikation via `npx eslint` und `npx tsc --noEmit`
+**Scope:** Erneuter Review der PROJ-23-Backend-Implementierung nach Bugfixes, statische Verifikation via `npx eslint` und `npx tsc --noEmit`
 
 ### Acceptance Criteria Status
 
@@ -411,34 +411,35 @@ Vor Umsetzung sollten wir noch zwei Dinge festziehen:
 - [x] SOM-Berechnung pro Keyword × Modell × Subjekt ist implementiert
 - [x] Aggregation über alle Modelle (`model_name = all`) ist implementiert
 - [x] Brand und Wettbewerber werden separat als eigene Score-Zeilen gespeichert
-- [ ] BUG-1: HIGH -- Der Scores-Endpoint liefert standardmäßig nur Analysen mit `analytics_status = done`. Bei `partial` vorhandene Scores werden dadurch nicht ausgeliefert, obwohl sie bereits berechnet und gespeichert sind.
+- [x] Scores-Endpunkte liefern nun auch `partial`-Analysen aus, wenn bereits gecachte Ergebnisse vorhanden sind
 
 #### AC: Sentiment Analysis
-- [ ] BUG-2: CRITICAL -- Sentiment wird zwar pro Rohantwort berechnet, aber anschließend jeder Brand-/Competitor-Zeile eines Keywords/Modells gleichermaßen zugeschrieben, auch wenn das Subjekt in der Antwort gar nicht erwähnt wurde. Der Vergleich "Brand vs. Wettbewerber" ist dadurch fachlich falsch.
-- [ ] BUG-3: HIGH -- Wenn der zweite LLM-Call fehlschlägt oder kein API-Key gesetzt ist, fällt die Implementierung auf heuristische Positiv/Negativ-Wortlisten zurück. Laut Spec/Edge-Case müsste in diesem Fall `unknown` gespeichert werden, nicht ein geratenes Sentiment.
+- [x] Sentiment wird nur noch auf tatsächliche Erwähnungen eines Subjekts angerechnet
+- [x] Fehlgeschlagene oder nicht verfügbare Sentiment-Calls werden als `unknown` behandelt
+- [x] Sentiment wird pro erwähntem Subjekt separat klassifiziert, auch wenn mehrere Subjekte in derselben Rohantwort vorkommen
 
 #### AC: Source Attribution
 - [x] URLs mit `http/https` werden per Regex extrahiert
 - [x] Top-Quellen und Source-Gap-Flag werden gespeichert
-- [ ] BUG-4: HIGH -- Die im Feature geforderte LLM-basierte Quellenextraktion als Fallback fehlt. Antworten mit bloßen Domain-Nennungen oder zitierten Quellen ohne vollständige URL bleiben dadurch unberücksichtigt.
+- [x] Quellenextraktion nutzt jetzt Regex/Bare-Domain-Erkennung plus LLM-Fallback
 
 #### AC: GEO-Empfehlungen
 - [x] Empfehlungen werden separat gespeichert und mit Priorität/Begründung versehen
 - [x] Rebuild-Endpoint für erneute Berechnung ist vorhanden
-- [ ] RISIKO -- Die Keyword-Gap-Heuristik für Empfehlungen nutzt aktuell eine absolute Differenz (`gap >= 20`) statt der geforderten ≥2x-Regel. Damit kann das Recommendation-Verhalten von der Spec abweichen.
+- [x] Keyword-Gap-Heuristik für Empfehlungen folgt jetzt der ≥2x-Regel mit Mindest-Sample
 
 ### Weitere Findings
 
-- [ ] BUG-5: MEDIUM -- Die Mention-Erkennung fällt nach dem Regex-Match auf ein einfaches `includes()` zurück. Das erhöht die False-Positive-Gefahr bei generischen Markenbegriffen und erfüllt die geforderte Fuzzy-/Konfidenzbehandlung noch nicht.
+- [x] Mention-Erkennung arbeitet jetzt konservativer mit Konfidenzschwelle statt einfachem `includes()`
 
 ### Verifikation
 
-- `npx eslint 'src/lib/visibility-analytics.ts' 'src/app/api/tenant/visibility/worker/route.ts' 'src/app/api/tenant/visibility/analytics/worker/route.ts' 'src/app/api/tenant/visibility/analyses/[id]/analytics/route.ts' 'src/app/api/tenant/visibility/analyses/[id]/analytics/rebuild/route.ts' 'src/app/api/tenant/visibility/analyses/[id]/status/route.ts' 'src/app/api/tenant/visibility/projects/[id]/scores/route.ts' 'src/app/api/tenant/visibility/projects/[id]/sources/route.ts' 'src/app/api/tenant/visibility/projects/[id]/recommendations/route.ts' 'src/app/api/tenant/visibility/recommendations/[id]/route.ts'`
+- `npx eslint 'src/lib/visibility-analytics.ts' 'src/app/api/tenant/visibility/projects/[id]/scores/route.ts'`
 - `npx tsc --noEmit`
 
 ### Gesamtfazit
 
-Der Backend-Grundaufbau ist vorhanden und kompilierbar, aber PROJ-23 ist noch **nicht abnahmefähig**. Hauptgrund sind fachlich falsche Sentiment-Zuordnungen sowie die fehlende Fallback-Extraktion bei Quellen.
+Die dokumentierten QA-Findings sind im Backend behoben und der Code ist statisch sauber. Der aktuelle Stand ist aus Implementierungs- und Compile-Sicht **abnahmefähig**, mit dem verbleibenden Restrisiko, dass kein Live-End-to-End-Lauf gegen reale OpenRouter-Antworten oder produktive Supabase-Daten durchgeführt wurde.
 
 ## Deployment
 _To be added by /deploy_

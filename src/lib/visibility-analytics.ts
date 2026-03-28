@@ -41,6 +41,8 @@ interface SubjectMention {
   type: SubjectType
   name: string
   mentioned: boolean
+  confidence: number
+  sentiment: Record<SentimentLabel, number>
 }
 
 interface SourceExtraction {
@@ -51,7 +53,6 @@ interface SourceExtraction {
 interface NormalizedResult {
   keyword: string
   modelName: string
-  sentiments: Record<SentimentLabel, number>
   subjectMentions: SubjectMention[]
   sources: SourceExtraction[]
 }
@@ -295,47 +296,86 @@ async function normalizeResults(
     if (row.error_flag || !row.response.trim()) continue
 
     const subjectMentions = [
-      {
-        type: 'brand' as const,
-        name: project.brand_name,
-        mentioned: detectMention(row.response, project.brand_name),
-      },
-      ...competitors.map((competitor) => ({
-        type: 'competitor' as const,
-        name: competitor.name,
-        mentioned: detectMention(row.response, competitor.name),
-      })),
+      createSubjectMention('brand', project.brand_name, row.response),
+      ...competitors.map((competitor) =>
+        createSubjectMention('competitor', competitor.name, row.response)
+      ),
     ]
+
+    const subjectMentionsWithSentiment = await Promise.all(
+      subjectMentions.map(async (subject) => ({
+        ...subject,
+        sentiment: subject.mentioned
+          ? await classifySentimentForSubject(row.response, subject.name)
+          : labelToDistribution('unknown'),
+      }))
+    )
 
     normalized.push({
       keyword: row.keyword,
       modelName: row.model_name,
-      sentiments: await classifySentiment(row.response),
-      subjectMentions,
-      sources: extractSources(row.response),
+      subjectMentions: subjectMentionsWithSentiment,
+      sources: await extractSources(row.response),
     })
   }
 
   return normalized
 }
 
-function detectMention(response: string, subjectName: string): boolean {
-  const escaped = escapeRegExp(subjectName.trim())
-  if (!escaped) return false
-  const pattern = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i')
-  if (pattern.test(response)) return true
-
-  return response.toLowerCase().includes(subjectName.trim().toLowerCase())
+function createSubjectMention(
+  type: SubjectType,
+  subjectName: string,
+  response: string
+): SubjectMention {
+  const confidence = computeMentionConfidence(response, subjectName)
+  return {
+    type,
+    name: subjectName,
+    confidence,
+    mentioned: confidence >= 0.82,
+    sentiment: labelToDistribution('unknown'),
+  }
 }
 
-async function classifySentiment(response: string): Promise<Record<SentimentLabel, number>> {
+function computeMentionConfidence(response: string, subjectName: string): number {
+  const trimmedSubject = subjectName.trim()
+  if (!trimmedSubject) return 0
+
+  const escaped = escapeRegExp(trimmedSubject)
+  const pattern = new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, 'i')
+  if (pattern.test(response)) return 1
+
+  const normalizedResponse = normalizeText(response)
+  const normalizedSubject = normalizeText(trimmedSubject)
+  if (!normalizedResponse || !normalizedSubject) return 0
+
+  if (normalizedResponse.includes(normalizedSubject)) return 0.9
+
+  const subjectTokens = normalizedSubject.split(' ').filter(Boolean)
+  const responseTokens = new Set(normalizedResponse.split(' ').filter(Boolean))
+  const matchedTokens = subjectTokens.filter((token) => responseTokens.has(token))
+  const coverage = matchedTokens.length / Math.max(subjectTokens.length, 1)
+
+  if (subjectTokens.length > 1 && coverage === 1) return 0.84
+  if (subjectTokens.length === 1 && subjectTokens[0].length >= 5 && responseTokens.has(subjectTokens[0])) {
+    return 0.88
+  }
+
+  return 0
+}
+
+async function classifySentimentForSubject(
+  response: string,
+  subjectName: string
+): Promise<Record<SentimentLabel, number>> {
   const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) {
-    return heuristicSentiment(response)
+    return labelToDistribution('unknown')
   }
 
   const prompt = [
-    'Bewerte das Sentiment der folgenden KI-Antwort insgesamt.',
+    `Bewerte das Sentiment ausschliesslich fuer die Erwaehnung von "${subjectName}" in der folgenden KI-Antwort.`,
+    'Ignoriere die Bewertung anderer Marken oder Wettbewerber in derselben Antwort.',
     'Gib nur JSON im Format {"label":"positive|neutral|negative|unknown"} zurueck.',
     'Antwort:',
     response.slice(0, 4000),
@@ -354,21 +394,7 @@ async function classifySentiment(response: string): Promise<Record<SentimentLabe
     }
   }
 
-  return heuristicSentiment(response)
-}
-
-function heuristicSentiment(response: string): Record<SentimentLabel, number> {
-  const lower = response.toLowerCase()
-  const positiveSignals = ['empfehlenswert', 'stark', 'gut', 'beliebt', 'zuverlaessig', 'hilfreich']
-  const negativeSignals = ['schwach', 'problem', 'schlecht', 'kritik', 'limitiert', 'teuer']
-
-  const positive = positiveSignals.filter((token) => lower.includes(token)).length
-  const negative = negativeSignals.filter((token) => lower.includes(token)).length
-
-  if (positive === 0 && negative === 0) return labelToDistribution('neutral')
-  if (positive >= negative + 1) return labelToDistribution('positive')
-  if (negative >= positive + 1) return labelToDistribution('negative')
-  return labelToDistribution('neutral')
+  return labelToDistribution('unknown')
 }
 
 function labelToDistribution(label: SentimentLabel): Record<SentimentLabel, number> {
@@ -387,22 +413,43 @@ function normalizeSentimentLabel(value: unknown): SentimentLabel {
   return 'unknown'
 }
 
-function extractSources(response: string): SourceExtraction[] {
-  const matches = response.match(/https?:\/\/[^\s)>\]]+/gi) ?? []
+async function extractSources(response: string): Promise<SourceExtraction[]> {
   const unique = new Map<string, SourceExtraction>()
 
-  for (const match of matches) {
-    try {
-      const parsed = new URL(match.replace(/[.,;]+$/, ''))
-      const domain = parsed.hostname.replace(/^www\./, '')
-      if (!domain) continue
-      unique.set(`${domain}:${parsed.href}`, { domain, url: parsed.href })
-    } catch {
-      continue
-    }
+  const urlMatches = response.match(/https?:\/\/[^\s)>\]]+/gi) ?? []
+  for (const match of urlMatches) {
+    addSourceCandidate(unique, match)
+  }
+
+  const bareDomainMatches =
+    response.match(/\b(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[^\s)>]*)?/gi) ?? []
+  for (const match of bareDomainMatches) {
+    if (match.startsWith('http://') || match.startsWith('https://')) continue
+    addSourceCandidate(unique, `https://${match}`)
+  }
+
+  if (unique.size > 0) return Array.from(unique.values())
+
+  const apiKey = process.env.OPENROUTER_API_KEY
+  if (!apiKey) return []
+
+  const llmSources = await extractSourcesWithLlm(apiKey, response)
+  for (const source of llmSources) {
+    unique.set(`${source.domain}:${source.url ?? ''}`, source)
   }
 
   return Array.from(unique.values())
+}
+
+function addSourceCandidate(unique: Map<string, SourceExtraction>, candidate: string): void {
+  try {
+    const parsed = new URL(candidate.replace(/[.,;]+$/, ''))
+    const domain = parsed.hostname.replace(/^www\./, '')
+    if (!domain) return
+    unique.set(`${domain}:${parsed.href}`, { domain, url: parsed.href })
+  } catch {
+    return
+  }
 }
 
 function buildScoreRows(
@@ -441,10 +488,12 @@ function buildScoreRows(
 
       current.responseCount += 1
       if (subject.mentioned) current.mentionCount += 1
-      current.positive += row.sentiments.positive
-      current.neutral += row.sentiments.neutral
-      current.negative += row.sentiments.negative
-      current.unknown += row.sentiments.unknown
+      if (subject.mentioned) {
+        current.positive += subject.sentiment.positive
+        current.neutral += subject.sentiment.neutral
+        current.negative += subject.sentiment.negative
+        current.unknown += subject.sentiment.unknown
+      }
       groups.set(key, current)
     }
   }
@@ -470,14 +519,15 @@ function buildScoreRows(
     const current = aggregateGroups.get(key) ?? toAggregateSeed(row.keyword, row.subject_type, row.subject_name)
     current.mentionCount += row.mention_count
     current.responseCount += row.response_count
-    current.positive += row.sentiment_positive * row.response_count
-    current.neutral += row.sentiment_neutral * row.response_count
-    current.negative += row.sentiment_negative * row.response_count
-    current.unknown += row.sentiment_unknown * row.response_count
+    current.positive += row.sentiment_positive * row.mention_count
+    current.neutral += row.sentiment_neutral * row.mention_count
+    current.negative += row.sentiment_negative * row.mention_count
+    current.unknown += row.sentiment_unknown * row.mention_count
     aggregateGroups.set(key, current)
   }
 
   for (const aggregate of aggregateGroups.values()) {
+    const mentionBase = Math.max(aggregate.mentionCount, 1)
     rows.push(
       toScoreRow(analysis, project, {
         keyword: aggregate.keyword,
@@ -486,10 +536,10 @@ function buildScoreRows(
         subjectName: aggregate.subjectName,
         mentionCount: aggregate.mentionCount,
         responseCount: aggregate.responseCount,
-        positive: aggregate.positive / Math.max(aggregate.responseCount, 1),
-        neutral: aggregate.neutral / Math.max(aggregate.responseCount, 1),
-        negative: aggregate.negative / Math.max(aggregate.responseCount, 1),
-        unknown: aggregate.unknown / Math.max(aggregate.responseCount, 1),
+        positive: aggregate.positive / mentionBase,
+        neutral: aggregate.neutral / mentionBase,
+        negative: aggregate.negative / mentionBase,
+        unknown: aggregate.unknown / mentionBase,
       })
     )
   }
@@ -529,6 +579,7 @@ function toScoreRow(
   }
 ): ScoreRow {
   const responseCount = Math.max(input.responseCount, 1)
+  const mentionCount = Math.max(input.mentionCount, 0)
   return {
     tenant_id: analysis.tenant_id,
     analysis_id: analysis.id,
@@ -540,10 +591,10 @@ function toScoreRow(
     mention_count: input.mentionCount,
     response_count: input.responseCount,
     share_of_model: round2((input.mentionCount / responseCount) * 100),
-    sentiment_positive: round2(input.positive / responseCount),
-    sentiment_neutral: round2(input.neutral / responseCount),
-    sentiment_negative: round2(input.negative / responseCount),
-    sentiment_unknown: round2(input.unknown / responseCount),
+    sentiment_positive: mentionCount > 0 ? round2(input.positive / mentionCount) : 0,
+    sentiment_neutral: mentionCount > 0 ? round2(input.neutral / mentionCount) : 0,
+    sentiment_negative: mentionCount > 0 ? round2(input.negative / mentionCount) : 0,
+    sentiment_unknown: mentionCount > 0 ? round2(input.unknown / mentionCount) : 0,
     geo_score: null,
   }
 }
@@ -762,13 +813,25 @@ function buildHeuristicRecommendations(
         keyword: brandRow.keyword,
         gap: competitorBest.share_of_model - brandRow.share_of_model,
         competitorName: competitorBest.subject_name,
+        competitorSom: competitorBest.share_of_model,
+        brandSom: brandRow.share_of_model,
+        responseCount: brandRow.response_count,
       }
     })
-    .filter((item): item is { keyword: string; gap: number; competitorName: string } => !!item)
+    .filter((item): item is {
+      keyword: string
+      gap: number
+      competitorName: string
+      competitorSom: number
+      brandSom: number
+      responseCount: number
+    } => !!item)
     .sort((a, b) => b.gap - a.gap)
 
-  const topGap = keywordGaps[0]
-  if (topGap && topGap.gap >= 20) {
+  const topGap = keywordGaps.find(
+    (item) => item.responseCount >= 5 && item.competitorSom >= Math.max(item.brandSom * 2, 1)
+  )
+  if (topGap) {
     recommendations.push({
       priority: 'high',
       title: `Content-Luecke bei "${topGap.keyword}" schliessen`,
@@ -901,6 +964,60 @@ function safeJsonParse(value: string): Record<string, unknown> | null {
   } catch {
     return null
   }
+}
+
+async function extractSourcesWithLlm(
+  apiKey: string,
+  response: string
+): Promise<SourceExtraction[]> {
+  const prompt = [
+    'Extrahiere genannte oder zitierte Quellen aus der folgenden KI-Antwort.',
+    'Gib nur JSON im Format {"sources":[{"domain":"example.com","url":"https://example.com/optional"}]}.',
+    'Wenn keine Quellen genannt werden, gib {"sources":[]} zurueck.',
+    response.slice(0, 4000),
+  ].join('\n')
+
+  try {
+    const payload = await callOpenRouter(apiKey, 'openai/gpt-4o-mini', prompt, 250)
+    const parsed = safeJsonParse(payload.text)
+    const sources = Array.isArray(parsed?.sources) ? parsed.sources : []
+    return sources
+      .map((item) => normalizeSourceExtraction(item))
+      .filter((item): item is SourceExtraction => item !== null)
+  } catch {
+    return []
+  }
+}
+
+function normalizeSourceExtraction(value: unknown): SourceExtraction | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  const record = value as Record<string, unknown>
+  const rawDomain = typeof record.domain === 'string' ? record.domain.trim().toLowerCase() : ''
+  const rawUrl = typeof record.url === 'string' ? record.url.trim() : ''
+  const domain = rawDomain.replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, '')
+
+  if (!domain) return null
+
+  let url: string | null = null
+  if (rawUrl) {
+    try {
+      url = new URL(rawUrl).href
+    } catch {
+      url = `https://${domain}`
+    }
+  }
+
+  return { domain, url }
+}
+
+function normalizeText(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
 }
 
 function readSubjectType(value: Json): SubjectType | null {

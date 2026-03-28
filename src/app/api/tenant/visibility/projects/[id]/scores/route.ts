@@ -39,7 +39,7 @@ export async function GET(
       .select('id')
       .eq('tenant_id', tenantId)
       .eq('project_id', id)
-      .eq('analytics_status', 'done')
+      .in('analytics_status', ['done', 'partial'])
       .order('completed_at', { ascending: false })
       .limit(1)
       .maybeSingle()
