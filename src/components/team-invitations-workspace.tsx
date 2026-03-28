@@ -3,14 +3,18 @@
 import { useEffect, useState } from 'react'
 import { BellRing, CheckCircle2, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
 import { InviteDialog, type InvitationDraft } from '@/components/invite-dialog'
-import { InvitationTable, type InvitationRecord } from '@/components/invitation-table'
+import { TeamMemberTable, type TeamMemberRecord } from '@/components/team-member-table'
 import { Badge } from '@/components/ui/badge'
 
 interface TeamInvitationsWorkspaceProps {
   tenantSlug: string
 }
 
-function formatInvitationDate(value: string) {
+function formatDateTime(value: string | null) {
+  if (!value) {
+    return null
+  }
+
   const date = new Date(value)
 
   if (Number.isNaN(date.getTime())) {
@@ -23,53 +27,56 @@ function formatInvitationDate(value: string) {
   }).format(date)
 }
 
-function normalizeInvitation(invitation: InvitationRecord): InvitationRecord {
+function normalizeEntry(entry: TeamMemberRecord): TeamMemberRecord {
   return {
-    ...invitation,
-    invitedAt: formatInvitationDate(invitation.invitedAt),
+    ...entry,
+    invitedAt: formatDateTime(entry.invitedAt),
+    joinedAt: formatDateTime(entry.joinedAt),
   }
 }
 
 export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspaceProps) {
-  const [invitations, setInvitations] = useState<InvitationRecord[]>([])
+  const [entries, setEntries] = useState<TeamMemberRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activity, setActivity] = useState(
-    'Lade Einladungen und Status direkt aus der API.'
-  )
+  const [activity, setActivity] = useState('Lade Teammitglieder und offene Einladungen direkt aus der API.')
   const [error, setError] = useState<string | null>(null)
+  const [pendingAction, setPendingAction] = useState<{
+    id: string
+    type: 'delete' | 'resend'
+  } | null>(null)
 
   useEffect(() => {
     let isActive = true
 
-    async function loadInvitations() {
+    async function loadEntries() {
       try {
         setIsLoading(true)
         setError(null)
 
-        const response = await fetch('/api/tenant/invitations', {
+        const response = await fetch('/api/tenant/members', {
           method: 'GET',
           credentials: 'include',
         })
         const payload = await response.json().catch(() => ({}))
 
         if (!response.ok) {
-          throw new Error(payload.error ?? 'Einladungen konnten nicht geladen werden.')
+          throw new Error(payload.error ?? 'Teamübersicht konnte nicht geladen werden.')
         }
 
         if (!isActive) return
 
-        setInvitations(
-          Array.isArray(payload.invitations)
-            ? payload.invitations.map(normalizeInvitation)
+        setEntries(
+          Array.isArray(payload.entries)
+            ? payload.entries.map(normalizeEntry)
             : []
         )
-        setActivity('Echte API-Anbindung aktiv: Einladungsliste und Status stammen aus dem Backend.')
+        setActivity('Echte API-Anbindung aktiv: Mitglieder und offene Einladungen stammen direkt aus dem Backend.')
       } catch (loadError) {
         if (!isActive) return
         setError(
           loadError instanceof Error
             ? loadError.message
-            : 'Einladungen konnten nicht geladen werden.'
+            : 'Teamübersicht konnte nicht geladen werden.'
         )
       } finally {
         if (isActive) {
@@ -78,7 +85,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       }
     }
 
-    void loadInvitations()
+    void loadEntries()
 
     return () => {
       isActive = false
@@ -105,59 +112,109 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
     }
 
     if (payload.invitation) {
-      setInvitations((current) => [normalizeInvitation(payload.invitation), ...current])
+      const newEntry = normalizeEntry({
+        id: payload.invitation.id,
+        kind: 'invitation',
+        userId: null,
+        email: payload.invitation.email,
+        name: payload.invitation.name ?? null,
+        role: payload.invitation.role,
+        status: 'pending',
+        invitedAt: payload.invitation.invitedAt,
+        joinedAt: null,
+      } satisfies TeamMemberRecord)
+
+      setEntries((current) => {
+        const filtered = current.filter(
+          (entry) =>
+            !(
+              entry.kind === 'invitation' &&
+              entry.email?.toLowerCase() === newEntry.email?.toLowerCase()
+            )
+        )
+        return [newEntry, ...filtered]
+      })
     }
 
     setActivity(
-      `Einladung an ${draft.email} als ${draft.role === 'admin' ? 'Admin' : 'Member'} wurde versendet.`
+      `Einladung an ${draft.email} als ${draft.role === 'admin' ? 'Admin' : 'User'} wurde versendet.`
     )
   }
 
   async function handleResend(id: string) {
     setError(null)
+    setPendingAction({ id, type: 'resend' })
 
-    const response = await fetch(`/api/tenant/invitations/${id}/resend`, {
-      method: 'POST',
-      credentials: 'include',
-    })
-    const payload = await response.json().catch(() => ({}))
+    try {
+      const response = await fetch(`/api/tenant/invitations/${id}/resend`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const payload = await response.json().catch(() => ({}))
 
-    if (!response.ok) {
-      setError(payload.error ?? 'Einladung konnte nicht erneut versendet werden.')
-      return
-    }
+      if (!response.ok) {
+        setError(payload.error ?? 'Einladung konnte nicht erneut versendet werden.')
+        return
+      }
 
-    if (payload.invitation) {
-      setInvitations((current) =>
-        current.map((entry) =>
-          entry.id === id ? normalizeInvitation(payload.invitation) : entry
+      if (payload.invitation) {
+        const nextEntry = normalizeEntry({
+          id: payload.invitation.id,
+          kind: 'invitation',
+          userId: null,
+          email: payload.invitation.email,
+          name: payload.invitation.name ?? null,
+          role: payload.invitation.role,
+          status: 'pending',
+          invitedAt: payload.invitation.invitedAt,
+          joinedAt: null,
+        } satisfies TeamMemberRecord)
+
+        setEntries((current) =>
+          current.map((entry) => (entry.id === id ? nextEntry : entry))
         )
-      )
-      setActivity(`Einladung an ${payload.invitation.email} wurde erneut versendet.`)
+        setActivity(`Einladung an ${payload.invitation.email} wurde erneut versendet.`)
+      }
+    } finally {
+      setPendingAction(null)
     }
   }
 
-  async function handleRevoke(id: string) {
-    const invitation = invitations.find((entry) => entry.id === id)
-    if (!invitation) return
-
+  async function handleDelete(entry: TeamMemberRecord) {
     setError(null)
+    setPendingAction({ id: entry.id, type: 'delete' })
 
-    const response = await fetch(`/api/tenant/invitations/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    })
-    const payload = await response.json().catch(() => ({}))
+    try {
+      const endpoint =
+        entry.kind === 'invitation'
+          ? `/api/tenant/invitations/${entry.id}`
+          : `/api/tenant/members/${entry.id}`
 
-    if (!response.ok) {
-      setError(payload.error ?? 'Einladung konnte nicht widerrufen werden.')
-      return
+      const fallbackError =
+        entry.kind === 'invitation'
+          ? 'Einladung konnte nicht gelöscht werden.'
+          : 'User konnte nicht gelöscht werden.'
+
+      const response = await fetch(endpoint, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+      const payload = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        setError(payload.error ?? fallbackError)
+        return
+      }
+
+      setEntries((current) => current.filter((currentEntry) => currentEntry.id !== entry.id))
+      setActivity(
+        entry.kind === 'invitation'
+          ? `Einladung an ${entry.email ?? 'den User'} wurde gelöscht.`
+          : `${entry.email ?? entry.name ?? 'Der User'} wurde aus dem Team entfernt.`
+      )
+    } finally {
+      setPendingAction(null)
     }
-
-    setInvitations((current) =>
-      current.map((entry) => (entry.id === id ? { ...entry, status: 'revoked' } : entry))
-    )
-    setActivity(`Einladung an ${invitation.email} wurde widerrufen.`)
   }
 
   return (
@@ -176,11 +233,11 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
                 Settings / Team
               </p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                Einladungen für {tenantSlug} steuern
+                Teammitglieder für {tenantSlug} verwalten
               </h1>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                Admins sehen offene Einladungen, können neue Teammitglieder vormerken und die
-                zukünftigen Aktionen fürs Resending oder Widerrufen direkt ansteuern.
+                Admins sehen vorhandene User und offene Einladungen in einer gemeinsamen Liste,
+                können User entfernen und Einladungen direkt erneut versenden oder löschen.
               </p>
             </div>
           </div>
@@ -191,23 +248,23 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
           <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
             <Sparkles className="h-5 w-5 text-[#b85e34]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Rolle beim Einladen setzen</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">User und Einladungen zusammen</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Dialog für E-Mail + Rolle ist bereits fertig und auf den Admin-Flow zugeschnitten.
+              Die Teamseite zeigt jetzt vorhandene Mitglieder und offene Einladungen in einer Sicht.
             </p>
           </div>
           <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
             <ShieldCheck className="h-5 w-5 text-[#157f68]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Status pro Einladung sichtbar</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">Status direkt erkennbar</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Pending, angenommen und widerrufen sind visuell klar getrennt und sofort scanbar.
+              Aktiv und Einladung offen sind klar getrennt und sofort scanbar.
             </p>
           </div>
           <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
             <BellRing className="h-5 w-5 text-[#1f2937]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Echte API-Anbindung aktiv</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900">Aktionen direkt aus der Übersicht</p>
             <p className="mt-1 text-sm leading-6 text-slate-600">
-              Neue Einladungen, Resend und Widerruf laufen jetzt direkt über Tenant-APIs.
+              Neue Einladungen, Resend und Löschen laufen direkt über Tenant-APIs.
             </p>
           </div>
         </div>
@@ -230,14 +287,15 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         <div className="flex min-h-48 items-center justify-center rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
           <div className="flex items-center gap-3 text-slate-600">
             <Loader2 className="h-5 w-5 animate-spin text-[#b85e34]" />
-            Einladungen werden geladen...
+            Teamübersicht wird geladen...
           </div>
         </div>
       ) : (
-        <InvitationTable
-          invitations={invitations}
+        <TeamMemberTable
+          entries={entries}
+          pendingAction={pendingAction}
           onResend={handleResend}
-          onRevoke={handleRevoke}
+          onDelete={handleDelete}
         />
       )}
     </div>
