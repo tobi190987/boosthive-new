@@ -182,9 +182,7 @@ function NavigationContent({
                               {tool.label}
                             </span>
                             {!hasAccess && (
-                              <Badge className="rounded-full bg-[#f1f5f9] px-1.5 py-0 text-[10px] text-slate-400 hover:bg-[#f1f5f9]">
-                                Nicht gebucht
-                              </Badge>
+                              <Lock className="h-3 w-3 text-slate-300" />
                             )}
                           </Link>
                         </li>
