@@ -219,7 +219,7 @@ export function tenantStatusLabel(status: string | null | undefined) {
     case 'inactive':
       return 'Pausiert'
     case 'setup_incomplete':
-      return 'Setup unvollstaendig'
+      return 'Setup unvollständig'
     case 'billing_blocked':
       return 'Billing-Block'
     case 'archived':
