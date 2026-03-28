@@ -30,6 +30,12 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  applyServerFieldErrors,
+  fetchJson,
+  getPayloadError,
+  type ApiFormPayload,
+} from '@/lib/client-form'
 import { getUserInitials } from '@/lib/profile'
 import { BaseProfileSchema, type ProfileUpdateInput } from '@/lib/schemas/profile'
 import {
@@ -53,6 +59,14 @@ interface AvatarCropDraft {
   previewUrl: string
   imageWidth: number
   imageHeight: number
+}
+
+interface AvatarResponse extends ApiFormPayload {
+  avatar_url?: string | null
+}
+
+interface AccountEmailResponse extends ApiFormPayload {
+  email?: string
 }
 
 type OwnerProfileFormValues = Pick<ProfileUpdateInput, 'first_name' | 'last_name'>
@@ -213,6 +227,11 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
     }
   }, [avatarCropDraft])
 
+  function clearFeedback() {
+    setError(null)
+    setSuccess(null)
+  }
+
   function closeAvatarCropDialog() {
     if (avatarCropDraft) {
       URL.revokeObjectURL(avatarCropDraft.previewUrl)
@@ -227,21 +246,17 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
     const formData = new FormData()
     formData.set('file', file)
 
-    const response = await fetch('/api/owner/profile/avatar', {
+    const { response, payload } = await fetchJson<AvatarResponse>('/api/owner/profile/avatar', {
       method: 'POST',
       credentials: 'include',
       body: formData,
     })
-    const payload = (await response.json().catch(() => ({}))) as {
-      avatar_url?: string | null
-      error?: string
-    }
 
     if (!response.ok) {
-      throw new Error(payload.error ?? 'Profilbild konnte nicht gespeichert werden.')
+      throw new Error(getPayloadError(payload, 'Profilbild konnte nicht gespeichert werden.'))
     }
 
-    setAvatarUrl(payload.avatar_url ?? null)
+    setAvatarUrl(payload?.avatar_url ?? null)
   }
 
   async function handleLogout() {
@@ -268,8 +283,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
     }
 
     try {
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
       const meta = await loadImageMeta(file)
       setAvatarCropDraft({
         file,
@@ -290,8 +304,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
 
     try {
       setAvatarPending(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
       const croppedFile = await renderCroppedAvatar(
         avatarCropDraft,
@@ -316,23 +329,18 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
   async function removeAvatar() {
     try {
       setAvatarPending(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/owner/profile/avatar', {
+      const { response, payload } = await fetchJson<AvatarResponse>('/api/owner/profile/avatar', {
         method: 'DELETE',
         credentials: 'include',
       })
-      const payload = (await response.json().catch(() => ({}))) as {
-        avatar_url?: string | null
-        error?: string
-      }
 
       if (!response.ok) {
-        throw new Error(payload.error ?? 'Profilbild konnte nicht entfernt werden.')
+        throw new Error(getPayloadError(payload, 'Profilbild konnte nicht entfernt werden.'))
       }
 
-      setAvatarUrl(payload.avatar_url ?? null)
+      setAvatarUrl(payload?.avatar_url ?? null)
       setSuccess('Dein Profilbild wurde entfernt.')
     } catch (removeError) {
       setError(
@@ -348,35 +356,18 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
   async function onSubmit(values: OwnerProfileFormValues) {
     try {
       setIsSaving(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/owner/profile', {
+      const { response, payload } = await fetchJson<ApiFormPayload>('/api/owner/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(values),
       })
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string
-        details?: Record<string, string[] | undefined>
-      }
-
       if (!response.ok) {
-        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
-          const firstMessage = messages?.[0]
-          if (!firstMessage) {
-            return
-          }
-
-          form.setError(field as keyof OwnerProfileFormValues, {
-            type: 'server',
-            message: firstMessage,
-          })
-        })
-
-        throw new Error(payload.error ?? 'Profil konnte nicht gespeichert werden.')
+        applyServerFieldErrors(form.setError, payload?.details)
+        throw new Error(getPayloadError(payload, 'Profil konnte nicht gespeichert werden.'))
       }
 
       setSuccess('Deine Profildaten wurden gespeichert.')
@@ -391,10 +382,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
 
   async function onSubmitEmail(values: EmailChangeInput) {
     try {
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/auth/account', {
+      const { response, payload } = await fetchJson<AccountEmailResponse>('/api/auth/account', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -404,35 +394,17 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
         }),
       })
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        email?: string
-        error?: string
-        details?: Record<string, string[] | undefined>
-        message?: string
-      }
-
       if (!response.ok) {
-        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
-          const firstMessage = messages?.[0]
-          if (!firstMessage) {
-            return
-          }
-
-          emailForm.setError(field as keyof EmailChangeInput, {
-            type: 'server',
-            message: firstMessage,
-          })
-        })
-
-        throw new Error(payload.error ?? 'E-Mail-Adresse konnte nicht aktualisiert werden.')
+        applyServerFieldErrors(emailForm.setError, payload?.details)
+        throw new Error(getPayloadError(payload, 'E-Mail-Adresse konnte nicht aktualisiert werden.'))
       }
 
       emailForm.reset({
-        email: payload.email ?? values.email,
+        email: payload?.email ?? values.email,
         current_password: '',
       })
       setShowCurrentEmailPassword(false)
-      setSuccess(payload.message ?? 'Deine E-Mail-Adresse wurde aktualisiert.')
+      setSuccess(payload?.message ?? 'Deine E-Mail-Adresse wurde aktualisiert.')
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -444,10 +416,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
 
   async function onSubmitPassword(values: PasswordChangeInput) {
     try {
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/auth/account', {
+      const { response, payload } = await fetchJson<ApiFormPayload>('/api/auth/account', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -457,26 +428,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
         }),
       })
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string
-        details?: Record<string, string[] | undefined>
-        message?: string
-      }
-
       if (!response.ok) {
-        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
-          const firstMessage = messages?.[0]
-          if (!firstMessage) {
-            return
-          }
-
-          passwordForm.setError(field as keyof PasswordChangeInput, {
-            type: 'server',
-            message: firstMessage,
-          })
-        })
-
-        throw new Error(payload.error ?? 'Passwort konnte nicht aktualisiert werden.')
+        applyServerFieldErrors(passwordForm.setError, payload?.details)
+        throw new Error(getPayloadError(payload, 'Passwort konnte nicht aktualisiert werden.'))
       }
 
       passwordForm.reset({
@@ -487,7 +441,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
       setShowCurrentPassword(false)
       setShowNewPassword(false)
       setShowConfirmPassword(false)
-      setSuccess(payload.message ?? 'Dein Passwort wurde aktualisiert.')
+      setSuccess(payload?.message ?? 'Dein Passwort wurde aktualisiert.')
     } catch (submitError) {
       setError(
         submitError instanceof Error ? submitError.message : 'Passwort konnte nicht aktualisiert werden.'

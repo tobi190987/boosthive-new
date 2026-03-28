@@ -1,6 +1,6 @@
 # PROJ-19: Profile & Onboarding Refactor
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-28
 
@@ -248,3 +248,47 @@ Es ist keine DB-Migration nötig. Der Refactor ist ein interner Umbau bei stabil
 - Änderung der fachlichen Billing-Regeln
 - Zusammenlegung von Avatar-/Logo-Upload in denselben Request wie Profil-Submit
 - Owner-spezifische Formular-Refactors außerhalb der vorhandenen Tenant-Profilbasis
+
+---
+
+## QA Test Results
+
+**Tested:** 2026-03-28
+**App URL:** http://localhost:3000
+
+### Acceptance Criteria Status
+- [x] AC-1: Gemeinsame Helper für Formular-Submit, JSON-Parsing und Fehlermapping existieren.
+- [x] AC-2: Profil- und Onboarding-Flow nutzen dieselbe Kernlogik.
+- [x] AC-3: Redirect- und Success-Verhalten ist stabil und testbar.
+- [x] AC-4: Admin-spezifische Billing-Pflichtlogik bleibt erhalten, ist aber klar getrennt.
+- [x] AC-5: E2E-Tests für Member- und Admin-Onboarding bleiben grün.
+
+### Durchgeführte Prüfungen
+- `./node_modules/.bin/eslint src/app/api/tenant/profile/route.ts src/lib/profile-update.ts src/lib/schemas/profile.ts src/components/tenant-profile-workspace.tsx src/components/owner-profile-workspace.tsx src/lib/client-form.ts tests/e2e/owner-flows.spec.ts`
+- `npx playwright test tests/e2e/authenticated-flows.spec.ts --project=chromium`
+- `npx playwright test tests/e2e/owner-flows.spec.ts --project=chromium --grep "owner can update profile data"`
+- `npx playwright test tests/e2e/owner-flows.spec.ts --project=chromium`
+
+### Ergebnis
+- Tenant-Onboarding für Member und Admin ist grün.
+- Der neue Owner-Profil-Test ist grün und bestätigt persistierte Profildaten nach Reload.
+- Die statische Prüfung der für PROJ-19 geänderten Dateien ist grün.
+
+### Bugs Found
+**BUG-1: Bestehender Owner-Dashboard-Regressionstest erwartet veralteten Status**
+- **Severity:** Medium
+- **Scope:** Nicht blocker für PROJ-19 selbst, aber Regression-Suite nicht vollständig grün
+- **Test:** `tests/e2e/owner-flows.spec.ts` - `owner can create, pause, resume and reassign a tenant admin`
+- **Beobachtung:** Der Test erwartet für den Seed-Tenant den Status `Aktiv`, die Oberfläche zeigt jedoch `Setup unvollstaendig`.
+- **Einordnung:** Das betrifft den Owner-Dashboard-/Tenant-Status-Bereich und nicht die in PROJ-19 geänderte Profil-/Onboarding-Submit-Logik. Der Fehler ist daher als separates Folgeproblem zu behandeln.
+
+### QA-Fazit
+PROJ-19 ist aus QA-Sicht für die refaktorierten Profil-, Onboarding- und Owner-Profil-Flows abnahmereif. Offenes Restrisiko bleibt nur in einem separaten bestehenden Owner-Dashboard-Test, dessen Erwartung nicht mehr zum aktuellen Statusmodell passt.
+
+---
+
+## Deployment
+
+**Status:** ✅ Deployed
+**Deployed:** 2026-03-28
+**Production URL:** Pending

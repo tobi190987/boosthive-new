@@ -35,11 +35,22 @@ export async function loginAsOwner(page: Page, email: string, password: string) 
   await page.goto(rootUrl('/owner/login'))
   await page.getByLabel('E-Mail').fill(email)
   await page.locator('input#password').fill(password)
-  await page.getByRole('button', { name: 'Anmelden' }).click()
+  await Promise.all([
+    page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/auth/owner/login') &&
+        response.request().method() === 'POST'
+    ),
+    page.getByRole('button', { name: 'Anmelden' }).click(),
+  ])
 
-  await page.waitForLoadState('networkidle')
+  await Promise.race([
+    page.waitForURL((url) => !url.pathname.startsWith('/owner/login'), { timeout: 10_000 }),
+    page.waitForLoadState('networkidle'),
+  ]).catch(() => null)
 
   if (page.url().includes('/owner/login')) {
+    await page.waitForTimeout(500)
     const alertText = await page.getByRole('alert').textContent().catch(() => null)
     throw new Error(`Owner-Login fehlgeschlagen: ${alertText?.trim() ?? 'Unbekannter Fehler.'}`)
   }

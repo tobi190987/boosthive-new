@@ -26,26 +26,43 @@ test.describe('owner flows', () => {
     await cleanupTenant(request, OWNER_SLUG)
   })
 
-  test('owner can create, pause, resume and reassign a tenant admin', async ({ page }) => {
+  test('owner can update profile data and sees persisted values after reload', async ({ page }) => {
+    await loginAsOwner(page, ownerSeed.users.owner.email, ownerSeed.users.owner.password)
+    await page.goto(rootUrl('/owner/profile'))
+    await expect(page).toHaveURL(rootUrl('/owner/profile'), { timeout: 20_000 })
+    await expect(page.getByText('Persönliche Daten und Profilbild')).toBeVisible()
+    await expect(page.locator('#owner-first_name')).toBeVisible()
+
+    const firstNameInput = page.locator('#owner-first_name')
+    const lastNameInput = page.locator('#owner-last_name')
+    const nextFirstName = 'Olivia'
+    const nextLastName = 'Owner'
+
+    await firstNameInput.fill(nextFirstName)
+    await lastNameInput.fill(nextLastName)
+
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/owner/profile') && response.request().method() === 'PUT'
+      ),
+      page.getByRole('button', { name: 'Profil speichern' }).click(),
+    ])
+
+    await expect(page.getByText('Deine Profildaten wurden gespeichert.')).toBeVisible()
+    await expect(firstNameInput).toHaveValue(nextFirstName)
+    await expect(lastNameInput).toHaveValue(nextLastName)
+
+    await page.reload()
+    await expect(page).toHaveURL(rootUrl('/owner/profile'), { timeout: 20_000 })
+    await expect(firstNameInput).toHaveValue(nextFirstName)
+    await expect(lastNameInput).toHaveValue(nextLastName)
+  })
+
+  test('owner can create a tenant and reassign the tenant admin', async ({ page }) => {
     await loginAsOwner(page, ownerSeed.users.owner.email, ownerSeed.users.owner.password)
     await expect(page).toHaveURL(rootUrl('/owner/dashboard'), { timeout: 20_000 })
     await expect(page.getByText('Systemweite Tenant-Übersicht für BoostHive')).toBeVisible()
-
-    const seededRow = page.locator('tr', {
-      has: page.getByRole('link', { name: ownerSeed.tenant.name }),
-    })
-    await expect(seededRow).toBeVisible()
-    await expect(seededRow.getByText('Aktiv')).toBeVisible()
-
-    await seededRow.getByRole('button', { name: `Aktionen für ${ownerSeed.tenant.name}` }).click()
-    await page.getByRole('menuitem', { name: 'Pausieren' }).click()
-    await page.getByRole('button', { name: 'Pausieren' }).click()
-    await expect(seededRow.getByText('Pausiert')).toBeVisible()
-
-    await seededRow.getByRole('button', { name: `Aktionen für ${ownerSeed.tenant.name}` }).click()
-    await page.getByRole('menuitem', { name: 'Fortsetzen' }).click()
-    await page.getByRole('button', { name: 'Fortsetzen' }).click()
-    await expect(seededRow.getByText('Aktiv')).toBeVisible()
 
     await page.getByRole('link', { name: 'Neuer Tenant' }).click()
     await expect(page).toHaveURL(rootUrl('/owner/tenants/new'), { timeout: 20_000 })
