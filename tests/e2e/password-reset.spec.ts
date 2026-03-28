@@ -31,9 +31,8 @@ test.describe('forgot password and reset flow', () => {
     await expect(
       page.getByText(
         'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
-      ),
-      { timeout: 20_000 }
-    ).toBeVisible()
+      )
+    ).toBeVisible({ timeout: 20_000 })
   })
 
   test('forgot-password responds with same success for existing email', async ({ page }) => {
@@ -46,9 +45,8 @@ test.describe('forgot password and reset flow', () => {
     await expect(
       page.getByText(
         'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
-      ),
-      { timeout: 20_000 }
-    ).toBeVisible()
+      )
+    ).toBeVisible({ timeout: 20_000 })
   })
 
   test('reset-password accepts a valid token and redirects into onboarding', async ({
