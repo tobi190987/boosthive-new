@@ -104,5 +104,5 @@ INSERT INTO modules (code, name, description, stripe_price_id, sort_order, is_ac
 VALUES
   ('seo_analyse', 'SEO Analyse', 'Umfassende SEO-Analyse deiner Webseite mit technischen und inhaltlichen Empfehlungen.', 'price_1TEy4BBqMa5Vx8VNcidWpuHa', 10, true),
   ('ai_performance', 'AI Performance Analyse', 'KI-gestuetzte Analyse deiner Marketing-Performance mit automatischen Optimierungsvorschlaegen.', 'price_1TEy4BBqMa5Vx8VNcidWpuHa', 20, true),
-  ('ai_visibility', 'AI Visibility Tool', 'Ueberwache und optimiere deine Sichtbarkeit in KI-Suchsystemen wie ChatGPT und Perplexity.', 'price_1TEy4BBqMa5Vx8VNcidWpuHa', 30, true)
+  ('ai_visibility', 'AI Visibility Tool', 'Überwache und optimiere deine Sichtbarkeit in KI-Suchsystemen wie ChatGPT und Perplexity.', 'price_1TEy4BBqMa5Vx8VNcidWpuHa', 30, true)
 ON CONFLICT (code) DO NOTHING;

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { getActiveModuleCodes } from '@/lib/module-access'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
+import { AiVisibilityWorkspace } from '@/components/ai-visibility-workspace'
 
 export default async function AiVisibilityPage() {
   const context = await requireTenantShellContext()
@@ -38,11 +39,5 @@ export default async function AiVisibilityPage() {
     )
   }
 
-  return (
-    <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
-      <CardContent className="px-6 py-12 text-center text-slate-500">
-        AI Visibility Tool — in Entwicklung.
-      </CardContent>
-    </Card>
-  )
+  return <AiVisibilityWorkspace role={context.membership.role} />
 }

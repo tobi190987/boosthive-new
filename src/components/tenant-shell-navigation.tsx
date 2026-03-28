@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   Lock,
   Menu,
+  Search,
   Sparkles,
   Users2,
 } from 'lucide-react'
@@ -48,6 +49,7 @@ const TOOLS: ToolNavItem[] = [
   { label: 'SEO Analyse', href: '/tools/seo-analyse', icon: BarChart3, moduleCode: 'seo_analyse' },
   { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
   { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
+  { label: 'Keyword Rankings', href: '/tools/keywords', icon: Search, moduleCode: 'keyword_tracking' },
 ]
 
 function roleLabel(role: TenantShellContext['membership']['role']) {
