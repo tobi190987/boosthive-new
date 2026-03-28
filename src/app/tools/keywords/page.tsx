@@ -9,7 +9,7 @@ import { KeywordProjectsWorkspace } from '@/components/keyword-projects-workspac
 export default async function KeywordsPage() {
   const context = await requireTenantShellContext()
   const activeModuleCodes = await getActiveModuleCodes(context.tenant.id)
-  const hasAccess = activeModuleCodes.includes('keyword_tracking')
+  const hasAccess = activeModuleCodes.includes('seo_analyse')
   const isAdmin = context.membership.role === 'admin'
 
   if (!hasAccess) {
@@ -20,9 +20,9 @@ export default async function KeywordsPage() {
             <Lock className="h-7 w-7 text-[#a35a34]" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-slate-950">Keyword Rankings ist noch gesperrt</h2>
+            <h2 className="text-xl font-semibold text-slate-950">Keywordranking ist noch gesperrt</h2>
             <p className="max-w-2xl text-sm leading-7 text-slate-600">
-              Dieses Modul ist fuer deinen Workspace noch nicht gebucht. Buche es in der Abrechnung, um Keyword-Projekte anzulegen und Rankings zu tracken.
+              Dieser Bereich gehoert zum Modul SEO-Analyse. Buche SEO-Analyse in der Abrechnung, um Keyword-Projekte anzulegen und Rankings zu tracken.
             </p>
           </div>
           {isAdmin ? (

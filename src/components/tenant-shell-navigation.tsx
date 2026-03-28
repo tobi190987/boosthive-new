@@ -43,13 +43,26 @@ interface ToolNavItem {
   href: string
   icon: ComponentType<{ className?: string }>
   moduleCode: string
+  children?: ToolNavItem[]
 }
 
 const TOOLS: ToolNavItem[] = [
-  { label: 'SEO Analyse', href: '/tools/seo-analyse', icon: BarChart3, moduleCode: 'seo_analyse' },
+  {
+    label: 'SEO Analyse',
+    href: '/tools/seo-analyse',
+    icon: BarChart3,
+    moduleCode: 'seo_analyse',
+    children: [
+      {
+        label: 'Keywordranking',
+        href: '/tools/keywords',
+        icon: Search,
+        moduleCode: 'seo_analyse',
+      },
+    ],
+  },
   { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
   { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
-  { label: 'Keyword Rankings', href: '/tools/keywords', icon: Search, moduleCode: 'keyword_tracking' },
 ]
 
 function roleLabel(role: TenantShellContext['membership']['role']) {
@@ -183,10 +196,47 @@ function NavigationContent({
                               )}
                               {tool.label}
                             </span>
-                            {!hasAccess && (
-                              <Lock className="h-3 w-3 text-slate-300" />
-                            )}
+                            {!hasAccess && <Lock className="h-3 w-3 text-slate-300" />}
                           </Link>
+
+                          {tool.children && tool.children.length > 0 ? (
+                            <ul className="ml-4 mt-1 space-y-0.5 border-l border-[#ebe2d5] pl-3">
+                              {tool.children.map((child) => {
+                                const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
+                                const childActive = isNavActive(pathname, child.href)
+
+                                return (
+                                  <li key={child.href}>
+                                    <Link
+                                      href={child.href}
+                                      onClick={onNavigate}
+                                      className={cn(
+                                        'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
+                                        childActive
+                                          ? 'bg-[#edf8f6] font-medium text-[#0d9488]'
+                                          : childHasAccess
+                                            ? 'text-slate-600 hover:bg-[#f7f3ed] hover:text-slate-900'
+                                            : 'text-slate-400 hover:bg-[#f7f3ed]'
+                                      )}
+                                      aria-current={childActive ? 'page' : undefined}
+                                    >
+                                      <span className="flex items-center gap-2.5">
+                                        {childHasAccess ? (
+                                          <child.icon
+                                            className={cn('h-3.5 w-3.5', childActive ? 'text-[#0d9488]' : 'text-slate-400')}
+                                          />
+                                        ) : (
+                                          <Lock className="h-3.5 w-3.5 text-slate-300" />
+                                        )}
+                                        {child.label}
+                                      </span>
+                                      {!childHasAccess && <Lock className="h-3 w-3 text-slate-300" />}
+                                    </Link>
+                                  </li>
+                                )
+                              })}
+                            </ul>
+                          ) : null}
                         </li>
                       )
                     })}

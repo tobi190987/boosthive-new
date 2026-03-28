@@ -261,9 +261,12 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-950">Keyword-Projekte</h1>
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0d9488]">
+            SEO-Analyse
+          </p>
+          <h1 className="text-2xl font-semibold text-slate-950">Keywordranking</h1>
           <p className="mt-1 text-sm text-slate-500">
-            Verwalte Keyword-Projekte fuer deine Kunden.
+            Verwalte Keyword-Projekte als Unterbereich deiner SEO-Analyse.
           </p>
         </div>
         <div className="flex items-center gap-3">

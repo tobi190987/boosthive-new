@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 
+const MODULE_ACCESS_ALIASES: Record<string, string[]> = {
+  keyword_tracking: ['keyword_tracking', 'seo_analyse'],
+}
+
 /**
  * PROJ-15: Server-side module access guard.
  * Checks if a tenant has an active (or canceling) subscription for a specific module.
@@ -15,15 +19,15 @@ export async function requireTenantModuleAccess(
   moduleCode: string
 ): Promise<{ granted: true } | { error: NextResponse }> {
   const supabaseAdmin = createAdminClient()
+  const eligibleCodes = MODULE_ACCESS_ALIASES[moduleCode] ?? [moduleCode]
 
-  // Look up the module by code
-  const { data: mod, error: modError } = await supabaseAdmin
+  // Look up matching modules by code, including access aliases for merged features.
+  const { data: mods, error: modError } = await supabaseAdmin
     .from('modules')
     .select('id')
-    .eq('code', moduleCode)
-    .maybeSingle()
+    .in('code', eligibleCodes)
 
-  if (modError || !mod) {
+  if (modError || !mods || mods.length === 0) {
     return {
       error: NextResponse.json(
         { error: 'Modul nicht gefunden.' },
@@ -32,13 +36,17 @@ export async function requireTenantModuleAccess(
     }
   }
 
-  // Check tenant's booking for this module
-  const { data: booking, error: bookingError } = await supabaseAdmin
+  const moduleIds = mods.map((mod) => mod.id)
+
+  // Check the tenant's booking for any module that grants access.
+  const { data: bookings, error: bookingError } = await supabaseAdmin
     .from('tenant_modules')
     .select('status, current_period_end')
     .eq('tenant_id', tenantId)
-    .eq('module_id', mod.id)
-    .maybeSingle()
+    .in('module_id', moduleIds)
+ 
+  const booking = bookings?.find((entry) => entry.status === 'active')
+    ?? bookings?.find((entry) => entry.status === 'canceling')
 
   if (bookingError || !booking) {
     return {
