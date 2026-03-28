@@ -286,11 +286,6 @@ async function handleInvoicePaymentFailed(
         }
       }
 
-      // PROJ-16: Send owner notification if this is a new transition to past_due
-      const previousSubStatus = tenant.subscription_status as string | null
-      if (previousSubStatus !== 'past_due') {
-        await sendOwnerPastDueNotification(supabase, tenant.name, tenant.slug, tenant.id)
-      }
     }
   } catch (emailError) {
     // Non-fatal: log but don't fail the webhook
