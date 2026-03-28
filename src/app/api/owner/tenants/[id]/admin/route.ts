@@ -115,6 +115,11 @@ export async function POST(
         {
           error:
             'Diese E-Mail existiert bereits bei einem anderen Tenant. Bitte eine neue E-Mail verwenden oder den User zuerst in diesen Tenant aufnehmen.',
+          details: {
+            email: [
+              'Diese E-Mail existiert bereits bei einem anderen Tenant. Bitte eine neue E-Mail verwenden oder den User zuerst in diesen Tenant aufnehmen.',
+            ],
+          },
         },
         { status: 409 }
       )

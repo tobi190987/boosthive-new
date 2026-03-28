@@ -248,7 +248,12 @@ export async function PATCH(
 
     if (conflictingTenant) {
       return NextResponse.json(
-        { error: `Die Subdomain "${parsed.data.slug}" ist bereits vergeben.` },
+        {
+          error: `Die Subdomain "${parsed.data.slug}" ist bereits vergeben.`,
+          details: {
+            slug: [`Die Subdomain "${parsed.data.slug}" ist bereits vergeben.`],
+          },
+        },
         { status: 409 }
       )
     }
@@ -266,7 +271,12 @@ export async function PATCH(
     if (error) {
       if (error.code === '23505') {
         return NextResponse.json(
-          { error: `Die Subdomain "${parsed.data.slug}" ist bereits vergeben.` },
+          {
+            error: `Die Subdomain "${parsed.data.slug}" ist bereits vergeben.`,
+            details: {
+              slug: [`Die Subdomain "${parsed.data.slug}" ist bereits vergeben.`],
+            },
+          },
           { status: 409 }
         )
       }

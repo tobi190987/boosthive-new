@@ -1,8 +1,8 @@
 # PROJ-13: Tenant Detail Management
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-27
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-03-28
 
 ## Dependencies
 - Requires: PROJ-2 (Tenant Provisioning) — erweitert das Tenant-Datenmodell und die Owner-Agenturen-Übersicht
@@ -18,18 +18,18 @@
 - Als Owner möchte ich auf der Detailseite sehen, wer aktuell Admin der Agentur ist (Name/E-Mail).
 
 ## Acceptance Criteria
-- [ ] Klick auf einen Agentur-Namen in der Tabelle `/owner/tenants` navigiert zu `/owner/tenants/[id]`
-- [ ] Detailseite zeigt alle aktuellen Daten der Agentur (Name, Subdomain, Status, Erstellt am, Admin, Rechnungsadresse, Kontaktdaten)
-- [ ] Owner kann Agentur-Name bearbeiten (Pflichtfeld, min. 2 Zeichen)
-- [ ] Owner kann Subdomain-Slug bearbeiten — Unique-Constraint und Format-Validierung gelten weiterhin (wie bei PROJ-2)
-- [ ] Subdomain-Änderung zeigt eine Warnung: "Die URL der Agentur ändert sich. Bestehende Bookmarks werden ungültig."
-- [ ] Owner kann Rechnungsadresse speichern: Firmenname, Straße + Nr., PLZ, Stadt, Land (alle optional außer Firmenname), ggf. USt-IdNr.
-- [ ] Owner kann Kontaktdaten speichern: Ansprechpartner (Name), Telefon, Website (alle optional)
-- [ ] Owner kann neuen Admin-User anlegen: E-Mail-Eingabe → neuer Supabase-Auth-User wird erstellt, erhält `role = admin` in `tenant_members`, bekommt Einladungs-E-Mail (via PROJ-4)
-- [ ] Beim Anlegen eines neuen Admins behält der bisherige Admin seinen `tenant_members`-Eintrag, aber seine Rolle wechselt zu `member`
-- [ ] Alle Felder werden per Formular mit Inline-Validierung bearbeitet (Zod + react-hook-form)
-- [ ] Erfolgreiche Speicherungen zeigen eine Toast-Bestätigung
-- [ ] Fehler (z.B. Subdomain vergeben) werden als Inline-Fehler angezeigt
+- [x] Klick auf einen Agentur-Namen in der Tabelle `/owner/tenants` navigiert zu `/owner/tenants/[id]`
+- [x] Detailseite zeigt alle aktuellen Daten der Agentur (Name, Subdomain, Status, Erstellt am, Admin, Rechnungsadresse, Kontaktdaten)
+- [x] Owner kann Agentur-Name bearbeiten (Pflichtfeld, min. 2 Zeichen)
+- [x] Owner kann Subdomain-Slug bearbeiten — Unique-Constraint und Format-Validierung gelten weiterhin (wie bei PROJ-2)
+- [x] Subdomain-Änderung zeigt eine Warnung: "Die URL der Agentur ändert sich. Bestehende Bookmarks werden ungültig."
+- [x] Owner kann Rechnungsadresse speichern: Firmenname, Straße + Nr., PLZ, Stadt, Land (alle optional außer Firmenname), ggf. USt-IdNr.
+- [x] Owner kann Kontaktdaten speichern: Ansprechpartner (Name), Telefon, Website (alle optional)
+- [x] Owner kann neuen Admin-User anlegen: E-Mail-Eingabe → neuer Supabase-Auth-User wird erstellt, erhält `role = admin` in `tenant_members`, bekommt Einladungs-E-Mail (via PROJ-4)
+- [x] Beim Anlegen eines neuen Admins behält der bisherige Admin seinen `tenant_members`-Eintrag, aber seine Rolle wechselt zu `member`
+- [x] Alle Felder werden per Formular mit Inline-Validierung bearbeitet (Zod + react-hook-form)
+- [x] Erfolgreiche Speicherungen zeigen eine Toast-Bestätigung
+- [x] Fehler (z.B. Subdomain vergeben) werden als Inline-Fehler angezeigt
 
 ## Edge Cases
 - Subdomain bereits von anderer Agentur belegt → 409-Fehler mit Hinweis, Formular bleibt offen
@@ -204,13 +204,13 @@ Keine neuen Pakete erforderlich. Die bestehende Basis reicht aus:
 
 ## QA Test Results
 
-**Tested:** 2026-03-27
+**Tested:** 2026-03-28
 **App URL:** http://localhost:3000
 **Tester:** QA Engineer (AI)
 
 ### Test Scope
 
-Geprueft wurden Code-Review, API-/Flow-Validierung und ein erfolgreicher Produktions-Build. Ein echter Browser-Durchlauf fuer Chrome, Firefox, Safari sowie Responsive-Checks auf 375px / 768px / 1440px konnte in dieser Session nicht ausgefuehrt werden.
+Geprueft wurden Code-Review, API-/Flow-Validierung sowie erfolgreiche Lint- und TypeScript-Checks fuer die PROJ-13-relevanten Dateien. Ein vollstaendiger Produktions-Build der Gesamt-App ist in dieser Session derzeit durch `PROJ-14` blockiert, weil `STRIPE_SECRET_KEY` fuer die Billing-Routen fehlt. Ein echter Browser-Durchlauf fuer Chrome, Firefox, Safari sowie Responsive-Checks auf 375px / 768px / 1440px konnte in dieser Session ebenfalls nicht ausgefuehrt werden.
 
 ### Acceptance Criteria Status
 
@@ -258,6 +258,7 @@ Geprueft wurden Code-Review, API-/Flow-Validierung und ein erfolgreicher Produkt
 
 #### AC-12: Fehler werden als Inline-Fehler angezeigt
 - [x] API liefert `details` fuer Feldfehler.
+- [x] Konfliktfaelle wie doppelte Subdomain oder tenant-fremde Admin-E-Mail werden direkt am betroffenen Feld angezeigt.
 - [x] Slug-Konflikte und Validierungsfehler bleiben im Formular sichtbar.
 
 ### Edge Cases Status

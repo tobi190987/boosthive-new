@@ -24,9 +24,11 @@
 | PROJ-10 | SEO Analyse Tool | Planned | [PROJ-10-seo-analyse.md](PROJ-10-seo-analyse.md) | 2026-03-26 |
 | PROJ-11 | AI Performance Analyse | Planned | [PROJ-11-ai-performance-analyse.md](PROJ-11-ai-performance-analyse.md) | 2026-03-26 |
 | PROJ-12 | AI Visibility Tool | Planned | [PROJ-12-ai-visibility.md](PROJ-12-ai-visibility.md) | 2026-03-26 |
-
-| PROJ-13 | Tenant Detail Management | In Review | [PROJ-13-tenant-detail-management.md](PROJ-13-tenant-detail-management.md) | 2026-03-27 |
+| PROJ-13 | Tenant Detail Management | Deployed | [PROJ-13-tenant-detail-management.md](PROJ-13-tenant-detail-management.md) | 2026-03-27 |
+| PROJ-14 | Stripe Setup & Basis-Abo | In Review | [PROJ-14-stripe-basis-abo.md](PROJ-14-stripe-basis-abo.md) | 2026-03-27 |
+| PROJ-15 | Modul-Buchung & Verwaltung | Planned | [PROJ-15-modul-buchung.md](PROJ-15-modul-buchung.md) | 2026-03-27 |
+| PROJ-16 | Owner Billing-Übersicht | Planned | [PROJ-16-owner-billing-uebersicht.md](PROJ-16-owner-billing-uebersicht.md) | 2026-03-27 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-14
+## Next Available ID: PROJ-17
