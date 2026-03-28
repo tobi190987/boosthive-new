@@ -64,10 +64,7 @@ interface TenantStatusLookupResult {
   error: unknown
 }
 
-function applyTenantLookupFilter(
-  query: { eq: (column: string, value: string) => { maybeSingle: () => Promise<unknown> } },
-  lookup: { id?: string; slug?: string }
-) {
+function applyTenantLookupFilter(query: any, lookup: { id?: string; slug?: string }) {
   if (lookup.id) {
     return query.eq('id', lookup.id)
   }
@@ -97,7 +94,7 @@ export async function loadTenantStatusRecord(
       lookup
     )
 
-    const result = await query.maybeSingle()
+    const result: any = await query.maybeSingle()
     const missingColumn = optionalColumns.find(
       (column) =>
         activeColumns.includes(column) && hasMissingTenantStatusColumnError(result.error, column)

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 function isMissingColumnError(error: { code?: string; message?: string } | null | undefined) {
   return error?.code === '42703'
@@ -17,6 +18,17 @@ export async function GET(request: NextRequest) {
   const tenantSlugFromHeader = request.headers.get('x-tenant-slug')
   if (!tenantIdFromHeader) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+  }
+
+  const rl = checkRateLimit(`billing-get:${tenantIdFromHeader}:${getClientIp(request)}`, {
+    limit: 30,
+    windowMs: 60_000,
+  })
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Zu viele Anfragen. Bitte warte einen Moment.' },
+      { status: 429 }
+    )
   }
 
   const authResult = await requireTenantAdmin(tenantIdFromHeader)
@@ -138,10 +150,90 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Load module catalog and tenant bookings for module section
+  let modules: {
+    id: string
+    code: string
+    name: string
+    description: string
+    price: number
+    currency: string
+    status: 'active' | 'canceling' | 'canceled' | 'not_subscribed'
+    current_period_end: string | null
+  }[] = []
+
+  try {
+    // Load all active modules from the catalog
+    const { data: allModules, error: modulesError } = await supabaseAdmin
+      .from('modules')
+      .select('id, code, name, description, stripe_price_id, sort_order, is_active')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true })
+
+    if (!modulesError && allModules) {
+      // Load this tenant's module bookings
+      const { data: tenantBookings } = await supabaseAdmin
+        .from('tenant_modules')
+        .select('module_id, status, current_period_end')
+        .eq('tenant_id', tenantId)
+
+      const bookingMap = new Map(
+        (tenantBookings ?? []).map((b: { module_id: string; status: string; current_period_end: string | null }) => [
+          b.module_id,
+          b,
+        ])
+      )
+
+      // Load module prices from Stripe (deduplicated by price ID)
+      const priceCache = new Map<string, { amount: number; currency: string }>()
+
+      for (const mod of allModules) {
+        if (!priceCache.has(mod.stripe_price_id)) {
+          try {
+            const price = await stripe.prices.retrieve(mod.stripe_price_id)
+            priceCache.set(mod.stripe_price_id, {
+              amount: price.unit_amount ?? 0,
+              currency: price.currency,
+            })
+          } catch {
+            priceCache.set(mod.stripe_price_id, { amount: 0, currency: 'eur' })
+          }
+        }
+      }
+
+      modules = allModules.map((mod) => {
+        const booking = bookingMap.get(mod.id) as { status: string; current_period_end: string | null } | undefined
+        const priceInfo = priceCache.get(mod.stripe_price_id) ?? { amount: 0, currency: 'eur' }
+
+        let moduleStatus: 'active' | 'canceling' | 'canceled' | 'not_subscribed' = 'not_subscribed'
+        if (booking) {
+          if (booking.status === 'active') moduleStatus = 'active'
+          else if (booking.status === 'canceling') moduleStatus = 'canceling'
+          // canceled = available to rebook, show as not_subscribed
+        }
+
+        return {
+          id: mod.id,
+          code: mod.code,
+          name: mod.name,
+          description: mod.description,
+          price: priceInfo.amount,
+          currency: priceInfo.currency,
+          status: moduleStatus,
+          current_period_end: booking?.current_period_end ?? null,
+        }
+      })
+    }
+  } catch (moduleLoadError) {
+    // Non-fatal: modules section will just be empty
+    console.error('[GET /api/tenant/billing] Modul-Daten konnten nicht geladen werden:', moduleLoadError)
+  }
+
   return NextResponse.json({
     subscription_status: subscriptionStatus,
     subscription_period_end: tenant.subscription_period_end ?? null,
     payment_method: paymentMethod,
     plan,
+    modules,
   })
 }

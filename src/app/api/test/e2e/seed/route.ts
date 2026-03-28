@@ -8,6 +8,7 @@ interface SeedBody {
   status?: 'active' | 'inactive'
   subscriptionStatus?: string | null
   billingOnboardingCompleted?: boolean
+  archived?: boolean
 }
 
 function isAllowed(request: NextRequest) {
@@ -45,9 +46,33 @@ function isMissingColumnError(error: unknown) {
     code === '42703' ||
     (code === 'PGRST204' && message?.includes('subscription_status')) ||
     (code === 'PGRST204' && message?.includes('billing_onboarding_completed_at')) ||
+    (code === 'PGRST204' && message?.includes('archived_at')) ||
+    (code === 'PGRST204' && message?.includes('archived_by')) ||
+    (code === 'PGRST204' && message?.includes('archive_reason')) ||
     message?.includes("Could not find the 'subscription_status' column") === true ||
-    message?.includes("Could not find the 'billing_onboarding_completed_at' column") === true
+    message?.includes("Could not find the 'billing_onboarding_completed_at' column") === true ||
+    message?.includes("Could not find the 'archived_at' column") === true ||
+    message?.includes("Could not find the 'archived_by' column") === true ||
+    message?.includes("Could not find the 'archive_reason' column") === true
   )
+}
+
+function missingTenantColumn(error: unknown) {
+  const message =
+    typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+      ? error.message
+      : null
+
+  if (!message) {
+    return null
+  }
+
+  if (message.includes('subscription_status')) return 'subscription_status'
+  if (message.includes('billing_onboarding_completed_at')) return 'billing_onboarding_completed_at'
+  if (message.includes('archived_at')) return 'archived_at'
+  if (message.includes('archived_by')) return 'archived_by'
+  if (message.includes('archive_reason')) return 'archive_reason'
+  return null
 }
 
 function errorMessage(error: unknown) {
@@ -165,7 +190,9 @@ export async function POST(request: NextRequest) {
     const tenantStatus = body?.status === 'inactive' ? 'inactive' : 'active'
     const subscriptionStatus = body?.subscriptionStatus ?? 'inactive'
     const billingOnboardingCompleted = body?.billingOnboardingCompleted === true
+    const archived = body?.archived === true
     let subscriptionStatusAvailable = true
+    let archivedSoftDeleteAvailable = true
 
     const supabaseAdmin = createAdminClient()
     const tenantName = `E2E ${slug}`
@@ -201,76 +228,90 @@ export async function POST(request: NextRequest) {
 
     if (existingTenant.data?.id) {
       tenantId = existingTenant.data.id
-      let updateResult = await supabaseAdmin
-        .from('tenants')
-        .update({
-          name: tenantName,
-          status: tenantStatus,
-          subscription_status: subscriptionStatus,
-          logo_url: null,
-          billing_company: null,
-          billing_street: null,
-          billing_zip: null,
-          billing_city: null,
-          billing_country: null,
-          billing_vat_id: null,
-          billing_onboarding_completed_at: billingOnboardingCompleted
-            ? new Date().toISOString()
-            : null,
-        })
-        .eq('id', tenantId)
+      const updatePayload: Record<string, unknown> = {
+        name: tenantName,
+        status: tenantStatus,
+        subscription_status: subscriptionStatus,
+        logo_url: null,
+        billing_company: null,
+        billing_street: null,
+        billing_zip: null,
+        billing_city: null,
+        billing_country: null,
+        billing_vat_id: null,
+        billing_onboarding_completed_at: billingOnboardingCompleted
+          ? new Date().toISOString()
+          : null,
+        archived_at: archived ? new Date().toISOString() : null,
+        archived_by: null,
+        archive_reason: archived ? 'e2e seed archived tenant' : null,
+      }
 
-      if (isMissingColumnError(updateResult.error)) {
-        subscriptionStatusAvailable = false
-        updateResult = await supabaseAdmin
-          .from('tenants')
-          .update({
-            name: tenantName,
-            status: tenantStatus,
-            logo_url: null,
-            billing_company: null,
-            billing_street: null,
-            billing_zip: null,
-            billing_city: null,
-            billing_country: null,
-            billing_vat_id: null,
-            billing_onboarding_completed_at: billingOnboardingCompleted
-              ? new Date().toISOString()
-              : null,
-          })
-          .eq('id', tenantId)
+      let updateResult = await supabaseAdmin.from('tenants').update(updatePayload).eq('id', tenantId)
+
+      while (isMissingColumnError(updateResult.error)) {
+        const missingColumn = missingTenantColumn(updateResult.error)
+
+        if (missingColumn === 'subscription_status') {
+          subscriptionStatusAvailable = false
+          delete updatePayload.subscription_status
+        } else if (missingColumn === 'archived_at' || missingColumn === 'archived_by' || missingColumn === 'archive_reason') {
+          archivedSoftDeleteAvailable = false
+          delete updatePayload.archived_at
+          delete updatePayload.archived_by
+          delete updatePayload.archive_reason
+        } else if (missingColumn === 'billing_onboarding_completed_at') {
+          delete updatePayload.billing_onboarding_completed_at
+        } else {
+          break
+        }
+
+        updateResult = await supabaseAdmin.from('tenants').update(updatePayload).eq('id', tenantId)
       }
 
       if (updateResult.error) {
         throw updateResult.error
       }
     } else {
+      const insertPayload: Record<string, unknown> = {
+        slug,
+        name: tenantName,
+        status: tenantStatus,
+        subscription_status: subscriptionStatus,
+        billing_onboarding_completed_at: billingOnboardingCompleted
+          ? new Date().toISOString()
+          : null,
+        archived_at: archived ? new Date().toISOString() : null,
+        archived_by: null,
+        archive_reason: archived ? 'e2e seed archived tenant' : null,
+      }
+
       let createdTenant = await supabaseAdmin
         .from('tenants')
-        .insert({
-          slug,
-          name: tenantName,
-          status: tenantStatus,
-          subscription_status: subscriptionStatus,
-          billing_onboarding_completed_at: billingOnboardingCompleted
-            ? new Date().toISOString()
-            : null,
-        })
+        .insert(insertPayload)
         .select('id')
         .single()
 
-      if (isMissingColumnError(createdTenant.error)) {
-        subscriptionStatusAvailable = false
+      while (isMissingColumnError(createdTenant.error)) {
+        const missingColumn = missingTenantColumn(createdTenant.error)
+
+        if (missingColumn === 'subscription_status') {
+          subscriptionStatusAvailable = false
+          delete insertPayload.subscription_status
+        } else if (missingColumn === 'archived_at' || missingColumn === 'archived_by' || missingColumn === 'archive_reason') {
+          archivedSoftDeleteAvailable = false
+          delete insertPayload.archived_at
+          delete insertPayload.archived_by
+          delete insertPayload.archive_reason
+        } else if (missingColumn === 'billing_onboarding_completed_at') {
+          delete insertPayload.billing_onboarding_completed_at
+        } else {
+          break
+        }
+
         createdTenant = await supabaseAdmin
           .from('tenants')
-          .insert({
-            slug,
-            name: tenantName,
-            status: tenantStatus,
-            billing_onboarding_completed_at: billingOnboardingCompleted
-              ? new Date().toISOString()
-              : null,
-          })
+          .insert(insertPayload)
           .select('id')
           .single()
       }
@@ -343,6 +384,7 @@ export async function POST(request: NextRequest) {
       },
       capabilities: {
         subscriptionStatusAvailable,
+        archivedSoftDeleteAvailable,
       },
       users: {
         owner: { email: ownerEmail, password },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
+import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
 
 /**
  * POST /api/tenant/billing/reactivate
@@ -11,6 +12,17 @@ export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
     return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+  }
+
+  const rl = checkRateLimit(`reactivate:${tenantId}:${getClientIp(request)}`, {
+    limit: 10,
+    windowMs: 60_000,
+  })
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: 'Zu viele Anfragen. Bitte warte einen Moment.' },
+      { status: 429 }
+    )
   }
 
   const authResult = await requireTenantAdmin(tenantId)

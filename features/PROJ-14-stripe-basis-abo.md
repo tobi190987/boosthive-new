@@ -1,8 +1,8 @@
 # PROJ-14: Stripe Setup & Basis-Abo
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-27
-**Last Updated:** 2026-03-27
+**Last Updated:** 2026-03-28
 
 ## Dependencies
 - Requires: PROJ-2 (Tenant Provisioning) — Tenants müssen existieren, bevor ein Stripe Customer angelegt wird

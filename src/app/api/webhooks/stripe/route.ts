@@ -164,6 +164,15 @@ async function handleSubscriptionUpdated(
     ? new Date(periodEnd * 1000).toISOString()
     : null
 
+  // PROJ-16: Respect owner locks — do not auto-reactivate a manually locked tenant
+  const { data: existingTenant } = await supabase
+    .from('tenants')
+    .select('id, owner_locked_at')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle()
+
+  const isOwnerLocked = existingTenant?.owner_locked_at != null
+
   const updateData: Record<string, unknown> = {
     subscription_status: subscriptionStatus,
     subscription_period_end: periodEndISO,
@@ -172,6 +181,8 @@ async function handleSubscriptionUpdated(
   if (subscription.status === 'unpaid' || subscription.status === 'canceled') {
     updateData.is_active = false
   }
+  // Do NOT set is_active=true if tenant is owner-locked
+  // (invoice.payment_succeeded handler also checks this)
 
   const { error } = await supabase
     .from('tenants')
@@ -185,6 +196,7 @@ async function handleSubscriptionUpdated(
     )
     throw error
   }
+
 }
 
 async function handleSubscriptionDeleted(
@@ -249,7 +261,7 @@ async function handleInvoicePaymentFailed(
   try {
     const { data: tenant } = await supabase
       .from('tenants')
-      .select('id, name, slug')
+      .select('id, name, slug, subscription_status')
       .eq('stripe_customer_id', customerId)
       .single()
 
@@ -273,6 +285,12 @@ async function handleInvoicePaymentFailed(
           })
         }
       }
+
+      // PROJ-16: Send owner notification if this is a new transition to past_due
+      const previousSubStatus = tenant.subscription_status as string | null
+      if (previousSubStatus !== 'past_due') {
+        await sendOwnerPastDueNotification(supabase, tenant.name, tenant.slug, tenant.id)
+      }
     }
   } catch (emailError) {
     // Non-fatal: log but don't fail the webhook
@@ -295,10 +313,25 @@ async function handleInvoicePaymentSucceeded(
   const inv = invoice as InvoiceWithSubscription
   if (!inv.subscription) return
 
+  // PROJ-16: Respect owner locks — do not auto-reactivate a manually locked tenant
+  const { data: lockedTenant } = await supabase
+    .from('tenants')
+    .select('id, owner_locked_at')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle()
+
+  const isOwnerLocked = lockedTenant?.owner_locked_at != null
+
   // BUG-4 fix: also restore is_active=true when payment succeeds after grace period
+  // But skip is_active restoration if tenant is owner-locked
+  const updatePayload: Record<string, unknown> = { subscription_status: 'active' }
+  if (!isOwnerLocked) {
+    updatePayload.is_active = true
+  }
+
   const { error } = await supabase
     .from('tenants')
-    .update({ subscription_status: 'active', is_active: true })
+    .update(updatePayload)
     .eq('stripe_customer_id', customerId)
 
   if (error) {
@@ -307,5 +340,124 @@ async function handleInvoicePaymentSucceeded(
       error
     )
     throw error
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/*  PROJ-15: Module subscription item sync                                     */
+/* -------------------------------------------------------------------------- */
+
+const BASIS_PLAN_PRICE_ID = process.env.STRIPE_BASIS_PLAN_PRICE_ID
+
+/**
+ * Synchronizes tenant_modules based on the current Stripe subscription items.
+ * Stripe is the source of truth -- this function reconciles the DB accordingly.
+ */
+async function syncModuleItems(
+  supabase: SupabaseAdmin,
+  tenantId: string,
+  subscription: Stripe.Subscription
+) {
+  try {
+    // Load all module definitions
+    const { data: allModules, error: modError } = await supabase
+      .from('modules')
+      .select('id, code, stripe_price_id')
+
+    if (modError || !allModules || allModules.length === 0) return
+
+    // Build a map from stripe_price_id to module IDs
+    const priceToModules = new Map<string, typeof allModules>()
+    for (const mod of allModules) {
+      const existing = priceToModules.get(mod.stripe_price_id) ?? []
+      existing.push(mod)
+      priceToModules.set(mod.stripe_price_id, existing)
+    }
+
+    // Get current subscription items (excluding basis plan)
+    const moduleItems = subscription.items.data.filter(
+      (item) => item.price.id !== BASIS_PLAN_PRICE_ID
+    )
+
+    // Build a set of module_ids that are currently active in Stripe
+    const activeModuleIds = new Set<string>()
+    const itemUpdates: { moduleId: string; itemId: string; periodEnd: string | null }[] = []
+
+    for (const item of moduleItems) {
+      // Try to resolve module by metadata first (most reliable)
+      const metadataModuleId = item.metadata?.module_id
+      if (metadataModuleId) {
+        activeModuleIds.add(metadataModuleId)
+        const periodEnd = item.current_period_end
+          ? new Date(item.current_period_end * 1000).toISOString()
+          : null
+        itemUpdates.push({
+          moduleId: metadataModuleId,
+          itemId: item.id,
+          periodEnd,
+        })
+        continue
+      }
+
+      // Fallback: resolve by price_id (only if unambiguous)
+      const matchingModules = priceToModules.get(item.price.id)
+      if (matchingModules && matchingModules.length === 1) {
+        const mod = matchingModules[0]
+        activeModuleIds.add(mod.id)
+        const periodEnd = item.current_period_end
+          ? new Date(item.current_period_end * 1000).toISOString()
+          : null
+        itemUpdates.push({
+          moduleId: mod.id,
+          itemId: item.id,
+          periodEnd,
+        })
+      }
+    }
+
+    // Upsert active modules
+    for (const update of itemUpdates) {
+      await supabase
+        .from('tenant_modules')
+        .upsert(
+          {
+            tenant_id: tenantId,
+            module_id: update.moduleId,
+            stripe_subscription_item_id: update.itemId,
+            status: 'active',
+            cancel_at_period_end: false,
+            current_period_end: update.periodEnd,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'tenant_id,module_id' }
+        )
+    }
+
+    // Mark modules no longer in Stripe as canceled (only from 'active', not 'canceling')
+    const { data: currentBookings } = await supabase
+      .from('tenant_modules')
+      .select('id, module_id, status')
+      .eq('tenant_id', tenantId)
+      .in('status', ['active'])
+
+    if (currentBookings) {
+      const toCancel = currentBookings.filter(
+        (b) => !activeModuleIds.has(b.module_id)
+      )
+
+      for (const booking of toCancel) {
+        await supabase
+          .from('tenant_modules')
+          .update({
+            status: 'canceled',
+            stripe_subscription_item_id: null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', booking.id)
+      }
+    }
+  } catch (syncError) {
+    // Non-fatal: log but don't fail the webhook
+    console.error('[Stripe Webhook] Module-Sync fehlgeschlagen:', syncError)
   }
 }

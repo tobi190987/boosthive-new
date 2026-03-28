@@ -1,8 +1,8 @@
 'use client'
 
 import Image from 'next/image'
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { useForm, type FieldPath } from 'react-hook-form'
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   AlertCircle,
@@ -40,6 +40,12 @@ import {
 } from '@/components/ui/select'
 import { StripeCardForm } from '@/components/stripe-card-form'
 import { TenantLogoutButton } from '@/components/tenant-logout-button'
+import {
+  applyServerFieldErrors,
+  fetchJson,
+  getPayloadError,
+  type ApiFormPayload,
+} from '@/lib/client-form'
 import { getUserInitials } from '@/lib/profile'
 import {
   EmailChangeSchema,
@@ -55,6 +61,23 @@ interface BillingResponse {
     exp_month: number
     exp_year: number
   } | null
+}
+
+interface ProfileSubmitResponse extends ApiFormPayload {
+  success?: boolean
+  onboarding_complete?: boolean
+}
+
+interface AvatarResponse extends ApiFormPayload {
+  avatar_url?: string | null
+}
+
+interface TenantLogoResponse extends ApiFormPayload {
+  logoUrl?: string | null
+}
+
+interface AccountEmailResponse extends ApiFormPayload {
+  email?: string
 }
 
 interface TenantProfileWorkspaceProps {
@@ -290,39 +313,39 @@ export function TenantProfileWorkspace({
     },
   })
 
+  const refreshBillingStatus = useCallback(async () => {
+    try {
+      setBillingLoading(true)
+      const { response, payload } = await fetchJson<BillingResponse & ApiFormPayload>(
+        '/api/tenant/billing',
+        {
+          credentials: 'include',
+        }
+      )
+
+      if (!response.ok || !payload) {
+        throw new Error(getPayloadError(payload, 'Stripe-Status konnte nicht geladen werden.'))
+      }
+
+      setBilling(payload)
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Stripe-Status konnte nicht geladen werden.'
+      )
+    } finally {
+      setBillingLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     if (initialData.role !== 'admin') {
       return
     }
 
-    async function loadBilling() {
-      try {
-        setBillingLoading(true)
-        const response = await fetch('/api/tenant/billing', {
-          credentials: 'include',
-        })
-        const payload = (await response.json().catch(() => ({}))) as BillingResponse & {
-          error?: string
-        }
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? 'Stripe-Status konnte nicht geladen werden.')
-        }
-
-        setBilling(payload)
-      } catch (loadError) {
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : 'Stripe-Status konnte nicht geladen werden.'
-        )
-      } finally {
-        setBillingLoading(false)
-      }
-    }
-
-    void loadBilling()
-  }, [initialData.role])
+    void refreshBillingStatus()
+  }, [initialData.role, refreshBillingStatus])
 
   useEffect(() => {
     return () => {
@@ -332,44 +355,26 @@ export function TenantProfileWorkspace({
     }
   }, [avatarCropDraft])
 
-  function applyFieldErrors(details?: Record<string, string[] | undefined>) {
-    if (!details) {
-      return
-    }
-
-    const fields = Object.entries(details) as Array<[FieldPath<ProfileFormValues>, string[] | undefined]>
-    fields.forEach(([field, messages]) => {
-      const firstMessage = messages?.[0]
-      if (!firstMessage) {
-        return
-      }
-
-      setFieldError(field, {
-        type: 'server',
-        message: firstMessage,
-      })
-    })
+  function clearFeedback() {
+    setError(null)
+    setSuccess(null)
   }
 
   async function uploadAvatarFile(file: File) {
     const formData = new FormData()
     formData.append('file', file)
 
-    const response = await fetch('/api/tenant/profile/avatar', {
+    const { response, payload } = await fetchJson<AvatarResponse>('/api/tenant/profile/avatar', {
       method: 'POST',
       body: formData,
       credentials: 'include',
     })
-    const payload = (await response.json().catch(() => ({}))) as {
-      avatar_url?: string | null
-      error?: string
-    }
 
     if (!response.ok) {
-      throw new Error(payload.error ?? 'Profilbild konnte nicht hochgeladen werden.')
+      throw new Error(getPayloadError(payload, 'Profilbild konnte nicht hochgeladen werden.'))
     }
 
-    setAvatarUrl(payload.avatar_url ?? null)
+    setAvatarUrl(payload?.avatar_url ?? null)
   }
 
   async function handleAvatarChange(event: ChangeEvent<HTMLInputElement>) {
@@ -379,8 +384,7 @@ export function TenantProfileWorkspace({
     }
 
     try {
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
       if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type)) {
         throw new Error('Erlaubt sind PNG, JPG und WEBP bis 2 MB.')
       }
@@ -430,8 +434,7 @@ export function TenantProfileWorkspace({
 
     try {
       setAvatarPending(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
       const croppedFile = await renderCroppedAvatar(
         avatarCropDraft,
@@ -456,19 +459,15 @@ export function TenantProfileWorkspace({
   async function removeAvatar() {
     try {
       setAvatarPending(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/tenant/profile/avatar', {
+      const { response, payload } = await fetchJson<AvatarResponse>('/api/tenant/profile/avatar', {
         method: 'DELETE',
         credentials: 'include',
       })
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string
-      }
 
       if (!response.ok) {
-        throw new Error(payload.error ?? 'Profilbild konnte nicht entfernt werden.')
+        throw new Error(getPayloadError(payload, 'Profilbild konnte nicht entfernt werden.'))
       }
 
       setAvatarUrl(null)
@@ -490,8 +489,7 @@ export function TenantProfileWorkspace({
 
     try {
       setTenantLogoPending(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
       if (!['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'].includes(file.type)) {
         throw new Error('Erlaubt sind PNG, JPG, WEBP und SVG bis 2 MB.')
@@ -504,21 +502,17 @@ export function TenantProfileWorkspace({
       const formData = new FormData()
       formData.append('file', file)
 
-      const response = await fetch('/api/tenant/logo', {
+      const { response, payload } = await fetchJson<TenantLogoResponse>('/api/tenant/logo', {
         method: 'POST',
         body: formData,
         credentials: 'include',
       })
-      const payload = (await response.json().catch(() => ({}))) as {
-        logoUrl?: string | null
-        error?: string
-      }
 
       if (!response.ok) {
-        throw new Error(payload.error ?? 'Agentur-Logo konnte nicht hochgeladen werden.')
+        throw new Error(getPayloadError(payload, 'Agentur-Logo konnte nicht hochgeladen werden.'))
       }
 
-      setTenantLogoUrl(payload.logoUrl ?? null)
+      setTenantLogoUrl(payload?.logoUrl ?? null)
       setSuccess('Agentur-Logo wurde aktualisiert.')
     } catch (uploadError) {
       setError(
@@ -537,19 +531,15 @@ export function TenantProfileWorkspace({
   async function removeTenantLogo() {
     try {
       setTenantLogoPending(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/tenant/logo', {
+      const { response, payload } = await fetchJson<TenantLogoResponse>('/api/tenant/logo', {
         method: 'DELETE',
         credentials: 'include',
       })
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string
-      }
 
       if (!response.ok) {
-        throw new Error(payload.error ?? 'Agentur-Logo konnte nicht entfernt werden.')
+        throw new Error(getPayloadError(payload, 'Agentur-Logo konnte nicht entfernt werden.'))
       }
 
       setTenantLogoUrl(null)
@@ -568,10 +558,14 @@ export function TenantProfileWorkspace({
   async function onSubmit(values: ProfileFormValues) {
     try {
       setIsSaving(true)
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/tenant/profile', {
+      const fallbackError =
+        mode === 'onboarding'
+          ? 'Onboarding konnte nicht abgeschlossen werden.'
+          : 'Profil konnte nicht gespeichert werden.'
+
+      const { response, payload } = await fetchJson<ProfileSubmitResponse>('/api/tenant/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -581,23 +575,12 @@ export function TenantProfileWorkspace({
         }),
       })
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string
-        details?: Record<string, string[] | undefined>
-        redirectTo?: string | null
-      }
-
       if (!response.ok) {
-        applyFieldErrors(payload.details)
-        throw new Error(
-          payload.error ??
-            (mode === 'onboarding'
-              ? 'Onboarding konnte nicht abgeschlossen werden.'
-              : 'Profil konnte nicht gespeichert werden.')
-        )
+        applyServerFieldErrors(setFieldError, payload?.details)
+        throw new Error(getPayloadError(payload, fallbackError))
       }
 
-      if (mode === 'onboarding' && payload.redirectTo) {
+      if (mode === 'onboarding' && payload?.redirectTo) {
         window.location.assign(payload.redirectTo)
         return
       }
@@ -618,10 +601,9 @@ export function TenantProfileWorkspace({
 
   async function onSubmitEmail(values: EmailChangeInput) {
     try {
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/auth/account', {
+      const { response, payload } = await fetchJson<AccountEmailResponse>('/api/auth/account', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -631,35 +613,17 @@ export function TenantProfileWorkspace({
         }),
       })
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        email?: string
-        error?: string
-        details?: Record<string, string[] | undefined>
-        message?: string
-      }
-
       if (!response.ok) {
-        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
-          const firstMessage = messages?.[0]
-          if (!firstMessage) {
-            return
-          }
-
-          emailForm.setError(field as keyof EmailChangeInput, {
-            type: 'server',
-            message: firstMessage,
-          })
-        })
-
-        throw new Error(payload.error ?? 'E-Mail-Adresse konnte nicht aktualisiert werden.')
+        applyServerFieldErrors(emailForm.setError, payload?.details)
+        throw new Error(getPayloadError(payload, 'E-Mail-Adresse konnte nicht aktualisiert werden.'))
       }
 
       emailForm.reset({
-        email: payload.email ?? values.email,
+        email: payload?.email ?? values.email,
         current_password: '',
       })
       setShowCurrentEmailPassword(false)
-      setSuccess(payload.message ?? 'Deine E-Mail-Adresse wurde aktualisiert.')
+      setSuccess(payload?.message ?? 'Deine E-Mail-Adresse wurde aktualisiert.')
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -671,10 +635,9 @@ export function TenantProfileWorkspace({
 
   async function onSubmitPassword(values: PasswordChangeInput) {
     try {
-      setError(null)
-      setSuccess(null)
+      clearFeedback()
 
-      const response = await fetch('/api/auth/account', {
+      const { response, payload } = await fetchJson<ApiFormPayload>('/api/auth/account', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -684,26 +647,9 @@ export function TenantProfileWorkspace({
         }),
       })
 
-      const payload = (await response.json().catch(() => ({}))) as {
-        error?: string
-        details?: Record<string, string[] | undefined>
-        message?: string
-      }
-
       if (!response.ok) {
-        Object.entries(payload.details ?? {}).forEach(([field, messages]) => {
-          const firstMessage = messages?.[0]
-          if (!firstMessage) {
-            return
-          }
-
-          passwordForm.setError(field as keyof PasswordChangeInput, {
-            type: 'server',
-            message: firstMessage,
-          })
-        })
-
-        throw new Error(payload.error ?? 'Passwort konnte nicht aktualisiert werden.')
+        applyServerFieldErrors(passwordForm.setError, payload?.details)
+        throw new Error(getPayloadError(payload, 'Passwort konnte nicht aktualisiert werden.'))
       }
 
       passwordForm.reset({
@@ -714,7 +660,7 @@ export function TenantProfileWorkspace({
       setShowCurrentPassword(false)
       setShowNewPassword(false)
       setShowConfirmPassword(false)
-      setSuccess(payload.message ?? 'Dein Passwort wurde aktualisiert.')
+      setSuccess(payload?.message ?? 'Dein Passwort wurde aktualisiert.')
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -1465,26 +1411,7 @@ export function TenantProfileWorkspace({
                       onSuccess={() => {
                         setShowStripeForm(false)
                         setSuccess('Zahlungsmethode wurde gespeichert.')
-                        setBillingLoading(true)
-                        void fetch('/api/tenant/billing', { credentials: 'include' })
-                          .then((response) => response.json().then((payload) => ({ response, payload })))
-                          .then(({ response, payload }) => {
-                            if (!response.ok) {
-                              throw new Error(
-                                (payload as { error?: string }).error ??
-                                  'Stripe-Status konnte nicht aktualisiert werden.'
-                              )
-                            }
-                            setBilling(payload as BillingResponse)
-                          })
-                          .catch((loadError: unknown) => {
-                            setError(
-                              loadError instanceof Error
-                                ? loadError.message
-                                : 'Stripe-Status konnte nicht aktualisiert werden.'
-                            )
-                          })
-                          .finally(() => setBillingLoading(false))
+                        void refreshBillingStatus()
                       }}
                     />
                   </div>

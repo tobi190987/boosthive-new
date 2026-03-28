@@ -3,6 +3,7 @@ import { logAudit, logOperationalError, logSecurity } from '@/lib/observability'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { LoginSchema } from '@/lib/schemas/auth'
+import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 /**
  * POST /api/auth/login
@@ -44,18 +45,25 @@ export async function POST(request: NextRequest) {
 
   // 3.5 Tenant-Status prüfen: inaktive Tenants duerfen keine neuen Logins akzeptieren
   const supabaseAdmin = createAdminClient()
-  const { data: tenant, error: tenantError } = await supabaseAdmin
-    .from('tenants')
-    .select('id, status')
-    .eq('id', tenantId)
-    .maybeSingle()
+  const { data: tenant, error: tenantError } = await loadTenantStatusRecord(supabaseAdmin, {
+    id: tenantId,
+  })
+  const tenantStatus = tenant ? resolveTenantStatus(tenant) : null
 
-  if (tenantError || !tenant || tenant.status !== 'active') {
-    logSecurity('tenant_login_blocked_inactive_tenant', {
+  if (tenantError || !tenant || !tenantStatus?.allowsLogin) {
+    logSecurity('tenant_login_blocked_tenant_status', {
       tenantId,
       email,
       tenantStatus: tenant?.status ?? null,
-      tenantError: tenantError?.message ?? null,
+      effectiveTenantStatus: tenantStatus?.effectiveStatus ?? null,
+      tenantStatusReason: tenantStatus?.reason ?? null,
+      tenantError:
+        typeof tenantError === 'object' &&
+        tenantError !== null &&
+        'message' in tenantError &&
+        typeof tenantError.message === 'string'
+          ? tenantError.message
+          : null,
     })
     return NextResponse.json({ error: GENERIC_ERROR }, { status: 401 })
   }

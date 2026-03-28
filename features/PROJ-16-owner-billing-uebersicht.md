@@ -1,6 +1,6 @@
 # PROJ-16: Owner Billing-Übersicht
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-03-27
 **Last Updated:** 2026-03-28
 
@@ -318,6 +318,27 @@ Damit bleibt fuer den Owner sofort sichtbar, ob ein Problem aus dem Vertrag, aus
 - PROJ-14 liefert Stripe-Status und Webhook-Synchronisierung.
 - PROJ-15 muss `modules` und `tenant_modules` real in der DB anlegen, damit Modulpreise und Modulstatus in der Owner-Sicht erscheinen koennen.
 - PROJ-4 wird fuer die Owner-Benachrichtigung bei `past_due` wiederverwendet.
+
+## Frontend Implementation Notes
+
+**Implementiert am 2026-03-28 durch /frontend**
+
+### Neue Dateien:
+- `src/components/owner-billing-workspace.tsx` -- Komplette Owner-Billing-Uebersicht mit Metriken-Row (aktive Abos, ueberfaellig, in Kuendigung, manuell gesperrt), Tenant-Tabelle mit Subscription-Badge, Modul-Count, naechstem Abrechnungstermin, Gesamtbetrag und Access-Badge. Unterstuetzt Suche, Pagination und Status-Filter.
+- `src/app/(owner)/owner/billing/page.tsx` -- Neue Owner-Route fuer die Billing-Uebersicht.
+
+### Geaenderte Dateien:
+- `src/components/owner-sidebar.tsx` -- Neuer Nav-Eintrag "Abrechnung" mit CreditCard-Icon.
+- `src/components/owner-tenant-detail-workspace.tsx` -- Neuer Tab "Abo" (value: subscription) mit OwnerTenantSubscriptionTab. Zeigt Abo-Status, Gesamtbetrag, Zugangs-Override (Sperren/Freischalten) und Modul-Breakdown. Tabs unterstuetzen `?tab=subscription` URL-Parameter fuer Direktnavigation aus der Billing-Tabelle.
+
+### Erwartete API-Endpunkte (noch zu implementieren in /backend):
+- `GET /api/owner/billing` -- Paginierte Tenant-Liste mit Billing-Metriken
+- `GET /api/owner/tenants/[id]/billing` -- Billing-Detail fuer einzelnen Tenant
+- `POST /api/owner/tenants/[id]/billing/lock` -- Manuelle Tenant-Sperre
+- `POST /api/owner/tenants/[id]/billing/unlock` -- Tenant-Freischaltung
+
+### Abweichungen vom Tech Design:
+- Keine -- Frontend folgt exakt der spezifizierten Komponentenstruktur und dem API-Design
 
 ## QA Test Results
 _To be added by /qa_

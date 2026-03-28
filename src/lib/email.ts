@@ -1,5 +1,7 @@
 import crypto from 'crypto'
+import type { SupabaseClient } from '@supabase/supabase-js'
 import { renderInvitationEmail } from '@/emails/invitation'
+import { renderOwnerPastDueEmail } from '@/emails/owner-past-due'
 import { renderPasswordResetEmail } from '@/emails/password-reset'
 import { renderPaymentFailedEmail } from '@/emails/payment-failed'
 import { renderWelcomeEmail } from '@/emails/welcome'
@@ -271,4 +273,56 @@ export async function sendInvitation({
     category: 'invitation',
     tokenForLogs: token,
   })
+}
+
+/**
+ * PROJ-16: Sends a past_due notification to all platform owners.
+ * Uses the admin supabase client passed from the webhook handler.
+ */
+export async function sendOwnerPastDueNotification(
+  supabaseAdmin: SupabaseClient,
+  tenantName: string,
+  tenantSlug: string,
+  tenantId: string
+): Promise<void> {
+  // Load all platform admins
+  const { data: platformAdmins, error: adminsError } = await supabaseAdmin
+    .from('platform_admins')
+    .select('user_id')
+
+  if (adminsError || !platformAdmins || platformAdmins.length === 0) {
+    console.warn('[email] Keine Platform-Admins fuer past_due Benachrichtigung gefunden.')
+    return
+  }
+
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'boost-hive.de'
+  const isLocal = process.env.NODE_ENV !== 'production'
+  const ownerDashboardUrl = isLocal
+    ? `http://localhost:3000/owner/tenants/${tenantId}?tab=subscription`
+    : `https://${rootDomain}/owner/tenants/${tenantId}?tab=subscription`
+
+  const { subject, html, text } = renderOwnerPastDueEmail({
+    tenantName,
+    tenantSlug,
+    ownerDashboardUrl,
+  })
+
+  for (const admin of platformAdmins) {
+    try {
+      const { data: userData } = await supabaseAdmin.auth.admin.getUserById(admin.user_id)
+      if (userData.user?.email) {
+        await sendEmail({
+          to: userData.user.email,
+          tenantName: 'BoostHive',
+          tenantSlug: 'owner',
+          subject,
+          html,
+          text,
+          category: 'owner-past-due',
+        })
+      }
+    } catch (emailError) {
+      console.error('[email] Owner past_due Benachrichtigung fehlgeschlagen:', emailError)
+    }
+  }
 }

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { ResetPasswordConfirmSchema } from '@/lib/schemas/auth'
 import { hashPasswordResetToken } from '@/lib/password-reset'
+import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 const INVALID_TOKEN_ERROR =
   'Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Reset-Link an.'
@@ -30,6 +31,16 @@ export async function POST(request: NextRequest) {
 
   const tokenHash = hashPasswordResetToken(parsed.data.token)
   const supabaseAdmin = createAdminClient()
+  const tenantStatusLookup = await loadTenantStatusRecord(supabaseAdmin, { id: tenantId })
+  const tenantStatus =
+    tenantStatusLookup.data ? resolveTenantStatus(tenantStatusLookup.data) : null
+
+  if (tenantStatusLookup.error || !tenantStatus || tenantStatus.effectiveStatus === 'archived') {
+    return NextResponse.json(
+      { error: 'Dieser Tenant ist archiviert. Passwort-Resets sind aktuell nicht verfuegbar.' },
+      { status: 403 }
+    )
+  }
 
   const { data, error } = await supabaseAdmin.rpc('consume_password_reset_token', {
     p_token_hash: tokenHash,

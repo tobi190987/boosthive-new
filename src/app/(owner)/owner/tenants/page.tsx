@@ -4,6 +4,10 @@ import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { Building2, Plus } from "lucide-react"
 import { OwnerTenantTable, type OwnerTenantRecord } from "@/components/owner-tenant-table"
+import {
+  canOwnerToggleTenantStatus,
+  nextOwnerToggleTenantStatus,
+} from "@/lib/tenant-status"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -41,7 +45,12 @@ export default function TenantsPage() {
   }, [fetchTenants])
 
   async function toggleStatus(tenant: OwnerTenantRecord) {
-    const newStatus = tenant.status === "active" ? "inactive" : "active"
+    const newStatus = nextOwnerToggleTenantStatus(tenant.status)
+    if (!newStatus || !canOwnerToggleTenantStatus(tenant.status)) {
+      setError("Dieser Tenant-Status kann derzeit nicht direkt umgeschaltet werden.")
+      return
+    }
+
     setTogglingId(tenant.id)
     setError(null)
 

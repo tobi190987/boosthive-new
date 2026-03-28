@@ -663,6 +663,235 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* ----- Module Catalog Section ----- */}
+      <ModuleSection
+        modules={billing.modules ?? []}
+        subscriptionStatus={status}
+        actionLoading={actionLoading}
+        onSubscribe={handleModuleSubscribe}
+        onCancel={handleModuleCancel}
+        onReactivate={handleModuleReactivate}
+      />
+    </div>
+  )
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Module Section                                                             */
+/* -------------------------------------------------------------------------- */
+
+function moduleStatusLabel(status: ModuleRecord['status']) {
+  switch (status) {
+    case 'active':
+      return 'Aktiv'
+    case 'canceling':
+      return 'Endet bald'
+    case 'canceled':
+      return 'Beendet'
+    default:
+      return 'Nicht gebucht'
+  }
+}
+
+function moduleStatusBadgeClasses(status: ModuleRecord['status']) {
+  switch (status) {
+    case 'active':
+      return 'bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]'
+    case 'canceling':
+      return 'bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]'
+    case 'canceled':
+      return 'bg-[#f1f5f9] text-[#64748b] hover:bg-[#f1f5f9]'
+    default:
+      return 'bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#f1f5f9]'
+  }
+}
+
+interface ModuleSectionProps {
+  modules: ModuleRecord[]
+  subscriptionStatus: BillingData['subscription_status']
+  actionLoading: string | null
+  onSubscribe: (moduleId: string) => void
+  onCancel: (moduleId: string) => void
+  onReactivate: (moduleId: string) => void
+}
+
+function ModuleSection({
+  modules,
+  subscriptionStatus,
+  actionLoading,
+  onSubscribe,
+  onCancel,
+  onReactivate,
+}: ModuleSectionProps) {
+  const hasActivePlan = subscriptionStatus === 'active' || subscriptionStatus === 'canceling'
+
+  return (
+    <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
+          <Package className="h-5 w-5 text-[#b85e34]" />
+          Modul-Katalog
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {!hasActivePlan && (
+          <div className="rounded-2xl bg-[#fff8ed] px-4 py-3 text-sm text-[#b85e34]">
+            <AlertTriangle className="mb-1 inline h-4 w-4" /> Module koennen nur mit einem aktiven
+            Basis-Plan gebucht werden.
+          </div>
+        )}
+
+        {modules.length === 0 ? (
+          <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
+            <Package className="mx-auto h-8 w-8 text-slate-300" />
+            <p className="mt-3 text-sm font-semibold text-slate-700">Keine Module verfuegbar</p>
+            <p className="mt-1 text-sm text-slate-500">
+              Sobald Module zur Plattform hinzugefuegt werden, erscheinen sie hier.
+            </p>
+          </div>
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-2">
+            {modules.map((mod) => (
+              <ModuleCatalogCard
+                key={mod.id}
+                module={mod}
+                hasActivePlan={hasActivePlan}
+                actionLoading={actionLoading}
+                onSubscribe={onSubscribe}
+                onCancel={onCancel}
+                onReactivate={onReactivate}
+              />
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+interface ModuleCatalogCardProps {
+  module: ModuleRecord
+  hasActivePlan: boolean
+  actionLoading: string | null
+  onSubscribe: (moduleId: string) => void
+  onCancel: (moduleId: string) => void
+  onReactivate: (moduleId: string) => void
+}
+
+function ModuleCatalogCard({
+  module: mod,
+  hasActivePlan,
+  actionLoading,
+  onSubscribe,
+  onCancel,
+  onReactivate,
+}: ModuleCatalogCardProps) {
+  const isSubscribing = actionLoading === `module-subscribe-${mod.id}`
+  const isCanceling = actionLoading === `module-cancel-${mod.id}`
+  const isReactivating = actionLoading === `module-reactivate-${mod.id}`
+  const isAnyActionOnThis = isSubscribing || isCanceling || isReactivating
+
+  return (
+    <div className="rounded-[22px] border border-[#e6ddd0] bg-[#fffdf9] p-5 transition hover:border-[#d4c9bb]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-slate-900">{mod.name}</p>
+          <p className="mt-1 text-sm leading-6 text-slate-500">{mod.description}</p>
+        </div>
+        <Badge className={`shrink-0 rounded-full ${moduleStatusBadgeClasses(mod.status)}`}>
+          {moduleStatusLabel(mod.status)}
+        </Badge>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <span className="text-sm font-semibold text-slate-900">
+          {formatAmount(mod.price, mod.currency)}{' '}
+          <span className="font-normal text-slate-500">/ 4 Wochen</span>
+        </span>
+
+        {mod.status === 'not_subscribed' && (
+          <Button
+            size="sm"
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            disabled={!hasActivePlan || isAnyActionOnThis}
+            onClick={() => void onSubscribe(mod.id)}
+          >
+            {isSubscribing ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Wird gebucht...
+              </>
+            ) : (
+              'Jetzt buchen'
+            )}
+          </Button>
+        )}
+
+        {mod.status === 'active' && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                disabled={isAnyActionOnThis}
+              >
+                {isCanceling ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Wird abbestellt...
+                  </>
+                ) : (
+                  'Abbestellen'
+                )}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent className="rounded-[24px]">
+              <AlertDialogHeader>
+                <AlertDialogTitle>Modul &quot;{mod.name}&quot; abbestellen?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Das Modul bleibt bis zum Ende der aktuellen Periode nutzbar und wird dann
+                  deaktiviert.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
+                <AlertDialogAction
+                  className="rounded-full bg-red-600 text-white hover:bg-red-700"
+                  onClick={() => void onCancel(mod.id)}
+                >
+                  Ja, abbestellen
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+
+        {mod.status === 'canceling' && (
+          <Button
+            size="sm"
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            disabled={isAnyActionOnThis}
+            onClick={() => void onReactivate(mod.id)}
+          >
+            {isReactivating ? (
+              <>
+                <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                Wird reaktiviert...
+              </>
+            ) : (
+              'Kuendigung aufheben'
+            )}
+          </Button>
+        )}
+      </div>
+
+      {mod.status === 'canceling' && mod.current_period_end && (
+        <p className="mt-3 text-xs text-[#b85e34]">
+          Endet am {formatDate(mod.current_period_end)}
+        </p>
+      )}
     </div>
   )
 }

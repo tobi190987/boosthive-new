@@ -38,6 +38,9 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 | P1 | Tenant Detail Management | Planned |
 | P1 | Owner Super-Admin Dashboard | Planned |
 | P1 | Tenant Dashboard Shell | Planned |
+| P1 | Stripe Setup & Basis-Abo | Planned |
+| P1 | Modul-Buchung & Verwaltung | Planned |
+| P1 | Owner Billing-Übersicht | Planned |
 | P2 | SEO Analyse Tool | Planned |
 | P2 | AI Performance Analyse | Planned |
 | P2 | AI Visibility Tool | Planned |
@@ -57,7 +60,7 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 
 ## Non-Goals
 - Kein eigenes E-Mail-System (nur SMTP-Relay über Mailtrap)
-- Kein Billing/Invoicing in v1
+- Kein selbst-bedienbares Stripe Customer Portal (Billing läuft über eigenes App-UI)
 - Keine nativen Mobile Apps (nur Web)
 - Kein öffentliches Self-Signup für Agenturen (Owner provisiert manuell)
 - Keine KI-Tools in v1 (kommen nach dem Foundation-Layer)

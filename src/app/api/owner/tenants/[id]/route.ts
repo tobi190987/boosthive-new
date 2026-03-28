@@ -5,6 +5,8 @@ import { logAudit, logOperationalError } from '@/lib/observability'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import {
+  RestoreTenantSchema,
+  UpdateTenantArchiveSchema,
   UpdateTenantBasicsSchema,
   UpdateTenantBillingSchema,
   UpdateTenantContactSchema,
@@ -22,6 +24,9 @@ const TENANT_DETAIL_SELECT = `
   created_at,
   billing_onboarding_completed_at,
   subscription_status,
+  archived_at,
+  archived_by,
+  archive_reason,
   logo_url,
   billing_company,
   billing_street,
@@ -47,6 +52,7 @@ function serializeTenantForOwner(tenant: Record<string, unknown>) {
       typeof tenant.billing_onboarding_completed_at === 'string'
         ? tenant.billing_onboarding_completed_at
         : null,
+    archived_at: typeof tenant.archived_at === 'string' ? tenant.archived_at : null,
   })
 
   return {
@@ -55,6 +61,7 @@ function serializeTenantForOwner(tenant: Record<string, unknown>) {
     status: resolution.effectiveStatus,
     status_reason: resolution.reason,
     status_allows_login: resolution.allowsLogin,
+    is_archived: Boolean(tenant.archived_at),
   }
 }
 
@@ -138,6 +145,9 @@ async function loadTenantDetail(tenantId: string) {
         status,
         created_at,
         billing_onboarding_completed_at,
+        archived_at,
+        archived_by,
+        archive_reason,
         logo_url,
         billing_company,
         billing_street,
@@ -154,6 +164,33 @@ async function loadTenantDetail(tenantId: string) {
   }
 
   if (hasMissingTenantStatusColumnError(tenantLookup.error, 'billing_onboarding_completed_at')) {
+    tenantLookup = await supabaseAdmin
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        created_at,
+        archived_at,
+        archived_by,
+        archive_reason,
+        logo_url,
+        billing_company,
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country,
+        billing_vat_id,
+        contact_person,
+        contact_phone,
+        contact_website
+      `)
+      .eq('id', tenantId)
+      .maybeSingle()
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantLookup.error, 'archived_at')) {
     tenantLookup = await supabaseAdmin
       .from('tenants')
       .select(`
@@ -219,6 +256,9 @@ async function reloadTenantRecord(
         status,
         created_at,
         billing_onboarding_completed_at,
+        archived_at,
+        archived_by,
+        archive_reason,
         logo_url,
         billing_company,
         billing_street,
@@ -235,6 +275,33 @@ async function reloadTenantRecord(
   }
 
   if (hasMissingTenantStatusColumnError(tenantLookup.error, 'billing_onboarding_completed_at')) {
+    tenantLookup = await supabaseAdmin
+      .from('tenants')
+      .select(`
+        id,
+        name,
+        slug,
+        status,
+        created_at,
+        archived_at,
+        archived_by,
+        archive_reason,
+        logo_url,
+        billing_company,
+        billing_street,
+        billing_zip,
+        billing_city,
+        billing_country,
+        billing_vat_id,
+        contact_person,
+        contact_phone,
+        contact_website
+      `)
+      .eq('id', tenantId)
+      .maybeSingle()
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantLookup.error, 'archived_at')) {
     tenantLookup = await supabaseAdmin
       .from('tenants')
       .select(`
@@ -333,6 +400,148 @@ export async function PATCH(
       : 'status'
 
   const supabaseAdmin = createAdminClient()
+
+  if (operationType === 'archive') {
+    const parsed = UpdateTenantArchiveSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validierungsfehler.', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+
+    const archivedAt = new Date().toISOString()
+    const { error } = await supabaseAdmin
+      .from('tenants')
+      .update({
+        archived_at: archivedAt,
+        archived_by: auth.userId,
+        archive_reason: parsed.data.archiveReason,
+      })
+      .eq('id', id)
+
+    if (error) {
+      logOperationalError('owner_tenant_archive_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Tenant konnte nicht archiviert werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    const tenant = tenantReload.data
+
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_archive_reload_failed', tenantReload.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Tenant konnte nicht archiviert werden.' },
+        { status: 500 }
+      )
+    }
+
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
+    }
+
+    const currentAdminResult = await getCurrentAdmin(id)
+    logAudit('owner_tenant_archived', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+      archiveReason: parsed.data.archiveReason,
+    })
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_archived',
+      context: {
+        tenantName: tenant.name,
+        tenantSlug: tenant.slug,
+        archiveReason: parsed.data.archiveReason,
+        archivedAt,
+      },
+    })
+    return NextResponse.json({
+      tenant: {
+        ...serializeTenantForOwner(tenant),
+        currentAdmin: currentAdminResult.data,
+      },
+    })
+  }
+
+  if (operationType === 'restore') {
+    const parsed = RestoreTenantSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: 'Validierungsfehler.', details: parsed.error.flatten().fieldErrors },
+        { status: 400 }
+      )
+    }
+
+    const { error } = await supabaseAdmin
+      .from('tenants')
+      .update({
+        archived_at: null,
+        archived_by: null,
+        archive_reason: null,
+      })
+      .eq('id', id)
+
+    if (error) {
+      logOperationalError('owner_tenant_restore_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Tenant konnte nicht wiederhergestellt werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    const tenant = tenantReload.data
+
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_restore_reload_failed', tenantReload.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Tenant konnte nicht wiederhergestellt werden.' },
+        { status: 500 }
+      )
+    }
+
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
+    }
+
+    const currentAdminResult = await getCurrentAdmin(id)
+    logAudit('owner_tenant_restored', {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_restored',
+      context: {
+        tenantName: tenant.name,
+        tenantSlug: tenant.slug,
+      },
+    })
+    return NextResponse.json({
+      tenant: {
+        ...serializeTenantForOwner(tenant),
+        currentAdmin: currentAdminResult.data,
+      },
+    })
+  }
 
   if (operationType === 'status') {
     const parsed = UpdateTenantStatusSchema.safeParse(body)
@@ -685,7 +894,7 @@ export async function PATCH(
  * Löscht einen Tenant und bereinigt verwaiste Auth-User.
  */
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireOwner()
@@ -697,6 +906,88 @@ export async function DELETE(
   }
 
   const supabaseAdmin = createAdminClient()
+  const mode = request.nextUrl.searchParams.get('mode') === 'hard' ? 'hard' : 'archive'
+
+  if (mode === 'archive') {
+    const archivedAt = new Date().toISOString()
+    const { error } = await supabaseAdmin
+      .from('tenants')
+      .update({
+        archived_at: archivedAt,
+        archived_by: auth.userId,
+      })
+      .eq('id', id)
+
+    if (error) {
+      logOperationalError('owner_tenant_delete_soft_archive_failed', error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Tenant konnte nicht archiviert werden.' },
+        { status: 500 }
+      )
+    }
+
+    const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+    if (tenantReload.error) {
+      logOperationalError('owner_tenant_delete_soft_archive_reload_failed', tenantReload.error, {
+        ownerUserId: auth.userId,
+        tenantId: id,
+      })
+      return NextResponse.json(
+        { error: 'Tenant konnte nicht archiviert werden.' },
+        { status: 500 }
+      )
+    }
+
+    if (!tenantReload.data) {
+      return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
+    }
+
+    await recordOwnerAuditLog({
+      actorUserId: auth.userId,
+      tenantId: id,
+      eventType: 'tenant_archived',
+      context: {
+        tenantName: tenantReload.data.name,
+        tenantSlug: tenantReload.data.slug,
+        archivedAt,
+        source: 'delete_endpoint_default',
+      },
+    })
+
+    return NextResponse.json({
+      success: true,
+      mode,
+      tenant: serializeTenantForOwner(tenantReload.data),
+    })
+  }
+
+  const tenantReload = await reloadTenantRecord(supabaseAdmin, id)
+  const tenantBeforeDelete = tenantReload.data
+
+  if (tenantReload.error) {
+    logOperationalError('owner_tenant_hard_delete_precheck_failed', tenantReload.error, {
+      ownerUserId: auth.userId,
+      tenantId: id,
+    })
+    return NextResponse.json(
+      { error: 'Tenant konnte nicht gelöscht werden.' },
+      { status: 500 }
+    )
+  }
+
+  if (!tenantBeforeDelete) {
+    return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 404 })
+  }
+
+  if (!tenantBeforeDelete.archived_at) {
+    return NextResponse.json(
+      { error: 'Harte Löschung ist nur für bereits archivierte Tenants erlaubt.' },
+      { status: 409 }
+    )
+  }
 
   try {
     const result = await deleteTenantForOwner(supabaseAdmin, id)

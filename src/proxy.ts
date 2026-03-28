@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { createMiddlewareClient } from '@/lib/supabase-middleware'
+import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 // ---------------------------------------------------------------------------
 // BUG-2: Rate Limiting für /api/owner/* Routen
@@ -30,6 +31,10 @@ function pruneRateLimitMap(): void {
 }
 
 function checkRateLimit(request: NextRequest, maxRequests = RATE_LIMIT_MAX_REQUESTS): boolean {
+  if (process.env.NODE_ENV === 'development') {
+    return true
+  }
+
   // BUG-11: In Produktion auf Vercel wird x-forwarded-for von der Edge-Network gesetzt
   // (nicht vom Client spoofbar). x-real-ip als weiterer Fallback, 'unknown' für lokale Dev.
   // Für Multi-Instance-Produktion: durch Upstash Redis ersetzen (dann echte Client-IP via Vercel).
@@ -112,10 +117,13 @@ function getSupabaseAdminClient() {
   )
 }
 
-async function redirectInactiveTenant(request: NextRequest): Promise<NextResponse> {
+async function redirectBlockedTenant(
+  request: NextRequest,
+  reason: 'tenant_inactive' | 'tenant_billing_blocked'
+): Promise<NextResponse> {
   const loginUrl = request.nextUrl.clone()
   loginUrl.pathname = '/login'
-  loginUrl.searchParams.set('reason', 'tenant_inactive')
+  loginUrl.searchParams.set('reason', reason)
 
   const response = NextResponse.redirect(loginUrl)
   const supabase = createMiddlewareClient(request, response)
@@ -123,7 +131,7 @@ async function redirectInactiveTenant(request: NextRequest): Promise<NextRespons
   try {
     await supabase.auth.signOut()
   } catch (error) {
-    console.warn('[Proxy] Tenant inactive sign-out failed:', error)
+    console.warn('[Proxy] Blocked tenant sign-out failed:', error)
   }
 
   return response
@@ -372,8 +380,9 @@ export async function proxy(request: NextRequest) {
       return maybeProtectTenantRoute(request, response, pathname, 'local-dev-fallback')
     }
 
-    if (tenant.status === 'inactive' && !isInactiveTenantAllowedPath(pathname)) {
-      return redirectInactiveTenant(request)
+    const tenantStatus = resolveTenantStatus(tenant)
+    if (tenantStatus.blocksProtectedAppAccess && !isInactiveTenantAllowedPath(pathname)) {
+      return redirectBlockedTenant(request, tenantStatus.loginBlockReason ?? 'tenant_inactive')
     }
 
     const headers = sanitizedHeaders(request)
@@ -392,8 +401,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.rewrite(url, { status: 404 })
   }
 
-  if (tenant.status === 'inactive' && !isInactiveTenantAllowedPath(pathname)) {
-    return redirectInactiveTenant(request)
+  const tenantStatus = resolveTenantStatus(tenant)
+  if (tenantStatus.blocksProtectedAppAccess && !isInactiveTenantAllowedPath(pathname)) {
+    return redirectBlockedTenant(request, tenantStatus.loginBlockReason ?? 'tenant_inactive')
   }
 
   // ----- Inject tenant context as request headers -----
@@ -487,23 +497,29 @@ async function maybeProtectTenantRoute(
 
 async function resolveTenant(
   slug: string
-): Promise<{ id: string; slug: string; status: 'active' | 'inactive' } | null> {
+): Promise<{
+  id: string
+  slug: string
+  status: string
+  subscription_status: string | null
+  billing_onboarding_completed_at: string | null
+  archived_at: string | null
+} | null> {
   try {
     const supabase = getSupabaseAdminClient()
-    const { data, error } = await supabase
-      .from('tenants')
-      .select('id, slug, status')
-      .eq('slug', slug)
-      .single()
-
+    const { data, error } = await loadTenantStatusRecord(supabase, { slug })
     if (error || !data) {
       return null
     }
 
     return {
-      id: data.id,
-      slug: data.slug,
-      status: data.status as 'active' | 'inactive',
+      id: data.id as string,
+      slug: data.slug as string,
+      status: data.status as string,
+      subscription_status: (data.subscription_status as string | null | undefined) ?? null,
+      billing_onboarding_completed_at:
+        (data.billing_onboarding_completed_at as string | null | undefined) ?? null,
+      archived_at: (data.archived_at as string | null | undefined) ?? null,
     }
   } catch (err) {
     console.error(`[Middleware] Tenant lookup failed for slug "${slug}":`, err)

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 export type AppRole = 'owner' | 'admin' | 'member'
 
@@ -40,6 +41,19 @@ export async function requireTenantUser(
     return {
       error: NextResponse.json(
         { error: 'Zugriff verweigert. Keine aktive Tenant-Mitgliedschaft.' },
+        { status: 403 }
+      ),
+    }
+  }
+
+  const tenantStatusResult = await loadTenantStatusRecord(supabase, { id: tenantIdFromHeader })
+  const tenantStatus =
+    tenantStatusResult.data ? resolveTenantStatus(tenantStatusResult.data) : null
+
+  if (tenantStatusResult.error || !tenantStatus || tenantStatus.blocksProtectedAppAccess) {
+    return {
+      error: NextResponse.json(
+        { error: 'Tenant ist archiviert oder aktuell gesperrt.' },
         { status: 403 }
       ),
     }

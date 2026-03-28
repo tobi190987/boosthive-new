@@ -35,3 +35,5 @@ export const ProfileUpdateSchema = BaseProfileSchema.extend({
 })
 
 export type ProfileUpdateInput = z.infer<typeof ProfileUpdateSchema>
+export type BaseProfileInput = z.infer<typeof BaseProfileSchema>
+export type BillingAddressInput = z.infer<typeof BillingAddressSchema>

@@ -56,12 +56,15 @@ export async function GET(request: NextRequest) {
     dataQuery = dataQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
   }
 
-  let tenantResult = await dataQuery
+  let tenantResult = (await dataQuery) as {
+    data: Record<string, unknown>[] | null
+    error: unknown
+  }
 
   if (hasMissingTenantStatusColumnError(tenantResult.error, 'subscription_status')) {
     let fallbackQuery = supabaseAdmin
       .from('tenants')
-      .select('id, name, slug, status, created_at, billing_onboarding_completed_at')
+      .select('id, name, slug, status, created_at, billing_onboarding_completed_at, archived_at, archive_reason')
       .order('created_at', { ascending: false })
 
     if (query.length > 0) {
@@ -70,10 +73,25 @@ export async function GET(request: NextRequest) {
       fallbackQuery = fallbackQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     }
 
-    tenantResult = await fallbackQuery
+    tenantResult = (await fallbackQuery) as typeof tenantResult
   }
 
   if (hasMissingTenantStatusColumnError(tenantResult.error, 'billing_onboarding_completed_at')) {
+    let fallbackQuery = supabaseAdmin
+      .from('tenants')
+      .select('id, name, slug, status, created_at, archived_at, archive_reason')
+      .order('created_at', { ascending: false })
+
+    if (query.length > 0) {
+      const escapedQuery = query.replace(/[%_]/g, '\\$&')
+      const pattern = `%${escapedQuery}%`
+      fallbackQuery = fallbackQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
+    }
+
+    tenantResult = (await fallbackQuery) as typeof tenantResult
+  }
+
+  if (hasMissingTenantStatusColumnError(tenantResult.error, 'archived_at')) {
     let fallbackQuery = supabaseAdmin
       .from('tenants')
       .select('id, name, slug, status, created_at')
@@ -85,7 +103,7 @@ export async function GET(request: NextRequest) {
       fallbackQuery = fallbackQuery.or(`name.ilike.${pattern},slug.ilike.${pattern}`)
     }
 
-    tenantResult = await fallbackQuery
+    tenantResult = (await fallbackQuery) as typeof tenantResult
   }
 
   const { data: tenants, error } = tenantResult
@@ -108,14 +126,14 @@ export async function GET(request: NextRequest) {
   const resolvedTenants = (tenants ?? []).map((tenant) => {
     const resolution = resolveTenantStatus(tenant)
     return {
-      id: tenant.id,
-      name: tenant.name,
-      slug: tenant.slug,
+      id: tenant.id as string,
+      name: tenant.name as string,
+      slug: tenant.slug as string,
       status: resolution.effectiveStatus,
       base_status: tenant.status,
       status_reason: resolution.reason,
       status_allows_login: resolution.allowsLogin,
-      created_at: tenant.created_at,
+      created_at: tenant.created_at as string,
       archived_at: 'archived_at' in tenant ? tenant.archived_at : null,
       is_archived: Boolean('archived_at' in tenant && tenant.archived_at),
       archive_reason: 'archive_reason' in tenant ? tenant.archive_reason : null,

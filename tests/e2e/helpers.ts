@@ -36,6 +36,13 @@ export async function loginAsOwner(page: Page, email: string, password: string) 
   await page.getByLabel('E-Mail').fill(email)
   await page.locator('input#password').fill(password)
   await page.getByRole('button', { name: 'Anmelden' }).click()
+
+  await page.waitForLoadState('networkidle')
+
+  if (page.url().includes('/owner/login')) {
+    const alertText = await page.getByRole('alert').textContent().catch(() => null)
+    throw new Error(`Owner-Login fehlgeschlagen: ${alertText?.trim() ?? 'Unbekannter Fehler.'}`)
+  }
 }
 
 export async function completeMemberOnboarding(page: Page, firstName = 'Mia', lastName = 'Member') {

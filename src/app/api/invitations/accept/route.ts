@@ -4,6 +4,7 @@ import { AcceptInvitationSchema } from '@/lib/schemas/invitations'
 import { deriveInvitationStatus, hashInvitationToken } from '@/lib/invitations'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 const INVALID_TOKEN_ERROR =
   'Der Einladungslink ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.'
@@ -47,6 +48,26 @@ export async function POST(request: NextRequest) {
   }
 
   const supabaseAdmin = createAdminClient()
+  const tenantStatusLookup = await loadTenantStatusRecord(supabaseAdmin, { id: tenantId })
+  const tenantStatus =
+    tenantStatusLookup.data ? resolveTenantStatus(tenantStatusLookup.data) : null
+
+  if (tenantStatusLookup.error || !tenantStatus || tenantStatus.effectiveStatus === 'archived') {
+    logSecurity('invitation_accept_archived_tenant_blocked', {
+      tenantId,
+      tenantError:
+        typeof tenantStatusLookup.error === 'object' &&
+        tenantStatusLookup.error !== null &&
+        'message' in tenantStatusLookup.error
+          ? tenantStatusLookup.error.message
+          : null,
+    })
+    return NextResponse.json(
+      { error: 'Dieser Tenant ist archiviert. Einladungen koennen aktuell nicht angenommen werden.' },
+      { status: 403 }
+    )
+  }
+
   const tokenHash = hashInvitationToken(parsed.data.token)
   const nowIso = new Date().toISOString()
   const { data: invitation, error: invitationError } = await supabaseAdmin

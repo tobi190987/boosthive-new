@@ -1,6 +1,6 @@
 # PROJ-15: Modul-Buchung & Verwaltung
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-03-27
 **Last Updated:** 2026-03-28
 
@@ -210,6 +210,23 @@ Nur wenn ein Modul zusätzlich eine neue eigene Produktfläche braucht, ist für
 - entscheiden, ob `canceled`-Datensätze in `tenant_modules` erhalten oder nach Ablauf entfernt werden
 - RLS-Policies für `modules` und `tenant_modules` definieren
 - Seed/Bootstrap-Strategie für erste Module (`SEO Analyse`, `AI Performance`, `AI Visibility`) festlegen
+
+## Frontend Implementation Notes
+
+**Implementiert am 2026-03-28 durch /frontend**
+
+### Geaenderte Dateien:
+- `src/components/billing-workspace.tsx` -- Erweitert um ModuleSection und ModuleCatalogCard. Das BillingData-Interface enthaelt jetzt ein optionales `modules[]`-Array. Drei neue API-Handler (subscribe, cancel, reactivate) fuer Modul-Aktionen. Jedes Modul zeigt Status-Badge, Preis, und kontextabhaengige CTAs.
+- `src/components/tenant-dashboard-overview.tsx` -- Dynamische Modul-Karten statt statischer "Tools" Placeholder. Aktive Module zeigen direkten Einstieg; nicht gebuchte Module sind als gated Cards mit Upgrade-Hinweis sichtbar. Members sehen Hinweis "Wende dich an deinen Admin". Admins sehen Link zum Billing-Bereich.
+
+### Erwartete API-Endpunkte (noch zu implementieren in /backend):
+- `GET /api/tenant/billing` muss `modules[]` Array im Response liefern
+- `POST /api/tenant/billing/modules/[moduleId]/subscribe`
+- `POST /api/tenant/billing/modules/[moduleId]/cancel`
+- `POST /api/tenant/billing/modules/[moduleId]/reactivate`
+
+### Abweichungen vom Tech Design:
+- Keine -- Frontend folgt exakt der spezifizierten UI-Struktur
 
 ## QA Test Results
 _To be added by /qa_

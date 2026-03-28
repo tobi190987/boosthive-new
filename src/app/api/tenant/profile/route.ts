@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantUser } from '@/lib/auth-guards'
-import { hasRequiredBillingDetails } from '@/lib/profile'
-import { BillingAddressSchema, ProfileUpdateSchema } from '@/lib/schemas/profile'
+import { executeTenantProfileUpdate } from '@/lib/profile-update'
+import { ProfileUpdateSchema } from '@/lib/schemas/profile'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 export async function GET(request: NextRequest) {
@@ -83,158 +83,20 @@ export async function PUT(request: NextRequest) {
     )
   }
 
-  const input = parsed.data
-  const supabaseAdmin = createAdminClient()
-  let validatedBillingAddress:
-    | {
-        billing_company: string
-        billing_street: string
-        billing_zip: string
-        billing_city: string
-        billing_country: string
-        billing_vat_id: string
-      }
-    | null = null
-  const { data: existingProfile } = await supabaseAdmin
-    .from('user_profiles')
-    .select('avatar_url')
-    .eq('user_id', authResult.auth.userId)
-    .maybeSingle()
-
-  const { error: profileError } = await supabaseAdmin.from('user_profiles').upsert({
-    user_id: authResult.auth.userId,
-    first_name: input.first_name,
-    last_name: input.last_name,
-    avatar_url: existingProfile?.avatar_url ?? null,
+  const result = await executeTenantProfileUpdate({
+    tenantId,
+    userId: authResult.auth.userId,
+    role: authResult.auth.role === 'admin' ? 'admin' : 'member',
+    input: parsed.data,
   })
 
-  if (profileError) {
-    console.error('[PUT /api/tenant/profile] Profil konnte nicht gespeichert werden:', profileError)
-    return NextResponse.json({ error: 'Profil konnte nicht gespeichert werden.' }, { status: 500 })
-  }
-
-  if (authResult.auth.role === 'admin') {
-    const billingResult = BillingAddressSchema.safeParse({
-      billing_company: input.billing_company ?? '',
-      billing_street: input.billing_street ?? '',
-      billing_zip: input.billing_zip ?? '',
-      billing_city: input.billing_city ?? '',
-      billing_country: input.billing_country ?? '',
-      billing_vat_id: input.billing_vat_id ?? '',
-    })
-
-    if (!billingResult.success) {
-      return NextResponse.json(
-        {
-          error: 'Bitte hinterlege eine vollständige Rechnungsadresse.',
-          details: billingResult.error.flatten().fieldErrors,
-        },
-        { status: 400 }
-      )
-    }
-
-    validatedBillingAddress = billingResult.data
-
-    const { error: tenantError } = await supabaseAdmin
-      .from('tenants')
-      .update(validatedBillingAddress)
-      .eq('id', tenantId)
-
-    if (tenantError) {
-      console.error('[PUT /api/tenant/profile] Rechnungsadresse konnte nicht gespeichert werden:', tenantError)
-      return NextResponse.json(
-        { error: 'Rechnungsadresse konnte nicht gespeichert werden.' },
-        { status: 500 }
-      )
-    }
-  }
-
-  if (input.complete_onboarding) {
-    if (authResult.auth.role === 'admin') {
-      if (!hasRequiredBillingDetails(validatedBillingAddress)) {
-        return NextResponse.json(
-          { error: 'Bitte vervollständige zuerst die Rechnungsadresse.' },
-          { status: 400 }
-        )
-      }
-
-      if (process.env.STRIPE_SECRET_KEY) {
-        const { data: tenantStripeData, error: tenantStripeError } = await supabaseAdmin
-          .from('tenants')
-          .select('stripe_customer_id')
-          .eq('id', tenantId)
-          .maybeSingle()
-
-        if (tenantStripeError) {
-          console.warn(
-            '[PUT /api/tenant/profile] Stripe-Tenantdaten konnten nicht geladen werden:',
-            tenantStripeError
-          )
-        } else if (!tenantStripeData) {
-          console.warn('[PUT /api/tenant/profile] Stripe-Tenantdatensatz fehlt fuer:', tenantId)
-        } else if (!tenantStripeData.stripe_customer_id) {
-          console.warn(
-            '[PUT /api/tenant/profile] Kein stripe_customer_id hinterlegt; Stripe-Pruefung wird uebersprungen.'
-          )
-        } else {
-          let hasPaymentMethod = false
-
-          try {
-            const { stripe } = await import('@/lib/stripe')
-            const paymentMethods = await stripe.paymentMethods.list({
-              customer: tenantStripeData.stripe_customer_id,
-              type: 'card',
-              limit: 1,
-            })
-            hasPaymentMethod = paymentMethods.data.length > 0
-          } catch (stripeError) {
-            console.warn('[PUT /api/tenant/profile] Stripe-Pruefung fehlgeschlagen:', stripeError)
-          }
-
-          if (!hasPaymentMethod) {
-          return NextResponse.json(
-              { error: 'Bitte hinterlege zuerst eine Zahlungsmethode für Stripe.' },
-              { status: 400 }
-            )
-          }
-        }
-      }
-
-      const { error: billingStatusError } = await supabaseAdmin
-        .from('tenants')
-        .update({ billing_onboarding_completed_at: new Date().toISOString() })
-        .eq('id', tenantId)
-
-      if (billingStatusError) {
-        console.error(
-          '[PUT /api/tenant/profile] Billing-Onboarding konnte nicht markiert werden:',
-          billingStatusError
-        )
-        return NextResponse.json(
-          { error: 'Stripe-Status konnte nicht gespeichert werden.' },
-          { status: 500 }
-        )
-      }
-    }
-
-    const { error: onboardingError } = await supabaseAdmin
-      .from('tenant_members')
-      .update({ onboarding_completed_at: new Date().toISOString() })
-      .eq('tenant_id', tenantId)
-      .eq('user_id', authResult.auth.userId)
-
-    if (onboardingError) {
-      console.error('[PUT /api/tenant/profile] Onboarding-Status konnte nicht gespeichert werden:', onboardingError)
-      return NextResponse.json(
-        { error: 'Onboarding konnte nicht abgeschlossen werden.' },
-        { status: 500 }
-      )
-    }
+  if ('error' in result) {
+    return result.error
   }
 
   return NextResponse.json({
     success: true,
-    onboarding_complete: input.complete_onboarding,
-    redirectTo: input.complete_onboarding ? '/dashboard' : null,
+    onboarding_complete: result.onboardingComplete,
+    redirectTo: result.redirectTo,
   })
 }

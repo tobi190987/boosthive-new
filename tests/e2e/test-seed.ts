@@ -11,6 +11,7 @@ export interface SeedResult {
   }
   capabilities: {
     subscriptionStatusAvailable: boolean
+    archivedSoftDeleteAvailable: boolean
   }
   users: {
     owner: {
@@ -32,6 +33,7 @@ export interface SeedTenantOptions {
   status?: 'active' | 'inactive'
   subscriptionStatus?: string | null
   billingOnboardingCompleted?: boolean
+  archived?: boolean
 }
 
 export interface InvitationTokenResult {
@@ -78,6 +80,7 @@ export async function seedTenant(
       status: options.status,
       subscriptionStatus: options.subscriptionStatus,
       billingOnboardingCompleted: options.billingOnboardingCompleted,
+      archived: options.archived,
     },
   })
 

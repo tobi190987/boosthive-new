@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { MANUAL_TENANT_STATUSES } from '@/lib/tenant-status'
 
 /**
  * Reservierte Subdomains, die nicht als Tenant-Slug vergeben werden duerfen.
@@ -45,12 +46,30 @@ export const CreateTenantSchema = z.object({
 export type CreateTenantInput = z.infer<typeof CreateTenantSchema>
 
 export const UpdateTenantStatusSchema = z.object({
-  status: z.enum(['active', 'inactive']).refine((v) => v === 'active' || v === 'inactive', {
+  status: z.enum(MANUAL_TENANT_STATUSES, {
     message: 'Status muss "active" oder "inactive" sein.',
   }),
 })
 
 export type UpdateTenantStatusInput = z.infer<typeof UpdateTenantStatusSchema>
+
+export const UpdateTenantArchiveSchema = z.object({
+  type: z.literal('archive'),
+  archiveReason: z
+    .string()
+    .trim()
+    .max(500, 'Archivierungsgrund darf maximal 500 Zeichen lang sein.')
+    .optional()
+    .transform((value) => (value && value.length > 0 ? value : null)),
+})
+
+export type UpdateTenantArchiveInput = z.infer<typeof UpdateTenantArchiveSchema>
+
+export const RestoreTenantSchema = z.object({
+  type: z.literal('restore'),
+})
+
+export type RestoreTenantInput = z.infer<typeof RestoreTenantSchema>
 
 export const UpdateTenantBasicsSchema = z.object({
   type: z.literal('basics'),
