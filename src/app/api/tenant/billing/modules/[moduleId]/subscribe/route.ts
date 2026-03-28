@@ -3,7 +3,6 @@ import { requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { stripe } from '@/lib/stripe'
 import { checkRateLimit, getClientIp } from '@/lib/rate-limit'
-import { sendModuleBooked } from '@/lib/email'
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -45,7 +44,7 @@ export async function POST(
   // 1. Load tenant with subscription data
   const { data: tenant, error: tenantError } = await supabaseAdmin
     .from('tenants')
-    .select('id, name, slug, stripe_customer_id, stripe_subscription_id, subscription_status')
+    .select('id, stripe_customer_id, stripe_subscription_id, subscription_status')
     .eq('id', tenantId)
     .single()
 
@@ -73,7 +72,7 @@ export async function POST(
   // 2. Load the module from the catalog
   const { data: mod, error: modError } = await supabaseAdmin
     .from('modules')
-    .select('id, code, name, description, stripe_price_id, is_active')
+    .select('id, code, name, stripe_price_id, is_active')
     .eq('id', moduleId)
     .single()
 
@@ -152,38 +151,6 @@ export async function POST(
         upsertError
       )
       // Non-fatal: webhook will eventually sync
-    }
-
-    // Send booking confirmation email (non-fatal)
-    try {
-      const { data: { user: adminUser } } = await supabaseAdmin.auth.admin.getUserById(authResult.auth.userId)
-      if (adminUser?.email) {
-        let priceFormatted = '–'
-        try {
-          const price = await stripe.prices.retrieve(mod.stripe_price_id)
-          let amount = price.unit_amount
-          if (amount === null && Array.isArray((price as any).tiers) && (price as any).tiers.length > 0) {
-            const firstTier = (price as any).tiers[0]
-            amount = firstTier.unit_amount ?? firstTier.flat_amount ?? null
-          }
-          if (amount !== null) {
-            priceFormatted = new Intl.NumberFormat('de-DE', { style: 'currency', currency: price.currency.toUpperCase() }).format(amount / 100)
-          }
-        } catch { /* use fallback */ }
-
-        const bookedAt = new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date())
-        await sendModuleBooked({
-          to: adminUser.email,
-          tenantName: tenant.name,
-          tenantSlug: tenant.slug,
-          moduleName: mod.name,
-          moduleDescription: mod.description ?? '',
-          priceFormatted,
-          bookedAt,
-        })
-      }
-    } catch (emailError) {
-      console.error('[POST /api/tenant/billing/modules/subscribe] Bestätigungs-E-Mail fehlgeschlagen:', emailError)
     }
 
     return NextResponse.json({
