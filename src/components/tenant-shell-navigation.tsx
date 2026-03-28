@@ -40,7 +40,7 @@ function roleLabel(role: TenantShellContext['membership']['role']) {
 function tenantNav(context: TenantShellContext) {
   const workspace: NavItem[] = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { label: 'Tools', href: '/tools', icon: Sparkles, comingSoon: true },
+    { label: 'Tools', href: '/tools', icon: Sparkles },
   ]
 
   const administration: NavItem[] =
