@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { renderInvitationEmail } from '@/emails/invitation'
+import { renderModuleBookedEmail } from '@/emails/module-booked'
 import { renderOwnerPastDueEmail } from '@/emails/owner-past-due'
 import { renderPasswordResetEmail } from '@/emails/password-reset'
 import { renderPaymentFailedEmail } from '@/emails/payment-failed'
@@ -26,6 +27,16 @@ interface SendPaymentFailedOptions {
   to: string
   tenantName: string
   tenantSlug: string
+}
+
+interface SendModuleBookedOptions {
+  to: string
+  tenantName: string
+  tenantSlug: string
+  moduleName: string
+  moduleDescription: string
+  priceFormatted: string
+  bookedAt: string
 }
 
 interface SendInvitationOptions {
@@ -272,6 +283,36 @@ export async function sendInvitation({
     text,
     category: 'invitation',
     tokenForLogs: token,
+  })
+}
+
+export async function sendModuleBooked({
+  to,
+  tenantName,
+  tenantSlug,
+  moduleName,
+  moduleDescription,
+  priceFormatted,
+  bookedAt,
+}: SendModuleBookedOptions): Promise<void> {
+  const billingUrl = buildTenantUrl(tenantSlug, '/billing')
+  const { subject, html, text } = renderModuleBookedEmail({
+    tenantName,
+    moduleName,
+    moduleDescription,
+    priceFormatted,
+    billingUrl,
+    bookedAt,
+  })
+
+  await sendEmail({
+    to,
+    tenantName,
+    tenantSlug,
+    subject,
+    html,
+    text,
+    category: 'module-booked',
   })
 }
 
