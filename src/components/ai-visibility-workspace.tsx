@@ -1654,8 +1654,9 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Analyse fehlgeschlagen</AlertTitle>
           <AlertDescription>
-            Die Analyse konnte nicht vollständig abgeschlossen werden. Prüfe das Fehler-Log unten
-            oder starte sie mit denselben Einstellungen erneut.
+            {status.error_message
+              ? status.error_message
+              : 'Die Analyse konnte nicht vollständig abgeschlossen werden. Pruefe das Fehler-Log unten oder starte sie mit denselben Einstellungen erneut.'}
           </AlertDescription>
         </Alert>
       )}

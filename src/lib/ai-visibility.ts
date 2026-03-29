@@ -47,6 +47,7 @@ export interface VisibilityAnalysis {
   models: string[]
   iterations: number
   status: AnalysisStatus
+  error_message?: string | null
   analytics_status?: AnalyticsStatus
   analytics_error_message?: string | null
   progress_done: number
@@ -71,6 +72,7 @@ export interface AnalysisStatusResponse {
   models: string[]
   iterations: number
   status: AnalysisStatus
+  error_message?: string | null
   analytics_status?: AnalyticsStatus
   analytics_error_message?: string | null
   progress_done: number

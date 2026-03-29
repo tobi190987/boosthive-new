@@ -25,7 +25,7 @@ export async function GET(
 
   const { data: analysis, error } = await admin
     .from('visibility_analyses')
-    .select('id, project_id, status, progress_done, progress_total, error_log, models, iterations, analytics_status, analytics_error_message')
+    .select('id, project_id, status, error_message, progress_done, progress_total, error_log, models, iterations, analytics_status, analytics_error_message')
     .eq('tenant_id', tenantId)
     .eq('id', id)
     .maybeSingle()
@@ -62,6 +62,7 @@ export async function GET(
     models: analysis.models ?? [],
     iterations: analysis.iterations ?? 5,
     status: analysis.status,
+    error_message: analysis.error_message,
     analytics_status: analysis.analytics_status,
     analytics_error_message: analysis.analytics_error_message,
     progress_done: analysis.progress_done,
