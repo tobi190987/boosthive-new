@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { dispatchAnalyticsWorker } from '@/lib/visibility-analytics'
+import { normalizeAiModelId } from '@/lib/ai-visibility'
 
 /**
  * PROJ-12: AI Visibility Background Worker
@@ -106,7 +107,9 @@ export async function POST(request: NextRequest) {
   const errorLog: Array<{ model: string; keyword: string; error: string; timestamp: string }> = []
 
   const keywords: string[] = project.keywords ?? []
-  const models: string[] = analysis.models ?? []
+  const models: string[] = ((analysis.models ?? []) as string[]).map((model: string) =>
+    normalizeAiModelId(model)
+  )
   const iterations: number = analysis.iterations ?? 5
   const brandName: string = project.brand_name
   const competitors: Competitor[] = (project.competitors as Competitor[]) ?? []

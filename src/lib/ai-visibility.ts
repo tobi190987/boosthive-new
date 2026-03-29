@@ -9,12 +9,20 @@ export interface AiModel {
   provider: string
 }
 
+const LEGACY_MODEL_ALIASES: Record<string, string> = {
+  'google/gemini-pro-1.5': 'google/gemini-2.5-pro',
+}
+
 export const AI_MODELS: AiModel[] = [
   { id: 'openai/gpt-4o', label: 'GPT-4o', provider: 'OpenAI' },
   { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
-  { id: 'google/gemini-pro-1.5', label: 'Gemini 1.5 Pro', provider: 'Google' },
+  { id: 'google/gemini-2.5-pro', label: 'Gemini 2.5 Pro', provider: 'Google' },
   { id: 'perplexity/llama-3.1-sonar-large-128k-online', label: 'Perplexity Sonar', provider: 'Perplexity' },
 ]
+
+export function normalizeAiModelId(modelId: string): string {
+  return LEGACY_MODEL_ALIASES[modelId] ?? modelId
+}
 
 // ─── Wettbewerber ─────────────────────────────────────────────
 export interface Competitor {
@@ -145,6 +153,7 @@ export function statusColor(status: AnalysisStatus): string {
 }
 
 export function modelLabel(modelId: string): string {
-  const found = AI_MODELS.find((m) => m.id === modelId)
+  const canonicalModelId = normalizeAiModelId(modelId)
+  const found = AI_MODELS.find((m) => m.id === canonicalModelId)
   return found?.label ?? modelId
 }

@@ -10,6 +10,7 @@ import {
   VISIBILITY_ANALYSIS_START,
   VISIBILITY_READ,
 } from '@/lib/rate-limit'
+import { normalizeAiModelId } from '@/lib/ai-visibility'
 
 const MAX_CONCURRENT_ANALYSES = 2
 
@@ -90,7 +91,8 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { project_id, models, iterations } = parsed.data
+  const { project_id, iterations } = parsed.data
+  const models = Array.from(new Set(parsed.data.models.map((model) => normalizeAiModelId(model))))
   const admin = createAdminClient()
 
   // Verify project belongs to tenant
