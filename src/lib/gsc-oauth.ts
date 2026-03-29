@@ -18,7 +18,10 @@ const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v2/userinfo'
 const GSC_API_BASE = 'https://www.googleapis.com/webmasters/v3'
 const STATE_TTL_MS = 10 * 60 * 1000
 
-const SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly']
+const SCOPES = [
+  'https://www.googleapis.com/auth/webmasters.readonly',
+  'https://www.googleapis.com/auth/userinfo.email',
+]
 
 // ---------------------------------------------------------------------------
 // Config helpers
