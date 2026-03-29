@@ -4,12 +4,15 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
   ArrowLeft,
+  ExternalLink,
   Globe,
+  Link2,
   Loader2,
   Plus,
   Search,
   Settings,
   Trash2,
+  Unlink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
@@ -73,6 +76,23 @@ interface Competitor {
   id: string
   domain: string
   created_at: string
+}
+
+type GscStatus = 'connected' | 'expired' | 'revoked' | 'not_connected'
+
+interface GscConnection {
+  id: string
+  project_id: string
+  google_email: string
+  selected_property: string | null
+  status: 'connected' | 'expired' | 'revoked'
+  connected_at: string
+  token_expires_at?: string
+}
+
+interface GscProperty {
+  siteUrl: string
+  permissionLevel: string
 }
 
 type View =
@@ -691,6 +711,10 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
             <Settings className="mr-1.5 h-3.5 w-3.5" />
             Einstellungen
           </TabsTrigger>
+          <TabsTrigger value="integrations" className="rounded-full data-[state=active]:bg-white">
+            <Link2 className="mr-1.5 h-3.5 w-3.5" />
+            Integrationen
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="keywords" className="mt-4">
@@ -708,6 +732,10 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
             onUpdated={loadProject}
             onDeleted={onBack}
           />
+        </TabsContent>
+
+        <TabsContent value="integrations" className="mt-4">
+          <IntegrationsTab projectId={projectId} role={role} />
         </TabsContent>
       </Tabs>
     </div>
@@ -1417,6 +1445,499 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Endgueltig loeschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Integrations Tab (Admin only)
+// ---------------------------------------------------------------------------
+
+interface IntegrationsTabProps {
+  projectId: string
+  role: WorkspaceRole
+}
+
+function GscStatusBadge({ status }: { status: GscStatus }) {
+  switch (status) {
+    case 'connected':
+      return (
+        <Badge className="rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+          Verbunden
+        </Badge>
+      )
+    case 'expired':
+      return (
+        <Badge className="rounded-full bg-amber-50 text-amber-700 hover:bg-amber-50">
+          Token abgelaufen
+        </Badge>
+      )
+    case 'revoked':
+      return (
+        <Badge className="rounded-full bg-red-50 text-red-700 hover:bg-red-50">
+          Zugriff widerrufen
+        </Badge>
+      )
+    case 'not_connected':
+    default:
+      return (
+        <Badge className="rounded-full bg-slate-100 text-slate-500 hover:bg-slate-100">
+          Nicht verbunden
+        </Badge>
+      )
+  }
+}
+
+function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
+  const { toast } = useToast()
+  const isAdmin = role === 'admin'
+  const [connection, setConnection] = useState<GscConnection | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Properties
+  const [properties, setProperties] = useState<GscProperty[]>([])
+  const [loadingProperties, setLoadingProperties] = useState(false)
+  const [selectedProperty, setSelectedProperty] = useState<string>('')
+  const [savingProperty, setSavingProperty] = useState(false)
+
+  // Disconnect
+  const [disconnectOpen, setDisconnectOpen] = useState(false)
+  const [disconnecting, setDisconnecting] = useState(false)
+
+  // Connecting (OAuth redirect)
+  const [connecting, setConnecting] = useState(false)
+
+  const gscBase = `${API_BASE}/${projectId}/gsc`
+
+  const loadStatus = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await apiFetch<{ connection: GscConnection | null }>(`${gscBase}/status`)
+      setConnection(data.connection)
+      if (data.connection?.selected_property) {
+        setSelectedProperty(data.connection.selected_property)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'GSC-Status konnte nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [gscBase])
+
+  const loadProperties = useCallback(async () => {
+    try {
+      setLoadingProperties(true)
+      const data = await apiFetch<{ properties: GscProperty[] }>(`${gscBase}/properties`)
+      setProperties(data.properties)
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description: err instanceof Error ? err.message : 'Properties konnten nicht geladen werden.',
+        variant: 'destructive',
+      })
+    } finally {
+      setLoadingProperties(false)
+    }
+  }, [gscBase, toast])
+
+  useEffect(() => {
+    loadStatus()
+  }, [loadStatus])
+
+  // Load properties when connected
+  useEffect(() => {
+    if (isAdmin && connection && connection.status === 'connected') {
+      loadProperties()
+    }
+  }, [connection, isAdmin, loadProperties])
+
+  // Check for OAuth callback result in URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const gscResult = params.get('gsc')
+    const gscError = params.get('gsc_error')
+
+    if (gscResult === 'connected') {
+      toast({ title: 'Google Search Console verbunden' })
+      // Clean URL
+      const url = new URL(window.location.href)
+      url.searchParams.delete('gsc')
+      window.history.replaceState({}, '', url.toString())
+      loadStatus()
+    } else if (gscError) {
+      toast({
+        title: 'Verbindung fehlgeschlagen',
+        description: decodeURIComponent(gscError),
+        variant: 'destructive',
+      })
+      const url = new URL(window.location.href)
+      url.searchParams.delete('gsc_error')
+      window.history.replaceState({}, '', url.toString())
+    }
+  }, [toast, loadStatus])
+
+  async function handleConnect() {
+    try {
+      setConnecting(true)
+      const data = await apiFetch<{ url: string }>(`${gscBase}/connect`, {
+        method: 'POST',
+      })
+      // Redirect to Google OAuth
+      window.location.href = data.url
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description: err instanceof Error ? err.message : 'OAuth-Flow konnte nicht gestartet werden.',
+        variant: 'destructive',
+      })
+      setConnecting(false)
+    }
+  }
+
+  async function handleSelectProperty(value: string) {
+    setSelectedProperty(value)
+    try {
+      setSavingProperty(true)
+      await apiFetch(`${gscBase}/property`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selected_property: value }),
+      })
+      toast({ title: 'Property gespeichert', description: value })
+      loadStatus()
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description: err instanceof Error ? err.message : 'Property konnte nicht gespeichert werden.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingProperty(false)
+    }
+  }
+
+  async function handleDisconnect() {
+    try {
+      setDisconnecting(true)
+      await apiFetch(`${gscBase}/disconnect`, {
+        method: 'DELETE',
+      })
+      toast({ title: 'Verbindung getrennt', description: 'Die GSC-Verbindung wurde entfernt.' })
+      setConnection(null)
+      setProperties([])
+      setSelectedProperty('')
+      setDisconnectOpen(false)
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description: err instanceof Error ? err.message : 'Verbindung konnte nicht getrennt werden.',
+        variant: 'destructive',
+      })
+    } finally {
+      setDisconnecting(false)
+    }
+  }
+
+  // Loading skeleton
+  if (loading) {
+    return (
+      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <CardHeader>
+          <Skeleton className="h-5 w-48" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-10 w-48" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Alert variant="destructive" className="rounded-2xl">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Fehler</AlertTitle>
+        <AlertDescription className="flex items-center justify-between">
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={loadStatus}>
+            Erneut versuchen
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  const gscStatus: GscStatus = connection?.status ?? 'not_connected'
+  const isConnected = connection && connection.status === 'connected'
+  const isExpiredOrRevoked = connection && (connection.status === 'expired' || connection.status === 'revoked')
+
+  return (
+    <div className="space-y-6">
+      {/* GSC Integration Card */}
+      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f3ed]">
+                <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                </svg>
+              </div>
+              <div>
+                <CardTitle className="text-base font-semibold">Google Search Console</CardTitle>
+                <p className="text-sm text-slate-500">Ranking-Daten automatisch abrufen</p>
+              </div>
+            </div>
+            <GscStatusBadge status={gscStatus} />
+          </div>
+        </CardHeader>
+
+        <Separator className="bg-[#ebe2d5]" />
+
+        <CardContent className="pt-5">
+          {/* Not connected */}
+          {!connection && (
+            <div className="flex flex-col items-center gap-4 py-6 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
+                <Link2 className="h-6 w-6 text-slate-400" />
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-slate-900">
+                  Keine Verbindung hergestellt
+                </p>
+                <p className="max-w-sm text-sm text-slate-500">
+                  Verbinde ein Google-Konto, um Ranking-Daten aus der Search Console automatisch abzurufen.
+                </p>
+              </div>
+              {isAdmin ? (
+                <Button
+                  onClick={handleConnect}
+                  disabled={connecting}
+                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                >
+                  {connecting ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  Google Search Console verbinden
+                </Button>
+              ) : (
+                <Alert className="max-w-md rounded-2xl text-left">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Nicht verbunden</AlertTitle>
+                  <AlertDescription>
+                    Fuer dieses Projekt ist noch keine Google-Search-Console-Verbindung eingerichtet. Bitte informiere einen Admin.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          {/* Expired / Revoked — reconnect prompt */}
+          {isExpiredOrRevoked && connection && (
+            <div className="space-y-4">
+              <Alert className="rounded-2xl border-amber-200 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">
+                  {connection.status === 'expired'
+                    ? 'Token abgelaufen'
+                    : 'Zugriff widerrufen'}
+                </AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  {connection.status === 'expired'
+                    ? 'Das Zugriffstoken fuer die Search Console ist abgelaufen. Bitte verbinde das Google-Konto erneut.'
+                    : 'Der Zugriff auf die Search Console wurde widerrufen. Bitte verbinde das Google-Konto erneut.'}
+                </AlertDescription>
+              </Alert>
+
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-700">Verbundenes Konto</p>
+                  <p className="truncate text-sm text-slate-500">{connection.google_email}</p>
+                </div>
+              </div>
+
+              {isAdmin ? (
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    onClick={handleConnect}
+                    disabled={connecting}
+                    className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                  >
+                    {connecting ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                    )}
+                    Erneut verbinden
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDisconnectOpen(true)}
+                    className="rounded-full text-red-600 hover:text-red-700"
+                  >
+                    <Unlink className="mr-2 h-4 w-4" />
+                    Verbindung trennen
+                  </Button>
+                </div>
+              ) : (
+                <Alert className="rounded-2xl border-amber-200 bg-amber-50">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800">Admin erforderlich</AlertTitle>
+                  <AlertDescription className="text-amber-700">
+                    Die Verbindung muss von einem Admin erneut hergestellt werden.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+          )}
+
+          {/* Connected */}
+          {isConnected && connection && (
+            <div className="space-y-5">
+              {/* Connected account info */}
+              <div className="flex items-center gap-3 rounded-xl bg-emerald-50/50 p-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
+                  <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05" />
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-slate-700">Verbundenes Google-Konto</p>
+                  <p className="truncate text-sm text-slate-500">{connection.google_email}</p>
+                </div>
+                <p className="shrink-0 text-xs text-slate-400">
+                  Verbunden am {formatDate(connection.connected_at)}
+                </p>
+              </div>
+
+              {/* Property selector */}
+              <div className="space-y-2">
+                <Label htmlFor="gsc-property-select">Aktive Property</Label>
+                {isAdmin ? (
+                  <>
+                    <p className="text-sm text-slate-500">
+                      Waehle die Domain, fuer die Ranking-Daten abgerufen werden sollen.
+                    </p>
+                    {loadingProperties ? (
+                      <div className="flex items-center gap-2 py-2">
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                        <span className="text-sm text-slate-500">Properties werden geladen...</span>
+                      </div>
+                    ) : properties.length === 0 ? (
+                      <Alert className="rounded-2xl">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertTitle>Keine Properties gefunden</AlertTitle>
+                        <AlertDescription>
+                          Dieses Google-Konto hat keine verifizierten Properties in der Search Console. Stelle sicher, dass die Domain in der Google Search Console hinzugefuegt und verifiziert wurde.
+                        </AlertDescription>
+                      </Alert>
+                    ) : (
+                      <Select
+                        value={selectedProperty}
+                        onValueChange={handleSelectProperty}
+                        disabled={savingProperty}
+                      >
+                        <SelectTrigger id="gsc-property-select" className="w-full sm:w-96">
+                          <SelectValue placeholder="Property auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {properties.map((prop) => (
+                            <SelectItem key={prop.siteUrl} value={prop.siteUrl}>
+                              <span className="flex items-center gap-2">
+                                <Globe className="h-3.5 w-3.5 text-slate-400" />
+                                {prop.siteUrl}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {savingProperty && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Property wird gespeichert...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-xl bg-slate-50 p-4">
+                    <p className="text-sm text-slate-500">
+                      {connection.selected_property
+                        ? connection.selected_property
+                        : 'Es wurde noch keine aktive Property ausgewaehlt.'}
+                    </p>
+                  </div>
+                )}
+              </div>
+
+              {isAdmin && <Separator className="bg-[#ebe2d5]" />}
+
+              {/* Disconnect */}
+              {isAdmin && (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-slate-700">Verbindung trennen</p>
+                    <p className="text-sm text-slate-500">
+                      Entfernt die Google-Verbindung und loescht alle gespeicherten Tokens.
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setDisconnectOpen(true)}
+                    className="shrink-0 rounded-full text-red-600 hover:text-red-700"
+                  >
+                    <Unlink className="mr-2 h-4 w-4" />
+                    Trennen
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Disconnect confirmation dialog */}
+      <Dialog open={isAdmin && disconnectOpen} onOpenChange={setDisconnectOpen}>
+        <DialogContent className="rounded-[24px] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Verbindung trennen?</DialogTitle>
+            <DialogDescription>
+              Die Verbindung zur Google Search Console wird getrennt. Alle gespeicherten Tokens werden geloescht. Ranking-Daten, die bereits abgerufen wurden, bleiben erhalten.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setDisconnectOpen(false)}
+              disabled={disconnecting}
+              className="rounded-full"
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnect}
+              disabled={disconnecting}
+              className="rounded-full"
+            >
+              {disconnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verbindung trennen
             </Button>
           </DialogFooter>
         </DialogContent>

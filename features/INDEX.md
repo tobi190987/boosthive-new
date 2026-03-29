@@ -35,9 +35,9 @@
 | PROJ-21 | Auth Hardening | Deployed | [PROJ-21-auth-hardening.md](PROJ-21-auth-hardening.md) | 2026-03-28 |
 | PROJ-22 | API Authorization Tests | Deployed | [PROJ-22-api-authorization-tests.md](PROJ-22-api-authorization-tests.md) | 2026-03-28 |
 | PROJ-23 | AI Visibility Analytics & GEO | Deployed | [PROJ-23-ai-visibility-analytics.md](PROJ-23-ai-visibility-analytics.md) | 2026-03-28 |
-| PROJ-24 | AI Visibility Dashboard & Reports | Planned | [PROJ-24-ai-visibility-dashboard.md](PROJ-24-ai-visibility-dashboard.md) | 2026-03-28 |
+| PROJ-24 | AI Visibility Dashboard & Reports | Deployed | [PROJ-24-ai-visibility-dashboard.md](PROJ-24-ai-visibility-dashboard.md) | 2026-03-28 |
 | PROJ-25 | Keyword Project Management | Deployed | [PROJ-25-keyword-project-management.md](PROJ-25-keyword-project-management.md) | 2026-03-28 |
-| PROJ-26 | Google Search Console Integration | In Progress | [PROJ-26-google-search-console-integration.md](PROJ-26-google-search-console-integration.md) | 2026-03-28 |
+| PROJ-26 | Google Search Console Integration | Deployed | [PROJ-26-google-search-console-integration.md](PROJ-26-google-search-console-integration.md) | 2026-03-28 |
 | PROJ-27 | Keyword Rankings Dashboard & History | In Progress | [PROJ-27-keyword-rankings-dashboard.md](PROJ-27-keyword-rankings-dashboard.md) | 2026-03-28 |
 
 <!-- Add features above this line -->

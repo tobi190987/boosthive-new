@@ -72,6 +72,15 @@ export const VISIBILITY_ANALYSIS_START: RateLimitOptions = {
 /** Visibility estimate calls: 30 requests / 15 min / tenant+IP */
 export const VISIBILITY_ESTIMATE: RateLimitOptions = { limit: 30, windowMs: 15 * 60 * 1000 }
 
+/** GSC OAuth connect (starts OAuth flow): 5 requests / 15 min / tenant+IP */
+export const GSC_CONNECT: RateLimitOptions = { limit: 5, windowMs: 15 * 60 * 1000 }
+
+/** GSC read endpoints (status, properties): 60 requests / min / tenant+IP */
+export const GSC_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** GSC mutations (set property, disconnect): 20 requests / min / tenant+IP */
+export const GSC_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------
