@@ -8,6 +8,7 @@ import {
   Download,
   ExternalLink,
   FileText,
+  Info,
   LineChart,
   Minus,
   Sparkles,
@@ -30,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 
 type ScoreRow = {
   analysis_id: string
@@ -94,6 +96,25 @@ type TimelineSeries = {
   points: TimelineSeriesPoint[]
 }
 
+type TimelineSeriesColor = {
+  line: string
+  badge: string
+  text: string
+}
+
+const BRAND_TIMELINE_COLOR: TimelineSeriesColor = {
+  line: '#0d9488',
+  badge: 'bg-[#edf8f6]',
+  text: 'text-[#0d9488]',
+}
+
+const COMPETITOR_TIMELINE_COLORS: TimelineSeriesColor[] = [
+  { line: '#a35a34', badge: 'bg-[#fff1e8]', text: 'text-[#a35a34]' },
+  { line: '#2563eb', badge: 'bg-[#eff6ff]', text: 'text-[#2563eb]' },
+  { line: '#c2554d', badge: 'bg-[#fff3f1]', text: 'text-[#c2554d]' },
+  { line: '#7c3aed', badge: 'bg-[#f5f3ff]', text: 'text-[#7c3aed]' },
+]
+
 interface AiVisibilityReportProps {
   project: VisibilityProject
   analyses: VisibilityAnalysis[]
@@ -119,6 +140,32 @@ export function AiVisibilityReport({
   const [modelFilter, setModelFilter] = useState('all')
   const [localRecommendationStatus, setLocalRecommendationStatus] = useState<Record<string, 'open' | 'done'>>({})
   const [savingRecommendationIds, setSavingRecommendationIds] = useState<Record<string, boolean>>({})
+  const [hiddenTimelineSeries, setHiddenTimelineSeries] = useState<string[]>([])
+
+  const timelineColorMap = useMemo(() => {
+    const map = new Map<string, TimelineSeriesColor>()
+    let competitorIndex = 0
+
+    for (const entry of timelineSeries) {
+      if (entry.subjectType === 'brand') {
+        map.set(entry.subjectName, BRAND_TIMELINE_COLOR)
+        continue
+      }
+
+      map.set(
+        entry.subjectName,
+        COMPETITOR_TIMELINE_COLORS[competitorIndex % COMPETITOR_TIMELINE_COLORS.length]
+      )
+      competitorIndex++
+    }
+
+    return map
+  }, [timelineSeries])
+
+  const visibleTimelineSeries = useMemo(
+    () => timelineSeries.filter((entry) => !hiddenTimelineSeries.includes(entry.subjectName)),
+    [hiddenTimelineSeries, timelineSeries]
+  )
 
   const reportableAnalyses = useMemo(
     () =>
@@ -280,6 +327,12 @@ export function AiVisibilityReport({
   }, [fetchTimeline])
 
   useEffect(() => {
+    setHiddenTimelineSeries((prev) =>
+      prev.filter((subjectName) => timelineSeries.some((entry) => entry.subjectName === subjectName))
+    )
+  }, [timelineSeries])
+
+  useEffect(() => {
     if (!onRefreshAnalyses) return
 
     const hasAnalyticsInProgress = analyses.some(
@@ -374,10 +427,62 @@ export function AiVisibilityReport({
       strongestCompetitor,
       openRecommendations: openRecommendations.length,
       geoScore: average(brandRows.map((row) => row.geo_score ?? 0)),
+      brandSentimentPositive: average(brandRows.map((row) => row.sentiment_positive)),
+      brandSentimentNeutral: average(brandRows.map((row) => row.sentiment_neutral)),
+      brandSentimentNegative: average(brandRows.map((row) => row.sentiment_negative)),
       brandSourceCoverage:
         detail.sources.length > 0 ? Math.round((brandSourceCount / detail.sources.length) * 100) : 0,
     }
   }, [detail, localRecommendationStatus])
+
+  const sentimentSummary = useMemo(() => {
+    if (!summary) return null
+
+    if (summary.brandSentimentNegative >= summary.brandSentimentPositive + 10) {
+      return {
+        label: 'Kritisch',
+        tone: 'amber' as const,
+      }
+    }
+
+    if (summary.brandSentimentPositive >= summary.brandSentimentNegative + 10) {
+      return {
+        label: 'Positiv',
+        tone: 'teal' as const,
+      }
+    }
+
+    return {
+      label: 'Gemischt',
+      tone: 'slate' as const,
+    }
+  }, [summary])
+
+  const executiveSummary = useMemo(() => {
+    if (!summary) return null
+
+    const strength =
+      summary.brandVisibility >= 60
+        ? `Deine Brand ist mit ${formatPercent(summary.brandVisibility)} bereits stark in den KI-Antworten sichtbar.`
+        : `Deine Brand erreicht aktuell ${formatPercent(summary.brandVisibility)} Sichtbarkeit und hat damit noch klares Ausbaupotenzial.`
+
+    const competitor =
+      summary.strongestCompetitor
+        ? `${summary.strongestCompetitor.subject_name} ist derzeit der stärkste Wettbewerber mit ${formatPercent(summary.strongestCompetitor.share_of_model)}.`
+        : 'Aktuell ist kein dominanter Wettbewerber erkennbar.'
+
+    const sourceCoverage =
+      summary.brandSourceCoverage > 0
+        ? `Der Brand-Quellenanteil liegt bei ${summary.brandSourceCoverage}%, hier ist also bereits erste Quellenpräsenz vorhanden.`
+        : 'Beim Brand-Quellenanteil gibt es mit 0% noch die größte Lücke, weil deine Brand in den erkannten Quellen bislang nicht auftaucht.'
+
+    const recommendationHint =
+      summary.openRecommendations > 0
+        ? `Priorisiere als Nächstes die ${summary.openRecommendations} offenen GEO-Empfehlungen, um Quellenpräsenz und Wettbewerbsabstand gezielt zu verbessern.`
+        : 'Die offenen GEO-Empfehlungen sind bereits abgearbeitet; jetzt lohnt sich vor allem der Blick auf Quellenpräsenz und den Abstand zum stärksten Wettbewerber.'
+
+    return `${strength} ${competitor} ${sourceCoverage} ${recommendationHint}`
+  }, [summary])
 
   async function handleExport() {
     if (!selectedAnalysis?.id || exporting) return
@@ -578,7 +683,7 @@ export function AiVisibilityReport({
 
       {detail && summary && (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             <MetricCard
               title="Brand-SOM"
               value={formatPercent(summary.brandVisibility)}
@@ -610,8 +715,28 @@ export function AiVisibilityReport({
               tone="rose"
               icon={<ExternalLink className="h-4 w-4" />}
               description={`GEO-Score Ø ${formatPercent(summary.geoScore)}.`}
+              tooltip="Zeigt, in wie viel Prozent der erkannten Quellen deine Brand überhaupt genannt wird. Ein hoher Wert spricht für starke Quellenpräsenz."
             />
+            {sentimentSummary && (
+              <MetricCard
+                title="Sentiment-Check"
+                value={sentimentSummary.label}
+                tone={sentimentSummary.tone}
+                icon={<Sparkles className="h-4 w-4" />}
+                description={`Positiv ${formatPercent(summary.brandSentimentPositive)} · Neutral ${formatPercent(summary.brandSentimentNeutral)} · Negativ ${formatPercent(summary.brandSentimentNegative)}.`}
+                tooltip="Zeigt die durchschnittliche Tonalität, mit der deine Brand in den KI-Antworten erwähnt wird."
+              />
+            )}
           </div>
+
+          {executiveSummary && (
+            <Card className="rounded-[24px] border border-[#e6ddd0] bg-[#fffaf3] shadow-sm">
+              <CardContent className="space-y-2 p-5">
+                <p className="text-sm font-semibold text-slate-900">Fazit</p>
+                <p className="text-sm leading-7 text-slate-600">{executiveSummary}</p>
+              </CardContent>
+            </Card>
+          )}
 
           <Tabs value={modelFilter} onValueChange={setModelFilter}>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -639,7 +764,12 @@ export function AiVisibilityReport({
                 <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
                   <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-semibold text-slate-900">Benchmark-Matrix</CardTitle>
+                      <CardTitle className="text-base font-semibold text-slate-900">
+                        <SectionTitleWithTooltip
+                          title="Benchmark-Matrix"
+                          tooltip="Vergleicht die durchschnittliche Sichtbarkeit deiner Brand mit den Wettbewerbern pro Keyword. Höherer Prozentwert bedeutet häufigere Nennung in KI-Antworten."
+                        />
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Table>
@@ -686,7 +816,12 @@ export function AiVisibilityReport({
 
                   <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base font-semibold text-slate-900">Keyword-Gaps</CardTitle>
+                      <CardTitle className="text-base font-semibold text-slate-900">
+                        <SectionTitleWithTooltip
+                          title="Keyword-Gaps"
+                          tooltip="Hebt Keywords hervor, bei denen ein Wettbewerber aktuell sichtbarer ist als deine Brand. Die Differenz zeigt die Größe der Lücke."
+                        />
+                      </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {keywordGaps.length === 0 && (
@@ -718,110 +853,144 @@ export function AiVisibilityReport({
             ))}
           </Tabs>
 
-          <div className="grid gap-4 xl:grid-cols-[1.05fr_0.95fr]">
-            <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold text-slate-900">Timeline der letzten 30 Tage</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {loadingTimeline && <Skeleton className="h-56 rounded-[20px]" />}
-                {!loadingTimeline && timelineSeries.length === 0 && (
-                  <p className="text-sm text-slate-500">
-                    Für den Verlauf ist mindestens eine abgeschlossene Analytics-Auswertung innerhalb der letzten 30 Tage nötig.
-                  </p>
-                )}
-                {!loadingTimeline && timelineSeries.length > 0 && (
-                  <>
-                    <TimelineChart series={timelineSeries} />
-                    <div className="flex flex-wrap gap-2">
-                      {timelineSeries.map((series) => (
+          <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-slate-900">
+                <SectionTitleWithTooltip
+                  title="Timeline der letzten 30 Tage"
+                  tooltip="Zeigt die Entwicklung der aggregierten Sichtbarkeit pro Brand oder Wettbewerber über abgeschlossene Analysen der letzten 30 Tage."
+                />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {loadingTimeline && <Skeleton className="h-56 rounded-[20px]" />}
+              {!loadingTimeline && timelineSeries.length === 0 && (
+                <p className="text-sm text-slate-500">
+                  Für den Verlauf ist mindestens eine abgeschlossene Analytics-Auswertung innerhalb der letzten 30 Tage nötig.
+                </p>
+              )}
+              {!loadingTimeline && timelineSeries.length > 0 && (
+                <>
+                  <TimelineChart series={visibleTimelineSeries} colorMap={timelineColorMap} />
+                  {visibleTimelineSeries.length === 0 && (
+                    <p className="text-sm text-slate-500">
+                      Aktuell sind alle Reihen ausgeblendet. Klicke unten auf einen Eintrag, um ihn wieder einzublenden.
+                    </p>
+                  )}
+                  <div className="flex flex-wrap gap-2">
+                    {timelineSeries.map((series) => (
+                      <button
+                        key={series.subjectName}
+                        type="button"
+                        onClick={() =>
+                          setHiddenTimelineSeries((prev) =>
+                            prev.includes(series.subjectName)
+                              ? prev.filter((name) => name !== series.subjectName)
+                              : [...prev, series.subjectName]
+                          )
+                        }
+                        className="rounded-full"
+                        aria-pressed={!hiddenTimelineSeries.includes(series.subjectName)}
+                      >
                         <Badge
-                          key={series.subjectName}
                           className={cn(
-                            'rounded-full px-3 py-1 text-xs',
-                            series.subjectType === 'brand'
-                              ? 'bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]'
-                              : 'bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]'
+                            'rounded-full px-3 py-1 text-xs transition hover:opacity-100',
+                            timelineColorMap.get(series.subjectName)?.badge ?? BRAND_TIMELINE_COLOR.badge,
+                            timelineColorMap.get(series.subjectName)?.text ?? BRAND_TIMELINE_COLOR.text,
+                            hiddenTimelineSeries.includes(series.subjectName) && 'opacity-40 saturate-50'
                           )}
                         >
+                          <span
+                            className="mr-2 inline-block h-2.5 w-2.5 rounded-full border-2 border-white shadow-sm"
+                            style={{
+                              backgroundColor:
+                                timelineColorMap.get(series.subjectName)?.line ?? BRAND_TIMELINE_COLOR.line,
+                            }}
+                            aria-hidden="true"
+                          />
                           {series.subjectName}
                         </Badge>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold text-slate-900">GEO-Empfehlungen</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {detail.recommendations.length === 0 && (
-                  <p className="text-sm text-slate-500">
-                    Für diesen Lauf wurden noch keine Empfehlungen berechnet.
-                  </p>
-                )}
-                {detail.recommendations.map((recommendation) => {
-                  const status = localRecommendationStatus[recommendation.id] ?? recommendation.status
-                  return (
-                    <div
-                      key={recommendation.id}
-                      className={cn(
-                        'rounded-[20px] border p-4 transition',
-                        status === 'done'
-                          ? 'border-emerald-200 bg-emerald-50/60'
-                          : 'border-[#e6ddd0] bg-[#fafaf9]'
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="space-y-2">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <PriorityBadge priority={recommendation.priority} />
-                            {recommendation.related_keyword && (
-                              <Badge className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-slate-500 hover:bg-white">
-                                {recommendation.related_keyword}
-                              </Badge>
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium text-slate-900">{recommendation.title}</p>
-                            <p className="mt-1 text-sm leading-6 text-slate-600">
-                              {recommendation.description}
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          variant={status === 'done' ? 'outline' : 'default'}
-                          size="sm"
-                          onClick={() => toggleRecommendationStatus(recommendation.id)}
-                          disabled={savingRecommendationIds[recommendation.id]}
-                          className={cn(
-                            'rounded-full',
-                            status === 'done'
-                              ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
-                              : 'bg-[#1f2937] text-white hover:bg-[#111827]'
-                          )}
-                        >
-                          {savingRecommendationIds[recommendation.id]
-                            ? 'Speichert...'
-                            : status === 'done'
-                              ? 'Erledigt'
-                              : 'Als erledigt markieren'}
-                        </Button>
-                      </div>
-                      <p className="mt-3 text-xs leading-5 text-slate-500">{recommendation.rationale}</p>
-                    </div>
-                  )
-                })}
-              </CardContent>
-            </Card>
-          </div>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
 
           <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base font-semibold text-slate-900">Source Attribution</CardTitle>
+              <CardTitle className="text-base font-semibold text-slate-900">GEO-Empfehlungen</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {detail.recommendations.length === 0 && (
+                <p className="text-sm text-slate-500">
+                  Für diesen Lauf wurden noch keine Empfehlungen berechnet.
+                </p>
+              )}
+              {detail.recommendations.map((recommendation) => {
+                const status = localRecommendationStatus[recommendation.id] ?? recommendation.status
+                return (
+                  <div
+                    key={recommendation.id}
+                    className={cn(
+                      'rounded-[20px] border p-4 transition',
+                      status === 'done'
+                        ? 'border-emerald-200 bg-emerald-50/60'
+                        : 'border-[#e6ddd0] bg-[#fafaf9]'
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <PriorityBadge priority={recommendation.priority} />
+                          {recommendation.related_keyword && (
+                            <Badge className="rounded-full bg-white px-2.5 py-0.5 text-[11px] text-slate-500 hover:bg-white">
+                              {recommendation.related_keyword}
+                            </Badge>
+                          )}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">{recommendation.title}</p>
+                          <p className="mt-1 text-sm leading-6 text-slate-600">
+                            {recommendation.description}
+                          </p>
+                        </div>
+                      </div>
+                      <Button
+                        variant={status === 'done' ? 'outline' : 'default'}
+                        size="sm"
+                        onClick={() => toggleRecommendationStatus(recommendation.id)}
+                        disabled={savingRecommendationIds[recommendation.id]}
+                        className={cn(
+                          'rounded-full',
+                          status === 'done'
+                            ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
+                            : 'bg-[#1f2937] text-white hover:bg-[#111827]'
+                        )}
+                      >
+                        {savingRecommendationIds[recommendation.id]
+                          ? 'Speichert...'
+                          : status === 'done'
+                            ? 'Erledigt'
+                            : 'Als erledigt markieren'}
+                      </Button>
+                    </div>
+                    <p className="mt-3 text-xs leading-5 text-slate-500">{recommendation.rationale}</p>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-semibold text-slate-900">
+                <SectionTitleWithTooltip
+                  title="Source Attribution"
+                  tooltip="Listet die wichtigsten erkannten Quellen aus den KI-Antworten. So siehst du, welche Domains häufig auftauchen und ob deine Brand dort vertreten ist."
+                />
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <Table>
@@ -892,12 +1061,14 @@ function MetricCard({
   description,
   tone,
   icon,
+  tooltip,
 }: {
   title: string
   value: string
   description: string
   tone: 'teal' | 'amber' | 'slate' | 'rose'
   icon: ReactNode
+  tooltip?: string
 }) {
   const toneClass =
     tone === 'teal'
@@ -912,13 +1083,52 @@ function MetricCard({
     <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
       <CardContent className="space-y-3 p-5">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-600">{title}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-600">{title}</span>
+            {tooltip && <InfoTooltip content={tooltip} />}
+          </div>
           <div className={cn('flex h-9 w-9 items-center justify-center rounded-full', toneClass)}>{icon}</div>
         </div>
         <p className="text-2xl font-semibold tracking-tight text-slate-950">{value}</p>
         <p className="text-sm leading-6 text-slate-500">{description}</p>
       </CardContent>
     </Card>
+  )
+}
+
+function SectionTitleWithTooltip({
+  title,
+  tooltip,
+}: {
+  title: string
+  tooltip?: string
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span>{title}</span>
+      {tooltip && <InfoTooltip content={tooltip} />}
+    </div>
+  )
+}
+
+function InfoTooltip({ content }: { content: string }) {
+  return (
+    <TooltipProvider delayDuration={150}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+            aria-label="Mehr Informationen"
+          >
+            <Info className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs text-balance">
+          {content}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   )
 }
 
@@ -979,7 +1189,13 @@ function TrendBadge({ delta }: { delta: number }) {
   )
 }
 
-function TimelineChart({ series }: { series: TimelineSeries[] }) {
+function TimelineChart({
+  series,
+  colorMap,
+}: {
+  series: TimelineSeries[]
+  colorMap: Map<string, TimelineSeriesColor>
+}) {
   const width = 640
   const height = 220
   const padding = 26
@@ -990,8 +1206,6 @@ function TimelineChart({ series }: { series: TimelineSeries[] }) {
   const timeMin = Math.min(...allPoints.map((point) => new Date(point.completedAt).getTime()))
   const timeMax = Math.max(...allPoints.map((point) => new Date(point.completedAt).getTime()))
 
-  const colors = ['#0d9488', '#a35a34', '#2563eb', '#c2554d']
-
   function xFor(time: number) {
     if (timeMin === timeMax) return width / 2
     return padding + ((time - timeMin) / (timeMax - timeMin)) * (width - padding * 2)
@@ -1000,6 +1214,18 @@ function TimelineChart({ series }: { series: TimelineSeries[] }) {
   function yFor(value: number) {
     if (maxValue === minValue) return height / 2
     return height - padding - ((value - minValue) / (maxValue - minValue)) * (height - padding * 2)
+  }
+
+  const overlapOffsets = new Map<string, number>()
+  const overlapCounts = new Map<string, number>()
+
+  for (const entry of series) {
+    for (const point of entry.points) {
+      const x = xFor(new Date(point.completedAt).getTime())
+      const y = yFor(point.value)
+      const key = `${Math.round(x)}:${Math.round(y)}`
+      overlapCounts.set(key, (overlapCounts.get(key) ?? 0) + 1)
+    }
   }
 
   return (
@@ -1022,7 +1248,8 @@ function TimelineChart({ series }: { series: TimelineSeries[] }) {
           </g>
         ))}
 
-        {series.map((entry, index) => {
+        {series.map((entry) => {
+          const color = colorMap.get(entry.subjectName)?.line ?? BRAND_TIMELINE_COLOR.line
           const points = entry.points
             .map((point) => `${xFor(new Date(point.completedAt).getTime())},${yFor(point.value)}`)
             .join(' ')
@@ -1031,7 +1258,7 @@ function TimelineChart({ series }: { series: TimelineSeries[] }) {
             <g key={entry.subjectName}>
               <polyline
                 fill="none"
-                stroke={colors[index % colors.length]}
+                stroke={color}
                 strokeWidth="3"
                 strokeLinejoin="round"
                 strokeLinecap="round"
@@ -1039,14 +1266,35 @@ function TimelineChart({ series }: { series: TimelineSeries[] }) {
               />
               {entry.points.map((point) => (
                 <g key={point.analysisId}>
+                  {(() => {
+                    const baseX = xFor(new Date(point.completedAt).getTime())
+                    const baseY = yFor(point.value)
+                    const overlapKey = `${Math.round(baseX)}:${Math.round(baseY)}`
+                    const overlapCount = overlapCounts.get(overlapKey) ?? 1
+                    const usedOffsetCount = overlapOffsets.get(overlapKey) ?? 0
+                    overlapOffsets.set(overlapKey, usedOffsetCount + 1)
+                    const xOffset =
+                      overlapCount > 1 ? (usedOffsetCount - (overlapCount - 1) / 2) * 8 : 0
+                    const pointX = baseX + xOffset
+
+                    return (
+                      <>
                   <circle
-                    cx={xFor(new Date(point.completedAt).getTime())}
-                    cy={yFor(point.value)}
+                    cx={pointX}
+                    cy={baseY}
+                    r="5"
+                    fill="#ffffff"
+                    stroke="#ffffff"
+                    strokeWidth="3"
+                  />
+                  <circle
+                    cx={pointX}
+                    cy={baseY}
                     r="4"
-                    fill={colors[index % colors.length]}
+                    fill={color}
                   />
                   <text
-                    x={xFor(new Date(point.completedAt).getTime()) - 14}
+                    x={baseX - 14}
                     y={height - 8}
                     fontSize="10"
                     fill="#94a3b8"
@@ -1056,6 +1304,9 @@ function TimelineChart({ series }: { series: TimelineSeries[] }) {
                       month: '2-digit',
                     })}
                   </text>
+                      </>
+                    )
+                  })()}
                 </g>
               ))}
             </g>
