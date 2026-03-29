@@ -260,6 +260,20 @@ function hasPreviewAccess(request: NextRequest): boolean {
   return request.cookies.get(PREVIEW_ACCESS_COOKIE)?.value === 'granted'
 }
 
+function hasInternalVisibilityWorkerAccess(request: NextRequest): boolean {
+  const pathname = request.nextUrl.pathname
+  const isVisibilityWorkerRoute =
+    pathname === '/api/tenant/visibility/worker' ||
+    pathname === '/api/tenant/visibility/analytics/worker'
+
+  if (!isVisibilityWorkerRoute) return false
+
+  const workerSecret = process.env.VISIBILITY_WORKER_SECRET
+  if (!workerSecret) return false
+
+  return request.headers.get('x-worker-secret') === workerSecret
+}
+
 function isPreviewGateBypassPath(pathname: string): boolean {
   return (
     pathname === '/access' ||
@@ -293,7 +307,11 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const subdomain = extractSubdomain(host)
 
-  if (!hasPreviewAccess(request) && !isPreviewGateBypassPath(pathname)) {
+  if (
+    !hasPreviewAccess(request) &&
+    !hasInternalVisibilityWorkerAccess(request) &&
+    !isPreviewGateBypassPath(pathname)
+  ) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
         { error: 'Temporärer Zugangsschutz aktiv. Bitte zuerst das Zugriffspasswort eingeben.' },
