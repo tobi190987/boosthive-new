@@ -47,6 +47,8 @@ export interface VisibilityAnalysis {
   models: string[]
   iterations: number
   status: AnalysisStatus
+  analytics_status?: AnalyticsStatus
+  analytics_error_message?: string | null
   progress_done: number
   progress_total: number
   started_at: string | null
@@ -69,11 +71,15 @@ export interface AnalysisStatusResponse {
   models: string[]
   iterations: number
   status: AnalysisStatus
+  analytics_status?: AnalyticsStatus
+  analytics_error_message?: string | null
   progress_done: number
   progress_total: number
   error_log: AnalysisError[]
   model_progress: ModelProgress[]
 }
+
+export type AnalyticsStatus = 'pending' | 'running' | 'done' | 'failed' | 'partial'
 
 export interface ModelProgress {
   model: string

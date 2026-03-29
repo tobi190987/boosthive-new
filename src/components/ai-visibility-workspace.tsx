@@ -21,6 +21,7 @@ import {
   AI_MODELS,
   calculateCostEstimate,
   modelLabel,
+  type AnalyticsStatus,
   statusColor,
   statusLabel,
   type AiModel,
@@ -35,6 +36,7 @@ import {
 } from '@/lib/ai-visibility'
 import { cn } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { AiVisibilityReport } from '@/components/ai-visibility-report'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -65,7 +67,7 @@ type WorkspaceRole = 'admin' | 'member'
 
 type View =
   | { type: 'list' }
-  | { type: 'detail'; projectId: string }
+  | { type: 'detail'; projectId: string; analysisId?: string | null }
   | { type: 'progress'; projectId: string; analysisId: string }
 
 interface AiVisibilityWorkspaceProps {
@@ -82,6 +84,30 @@ function formatDate(value: string) {
     hour: '2-digit',
     minute: '2-digit',
   })
+}
+
+function analyticsStatusLabel(status: AnalyticsStatus) {
+  const map: Record<AnalyticsStatus, string> = {
+    pending: 'Analytics ausstehend',
+    running: 'Analytics laufen',
+    done: 'Analytics bereit',
+    failed: 'Analytics fehlgeschlagen',
+    partial: 'Teilweise bereit',
+  }
+
+  return map[status]
+}
+
+function analyticsStatusColor(status: AnalyticsStatus) {
+  const map: Record<AnalyticsStatus, string> = {
+    pending: 'bg-slate-100 text-slate-600',
+    running: 'bg-blue-50 text-blue-700',
+    done: 'bg-emerald-50 text-emerald-700',
+    failed: 'bg-red-50 text-red-700',
+    partial: 'bg-amber-50 text-amber-700',
+  }
+
+  return map[status]
 }
 
 // ─── Hauptkomponente ──────────────────────────────────────────
@@ -124,8 +150,8 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
     fetchProjects()
   }
 
-  function goToDetail(projectId: string) {
-    setView({ type: 'detail', projectId })
+  function goToDetail(projectId: string, analysisId?: string | null) {
+    setView({ type: 'detail', projectId, analysisId: analysisId ?? null })
   }
 
   function goToProgress(projectId: string, analysisId: string) {
@@ -161,8 +187,10 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
         role={role}
         projectId={view.projectId}
         cachedProject={project ?? null}
+        initialSelectedAnalysisId={view.analysisId ?? null}
         onBack={goToList}
         onOpenProgress={(analysisId) => goToProgress(view.projectId, analysisId)}
+        onOpenReport={(analysisId) => goToDetail(view.projectId, analysisId)}
         onProjectDeleted={goToList}
       />
     )
@@ -173,6 +201,7 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
       <AnalysisProgressView
         analysisId={view.analysisId}
         onOpenProgress={(analysisId) => goToProgress(view.projectId, analysisId)}
+        onOpenReport={(analysisId) => goToDetail(view.projectId, analysisId)}
         onBack={() => goToDetail(view.projectId)}
       />
     )
@@ -880,8 +909,10 @@ interface ProjectDetailViewProps {
   role: WorkspaceRole
   projectId: string
   cachedProject: VisibilityProject | null
+  initialSelectedAnalysisId: string | null
   onBack: () => void
   onOpenProgress: (analysisId: string) => void
+  onOpenReport: (analysisId: string) => void
   onProjectDeleted: () => void
 }
 
@@ -889,8 +920,10 @@ function ProjectDetailView({
   role,
   projectId,
   cachedProject,
+  initialSelectedAnalysisId,
   onBack,
   onOpenProgress,
+  onOpenReport,
   onProjectDeleted,
 }: ProjectDetailViewProps) {
   const { toast } = useToast()
@@ -900,6 +933,7 @@ function ProjectDetailView({
   const [error, setError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [startingAnalysis, setStartingAnalysis] = useState(false)
+  const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(initialSelectedAnalysisId)
 
   // ── Dialog State fuer Neue Analyse ──────────────────────────
   const [newAnalysisOpen, setNewAnalysisOpen] = useState(false)
@@ -936,6 +970,10 @@ function ProjectDetailView({
   useEffect(() => {
     fetchDetail()
   }, [fetchDetail])
+
+  useEffect(() => {
+    setSelectedAnalysisId(initialSelectedAnalysisId)
+  }, [initialSelectedAnalysisId])
 
   // ── Projekt loeschen ────────────────────────────────────────
   async function handleDelete() {
@@ -1022,6 +1060,14 @@ function ProjectDetailView({
   }
 
   const runningCount = analyses.filter((a) => a.status === 'running' || a.status === 'pending').length
+  const reportableAnalyses = analyses.filter(
+    (analysis) =>
+      analysis.status === 'done' &&
+      (analysis.analytics_status === 'done' || analysis.analytics_status === 'partial')
+  )
+
+  const selectedAnalysis =
+    analyses.find((analysis) => analysis.id === selectedAnalysisId) ?? reportableAnalyses[0] ?? null
 
   return (
     <div className="space-y-5">
@@ -1119,16 +1165,27 @@ function ProjectDetailView({
             <AnalysisRow
               key={analysis.id}
               analysis={analysis}
+              isSelected={analysis.id === selectedAnalysis?.id}
               onClick={() => {
                 if (analysis.status === 'running' || analysis.status === 'pending' || analysis.status === 'queued') {
                   onOpenProgress(analysis.id)
+                  return
                 }
-                // TODO: Fuer done/failed/cancelled -> Ergebnis-Ansicht (PROJ-24)
+
+                setSelectedAnalysisId(analysis.id)
+                onOpenReport(analysis.id)
               }}
             />
           ))}
         </CardContent>
       </Card>
+
+      <AiVisibilityReport
+        project={project}
+        analyses={analyses}
+        selectedAnalysisId={selectedAnalysis?.id ?? selectedAnalysisId}
+        onSelectAnalysis={setSelectedAnalysisId}
+      />
 
       {/* ── Neue Analyse Dialog ────────────────────────────── */}
       <Dialog open={newAnalysisOpen} onOpenChange={setNewAnalysisOpen}>
@@ -1243,12 +1300,15 @@ function ProjectDetailView({
 
 function AnalysisRow({
   analysis,
+  isSelected,
   onClick,
 }: {
   analysis: VisibilityAnalysis
+  isSelected?: boolean
   onClick: () => void
 }) {
   const isActive = analysis.status === 'running' || analysis.status === 'pending' || analysis.status === 'queued'
+  const hasReport = analysis.status === 'done' && (analysis.analytics_status === 'done' || analysis.analytics_status === 'partial')
   const progressPercent =
     analysis.progress_total > 0
       ? Math.round((analysis.progress_done / analysis.progress_total) * 100)
@@ -1262,7 +1322,10 @@ function AnalysisRow({
         'flex w-full items-center gap-4 rounded-xl border border-[#e6ddd0] p-3 text-left transition',
         isActive
           ? 'cursor-pointer bg-white hover:border-[#d7ccbc] hover:shadow-sm'
-          : 'cursor-default bg-[#fafaf9]'
+          : hasReport || analysis.analytics_status === 'pending' || analysis.analytics_status === 'running'
+            ? 'cursor-pointer bg-white hover:border-[#d7ccbc] hover:shadow-sm'
+            : 'cursor-default bg-[#fafaf9]',
+        isSelected && 'border-[#0d9488] bg-[#f2fbfa]'
       )}
       aria-label={`Analyse vom ${formatDate(analysis.created_at)}, Status: ${statusLabel(analysis.status)}`}
     >
@@ -1271,6 +1334,16 @@ function AnalysisRow({
           <Badge className={cn('rounded-full px-2 py-0.5 text-[11px]', statusColor(analysis.status))}>
             {statusLabel(analysis.status)}
           </Badge>
+          {analysis.analytics_status && (
+            <Badge
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[11px]',
+                analyticsStatusColor(analysis.analytics_status)
+              )}
+            >
+              {analyticsStatusLabel(analysis.analytics_status)}
+            </Badge>
+          )}
           <span className="text-xs text-slate-400">{formatDate(analysis.created_at)}</span>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1">
@@ -1291,7 +1364,9 @@ function AnalysisRow({
           </div>
         )}
       </div>
-      {isActive && <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />}
+      {(isActive || hasReport || analysis.analytics_status === 'pending' || analysis.analytics_status === 'running') && (
+        <ChevronRight className="h-4 w-4 shrink-0 text-slate-300" />
+      )}
     </button>
   )
 }
@@ -1303,10 +1378,11 @@ function AnalysisRow({
 interface AnalysisProgressViewProps {
   analysisId: string
   onOpenProgress: (analysisId: string) => void
+  onOpenReport?: (analysisId: string) => void
   onBack: () => void
 }
 
-function AnalysisProgressView({ analysisId, onOpenProgress, onBack }: AnalysisProgressViewProps) {
+function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack }: AnalysisProgressViewProps) {
   const { toast } = useToast()
   const [status, setStatus] = useState<AnalysisStatusResponse | null>(null)
   const [loading, setLoading] = useState(true)
@@ -1539,6 +1615,17 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onBack }: AnalysisPr
             Alle Abfragen wurden erfolgreich verarbeitet. Die Ergebnisse stehen in der Auswertung zur Verfügung.
           </AlertDescription>
         </Alert>
+      )}
+
+      {isDone && (status.analytics_status === 'done' || status.analytics_status === 'partial') && (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => onOpenReport?.(analysisId)}
+            className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
+          >
+            Zur Auswertung
+          </Button>
+        </div>
       )}
 
       {/* ── Fehler-Meldung ─────────────────────────────────── */}
