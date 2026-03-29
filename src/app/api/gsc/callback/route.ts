@@ -17,6 +17,14 @@ const stateProjectSchema = z.object({
   userId: z.string().uuid(),
 })
 
+function toSafeErrorCode(error: unknown) {
+  const raw = error instanceof Error ? error.message : 'unknown_error'
+  return raw
+    .slice(0, 180)
+    .replace(/\s+/g, '_')
+    .replace(/[^a-zA-Z0-9._-]/g, '_')
+}
+
 function buildRedirectUrl(tenantSlug: string, projectId: string, result: 'connected' | 'error', errorMsg?: string): string {
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000'
   const isLocalhost = rootDomain.startsWith('localhost')
@@ -150,7 +158,7 @@ export async function GET(request: NextRequest) {
   } catch (err) {
     console.error('[gsc/callback] Error:', err)
     const response = NextResponse.redirect(
-      buildRedirectUrl(tenantSlug, projectId, 'error', 'token_exchange_failed')
+      buildRedirectUrl(tenantSlug, projectId, 'error', toSafeErrorCode(err))
     )
     response.cookies.delete(nonceCookieName)
     return response
