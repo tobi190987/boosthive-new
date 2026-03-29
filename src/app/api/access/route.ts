@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     sameSite: 'lax',
     secure: request.nextUrl.protocol === 'https:',
     path: '/',
-    maxAge: 60 * 60 * 8,
+    maxAge: 60 * 60 * 24 * 7,
   })
 
   return response
