@@ -301,7 +301,9 @@ export async function listGscProperties(accessToken: string): Promise<GscSiteEnt
   }
 
   const data = (await response.json()) as { siteEntry?: GscSiteEntry[] }
-  return (data.siteEntry ?? []).filter((entry) => entry.permissionLevel !== 'siteUnverifiedUser')
+  return (data.siteEntry ?? [])
+    .filter((entry) => typeof entry.siteUrl === 'string' && entry.siteUrl.length > 0)
+    .sort((a, b) => a.siteUrl.localeCompare(b.siteUrl))
 }
 
 export interface SearchAnalyticsQueryInput {

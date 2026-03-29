@@ -109,6 +109,21 @@ interface GscProperty {
   permissionLevel: string
 }
 
+function formatGscPermissionLevel(permissionLevel: string): string {
+  switch (permissionLevel) {
+    case 'siteOwner':
+      return 'Eigentuemer'
+    case 'siteFullUser':
+      return 'Vollzugriff'
+    case 'siteRestrictedUser':
+      return 'Eingeschraenkt'
+    case 'siteUnverifiedUser':
+      return 'Nicht verifiziert'
+    default:
+      return permissionLevel
+  }
+}
+
 type RankingRunStatus = 'idle' | 'queued' | 'running' | 'success' | 'failed'
 
 interface RankingsSummary {
@@ -2752,12 +2767,20 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                             <SelectItem key={prop.siteUrl} value={prop.siteUrl}>
                               <span className="flex items-center gap-2">
                                 <Globe className="h-3.5 w-3.5 text-slate-400" />
-                                {prop.siteUrl}
+                                <span>{prop.siteUrl}</span>
+                                <span className="text-xs text-slate-400">
+                                  ({formatGscPermissionLevel(prop.permissionLevel)})
+                                </span>
                               </span>
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
+                    )}
+                    {properties.some((prop) => prop.permissionLevel === 'siteUnverifiedUser') && (
+                      <p className="text-xs text-amber-700">
+                        Einige Properties wurden von Google als nicht verifiziert markiert. Diese koennen in der Regel keine Ranking-Daten liefern.
+                      </p>
                     )}
                     {savingProperty && (
                       <p className="flex items-center gap-2 text-xs text-slate-500">
