@@ -1,7 +1,7 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 
-type SupabaseAdmin = ReturnType<typeof createClient>
+type SupabaseAdmin = SupabaseClient<any, 'public', any>
 
 interface E2ESeedResultLike {
   tenant: {

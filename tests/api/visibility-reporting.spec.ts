@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { readFileSync } from 'node:fs'
 import { tenantGet, tenantPatch, tenantUrl } from './helpers/api-client'
 import {
@@ -8,7 +8,7 @@ import {
   type TestSessions,
 } from './helpers/fixtures'
 
-type SupabaseAdmin = ReturnType<typeof createClient>
+type SupabaseAdmin = SupabaseClient<any, 'public', any>
 
 test.describe('ai visibility reporting api', () => {
   test.describe.configure({ mode: 'serial' })
