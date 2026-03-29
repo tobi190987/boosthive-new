@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { getProjectReportSummaryMap } from '@/lib/visibility-report'
 import {
   checkRateLimit,
   getClientIp,
@@ -59,32 +60,17 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ projects: [] })
   }
 
-  // Enrich with latest analysis status + count in a single query
   const projectIds = projects.map((p) => p.id)
-
-  const { data: analyses } = await admin
-    .from('visibility_analyses')
-    .select('id, project_id, status, created_at')
-    .eq('tenant_id', tenantId)
-    .in('project_id', projectIds)
-    .order('created_at', { ascending: false })
-
-  // Build lookup maps
-  const latestByProject: Record<string, { status: string; created_at: string }> = {}
-  const countByProject: Record<string, number> = {}
-
-  for (const a of analyses ?? []) {
-    countByProject[a.project_id] = (countByProject[a.project_id] ?? 0) + 1
-    if (!latestByProject[a.project_id]) {
-      latestByProject[a.project_id] = { status: a.status, created_at: a.created_at }
-    }
-  }
+  const summaries = await getProjectReportSummaryMap(tenantId, projectIds)
 
   const enriched = projects.map((p) => ({
     ...p,
-    latest_analysis_status: latestByProject[p.id]?.status ?? null,
-    latest_analysis_at: latestByProject[p.id]?.created_at ?? null,
-    analysis_count: countByProject[p.id] ?? 0,
+    latest_analysis_status: summaries[p.id]?.latestAnalysisStatus ?? null,
+    latest_analysis_at: summaries[p.id]?.latestAnalysisAt ?? null,
+    latest_analytics_status: summaries[p.id]?.latestAnalyticsStatus ?? null,
+    latest_share_of_model: summaries[p.id]?.latestShareOfModel ?? null,
+    trend_delta: summaries[p.id]?.trendDelta ?? null,
+    analysis_count: summaries[p.id]?.analysisCount ?? 0,
   }))
 
   return NextResponse.json({ projects: enriched })
