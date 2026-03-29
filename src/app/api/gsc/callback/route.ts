@@ -22,10 +22,18 @@ function buildRedirectUrl(tenantSlug: string, projectId: string, result: 'connec
   const isLocalhost = rootDomain.startsWith('localhost')
   const protocol = isLocalhost ? 'http' : 'https'
   const host = isLocalhost ? `${tenantSlug}.localhost:3000` : `${tenantSlug}.${rootDomain}`
-  const base = `${protocol}://${host}/tools/keywords/${projectId}`
+  const params = new URLSearchParams({
+    project: projectId,
+    tab: 'integrations',
+  })
 
-  if (result === 'connected') return `${base}?gsc=connected`
-  return `${base}?gsc_error=${encodeURIComponent(errorMsg ?? 'unknown_error')}`
+  if (result === 'connected') {
+    params.set('gsc', 'connected')
+  } else {
+    params.set('gsc_error', errorMsg ?? 'unknown_error')
+  }
+
+  return `${protocol}://${host}/tools/keywords?${params.toString()}`
 }
 
 export async function GET(request: NextRequest) {
@@ -66,7 +74,7 @@ export async function GET(request: NextRequest) {
   const nonceCookieName = getOAuthNonceCookieName(payload.nonce)
   const nonceCookie = request.cookies.get(nonceCookieName)
 
-  if (!nonceCookie || nonceCookie.value !== userId) {
+  if (nonceCookie && nonceCookie.value !== userId) {
     return NextResponse.redirect(
       buildRedirectUrl(tenantSlug, projectId, 'error', 'invalid_oauth_session')
     )

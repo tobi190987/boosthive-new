@@ -305,7 +305,13 @@ interface KeywordProjectsWorkspaceProps {
 }
 
 export function KeywordProjectsWorkspace({ role }: KeywordProjectsWorkspaceProps) {
-  const [view, setView] = useState<View>({ type: 'list' })
+  const [view, setView] = useState<View>(() => {
+    if (typeof window === 'undefined') return { type: 'list' }
+
+    const params = new URLSearchParams(window.location.search)
+    const projectId = params.get('project')
+    return projectId ? { type: 'detail', projectId } : { type: 'list' }
+  })
 
   return (
     <div className="space-y-6">
@@ -737,7 +743,14 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
   const [project, setProject] = useState<KeywordProject | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('keywords')
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window === 'undefined') return 'keywords'
+
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get('tab')
+    const projectFromUrl = params.get('project')
+    return projectFromUrl === projectId && tab ? tab : 'keywords'
+  })
 
   const loadProject = useCallback(async () => {
     try {
