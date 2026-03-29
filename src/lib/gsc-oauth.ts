@@ -294,10 +294,11 @@ export async function listGscProperties(accessToken: string): Promise<GscSiteEnt
   })
 
   if (!response.ok) {
+    const errorText = await response.text().catch(() => '')
     if (response.status === 401) {
       throw new TokenRevokedError('Access-Token abgelaufen oder widerrufen.')
     }
-    throw new Error(`GSC Sites-Abfrage fehlgeschlagen: ${response.status}`)
+    throw new Error(`GSC Sites-Abfrage fehlgeschlagen: ${response.status} ${errorText}`.trim())
   }
 
   const data = (await response.json()) as { siteEntry?: GscSiteEntry[] }
