@@ -1,8 +1,8 @@
 # PROJ-25: Keyword Project Management
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-28
-**Last Updated:** 2026-03-28
+**Last Updated:** 2026-03-29
 
 ## Implementation Notes (Backend)
 - Migration: `supabase/migrations/018_keyword_projects.sql` — Tables: `keyword_projects`, `keywords`, `competitor_domains` mit RLS (service_role only writes), CASCADE DELETE
@@ -319,4 +319,17 @@ Cascade Delete: Projekt löschen → Keywords + Wettbewerber werden automatisch 
 - **Blocker:** BUG-2 (Admin-Rollenpruefung) und BUG-6 (verwaistes Modul) muessen vor Deployment gefixt werden. BUG-6 koennte zu Billing-Problemen fuehren, BUG-2 ist eine Authorization-Luecke.
 
 ## Deployment
-_To be added by /deploy_
+**Deployed:** 2026-03-29
+**Commit:** `7c4e86e`
+**Branch:** main → Vercel auto-deploy
+
+**Pre-Deployment completed:**
+- Build: ✓ (no TypeScript errors)
+- Lint: ✓ (0 errors, 1 warning — unrelated img element in tenant-tools-workspace)
+- QA: alle Bugs behoben (BUG-1, BUG-2, BUG-3, BUG-4, BUG-5, BUG-6)
+
+**Migration auszufuehren in Supabase:**
+```
+supabase/migrations/018_keyword_projects.sql
+```
+Tables: `keyword_projects`, `keywords`, `competitor_domains`
