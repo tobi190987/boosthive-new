@@ -262,7 +262,11 @@ function formatRelativeTime(value: string | null | undefined) {
 function formatPosition(position: number | null | undefined) {
   if (position == null) return 'Keine Daten'
   if (position > 100) return 'Nicht gefunden'
-  return `#${position}`
+  const hasDecimals = Number(position) % 1 !== 0
+  const formatted = Number(position)
+    .toFixed(hasDecimals ? 2 : 0)
+    .replace('.', ',')
+  return `#${formatted}`
 }
 
 function getDeltaTone(delta: number | null | undefined) {
@@ -338,10 +342,32 @@ async function apiFetch<T>(url: string, opts?: RequestInit): Promise<T> {
 
 interface KeywordProjectsWorkspaceProps {
   role: WorkspaceRole
+  initialProjectId?: string | null
+  initialTab?: string | null
 }
 
-export function KeywordProjectsWorkspace({ role }: KeywordProjectsWorkspaceProps) {
+function buildKeywordProjectUrl(projectId: string, tab: string) {
+  if (tab === 'rankings') {
+    return `/tools/keywords/${projectId}/rankings`
+  }
+
+  const params = new URLSearchParams({
+    project: projectId,
+    tab,
+  })
+  return `/tools/keywords?${params.toString()}`
+}
+
+export function KeywordProjectsWorkspace({
+  role,
+  initialProjectId = null,
+  initialTab = null,
+}: KeywordProjectsWorkspaceProps) {
   const [view, setView] = useState<View>(() => {
+    if (initialProjectId) {
+      return { type: 'detail', projectId: initialProjectId }
+    }
+
     if (typeof window === 'undefined') return { type: 'list' }
 
     const params = new URLSearchParams(window.location.search)
@@ -354,14 +380,25 @@ export function KeywordProjectsWorkspace({ role }: KeywordProjectsWorkspaceProps
       {view.type === 'list' && (
         <ProjectList
           role={role}
-          onOpenProject={(id) => setView({ type: 'detail', projectId: id })}
+          onOpenProject={(id) => {
+            setView({ type: 'detail', projectId: id })
+            if (typeof window !== 'undefined') {
+              window.history.replaceState({}, '', buildKeywordProjectUrl(id, 'rankings'))
+            }
+          }}
         />
       )}
       {view.type === 'detail' && (
         <ProjectDetail
           role={role}
           projectId={view.projectId}
-          onBack={() => setView({ type: 'list' })}
+          initialTab={initialProjectId === view.projectId ? initialTab : null}
+          onBack={() => {
+            setView({ type: 'list' })
+            if (typeof window !== 'undefined') {
+              window.history.replaceState({}, '', '/tools/keywords')
+            }
+          }}
         />
       )}
     </div>
@@ -771,21 +808,23 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 interface ProjectDetailProps {
   role: WorkspaceRole
   projectId: string
+  initialTab?: string | null
   onBack: () => void
 }
 
-function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
+function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDetailProps) {
   const { toast } = useToast()
   const [project, setProject] = useState<KeywordProject | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState(() => {
-    if (typeof window === 'undefined') return 'keywords'
+    if (initialTab) return initialTab
+    if (typeof window === 'undefined') return 'rankings'
 
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
     const projectFromUrl = params.get('project')
-    return projectFromUrl === projectId && tab ? tab : 'keywords'
+    return projectFromUrl === projectId && tab ? tab : 'rankings'
   })
 
   const loadProject = useCallback(async () => {
@@ -804,6 +843,11 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
   useEffect(() => {
     loadProject()
   }, [loadProject])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    window.history.replaceState({}, '', buildKeywordProjectUrl(projectId, activeTab))
+  }, [activeTab, projectId])
 
   if (loading) {
     return (
@@ -878,12 +922,12 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-[#f7f3ed] p-1">
-          <TabsTrigger value="keywords" className="rounded-full data-[state=active]:bg-white">
-            Keywords
-          </TabsTrigger>
           <TabsTrigger value="rankings" className="rounded-full data-[state=active]:bg-white">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
             Rankings
+          </TabsTrigger>
+          <TabsTrigger value="keywords" className="rounded-full data-[state=active]:bg-white">
+            Keywords
           </TabsTrigger>
           <TabsTrigger value="competitors" className="rounded-full data-[state=active]:bg-white">
             Wettbewerber
@@ -898,10 +942,6 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="keywords" className="mt-4">
-          <KeywordsTab projectId={projectId} targetDomain={project.target_domain} />
-        </TabsContent>
-
         <TabsContent value="rankings" className="mt-4">
           <RankingsTab
             project={project}
@@ -909,6 +949,10 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
             role={role}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
+        </TabsContent>
+
+        <TabsContent value="keywords" className="mt-4">
+          <KeywordsTab projectId={projectId} targetDomain={project.target_domain} />
         </TabsContent>
 
         <TabsContent value="competitors" className="mt-4">
@@ -1167,7 +1211,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
             />
             <MetricCard
               label="Tracking-Intervall"
-              value={project.tracking_interval === 'weekly' ? 'Woechentlich' : 'Taeglich'}
+              value={project.tracking_interval === 'weekly' ? 'Wöchentlich' : 'Täglich'}
               hint="Kann im Einstellungen-Tab angepasst werden"
             />
             <MetricCard
@@ -1198,7 +1242,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                     Zuletzt aktualisiert: {effectiveLastTrackedAt ? formatRelativeTime(effectiveLastTrackedAt) : 'Ausstehend'}
                   </span>
                   {summary?.trackingInterval && (
-                    <span>Intervall: {summary.trackingInterval === 'daily' ? 'Taeglich' : 'Woechentlich'}</span>
+                    <span>Intervall: {summary.trackingInterval === 'daily' ? 'Täglich' : 'Wöchentlich'}</span>
                   )}
                   {connection?.selected_property && (
                     <span className="truncate">Property: {connection.selected_property}</span>
@@ -1247,7 +1291,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
               />
               <MetricCard
                 label="Tracking-Intervall"
-                value={summary?.trackingInterval === 'weekly' ? 'Woechentlich' : 'Taeglich'}
+                value={summary?.trackingInterval === 'weekly' ? 'Wöchentlich' : 'Täglich'}
                 hint="Steuert den automatischen Cron-Lauf"
               />
             </div>
