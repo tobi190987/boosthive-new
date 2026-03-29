@@ -71,3 +71,13 @@ export function decryptToken(encryptedStr: string): string {
   const decrypted = Buffer.concat([decipher.update(ciphertext), decipher.final()])
   return decrypted.toString('utf8')
 }
+
+export function isTokenDecryptError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const message = error.message.toLowerCase()
+  return (
+    message.includes('unable to authenticate data') ||
+    message.includes('unsupported state') ||
+    message.includes('ungueltiges token-format')
+  )
+}

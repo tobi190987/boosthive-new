@@ -11,7 +11,7 @@ import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, GSC_READ } from '@/lib/rate-limit'
 import { listGscProperties, refreshAccessToken, TokenRevokedError } from '@/lib/gsc-oauth'
-import { encryptToken, decryptToken } from '@/lib/gsc-crypto'
+import { encryptToken, decryptToken, isTokenDecryptError } from '@/lib/gsc-crypto'
 
 const paramsSchema = z.object({
   id: z.string().uuid('Ungueltige Projekt-ID.'),
@@ -121,6 +121,16 @@ export async function GET(
       return NextResponse.json({ error: toSafeErrorMessage(err) }, { status: 500 })
     }
   } catch (err) {
+    if (isTokenDecryptError(err)) {
+      console.error('[gsc/properties] Token konnte nicht entschluesselt werden:', err)
+      return NextResponse.json(
+        {
+          error:
+            'Die gespeicherte GSC-Verbindung kann mit dem aktuellen Verschluesselungs-Schluessel nicht gelesen werden. Bitte trenne die Verbindung und verbinde Google Search Console erneut.',
+        },
+        { status: 409 }
+      )
+    }
     console.error('[gsc/properties] Unerwarteter Fehler:', err)
     return NextResponse.json({ error: toSafeErrorMessage(err) }, { status: 500 })
   }
