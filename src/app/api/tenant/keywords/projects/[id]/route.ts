@@ -1,11 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { requireTenantUser } from '@/lib/auth-guards'
+import { requireTenantAdmin, requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  VISIBILITY_PROJECT_WRITE,
+  VISIBILITY_READ,
+} from '@/lib/rate-limit'
+
+function normalizeDomain(raw: string): string {
+  let d = raw.trim().toLowerCase()
+  d = d.replace(/^https?:\/\//, '')
+  d = d.replace(/^www\./, '')
+  d = d.replace(/\/.*$/, '')
+  return d
+}
+
+const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
 const updateProjectSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  target_domain: z
+    .string()
+    .min(1)
+    .max(253)
+    .transform(normalizeDomain)
+    .refine((d) => DOMAIN_REGEX.test(d), 'Ungueltige Domain.')
+    .optional(),
   language_code: z.string().min(2).max(10).optional(),
   country_code: z.string().min(2).max(10).optional(),
   status: z.enum(['active', 'inactive']).optional(),
@@ -28,10 +52,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
 
+  const rl = checkRateLimit(`kw-project-read:${tenantId}:${getClientIp(request)}`, VISIBILITY_READ)
+  if (!rl.allowed) return rateLimitResponse(rl)
+
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
 
-  const moduleAccess = await requireTenantModuleAccess(tenantId, 'keyword_tracking')
+  const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
   if ('error' in moduleAccess) return moduleAccess.error
 
   const { id: projectId } = await params
@@ -77,10 +104,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
 
-  const authResult = await requireTenantUser(tenantId)
+  const rl = checkRateLimit(`kw-project-write:${tenantId}:${getClientIp(request)}`, VISIBILITY_PROJECT_WRITE)
+  if (!rl.allowed) return rateLimitResponse(rl)
+
+  const authResult = await requireTenantAdmin(tenantId)
   if ('error' in authResult) return authResult.error
 
-  const moduleAccess = await requireTenantModuleAccess(tenantId, 'keyword_tracking')
+  const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
   if ('error' in moduleAccess) return moduleAccess.error
 
   const { id: projectId } = await params
@@ -105,6 +135,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
   if (parsed.data.name !== undefined) updates.name = parsed.data.name
+  if (parsed.data.target_domain !== undefined) updates.target_domain = parsed.data.target_domain
   if (parsed.data.language_code !== undefined) updates.language_code = parsed.data.language_code
   if (parsed.data.country_code !== undefined) updates.country_code = parsed.data.country_code
   if (parsed.data.status !== undefined) updates.status = parsed.data.status
@@ -128,10 +159,13 @@ export async function DELETE(
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
 
-  const authResult = await requireTenantUser(tenantId)
+  const rl = checkRateLimit(`kw-project-write:${tenantId}:${getClientIp(request)}`, VISIBILITY_PROJECT_WRITE)
+  if (!rl.allowed) return rateLimitResponse(rl)
+
+  const authResult = await requireTenantAdmin(tenantId)
   if ('error' in authResult) return authResult.error
 
-  const moduleAccess = await requireTenantModuleAccess(tenantId, 'keyword_tracking')
+  const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
   if ('error' in moduleAccess) return moduleAccess.error
 
   const { id: projectId } = await params

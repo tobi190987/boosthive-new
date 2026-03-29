@@ -139,53 +139,62 @@ Cascade Delete: Projekt löschen → Keywords + Wettbewerber werden automatisch 
 
 ## QA Test Results
 
-**Tested:** 2026-03-28
+**Tested:** 2026-03-29 (Re-Test nach Bugfixes)
 **App URL:** http://localhost:3000
 **Tester:** QA Engineer (AI)
-**Method:** Code review + build verification (no live browser session)
+**Method:** Code review + build verification (kein Live-Browser)
+**Build:** Erfolgreich (npm run build -- keine TypeScript- oder ESLint-Fehler)
+
+### Vorheriger QA-Lauf (2026-03-28)
+- 5 Bugs gefunden (1 Critical, 1 Medium, 3 Low)
+- BUG-1 (Critical): Modul-Code-Mismatch -- GEFIXT
+- BUG-2 (Medium): Fehlende Admin-Rollenpruefung -- OFFEN
+- BUG-3 (Low): Backend-Domain-Normalisierung -- GEFIXT
+- BUG-4 (Low): Kein Rate-Limiting -- OFFEN
+- BUG-5 (Low): target_domain nicht aenderbar -- TEILWEISE GEFIXT (API ja, UI nein)
 
 ### Acceptance Criteria Status
 
-#### AC-1: Admin kann ein Keyword-Projekt anlegen mit: Name, Ziel-Domain, Sprache, Land/Region
+#### AC-1: Admin kann ein Keyword-Projekt anlegen mit: Name, Ziel-Domain, Sprache, Land/Region -- PASS
 - [x] CreateProjectDialog hat Felder: Name, Ziel-Domain, Sprache (Select mit 8 Optionen), Land/Region (Select mit 10 Optionen)
-- [x] POST /api/tenant/keywords/projects validiert mit Zod: name (min 1, max 100), target_domain (Domain-Regex), language_code, country_code
+- [x] POST /api/tenant/keywords/projects validiert mit Zod: name (min 1, max 100), target_domain (Domain-Regex mit .transform(normalizeDomain)), language_code, country_code
 - [x] Frontend normalisiert Domain (entfernt https://, www., trailing slashes, lowercase)
-- [ ] BUG: Modul-Code-Mismatch verhindert Zugang komplett (siehe BUG-1)
+- [x] Modul-Zugang korrekt: page.tsx prueft `seo_analyse`, Navigation hat `moduleCode: 'seo_analyse'` (BUG-1 aus v1 gefixt)
 
-#### AC-2: Bis zu 5 Projekte pro Tenant (MVP-Limit)
-- [x] PROJECT_LIMIT = 5 serverseitig enforced in POST-Route (Zeile 98-109)
+#### AC-2: Bis zu 5 Projekte pro Tenant (MVP-Limit) -- PASS
+- [x] PROJECT_LIMIT = 5 serverseitig enforced in POST-Route
 - [x] Frontend zeigt "X/5 Projekte" Badge
 - [x] Frontend deaktiviert "Neues Projekt" Button bei Limit
 - [x] Limit-Warnung als Alert bei erreichtem Limit
 
-#### AC-3: Einem Projekt koennen bis zu 50 Keywords hinzugefuegt werden
-- [x] KEYWORD_LIMIT = 50 serverseitig enforced in POST-Route (Zeile 97-104)
+#### AC-3: Einem Projekt koennen bis zu 50 Keywords hinzugefuegt werden -- PASS
+- [x] KEYWORD_LIMIT = 50 serverseitig enforced in POST-Route
 - [x] Bulk-Import unterstuetzt via `{ keywords: string[] }` (max 50 pro Request)
 - [x] Frontend zeigt "X/50" Badge und deaktiviert Input bei Limit
 - [x] Fehlermeldung mit aktuellem Count bei Ueberschreitung
 
-#### AC-4: Einem Projekt koennen bis zu 5 Wettbewerber-Domains hinzugefuegt werden
-- [x] COMPETITOR_LIMIT = 5 serverseitig enforced in POST-Route (Zeile 99-110)
+#### AC-4: Einem Projekt koennen bis zu 5 Wettbewerber-Domains hinzugefuegt werden -- PASS
+- [x] COMPETITOR_LIMIT = 5 serverseitig enforced in POST-Route
 - [x] Frontend zeigt "X/5" Badge und deaktiviert Input bei Limit
 
-#### AC-5: Keywords und Wettbewerber koennen einzeln geloescht werden
+#### AC-5: Keywords und Wettbewerber koennen einzeln geloescht werden -- PASS
 - [x] DELETE /api/tenant/keywords/projects/[id]/keywords/[kwId] implementiert
 - [x] DELETE /api/tenant/keywords/projects/[id]/competitors/[cId] implementiert
 - [x] Beide DELETE-Routes pruefen project_id + tenant_id (kein Cross-Tenant-Loeschen)
 - [x] UI zeigt Trash-Icon pro Zeile mit Lade-Spinner
 
-#### AC-6: Projekte koennen umbenannt oder deaktiviert werden
-- [x] PATCH /api/tenant/keywords/projects/[id] erlaubt: name, language_code, country_code, status
-- [x] SettingsTab hat eigenes Rename-Formular, Sprache/Region-Formular, Status-Toggle
+#### AC-6: Projekte koennen umbenannt oder deaktiviert werden -- PASS (mit Einschraenkung)
+- [x] PATCH /api/tenant/keywords/projects/[id] erlaubt: name, target_domain, language_code, country_code, status
+- [x] SettingsTab hat Rename-Formular, Sprache/Region-Formular, Status-Toggle
 - [x] Deaktivieren/Aktivieren Button in Settings (nur fuer Admin im UI)
-- [ ] BUG: API erlaubt Member-Zugriff auf PATCH/DELETE (siehe BUG-2)
+- [ ] BUG: API erlaubt Member-Zugriff auf PATCH/DELETE (siehe BUG-2 -- weiterhin offen)
 
-#### AC-7: Jedes Projekt zeigt Uebersicht: Anzahl Keywords, Wettbewerber, letzter Tracking-Lauf
+#### AC-7: Jedes Projekt zeigt Uebersicht: Anzahl Keywords, Wettbewerber, letzter Tracking-Lauf -- PASS
 - [x] GET /api/tenant/keywords/projects gibt keyword_count und competitor_count via Supabase count-Aggregation
 - [x] Projekt-Cards zeigen "X Keywords", "X Wettbewerber"
 - [x] last_tracking_run wird angezeigt wenn vorhanden
 
-#### AC-8: Daten sind strikt Tenant-isoliert
+#### AC-8: Daten sind strikt Tenant-isoliert -- PASS
 - [x] Alle DB-Tabellen haben tenant_id mit Foreign Key
 - [x] Alle API-Queries filtern nach tenant_id
 - [x] RLS-Policies erlauben nur SELECT fuer eigene Tenant-Members
@@ -194,27 +203,27 @@ Cascade Delete: Projekt löschen → Keywords + Wettbewerber werden automatisch 
 
 ### Edge Cases Status
 
-#### EC-1: Duplikat-Keyword im selben Projekt
+#### EC-1: Duplikat-Keyword im selben Projekt -- PASS
 - [x] UNIQUE Constraint (project_id, keyword) in DB
 - [x] API gibt 409 mit "Ein oder mehrere Keywords existieren bereits." bei Code 23505
 
-#### EC-2: Domain ohne https:// eingegeben
+#### EC-2: Domain ohne https:// eingegeben -- PASS (gefixt seit v1)
 - [x] Frontend normalizeDomain() entfernt https://, www., trailing slashes
-- [x] Backend validiert mit striktem Domain-Regex (nur lowercase hostname)
-- [ ] BUG: Backend normalisiert NICHT vor Validierung (siehe BUG-3)
+- [x] Backend verwendet .transform(normalizeDomain) VOR Regex-Validierung -- BUG-3 aus v1 gefixt
+- [x] Beide Endpoints (projects POST, competitors POST) normalisieren jetzt serverseitig
 
-#### EC-3: Projekt-Limit erreicht
+#### EC-3: Projekt-Limit erreicht -- PASS
 - [x] Klare Fehlermeldung mit Hinweis auf Loeschen oder Support
 
-#### EC-4: Keyword-Limit (50) erreicht
+#### EC-4: Keyword-Limit (50) erreicht -- PASS
 - [x] Klare Fehlermeldung mit aktuellem Count und Limit
 
-#### EC-5: Wettbewerber-Domain identisch mit Ziel-Domain
+#### EC-5: Wettbewerber-Domain identisch mit Ziel-Domain -- PASS
 - [x] Backend prueft in POST /competitors: `parsed.data.domain === project.target_domain`
 - [x] Frontend prueft ebenfalls via normalizeDomain() Vergleich
 - [x] Toast-Meldung bei identischer Domain
 
-#### EC-6: Projekt wird geloescht -- Cascade
+#### EC-6: Projekt wird geloescht -- Cascade -- PASS
 - [x] DB: ON DELETE CASCADE auf keywords.project_id und competitor_domains.project_id
 - [x] Delete-Dialog warnt explizit ueber Cascade-Loeschung
 - [x] Bestaetigung erforderlich ("Endgueltig loeschen" Button)
@@ -224,13 +233,15 @@ Cascade Delete: Projekt löschen → Keywords + Wettbewerber werden automatisch 
 - [x] Authentication: Alle Routes pruefen requireTenantUser() -- kein Zugriff ohne Login
 - [x] Tenant-Isolation: Alle Queries filtern nach tenant_id aus x-tenant-id Header (Proxy-gesetzt, nicht spoofbar)
 - [x] RLS: INSERT/UPDATE/DELETE via RLS gesperrt (nur service_role) -- Defense-in-Depth
-- [x] Input Validation: Zod-Schemas auf allen POST/PATCH-Routes
+- [x] Input Validation: Zod-Schemas auf allen POST/PATCH-Routes mit serverseitiger Domain-Normalisierung
 - [x] SQL Injection: Supabase Query Builder verwendet parametrisierte Queries
 - [x] XSS: React-Rendering escaped Ausgaben automatisch
-- [ ] BUG: Fehlende Admin-Rollenprüfung auf API-Ebene fuer schreibende Projekt-Operationen (siehe BUG-2)
-- [ ] BUG: Kein Rate-Limiting auf schreibenden Endpoints (siehe BUG-4)
+- [x] IDOR: Alle nested Routes (keywords, competitors) pruefen Projekt-Zugehoerigkeit via resolveProject(tenantId, projectId)
 - [x] Header-Spoofing: x-tenant-id wird im Proxy sanitisiert (PROJ-21 verifiziert)
 - [x] Cascade Delete: Verhindert verwaiste Datensaetze
+- [ ] BUG: Fehlende Admin-Rollenpruefung auf API-Ebene fuer Projekt-CRUD (siehe BUG-2)
+- [ ] BUG: Kein Rate-Limiting auf schreibenden Endpoints (siehe BUG-4)
+- [ ] BUG: Verwaistes keyword_tracking Modul im Billing buchbar ohne Funktion (siehe BUG-6)
 
 ### Cross-Browser / Responsive (Code-Review-Basis)
 
@@ -243,66 +254,69 @@ Cascade Delete: Projekt löschen → Keywords + Wettbewerber werden automatisch 
 
 ### Bugs Found
 
-#### BUG-1: Modul-Code-Mismatch -- Feature komplett gesperrt (CRITICAL)
-- **Severity:** Critical
-- **Steps to Reproduce:**
-  1. Tenant bucht das Modul "Keyword Rankings" (DB-Code: `keyword_tracking`)
-  2. Navigiere zu /tools/keywords
-  3. Expected: Workspace wird angezeigt
-  4. Actual: Lockscreen "Keyword Rankings ist noch gesperrt" wird IMMER angezeigt
-- **Root Cause:** `page.tsx` Zeile 12 prueft `activeModuleCodes.includes('keyword_rankings')`, aber der DB-Modul-Code ist `keyword_tracking` (geseedet in Migration 018). Ebenso in `tenant-shell-navigation.tsx` Zeile 52: `moduleCode: 'keyword_rankings'` statt `'keyword_tracking'`.
-- **Betroffene Dateien:**
-  - `/Users/tobi/TRAE/boosthive-new/src/app/tools/keywords/page.tsx` (Zeile 12)
-  - `/Users/tobi/TRAE/boosthive-new/src/components/tenant-shell-navigation.tsx` (Zeile 52)
-- **Priority:** Fix before deployment -- Feature ist komplett unbenutzbar
+#### BUG-1: Modul-Code-Mismatch (CRITICAL) -- GEFIXT
+- **Status:** Gefixt in Commit `e612056` / `bc8f7be`
+- **Vorher:** page.tsx prueft `keyword_rankings`, DB-Code ist `keyword_tracking`
+- **Nachher:** page.tsx prueft `seo_analyse`, Navigation hat `moduleCode: 'seo_analyse'`. Keywordranking ist als Unterbereich von SEO-Analyse eingeordnet.
 
-#### BUG-2: Fehlende Admin-Rollenprüfung auf API-Ebene (MEDIUM)
+#### BUG-2: Fehlende Admin-Rollenpruefung auf API-Ebene (MEDIUM) -- OFFEN
 - **Severity:** Medium
 - **Steps to Reproduce:**
   1. Logge dich als Member ein (nicht Admin)
   2. Sende direkt: `POST /api/tenant/keywords/projects` mit gueltigem Body
   3. Expected: 403 Forbidden (nur Admin darf Projekte erstellen)
   4. Actual: 201 Created -- Projekt wird angelegt
-- **Details:** Die UI versteckt "Neues Projekt", Umbenennen, Deaktivieren und Loeschen fuer Members. Aber die API-Routes verwenden `requireTenantUser` statt `requireTenantAdmin`, sodass Members durch direkten API-Aufruf schreibende Operationen ausfuehren koennen (POST projects, PATCH, DELETE).
-- **Hinweis:** Die Spec sagt "Admin kann ein Keyword-Projekt anlegen", aber "Member moechte Keywords und Wettbewerber hinzufuegen". Die Abgrenzung ist nicht ganz klar. Keywords/Wettbewerber-CRUD fuer Members ist vermutlich gewuenscht, aber Projekt-Create/Delete/StatusToggle sollte Admin-only sein.
+- **Details:** Die UI versteckt "Neues Projekt", Umbenennen, Deaktivieren und Loeschen fuer Members. Aber die API-Routes verwenden `requireTenantUser` statt `requireTenantAdmin`, sodass Members durch direkten API-Aufruf schreibende Operationen ausfuehren koennen (POST projects, PATCH projects, DELETE projects). Die Funktion `requireTenantAdmin` existiert bereits in `src/lib/auth-guards.ts` (Zeile 179) und muss nur eingesetzt werden.
+- **Betroffene Dateien:**
+  - `/Users/tobi/TRAE/boosthive-new/src/app/api/tenant/keywords/projects/route.ts` (POST)
+  - `/Users/tobi/TRAE/boosthive-new/src/app/api/tenant/keywords/projects/[id]/route.ts` (PATCH, DELETE)
+- **Hinweis:** Keywords/Wettbewerber-CRUD (POST/DELETE) fuer Members ist vermutlich gewuenscht (User Stories). Nur Projekt-Create/Delete/StatusToggle sollte Admin-only sein.
 - **Priority:** Fix before deployment
 
-#### BUG-3: Backend normalisiert Domain nicht vor Validierung (LOW)
-- **Severity:** Low
-- **Steps to Reproduce:**
-  1. Sende direkt: `POST /api/tenant/keywords/projects` mit `target_domain: "https://Example.DE/"`
-  2. Expected: Domain wird normalisiert zu "example.de" und akzeptiert
-  3. Actual: 422 Validierungsfehler ("Ungueltige Domain")
-- **Details:** Das Frontend normalisiert korrekt, aber der Backend-Validator akzeptiert nur bereits normalisierte Domains. Bei direkten API-Aufrufen (z.B. durch Integrationen oder Tests) wird die Domain abgelehnt, wenn sie nicht vorher normalisiert wurde. Dasselbe gilt fuer den Wettbewerber-POST-Endpoint.
-- **Priority:** Nice to have -- Frontend normalisiert bereits
+#### BUG-3: Backend normalisiert Domain nicht vor Validierung (LOW) -- GEFIXT
+- **Status:** Gefixt -- Zod-Schema verwendet jetzt `.transform(normalizeDomain)` vor `.refine()` in allen drei Dateien (projects/route.ts, [id]/route.ts, competitors/route.ts).
 
-#### BUG-4: Kein Rate-Limiting auf schreibenden Endpoints (LOW)
+#### BUG-4: Kein Rate-Limiting auf schreibenden Endpoints (LOW) -- OFFEN
 - **Severity:** Low
 - **Steps to Reproduce:**
   1. Sende 100 POST-Requests an /api/tenant/keywords/projects/[id]/keywords in schneller Folge
   2. Expected: Rate-Limiting greift
   3. Actual: Alle Requests werden verarbeitet (bis zum Keyword-Limit)
-- **Details:** Schreibende Endpoints (POST keywords, POST competitors, POST/PATCH/DELETE projects) haben kein Rate-Limiting. Das Limit-System verhindert zwar Daten-Explosion, aber ein Angreifer koennte schnell viele Schreib-Operationen ausloesen.
+- **Details:** Schreibende Endpoints haben kein Rate-Limiting. Das Data-Limit-System verhindert zwar Daten-Explosion, aber ein Angreifer koennte hohe DB-Last durch schnelle Schreib-Operationen erzeugen. `src/lib/rate-limit.ts` existiert bereits im Projekt.
 - **Priority:** Fix in next sprint
 
-#### BUG-5: target_domain nicht aenderbar nach Erstellung (LOW)
+#### BUG-5: target_domain nicht ueber UI aenderbar (LOW) -- TEILWEISE GEFIXT
+- **Status:** API-seitig gefixt (PATCH-Schema akzeptiert jetzt `target_domain`), aber die UI in SettingsTab hat weiterhin kein Eingabefeld fuer Domain-Aenderung.
 - **Severity:** Low
+- **Priority:** Nice to have -- ggf. by-design, Domain als Projekt-Identifier
+
+#### BUG-6: Verwaistes keyword_tracking Modul im Billing (MEDIUM) -- NEU
+- **Severity:** Medium
 - **Steps to Reproduce:**
-  1. Erstelle ein Projekt mit target_domain "old-domain.de"
-  2. Versuche die Domain in den Einstellungen zu aendern
-  3. Expected: Domain kann geaendert werden
-  4. Actual: Kein Eingabefeld fuer Domain-Aenderung vorhanden
-- **Details:** Das PATCH-Schema erlaubt nur name, language_code, country_code, status. target_domain fehlt. Die UI hat auch kein Feld dafuer. Dies koennte beabsichtigt sein (Domain als unveraenderlicher Projekt-Identifier), sollte aber dokumentiert werden.
-- **Priority:** Nice to have -- ggf. by-design
+  1. Oeffne als Admin den Billing-Bereich
+  2. Beobachte: Modul "Keyword Rankings" (code: `keyword_tracking`) ist buchbar
+  3. Buche NUR "Keyword Rankings" (ohne "SEO Analyse")
+  4. Navigiere zu /tools/keywords
+  5. Expected: Workspace wird angezeigt (Modul ist ja gebucht)
+  6. Actual: Lockscreen "Keywordranking ist noch gesperrt" -- weil page.tsx und API auf `seo_analyse` pruefen
+- **Root Cause:** Migration 018 seedet ein `keyword_tracking` Modul, aber kein Code gated darauf. `page.tsx` und alle API-Routes pruefen `seo_analyse`. Ein Tenant koennte Geld fuer ein Modul ausgeben, das keinen Zugang gewaehrt. Die Alias-Map in `module-access.ts` (`keyword_tracking: ['keyword_tracking', 'seo_analyse']`) wirkt nur wenn Code `requireTenantModuleAccess(_, 'keyword_tracking')` aufruft -- das tut niemand.
+- **Loesung:** Entweder (a) `keyword_tracking` Modul aus DB entfernen / deaktivieren, oder (b) `page.tsx` so aendern, dass auch `keyword_tracking` geprueft wird, oder (c) im Billing-UI das Modul als nicht-buchbar kennzeichnen.
+- **Betroffene Dateien:**
+  - `/Users/tobi/TRAE/boosthive-new/supabase/migrations/018_keyword_projects.sql` (Zeile 125-136)
+  - `/Users/tobi/TRAE/boosthive-new/src/app/tools/keywords/page.tsx` (Zeile 12)
+  - `/Users/tobi/TRAE/boosthive-new/src/lib/module-access.ts` (Zeile 5)
+- **Priority:** Fix before deployment -- Tenant koennte fuer ein funktionsloses Modul bezahlen
 
 ### Summary
-- **Acceptance Criteria:** 7/8 passed (1 blockiert durch BUG-1)
-- **Edge Cases:** 5/6 bestanden (1 Minor: EC-2 Backend-Normalisierung)
-- **Bugs Found:** 5 total (1 Critical, 1 Medium, 3 Low)
-- **Security:** Tenant-Isolation solide, RLS korrekt, aber fehlende Admin-Rollenprüfung auf API-Ebene
+- **Acceptance Criteria:** 8/8 passed (AC-6 mit Einschraenkung BUG-2)
+- **Edge Cases:** 6/6 bestanden
+- **Bugs aus v1:** 3/5 gefixt (BUG-1, BUG-3, BUG-5 API-seitig), 2 offen (BUG-2, BUG-4)
+- **Neue Bugs:** 1 (BUG-6 -- verwaistes Modul)
+- **Offene Bugs gesamt:** 3 (0 Critical, 2 Medium, 1 Low)
+- **Security:** Tenant-Isolation solide, RLS korrekt, IDOR geschuetzt. Offene Punkte: Admin-Rollenpruefung (BUG-2), Rate-Limiting (BUG-4)
 - **Build:** Erfolgreich (keine TypeScript- oder ESLint-Fehler)
 - **Production Ready:** NEIN
-- **Recommendation:** BUG-1 (Modul-Code-Mismatch) und BUG-2 (Admin-Rollenprüfung) muessen vor Deployment gefixt werden. BUG-1 macht das Feature komplett unbenutzbar.
+- **Blocker:** BUG-2 (Admin-Rollenpruefung) und BUG-6 (verwaistes Modul) muessen vor Deployment gefixt werden. BUG-6 koennte zu Billing-Problemen fuehren, BUG-2 ist eine Authorization-Luecke.
 
 ## Deployment
 _To be added by /deploy_

@@ -121,16 +121,4 @@ CREATE POLICY "competitor_domains_deny_delete"
 CREATE INDEX IF NOT EXISTS idx_competitor_domains_project_id ON competitor_domains (project_id);
 CREATE INDEX IF NOT EXISTS idx_competitor_domains_tenant_id ON competitor_domains (tenant_id);
 
--- ---------------------------------------------------------------------------
--- 4. Add keyword_tracking module to catalog
--- ---------------------------------------------------------------------------
-INSERT INTO modules (code, name, description, stripe_price_id, sort_order, is_active)
-VALUES (
-  'keyword_tracking',
-  'Keyword Rankings',
-  'Tracke Keyword-Rankings fuer deine Kunden, ueberwache Wettbewerber und analysiere historische Ranking-Entwicklungen.',
-  'price_1TEy4BBqMa5Vx8VNcidWpuHa',
-  40,
-  true
-)
-ON CONFLICT (code) DO NOTHING;
+-- Note: Keyword Rankings is gated behind the seo_analyse module (no separate module entry needed)
