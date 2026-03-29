@@ -99,6 +99,7 @@ interface AiVisibilityReportProps {
   analyses: VisibilityAnalysis[]
   selectedAnalysisId: string | null
   onSelectAnalysis: (analysisId: string) => void
+  onRefreshAnalyses?: () => Promise<void> | void
 }
 
 export function AiVisibilityReport({
@@ -106,6 +107,7 @@ export function AiVisibilityReport({
   analyses,
   selectedAnalysisId,
   onSelectAnalysis,
+  onRefreshAnalyses,
 }: AiVisibilityReportProps) {
   const { toast } = useToast()
   const [detail, setDetail] = useState<AnalyticsDetailResponse | null>(null)
@@ -276,6 +278,27 @@ export function AiVisibilityReport({
   useEffect(() => {
     void fetchTimeline()
   }, [fetchTimeline])
+
+  useEffect(() => {
+    if (!onRefreshAnalyses) return
+
+    const hasAnalyticsInProgress = analyses.some(
+      (analysis) =>
+        analysis.status === 'done' &&
+        (analysis.analytics_status === 'pending' || analysis.analytics_status === 'running')
+    )
+
+    const shouldPoll = hasAnalyticsInProgress || (analyses.length > 0 && reportableAnalyses.length === 0)
+    if (!shouldPoll) return
+
+    const intervalId = window.setInterval(() => {
+      void onRefreshAnalyses()
+    }, 5000)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [analyses, onRefreshAnalyses, reportableAnalyses.length])
 
   const filteredScores = useMemo(() => {
     if (!detail) return []

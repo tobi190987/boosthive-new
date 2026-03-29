@@ -1228,6 +1228,7 @@ function ProjectDetailView({
         analyses={analyses}
         selectedAnalysisId={selectedAnalysis?.id ?? selectedAnalysisId}
         onSelectAnalysis={setSelectedAnalysisId}
+        onRefreshAnalyses={fetchDetail}
       />
 
       {/* ── Neue Analyse Dialog ────────────────────────────── */}
