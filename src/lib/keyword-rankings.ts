@@ -33,6 +33,7 @@ interface ConnectionRecord {
 interface KeywordRecord {
   id: string
   keyword: string
+  created_at: string
 }
 
 interface RunRecord {
@@ -200,7 +201,7 @@ async function loadKeywords(projectId: string, tenantId: string) {
   const admin = getAdmin()
   const { data, error } = await admin
     .from('keywords')
-    .select('id, keyword')
+    .select('id, keyword, created_at')
     .eq('project_id', projectId)
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: true })
@@ -387,6 +388,20 @@ export async function assertManualRefreshAllowed(projectId: string, tenantId: st
 
   if (recentError) throw new Error(recentError.message)
   if (recentRun) {
+    const { data: latestKeyword, error: latestKeywordError } = await admin
+      .from('keywords')
+      .select('created_at')
+      .eq('project_id', projectId)
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (latestKeywordError) throw new Error(latestKeywordError.message)
+    if (latestKeyword?.created_at && latestKeyword.created_at > recentRun.created_at) {
+      return
+    }
+
     throw new Error(
       `Manuelle Aktualisierung ist erst wieder ${addMs(recentRun.created_at, MANUAL_REFRESH_COOLDOWN_MS)} moeglich.`
     )
@@ -624,6 +639,14 @@ export async function getRankingsDashboard(
   const latestManualSuccess = (runs ?? []).find(
     (run) => run.status === 'success' && run.trigger_type === 'manual'
   )
+  const latestKeywordCreatedAt = keywords.reduce<string | null>((latest, keyword) => {
+    if (!latest || keyword.created_at > latest) return keyword.created_at
+    return latest
+  }, null)
+  const manualRefreshBypass =
+    Boolean(latestManualSuccess?.created_at) &&
+    Boolean(latestKeywordCreatedAt) &&
+    (latestKeywordCreatedAt as string) > (latestManualSuccess?.created_at as string)
 
   return {
     summary: {
@@ -634,7 +657,7 @@ export async function getRankingsDashboard(
       lastRunCompletedAt: lastRun?.completed_at ?? null,
       lastError: project.last_tracking_error ?? lastRun?.error_message ?? null,
       trackingInterval: project.tracking_interval,
-      refreshAvailableAt: latestManualSuccess
+      refreshAvailableAt: latestManualSuccess && !manualRefreshBypass
         ? addMs(latestManualSuccess.created_at, MANUAL_REFRESH_COOLDOWN_MS)
         : null,
     },

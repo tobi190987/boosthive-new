@@ -15,6 +15,7 @@ import {
   RefreshCcw,
   Search,
   Settings,
+  Sparkles,
   TrendingDown,
   TrendingUp,
   Trash2,
@@ -90,6 +91,26 @@ interface Competitor {
   id: string
   domain: string
   created_at: string
+}
+
+interface SuggestedKeyword {
+  keyword: string
+  reason: string
+}
+
+interface SuggestedCompetitor {
+  domain: string
+  reason: string
+}
+
+interface ProjectSuggestionsResponse {
+  source: 'anthropic' | 'fallback'
+  page: {
+    url: string
+    title: string
+  }
+  keywords: SuggestedKeyword[]
+  competitors: SuggestedCompetitor[]
 }
 
 type GscStatus = 'connected' | 'expired' | 'revoked' | 'not_connected'
@@ -1620,7 +1641,7 @@ interface KeywordsTabProps {
   targetDomain: string
 }
 
-function KeywordsTab({ projectId }: KeywordsTabProps) {
+function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
   const { toast } = useToast()
   const [keywords, setKeywords] = useState<Keyword[]>([])
   const [loading, setLoading] = useState(true)
@@ -1628,6 +1649,11 @@ function KeywordsTab({ projectId }: KeywordsTabProps) {
   const [newKeyword, setNewKeyword] = useState('')
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<SuggestedKeyword[]>([])
+  const [suggestionSource, setSuggestionSource] = useState<'anthropic' | 'fallback' | null>(null)
+  const [suggestionUrl, setSuggestionUrl] = useState<string | null>(null)
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [addingSuggestedKeyword, setAddingSuggestedKeyword] = useState<string | null>(null)
 
   const loadKeywords = useCallback(async () => {
     try {
@@ -1648,9 +1674,7 @@ function KeywordsTab({ projectId }: KeywordsTabProps) {
     loadKeywords()
   }, [loadKeywords])
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    const kw = newKeyword.trim()
+  async function addKeyword(kw: string) {
     if (!kw) return
 
     try {
@@ -1661,16 +1685,61 @@ function KeywordsTab({ projectId }: KeywordsTabProps) {
         body: JSON.stringify({ keyword: kw }),
       })
       setNewKeyword('')
-      toast({ title: 'Keyword hinzugefuegt', description: `"${kw}" wurde gespeichert.` })
+      toast({ title: 'Keyword hinzugefügt', description: `"${kw}" wurde gespeichert.` })
+      setSuggestions((current) => current.filter((item) => item.keyword.toLowerCase() !== kw.toLowerCase()))
       loadKeywords()
     } catch (err) {
       toast({
         title: 'Fehler',
-        description: err instanceof Error ? err.message : 'Keyword konnte nicht hinzugefuegt werden.',
+        description: err instanceof Error ? err.message : 'Keyword konnte nicht hinzugefügt werden.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    const kw = newKeyword.trim()
+    if (!kw) return
+
+    try {
+      await addKeyword(kw)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function loadSuggestions() {
+    try {
+      setLoadingSuggestions(true)
+      const data = await apiFetch<ProjectSuggestionsResponse>(`${API_BASE}/${projectId}/suggestions`)
+      setSuggestions(data.keywords)
+      setSuggestionSource(data.source)
+      setSuggestionUrl(data.page.url)
+      if (data.keywords.length === 0) {
+        toast({
+          title: 'Keine Keyword-Vorschläge gefunden',
+          description: 'Auf Basis der aktuellen Domain konnten keine neuen Keywords abgeleitet werden.',
+        })
+      }
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description: err instanceof Error ? err.message : 'Keyword-Vorschläge konnten nicht geladen werden.',
         variant: 'destructive',
       })
     } finally {
+      setLoadingSuggestions(false)
+    }
+  }
+
+  async function handleAddSuggestion(keyword: string) {
+    try {
+      setAddingSuggestedKeyword(keyword)
+      await addKeyword(keyword)
+    } finally {
       setAdding(false)
+      setAddingSuggestedKeyword(null)
     }
   }
 
@@ -1680,12 +1749,12 @@ function KeywordsTab({ projectId }: KeywordsTabProps) {
       await apiFetch(`${API_BASE}/${projectId}/keywords/${kw.id}`, {
         method: 'DELETE',
       })
-      toast({ title: 'Keyword geloescht', description: `"${kw.keyword}" wurde entfernt.` })
+      toast({ title: 'Keyword gelöscht', description: `"${kw.keyword}" wurde entfernt.` })
       loadKeywords()
     } catch (err) {
       toast({
         title: 'Fehler',
-        description: err instanceof Error ? err.message : 'Keyword konnte nicht geloescht werden.',
+        description: err instanceof Error ? err.message : 'Keyword konnte nicht gelöscht werden.',
         variant: 'destructive',
       })
     } finally {
@@ -1759,6 +1828,69 @@ function KeywordsTab({ projectId }: KeywordsTabProps) {
           </Button>
         </form>
 
+        <div className="rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                <Sparkles className="h-4 w-4 text-[#0f766e]" />
+                Keyword-Vorschläge
+              </div>
+              <p className="text-sm text-slate-500">
+                Generiere passende Suchbegriffe direkt aus dem Inhalt von {targetDomain}.
+              </p>
+              {suggestionUrl && (
+                <p className="text-xs text-slate-400">
+                  Quelle: {suggestionUrl} {suggestionSource === 'anthropic' ? '· KI-gestützt' : '· heuristisch'}
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void loadSuggestions()}
+              disabled={loadingSuggestions}
+              className="rounded-full"
+            >
+              {loadingSuggestions ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Vorschläge laden
+            </Button>
+          </div>
+
+          {suggestions.length > 0 && (
+            <div className="mt-4 grid gap-3">
+              {suggestions.map((item) => (
+                <div
+                  key={item.keyword}
+                  className="flex flex-col gap-3 rounded-2xl border border-[#e6ddd0] bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-900">{item.keyword}</p>
+                    <p className="text-sm text-slate-500">{item.reason}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleAddSuggestion(item.keyword)}
+                    disabled={atLimit || addingSuggestedKeyword === item.keyword}
+                    className="shrink-0 rounded-full"
+                  >
+                    {addingSuggestedKeyword === item.keyword ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="mr-2 h-4 w-4" />
+                    )}
+                    Übernehmen
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {atLimit && (
           <p className="text-xs text-amber-600">
             Keyword-Limit erreicht ({KEYWORD_LIMIT}). Loesche bestehende Keywords, um neue hinzuzufuegen.
@@ -1768,7 +1900,7 @@ function KeywordsTab({ projectId }: KeywordsTabProps) {
         {keywords.length === 0 ? (
           <div className="py-8 text-center">
             <Search className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-2 text-sm text-slate-500">Noch keine Keywords hinzugefuegt.</p>
+            <p className="mt-2 text-sm text-slate-500">Noch keine Keywords hinzugefügt.</p>
           </div>
         ) : (
           <Table>
@@ -1829,6 +1961,11 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
   const [newDomain, setNewDomain] = useState('')
   const [adding, setAdding] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [suggestions, setSuggestions] = useState<SuggestedCompetitor[]>([])
+  const [suggestionSource, setSuggestionSource] = useState<'anthropic' | 'fallback' | null>(null)
+  const [suggestionUrl, setSuggestionUrl] = useState<string | null>(null)
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false)
+  const [addingSuggestedDomain, setAddingSuggestedDomain] = useState<string | null>(null)
 
   const loadCompetitors = useCallback(async () => {
     try {
@@ -1849,14 +1986,11 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
     loadCompetitors()
   }, [loadCompetitors])
 
-  async function handleAdd(e: React.FormEvent) {
-    e.preventDefault()
-    const normalized = normalizeDomain(newDomain)
-
+  async function addCompetitor(normalized: string) {
     if (!isValidDomain(normalized)) {
       toast({
-        title: 'Ungueltige Domain',
-        description: 'Bitte eine gueltige Domain eingeben (z. B. competitor.de).',
+        title: 'Ungültige Domain',
+        description: 'Bitte eine gültige Domain eingeben (z. B. competitor.de).',
         variant: 'destructive',
       })
       return
@@ -1880,16 +2014,61 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
         body: JSON.stringify({ domain: normalized }),
       })
       setNewDomain('')
-      toast({ title: 'Wettbewerber hinzugefuegt', description: `"${normalized}" wurde gespeichert.` })
+      toast({ title: 'Wettbewerber hinzugefügt', description: `"${normalized}" wurde gespeichert.` })
+      setSuggestions((current) => current.filter((item) => normalizeDomain(item.domain) !== normalized))
       loadCompetitors()
     } catch (err) {
       toast({
         title: 'Fehler',
-        description: err instanceof Error ? err.message : 'Wettbewerber konnte nicht hinzugefuegt werden.',
+        description: err instanceof Error ? err.message : 'Wettbewerber konnte nicht hinzugefügt werden.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault()
+    const normalized = normalizeDomain(newDomain)
+
+    try {
+      await addCompetitor(normalized)
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  async function loadSuggestions() {
+    try {
+      setLoadingSuggestions(true)
+      const data = await apiFetch<ProjectSuggestionsResponse>(`${API_BASE}/${projectId}/suggestions`)
+      setSuggestions(data.competitors)
+      setSuggestionSource(data.source)
+      setSuggestionUrl(data.page.url)
+      if (data.competitors.length === 0) {
+        toast({
+          title: 'Keine Wettbewerber-Vorschläge gefunden',
+          description: 'Die Domain liefert aktuell keine sicheren Wettbewerber-Vorschläge.',
+        })
+      }
+    } catch (err) {
+      toast({
+        title: 'Fehler',
+        description:
+          err instanceof Error ? err.message : 'Wettbewerber-Vorschläge konnten nicht geladen werden.',
         variant: 'destructive',
       })
     } finally {
+      setLoadingSuggestions(false)
+    }
+  }
+
+  async function handleAddSuggestion(domain: string) {
+    try {
+      setAddingSuggestedDomain(domain)
+      await addCompetitor(domain)
+    } finally {
       setAdding(false)
+      setAddingSuggestedDomain(null)
     }
   }
 
@@ -1899,12 +2078,12 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
       await apiFetch(`${API_BASE}/${projectId}/competitors/${comp.id}`, {
         method: 'DELETE',
       })
-      toast({ title: 'Wettbewerber geloescht', description: `"${comp.domain}" wurde entfernt.` })
+      toast({ title: 'Wettbewerber gelöscht', description: `"${comp.domain}" wurde entfernt.` })
       loadCompetitors()
     } catch (err) {
       toast({
         title: 'Fehler',
-        description: err instanceof Error ? err.message : 'Wettbewerber konnte nicht geloescht werden.',
+        description: err instanceof Error ? err.message : 'Wettbewerber konnte nicht gelöscht werden.',
         variant: 'destructive',
       })
     } finally {
@@ -1978,6 +2157,69 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
           </Button>
         </form>
 
+        <div className="rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
+                <Sparkles className="h-4 w-4 text-[#0f766e]" />
+                Wettbewerber-Vorschläge
+              </div>
+              <p className="text-sm text-slate-500">
+                Leite potenzielle Wettbewerber aus Angebot und Positionierung von {targetDomain} ab.
+              </p>
+              {suggestionUrl && (
+                <p className="text-xs text-slate-400">
+                  Quelle: {suggestionUrl} {suggestionSource === 'anthropic' ? '· KI-gestützt' : '· heuristisch'}
+                </p>
+              )}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => void loadSuggestions()}
+              disabled={loadingSuggestions}
+              className="rounded-full"
+            >
+              {loadingSuggestions ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="mr-2 h-4 w-4" />
+              )}
+              Vorschläge laden
+            </Button>
+          </div>
+
+          {suggestions.length > 0 && (
+            <div className="mt-4 grid gap-3">
+              {suggestions.map((item) => (
+                <div
+                  key={item.domain}
+                  className="flex flex-col gap-3 rounded-2xl border border-[#e6ddd0] bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-slate-900">{item.domain}</p>
+                    <p className="text-sm text-slate-500">{item.reason}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => void handleAddSuggestion(item.domain)}
+                    disabled={atLimit || addingSuggestedDomain === item.domain}
+                    className="shrink-0 rounded-full"
+                  >
+                    {addingSuggestedDomain === item.domain ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Plus className="mr-2 h-4 w-4" />
+                    )}
+                    Übernehmen
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {atLimit && (
           <p className="text-xs text-amber-600">
             Wettbewerber-Limit erreicht ({COMPETITOR_LIMIT}). Loesche bestehende Eintraege, um neue hinzuzufuegen.
@@ -1987,7 +2229,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
         {competitors.length === 0 ? (
           <div className="py-8 text-center">
             <Globe className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-2 text-sm text-slate-500">Noch keine Wettbewerber hinzugefuegt.</p>
+            <p className="mt-2 text-sm text-slate-500">Noch keine Wettbewerber hinzugefügt.</p>
           </div>
         ) : (
           <Table>
