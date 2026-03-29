@@ -11,19 +11,33 @@ import {
   VISIBILITY_READ,
 } from '@/lib/rate-limit'
 
+function normalizeUrl(value: string | null | undefined) {
+  const trimmed = typeof value === 'string' ? value.trim() : ''
+  if (!trimmed) return null
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
 const updateProjectSchema = z.object({
-  brand_name: z.string().min(1).max(200).optional(),
-  website_url: z.string().url().max(500).nullable().optional(),
+  brand_name: z.string().trim().min(1).max(200).optional(),
+  website_url: z
+    .union([z.string().trim().max(500), z.null(), z.undefined()])
+    .transform((value) => normalizeUrl(value))
+    .refine((value) => value === null || z.string().url().safeParse(value).success, 'Ungueltige URL.')
+    .optional(),
   competitors: z
     .array(
       z.object({
-        name: z.string().min(1).max(200),
-        url: z.string().max(500).optional().default(''),
+        name: z.string().trim().min(1).max(200),
+        url: z
+          .union([z.string().trim().max(500), z.null(), z.undefined()])
+          .transform((value) => normalizeUrl(value) ?? '')
+          .refine((value) => value === '' || z.string().url().safeParse(value).success, 'Ungueltige URL.'),
       })
     )
     .max(3)
     .optional(),
-  keywords: z.array(z.string().min(1).max(300)).min(1).max(10).optional(),
+  keywords: z.array(z.string().trim().min(1).max(300)).min(1).max(10).optional(),
 })
 
 export async function GET(
@@ -88,8 +102,10 @@ export async function PUT(
 
   const parsed = updateProjectSchema.safeParse(body)
   if (!parsed.success) {
+    const details = parsed.error.flatten().fieldErrors
+    const firstDetail = Object.values(details).flat().find(Boolean)
     return NextResponse.json(
-      { error: 'Validierungsfehler.', details: parsed.error.flatten().fieldErrors },
+      { error: firstDetail ?? 'Validierungsfehler.', details },
       { status: 400 }
     )
   }

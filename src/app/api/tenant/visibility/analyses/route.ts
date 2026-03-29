@@ -14,9 +14,12 @@ import {
 const MAX_CONCURRENT_ANALYSES = 2
 
 const createAnalysisSchema = z.object({
-  project_id: z.string().uuid('Ungueltige project_id.'),
-  models: z.array(z.string().min(1)).min(1, 'Mindestens 1 Modell erforderlich.'),
-  iterations: z
+  project_id: z.string().trim().uuid('Ungueltige project_id.'),
+  models: z
+    .array(z.string().trim().min(1))
+    .transform((models) => models.filter(Boolean))
+    .refine((models) => models.length > 0, 'Mindestens 1 Modell erforderlich.'),
+  iterations: z.coerce
     .number()
     .int()
     .min(5, 'Mindestens 5 Iterationen.')
@@ -79,8 +82,10 @@ export async function POST(request: NextRequest) {
 
   const parsed = createAnalysisSchema.safeParse(body)
   if (!parsed.success) {
+    const details = parsed.error.flatten().fieldErrors
+    const firstDetail = Object.values(details).flat().find(Boolean)
     return NextResponse.json(
-      { error: 'Validierungsfehler.', details: parsed.error.flatten().fieldErrors },
+      { error: firstDetail ?? 'Validierungsfehler.', details },
       { status: 400 }
     )
   }

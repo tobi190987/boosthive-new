@@ -532,7 +532,17 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
       if (!projectRes.ok) {
         const body = await projectRes.json().catch(() => ({}))
-        throw new Error(body.error ?? `Fehler ${projectRes.status}`)
+        const firstDetail =
+          body?.details && typeof body.details === 'object'
+            ? Object.values(body.details as Record<string, unknown[]>)
+                .flat()
+                .find((value) => typeof value === 'string')
+            : null
+        throw new Error(
+          (typeof firstDetail === 'string' && firstDetail) ||
+            body.error ||
+            `Fehler ${projectRes.status}`
+        )
       }
 
       const { project } = await projectRes.json()
@@ -1014,7 +1024,17 @@ function ProjectDetailView({
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
-        throw new Error(body.error ?? `Fehler ${res.status}`)
+        const firstDetail =
+          body?.details && typeof body.details === 'object'
+            ? Object.values(body.details as Record<string, unknown[]>)
+                .flat()
+                .find((value) => typeof value === 'string')
+            : null
+        throw new Error(
+          (typeof firstDetail === 'string' && firstDetail) ||
+            body.error ||
+            `Fehler ${res.status}`
+        )
       }
       const { analysis } = await res.json()
       toast({ title: 'Analyse gestartet' })
