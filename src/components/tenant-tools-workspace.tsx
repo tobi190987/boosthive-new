@@ -1952,29 +1952,6 @@ function SeoAnalysisWorkspace({
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-[32px] border border-[#e6ddd0] bg-[#fffdf9] shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl text-slate-950">
-            <Sparkles className="h-5 w-5 text-[#b85e34]" />
-            SEO-Analyse
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-3 text-sm leading-6 text-slate-600 md:grid-cols-3">
-          <div className="rounded-2xl bg-white px-4 py-3">
-            <p className="font-semibold text-slate-900">Onpage-Signale</p>
-            <p>Title, Meta-Description, H1/H2, Wortanzahl und Alt-Texte pro Seite.</p>
-          </div>
-          <div className="rounded-2xl bg-white px-4 py-3">
-            <p className="font-semibold text-slate-900">Technische Checks</p>
-            <p>HTTPS, Viewport, Robots, Schema.org, Favicon und optional Lighthouse.</p>
-          </div>
-          <div className="rounded-2xl bg-white px-4 py-3">
-            <p className="font-semibold text-slate-900">Verlauf & Wiederaufruf</p>
-            <p>Abgeschlossene Analysen bleiben tenant-isoliert gespeichert und abrufbar.</p>
-          </div>
-        </CardContent>
-      </Card>
-
       <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950">

@@ -1,8 +1,8 @@
 # PROJ-24: AI Visibility Dashboard & Reports
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-03-28
-**Last Updated:** 2026-03-28
+**Last Updated:** 2026-03-29
 
 ## Summary
 Präsentationsschicht des AI Visibility Tools. Visualisiert die berechneten Metriken in einem Agentur-Dashboard mit Benchmark-Matrix (Brand vs. Wettbewerber), Timeline-Tracking über 30 Tage und ermöglicht den White-Label-PDF-Export für die Endkunden der Agentur.

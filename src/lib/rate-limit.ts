@@ -113,7 +113,7 @@ export function rateLimitResponse(result: RateLimitResult): NextResponse {
   const retryAfterSeconds = Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000))
 
   return NextResponse.json(
-    { error: 'Zu viele Anfragen. Bitte versuche es spaeter erneut.' },
+    { error: 'Zu viele Anfragen. Bitte versuche es später erneut.' },
     {
       status: 429,
       headers: {

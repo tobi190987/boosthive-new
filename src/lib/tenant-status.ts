@@ -240,7 +240,7 @@ export function tenantStatusDescription(status: string | null | undefined) {
     case 'billing_blocked':
       return 'Der Tenant ist wegen eines Billing-Problems oder eines gesperrten Abos blockiert.'
     case 'archived':
-      return 'Der Tenant wurde archiviert und ist fuer neue Logins sowie geschuetzte Bereiche gesperrt.'
+      return 'Der Tenant wurde archiviert und ist für neue Logins sowie geschützte Bereiche gesperrt.'
     default:
       return 'Der aktuelle Tenant-Status konnte noch nicht eindeutig eingeordnet werden.'
   }
@@ -302,7 +302,7 @@ export function ownerToggleTenantStatusLabel(status: string | null | undefined) 
 export function ownerToggleTenantStatusDescription(status: string | null | undefined) {
   const normalized = normalizeTenantStatus(status)
   if (normalized === 'active') {
-    return 'Neue Logins werden blockiert. Offene Tenant-Sessions verlieren spaetestens beim naechsten Request den Zugriff auf die Subdomain.'
+    return 'Neue Logins werden blockiert. Offene Tenant-Sessions verlieren spätestens beim nächsten Request den Zugriff auf die Subdomain.'
   }
 
   if (normalized === 'inactive') {

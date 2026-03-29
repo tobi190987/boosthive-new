@@ -24,6 +24,7 @@ export default async function BillingLayout({
       eyebrow="Abrechnung"
       title="Abo und Zahlungsmethode verwalten"
       description="Hier verwaltest du deinen Basis-Plan, siehst den aktuellen Abo-Status und kannst deine Zahlungsmethode hinterlegen oder ändern."
+      showHeader={false}
     >
       {children}
     </TenantAppShell>

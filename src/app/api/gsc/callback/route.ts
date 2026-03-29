@@ -142,9 +142,9 @@ export async function GET(request: NextRequest) {
       )
 
     if (dbError) {
-      console.error('[gsc/callback] DB error:', dbError.message)
+      console.error('[gsc/callback] DB error:', dbError)
       const response = NextResponse.redirect(
-        buildRedirectUrl(tenantSlug, projectId, 'error', 'db_error')
+        buildRedirectUrl(tenantSlug, projectId, 'error', toSafeErrorCode(dbError.message))
       )
       response.cookies.delete(nonceCookieName)
       return response

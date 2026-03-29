@@ -609,20 +609,32 @@ export async function getRankingsDashboard(
     snapshotMap.set(snapshot.keyword_id, list)
   }
 
-  const rows: RankingsDashboardRow[] = keywords.map((keyword) => {
-    const history = snapshotMap.get(keyword.id) ?? []
-    const latest = history[0]
-    const previous = history[1]
-    return {
-      keywordId: keyword.id,
-      keyword: keyword.keyword,
-      currentPosition: latest?.position ?? null,
-      previousPosition: previous?.position ?? null,
-      delta: computeDelta(latest?.position ?? null, previous?.position ?? null),
-      lastTrackedAt: latest?.tracked_at ?? null,
-      bestUrl: latest?.best_url ?? null,
-    }
-  })
+  const rows: RankingsDashboardRow[] = keywords
+    .map((keyword) => {
+      const history = snapshotMap.get(keyword.id) ?? []
+      const latest = history[0]
+      const previous = history[1]
+      return {
+        keywordId: keyword.id,
+        keyword: keyword.keyword,
+        currentPosition: latest?.position ?? null,
+        previousPosition: previous?.position ?? null,
+        delta: computeDelta(latest?.position ?? null, previous?.position ?? null),
+        lastTrackedAt: latest?.tracked_at ?? null,
+        bestUrl: latest?.best_url ?? null,
+      }
+    })
+    .sort((a, b) => {
+      if (a.currentPosition == null && b.currentPosition == null) {
+        return a.keyword.localeCompare(b.keyword, 'de')
+      }
+      if (a.currentPosition == null) return 1
+      if (b.currentPosition == null) return -1
+      if (a.currentPosition !== b.currentPosition) {
+        return a.currentPosition - b.currentPosition
+      }
+      return a.keyword.localeCompare(b.keyword, 'de')
+    })
 
   const lastRun = (runs ?? [])[0] as
     | {

@@ -35,7 +35,7 @@ export const ResetPasswordSchema = z
       .min(1, 'Bitte bestätige dein neues Passwort.'),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: 'Die Passwörter muessen übereinstimmen.',
+    message: 'Die Passwörter müssen übereinstimmen.',
     path: ['confirmPassword'],
   })
 
@@ -78,7 +78,7 @@ export const PasswordChangeSchema = z
       .min(1, 'Bitte bestätige dein neues Passwort.'),
   })
   .refine((data) => data.new_password === data.confirm_password, {
-    message: 'Die Passwörter muessen übereinstimmen.',
+    message: 'Die Passwörter müssen übereinstimmen.',
     path: ['confirm_password'],
   })
 
