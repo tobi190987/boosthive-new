@@ -38,7 +38,7 @@
 | PROJ-24 | AI Visibility Dashboard & Reports | Deployed | [PROJ-24-ai-visibility-dashboard.md](PROJ-24-ai-visibility-dashboard.md) | 2026-03-28 |
 | PROJ-25 | Keyword Project Management | Deployed | [PROJ-25-keyword-project-management.md](PROJ-25-keyword-project-management.md) | 2026-03-28 |
 | PROJ-26 | Google Search Console Integration | Deployed | [PROJ-26-google-search-console-integration.md](PROJ-26-google-search-console-integration.md) | 2026-03-28 |
-| PROJ-27 | Keyword Rankings Dashboard & History | In Progress | [PROJ-27-keyword-rankings-dashboard.md](PROJ-27-keyword-rankings-dashboard.md) | 2026-03-28 |
+| PROJ-27 | Keyword Rankings Dashboard & History | Deployed | [PROJ-27-keyword-rankings-dashboard.md](PROJ-27-keyword-rankings-dashboard.md) | 2026-03-28 |
 
 <!-- Add features above this line -->
 

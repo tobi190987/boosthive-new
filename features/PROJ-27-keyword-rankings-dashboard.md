@@ -1,6 +1,6 @@
 # PROJ-27: Keyword Rankings Dashboard & History
 
-## Status: In Progress
+## Status: Deployed
 **Created:** 2026-03-28
 **Last Updated:** 2026-03-29
 
@@ -47,128 +47,276 @@
 
 ## Tech Design (Solution Architect)
 
-### Überblick
+### Zielbild
 
-Das Feature baut auf PROJ-25 (Keyword-Projekte) und PROJ-26 (GSC OAuth) auf. Ranking-Snapshots werden regelmäßig im Hintergrund gesammelt und blitzschnell aus der Datenbank geladen — keine Live-API-Calls beim Öffnen des Dashboards.
+PROJ-27 erweitert den bestehenden Keyword-Workspace aus PROJ-25 und die GSC-Anbindung aus PROJ-26 um einen read-optimierten Rankings-Bereich. Das Dashboard selbst liest nur gecachte Daten aus Supabase. Alle Google-Abfragen laufen asynchron über einen serverseitigen Tracker.
 
-### Komponenten-Struktur
+Wichtig fuer die Architektur:
 
+- Die bestehende UI ist heute eine einzelne Client-Komponente auf `/tools/keywords`.
+- Die bestehende Datenbasis kennt bereits `keyword_projects`, `keywords`, `competitor_domains` und `gsc_connections`.
+- Die GSC-Integration ist projektbezogen und nutzt genau eine `selected_property` pro Projekt.
+- Google Search Console liefert nur Daten fuer Properties, auf die das verbundene Google-Konto Zugriff hat. Wettbewerber-Rankings lassen sich daher nicht aus derselben Kunden-Property ableiten.
+
+Daraus folgt:
+
+- **v1** liefert belastbar die eigenen Keyword-Positionen inklusive Delta, Verlauf, Fehlerstatus und manuellem Refresh.
+- **Wettbewerber-Linien** brauchen einen zweiten Datenanbieter (SERP API) oder muessen als spaetere Ausbaustufe geplant werden.
+
+### Architektur-Uebersicht
+
+```text
+Tenant Browser
+  ↓
+/tools/keywords
+  ↓
+KeywordProjectsWorkspace
+  ├─ Projektliste
+  └─ Projekt-Detail
+      ├─ Keywords
+      ├─ Wettbewerber
+      ├─ Integrationen
+      ├─ Einstellungen
+      └─ NEU: Rankings
+          ├─ Summary Header
+          ├─ Ranking Table
+          └─ Keyword History Panel
+  ↓
+Next.js API Routes
+  ├─ /api/tenant/keywords/projects/[id]/rankings
+  ├─ /api/tenant/keywords/projects/[id]/rankings/history
+  ├─ /api/tenant/keywords/projects/[id]/rankings/refresh
+  ├─ /api/internal/keyword-rankings/run
+  └─ /api/cron/keyword-rankings
+  ↓
+Supabase
+  ├─ keyword_projects
+  ├─ keywords
+  ├─ competitor_domains
+  ├─ gsc_connections
+  ├─ keyword_ranking_runs        (neu)
+  └─ keyword_ranking_snapshots   (neu)
 ```
-Keyword Projects Workspace (/tools/keywords)
-+-- Projekt-Card
-    +-- GSC Status Badge (von PROJ-26)
-    +-- Letzter Tracking-Zeitpunkt (neu)
 
-Projekt-Detail View (/tools/keywords/[id])
-+-- Tabs (bestehend: Keywords, Wettbewerber, Integrationen, Einstellungen)
-    +-- NEU: Rankings-Tab
-        +-- [Fallback: GSC nicht verbunden]
-        |   +-- Alert mit Link zum Integrationen-Tab
+### UI-Struktur
+
+Der Rankings-Bereich sollte als weiterer Tab in der bestehenden Detailansicht von `KeywordProjectsWorkspace` umgesetzt werden, nicht als neue Seite. Das passt zum aktuellen Informationsmodell im Repo.
+
+```text
+Projekt-Detail (bestehend)
++-- Tabs
+    +-- Keywords
+    +-- Wettbewerber
+    +-- Integrationen
+    +-- Einstellungen
+    +-- NEU: Rankings
+        +-- Header
+        |   +-- Letzter erfolgreicher Lauf
+        |   +-- Status-Badge (bereit / laeuft / Fehler / ausstehend)
+        |   +-- [Jetzt aktualisieren] (nur Admin)
         |
-        +-- [Fallback: Noch kein Tracking]
+        +-- Fallback: GSC nicht verbunden
+        |   +-- Hinweis mit Link zum Integrationen-Tab
+        |
+        +-- Fallback: Noch keine Snapshots
         |   +-- Empty State "Erstes Tracking ausstehend"
-        |   +-- [Jetzt tracken] Button (nur Admin)
         |
-        +-- [Normalzustand]
-            +-- Rankings-Header
-            |   +-- "Zuletzt aktualisiert: vor 3h"
-            |   +-- [Jetzt aktualisieren] Button (Admin, max. 1x/Stunde)
-            |
-            +-- Rankings-Tabelle
-                +-- Zeile pro Keyword
-                    +-- Keyword-Text
-                    +-- Aktuelle Position (z. B. "7" oder "nicht gefunden")
-                    +-- Delta-Badge (↑+3 grün / ↓-1 rot / = grau)
-                    +-- [Details] Button
-                        +-- Keyword-Detail Sheet/Panel
-                            +-- Zeitraum-Selector (30 / 90 Tage)
-                            +-- Liniendiagramm
-                                +-- Linie: eigene Domain
-                                +-- Linien: je Wettbewerber (Farben)
+        +-- Ranking-Tabelle
+        |   +-- Keyword
+        |   +-- Aktuelle Position
+        |   +-- Delta zum vorherigen Snapshot
+        |   +-- Letzte Messung
+        |   +-- [Details]
+        |
+        +-- Keyword-Detail-Sheet
+            +-- Zeitraum 30 / 90 Tage
+            +-- Liniendiagramm fuer eigene Domain
+            +-- Optional spaeter: Wettbewerber-Linien aus externer Quelle
 ```
 
 ### Datenmodell
 
-**Neue Tabelle: `keyword_ranking_snapshots`**
+**1. Bestehende Tabelle erweitern: `keyword_projects`**
 
-| Feld | Bedeutung |
-|------|-----------|
-| `id` | Eindeutige ID |
-| `keyword_id` | Welches Keyword wurde getracked |
-| `project_id` | Welches Projekt (für schnelle Abfragen) |
-| `tenant_id` | Für Datenisolation (RLS) |
-| `domain` | Die Domain, für die dieser Snapshot gilt |
-| `is_competitor` | `false` = eigene Domain, `true` = Wettbewerber |
-| `competitor_id` | Verweis auf Wettbewerber (wenn `is_competitor = true`) |
-| `position` | Google-Position 1–100, `NULL` = nicht gefunden |
-| `tracked_at` | Wann wurde dieser Snapshot erstellt |
+Bestehende Felder wie `last_tracking_run` sollten weitergenutzt statt umbenannt werden.
 
-**Erweiterung `keyword_projects`-Tabelle:**
+Neue Felder:
 
 | Feld | Bedeutung |
 |------|-----------|
 | `tracking_interval` | `daily` oder `weekly` |
-| `last_tracked_at` | Letzter erfolgreicher Tracking-Lauf |
-| `last_tracking_error` | Fehlermeldung des letzten fehlgeschlagenen Laufs (oder leer) |
+| `last_tracking_error` | Letzte fachliche Fehlermeldung des Trackers |
+| `last_tracking_status` | `idle`, `running`, `failed`, `success` |
 
-**Retention:** Snapshots älter als 12 Monate werden automatisch gelöscht (zweiter Vercel Cron Cleanup-Job).
+**2. Neue Tabelle: `keyword_ranking_runs`**
 
-### API-Routen (neue)
+Eine separate Run-Tabelle ist sinnvoll, weil sie Status, Fehler und manuelle Refresh-Limits sauber modelliert. Nur mit einer Snapshot-Tabelle waeren laufende/fehlgeschlagene Jobs schwer darstellbar.
 
-```
-GET  /api/tenant/keywords/projects/[id]/rankings
-     → Neuester Snapshot pro Keyword (aktuelle Positionen + Delta)
+| Feld | Bedeutung |
+|------|-----------|
+| `id` | Eindeutige ID des Tracking-Laufs |
+| `tenant_id` | Tenant-Isolation |
+| `project_id` | Referenz auf das Keyword-Projekt |
+| `trigger_type` | `cron` oder `manual` |
+| `status` | `queued`, `running`, `success`, `failed`, `skipped` |
+| `started_at` | Startzeit des Laufs |
+| `completed_at` | Endzeit des Laufs |
+| `error_message` | Fehlertext fuer UI und Debugging |
+| `keyword_count` | Anzahl verarbeiteter Keywords |
 
-GET  /api/tenant/keywords/projects/[id]/rankings/history
-     → Verlauf eines Keywords über Zeit (Query-Params: keyword_id, days=30|90)
+**3. Neue Tabelle: `keyword_ranking_snapshots`**
 
-POST /api/tenant/keywords/projects/[id]/rankings/refresh
-     → Manueller Tracking-Run (nur Admin, Rate-Limit: 1x/Stunde per Projekt)
+| Feld | Bedeutung |
+|------|-----------|
+| `id` | Eindeutige ID |
+| `run_id` | Referenz auf `keyword_ranking_runs` |
+| `tenant_id` | Tenant-Isolation |
+| `project_id` | Schnellere Projekt-Abfragen |
+| `keyword_id` | Referenz auf das Keyword |
+| `position` | Position 1-100, `NULL` = keine Daten / nicht gefunden |
+| `best_url` | URL aus GSC, falls vorhanden |
+| `clicks` | Optional fuer spaetere Debug-Ansichten |
+| `impressions` | Optional fuer "keine Daten" Einordnung |
+| `tracked_at` | Snapshot-Zeitpunkt |
+| `source` | `gsc` in v1, spaeter erweiterbar |
 
-GET  /api/cron/keyword-rankings
-     → Vercel Cron Endpoint — läuft täglich, verarbeitet alle fälligen Projekte
-```
+**Retention**
 
-### Cron-Job-Ablauf
+- Snapshots fuer 12 Monate behalten
+- altere Daten per Cleanup-Cron loeschen
+- Run-Historie kann ebenfalls mit auf 12 Monate begrenzt werden
 
-```
-Vercel Cron: täglich 02:00 UTC
-      ↓
-/api/cron/keyword-rankings
-      ↓
-Lade alle Projekte: GSC verbunden + tracking_interval fällig
-      ↓
-Für jedes Projekt:
-  1. GSC Access Token erneuern (serverseitig)
-  2. Search Analytics Batch-Query: alle Keywords + Wettbewerber auf einmal
-  3. Positionen in keyword_ranking_snapshots speichern
-  4. last_tracked_at aktualisieren
-      ↓
-Bei Fehler (Token abgelaufen, GSC 4xx):
-  - gsc_connections.status = 'expired'
+### Datenfluss
+
+**A. Dashboard lesen**
+
+1. UI ruft `GET /api/tenant/keywords/projects/[id]/rankings` auf.
+2. Route liest nur aus Supabase:
+   - Projekt-Metadaten aus `keyword_projects`
+   - neuesten Snapshot je Keyword aus `keyword_ranking_snapshots`
+   - vorherigen Snapshot fuer Delta
+   - letzten Run-Status aus `keyword_ranking_runs`
+3. Antwort ist bereits tabellenfertig, damit die Client-Komponente keine Mehrfachabfragen bauen muss.
+
+**B. Keyword-Historie lesen**
+
+1. UI oeffnet das Detail-Sheet.
+2. `GET /api/tenant/keywords/projects/[id]/rankings/history?keyword_id=...&days=30|90`
+3. Route liefert eine kleine Zeitreihe fuer genau ein Keyword.
+
+**C. Manueller Refresh**
+
+1. Admin klickt "Jetzt aktualisieren".
+2. `POST /api/tenant/keywords/projects/[id]/rankings/refresh`
+3. Route prueft:
+   - Tenant/Admin-Rechte
+   - Modulzugang `seo_analyse`
+   - GSC verbunden und `selected_property` gesetzt
+   - kein laufender Run fuer das Projekt
+   - kein erfolgreicher manueller Run in den letzten 60 Minuten
+4. Route legt einen `keyword_ranking_runs`-Datensatz mit `queued` an und triggert den internen Worker.
+
+**D. Geplanter Refresh**
+
+1. Vercel Cron ruft taeglich `/api/cron/keyword-rankings` auf.
+2. Die Route sucht alle aktiven Projekte, die faellig sind:
+   - `tracking_interval = daily` und letzter Lauf > 24h
+   - `tracking_interval = weekly` und letzter Lauf > 7d
+3. Pro Projekt wird ein Run angelegt und der Worker gestartet.
+
+### Worker-Ablauf
+
+Der Worker sollte als internes Endpoint-Muster analog zu den bestehenden Worker-Routen umgesetzt werden.
+
+```text
+/api/internal/keyword-rankings/run
+  ↓
+Lade Run + Projekt + Keywords + GSC Connection
+  ↓
+Refresh Access Token falls noetig
+  ↓
+Fuer jedes Keyword:
+  1. Query gegen die ausgewaehlte GSC-Property
+  2. Beste Position fuer das Keyword bestimmen
+  3. Snapshot speichern
+  ↓
+Bei Erfolg:
+  - keyword_ranking_runs.status = success
+  - keyword_projects.last_tracking_run = now()
+  - keyword_projects.last_tracking_status = success
+  - keyword_projects.last_tracking_error = null
+  ↓
+Bei Fehler:
+  - keyword_ranking_runs.status = failed
+  - keyword_projects.last_tracking_status = failed
   - keyword_projects.last_tracking_error setzen
-  - Kein Absturz für andere Projekte
+  - bei Token-Problemen zusaetzlich gsc_connections.status aktualisieren
 ```
+
+### API-Routen
+
+| Route | Methode | Zweck |
+|-------|---------|-------|
+| `/api/tenant/keywords/projects/[id]/rankings` | GET | Tabellenansicht: aktueller Stand, Delta, Status, letzter Lauf |
+| `/api/tenant/keywords/projects/[id]/rankings/history` | GET | Verlauf eines Keywords fuer 30 oder 90 Tage |
+| `/api/tenant/keywords/projects/[id]/rankings/refresh` | POST | Manuellen Lauf anstossen (Admin only, DB-basiert gedrosselt) |
+| `/api/internal/keyword-rankings/run` | POST | Interner Worker fuer genau einen Run |
+| `/api/cron/keyword-rankings` | GET | Faellige Projekte einsammeln und Runs anlegen |
+| `/api/cron/keyword-rankings-cleanup` | GET | Snapshots und alte Runs nach Retention loeschen |
+
+### Wettbewerber-Strategie
+
+Die bisherige Spezifikation nimmt an, dass GSC auch Wettbewerber-Positionen fuer fremde Domains liefern kann. Das ist mit der aktuellen PROJ-26-Integration nicht realistisch, weil eine GSC-Property immer an ein verifiziertes Eigentum gebunden ist.
+
+Deshalb sollte PROJ-27 in zwei Stufen gedacht werden:
+
+**Stufe 1: GSC First-Party Rankings**
+
+- aktuelle Position je Keyword fuer die eigene Domain
+- Delta zum letzten Snapshot
+- Verlauf 30/90 Tage
+- Cron + manueller Refresh
+- Fehler-/Freshness-Status
+
+**Stufe 2: Wettbewerber-Rankings**
+
+- externer SERP-Datenanbieter
+- eigener `source = serp_api` oder aehnlich in der Snapshot-Tabelle
+- Wettbewerber-Linien im Diagramm
+- Vergleich in derselben Detailansicht
+
+Wenn die Wettbewerber-Anforderung zwingend im selben Scope bleiben soll, braucht das Projekt vor der Umsetzung eine Produktentscheidung fuer den externen Provider, die Kosten und die Zielregionen.
 
 ### Tech-Entscheidungen
 
 | Entscheidung | Warum |
 |---|---|
-| **Rankings-Tab im bestehenden Projekt-Detail** | Konsistentes Tab-Muster aus PROJ-25/26 — kein neues UI-Konzept |
-| **Snapshots in DB, kein Live-API-Call** | Dashboard-Ladezeit < 1s — GSC wird nur im Cron abgefragt |
-| **Vercel Cron** (`vercel.json`) | Serverless, kein eigener Server, nativ in der bestehenden Infrastruktur |
-| **Batch-Query an GSC** | 50 Keywords × 5 Wettbewerber = bis zu 250 einzelne Calls → stattdessen eine Batch-Anfrage pro Domain |
-| **Rate-Limit 1x/Stunde für manuelle Aktualisierung** | GSC API hat Tageskontingente — verhindert versehentliche Überlastung |
-| **Delta berechnet zur Ladezeit** | Kein eigenes Delta-Feld — letzten und vorletzten Snapshot vergleichen (einfacher, kein Sync-Problem) |
-| **`recharts` für Liniendiagramm** | React-nativ, leichtgewichtig, bestens für Next.js — kein D3 nötig |
-| **Cleanup-Job für 12-Monats-Retention** | Zweiter Vercel Cron löscht Snapshots älter als 12 Monate |
+| **Rankings als weiterer Tab im bestehenden Workspace** | Kein neues Navigationsmodell, passt zur aktuellen `KeywordProjectsWorkspace`-Struktur |
+| **DB-Read-Model statt Live-GSC-Calls im UI** | Erfuellt das Performance-Ziel und haelt die UI robust bei API-Ausfaellen |
+| **Separate Run-Tabelle zusaetzlich zu Snapshots** | Saubere Abbildung von Status, Fehlern, Queueing und 1h-Refresh-Regel |
+| **`last_tracking_run` weiterverwenden** | Passt zur bestehenden `keyword_projects`-Migration und vermeidet doppelte Felder |
+| **DB-basierte Refresh-Sperre statt In-Memory Rate Limit** | Der aktuelle In-Memory-Limiter ist auf Serverless nicht verlässlich genug fuer "1x pro Stunde pro Projekt" |
+| **Interner Worker-Endpoint** | Folgt dem bestehenden Muster im Repo fuer laengere Hintergrundjobs |
+| **`recharts` fuer Verlaufschart** | Noch nicht installiert, aber fuer die bestehende React/Next-UI der leichteste Fit |
+| **Vercel Cron erst nach `vercel.json`-Eintrag** | Im Repo existiert aktuell noch keine Cron-Konfiguration |
 
-### Abhängigkeiten (neue Packages)
+### Offene Entscheidungen
+
+1. Soll PROJ-27 als **v1 ohne Wettbewerber-Linien** ausgeliefert werden?
+2. Falls nein: Welcher externe SERP-Provider ist fachlich und kostenmaessig akzeptabel?
+3. Soll der Cron nur taeglich laufen und woechentliche Projekte serverseitig herausfiltern, oder werden zwei getrennte Schedules bevorzugt?
+
+### Abhaengigkeiten (neue Packages)
 
 | Package | Zweck |
 |---|---|
-| `recharts` | Liniendiagramm für Positions-Verlauf |
-| `googleapis` | Bereits aus PROJ-26 vorhanden — wird wiederverwendet |
+| `recharts` | Liniendiagramm fuer Positionsverlauf |
+
+### Umsetzungshinweise fuer spaetere Skills
+
+- `/backend` sollte zuerst Migrationen + Read-/Worker-Routen bauen.
+- `/frontend` sollte danach nur auf die neuen Read-Model-Responses aufsetzen.
+- `/qa` sollte besonders pruefen: leere Historie, Token abgelaufen, manueller Refresh gesperrt, Tenant-Isolation.
 
 ## QA Test Results
 _To be added by /qa_

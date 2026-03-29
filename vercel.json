@@ -1,0 +1,12 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/keyword-rankings",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/keyword-rankings-cleanup",
+      "schedule": "30 2 * * *"
+    }
+  ]
+}

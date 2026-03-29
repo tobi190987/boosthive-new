@@ -2,15 +2,21 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
+  BarChart3,
   AlertCircle,
   ArrowLeft,
+  Clock3,
   ExternalLink,
   Globe,
   Link2,
   Loader2,
+  Minus,
   Plus,
+  RefreshCcw,
   Search,
   Settings,
+  TrendingDown,
+  TrendingUp,
   Trash2,
   Unlink,
 } from 'lucide-react'
@@ -38,6 +44,13 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
@@ -59,6 +72,7 @@ interface KeywordProject {
   target_domain: string
   language_code: string
   country_code: string
+  tracking_interval?: 'daily' | 'weekly'
   status: 'active' | 'inactive'
   created_at: string
   keyword_count: number
@@ -93,6 +107,54 @@ interface GscConnection {
 interface GscProperty {
   siteUrl: string
   permissionLevel: string
+}
+
+type RankingRunStatus = 'idle' | 'queued' | 'running' | 'success' | 'failed'
+
+interface RankingsSummary {
+  status?: RankingRunStatus
+  lastTrackedAt?: string | null
+  lastSuccessfulRunAt?: string | null
+  lastRunStartedAt?: string | null
+  lastRunCompletedAt?: string | null
+  lastError?: string | null
+  trackingInterval?: 'daily' | 'weekly' | null
+  refreshAvailableAt?: string | null
+}
+
+interface RankingRow {
+  keywordId: string
+  keyword: string
+  currentPosition: number | null
+  previousPosition?: number | null
+  delta?: number | null
+  lastTrackedAt?: string | null
+  bestUrl?: string | null
+}
+
+interface RankingsResponse {
+  summary?: RankingsSummary
+  rows?: RankingRow[]
+}
+
+interface RankingHistoryPoint {
+  trackedAt: string
+  position: number | null
+  domain?: string | null
+  source?: string | null
+}
+
+interface RankingHistorySeries {
+  label: string
+  domain?: string | null
+  color?: string | null
+  points: RankingHistoryPoint[]
+}
+
+interface RankingHistoryResponse {
+  keyword?: { id: string; keyword: string }
+  summary?: Record<string, never>
+  series?: RankingHistorySeries[]
 }
 
 type View =
@@ -141,6 +203,62 @@ function formatDate(value: string) {
   })
 }
 
+function formatRelativeTime(value: string | null | undefined) {
+  if (!value) return 'Noch nie'
+
+  const target = new Date(value).getTime()
+  if (Number.isNaN(target)) return formatDate(value)
+
+  const diffMs = target - Date.now()
+  const diffMinutes = Math.round(diffMs / 60000)
+  const absMinutes = Math.abs(diffMinutes)
+
+  if (absMinutes < 1) return 'Gerade eben'
+  if (absMinutes < 60) return diffMinutes >= 0 ? `in ${absMinutes} Min.` : `vor ${absMinutes} Min.`
+
+  const absHours = Math.round(absMinutes / 60)
+  if (absHours < 24) return diffMinutes >= 0 ? `in ${absHours} Std.` : `vor ${absHours} Std.`
+
+  const absDays = Math.round(absHours / 24)
+  return diffMinutes >= 0 ? `in ${absDays} Tagen` : `vor ${absDays} Tagen`
+}
+
+function formatPosition(position: number | null | undefined) {
+  if (position == null) return 'Keine Daten'
+  if (position > 100) return 'Nicht gefunden'
+  return `#${position}`
+}
+
+function getDeltaTone(delta: number | null | undefined) {
+  if (delta == null || delta === 0) {
+    return {
+      label: 'Kein Vergleich',
+      className: 'bg-slate-100 text-slate-500 hover:bg-slate-100',
+      icon: Minus,
+    }
+  }
+
+  if (delta < 0) {
+    return {
+      label: `${Math.abs(delta)} besser`,
+      className: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50',
+      icon: TrendingUp,
+    }
+  }
+
+  return {
+    label: `${delta} schlechter`,
+    className: 'bg-red-50 text-red-700 hover:bg-red-50',
+    icon: TrendingDown,
+  }
+}
+
+function formatDelta(delta: number | null | undefined) {
+  if (delta == null) return 'Neu'
+  if (delta === 0) return '0'
+  return delta < 0 ? `+${Math.abs(delta)}` : `-${delta}`
+}
+
 function normalizeDomain(raw: string): string {
   let d = raw.trim()
   d = d.replace(/^https?:\/\//, '')
@@ -159,11 +277,21 @@ function isValidDomain(d: string): boolean {
 
 const API_BASE = '/api/tenant/keywords/projects'
 
+class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}
+
 async function apiFetch<T>(url: string, opts?: RequestInit): Promise<T> {
   const res = await fetch(url, opts)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.error || `Request failed (${res.status})`)
+    throw new ApiError(body.error || `Request failed (${res.status})`, res.status)
   }
   return res.json()
 }
@@ -700,9 +828,13 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="rounded-full bg-[#f7f3ed]">
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-[#f7f3ed] p-1">
           <TabsTrigger value="keywords" className="rounded-full data-[state=active]:bg-white">
             Keywords
+          </TabsTrigger>
+          <TabsTrigger value="rankings" className="rounded-full data-[state=active]:bg-white">
+            <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
+            Rankings
           </TabsTrigger>
           <TabsTrigger value="competitors" className="rounded-full data-[state=active]:bg-white">
             Wettbewerber
@@ -719,6 +851,15 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
 
         <TabsContent value="keywords" className="mt-4">
           <KeywordsTab projectId={projectId} targetDomain={project.target_domain} />
+        </TabsContent>
+
+        <TabsContent value="rankings" className="mt-4">
+          <RankingsTab
+            project={project}
+            projectId={projectId}
+            role={role}
+            onOpenIntegrations={() => setActiveTab('integrations')}
+          />
         </TabsContent>
 
         <TabsContent value="competitors" className="mt-4">
@@ -739,6 +880,706 @@ function ProjectDetail({ role, projectId, onBack }: ProjectDetailProps) {
         </TabsContent>
       </Tabs>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Rankings Tab
+// ---------------------------------------------------------------------------
+
+interface RankingsTabProps {
+  project: KeywordProject
+  projectId: string
+  role: WorkspaceRole
+  onOpenIntegrations: () => void
+}
+
+function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsTabProps) {
+  const { toast } = useToast()
+  const isAdmin = role === 'admin'
+  const [rows, setRows] = useState<RankingRow[]>([])
+  const [summary, setSummary] = useState<RankingsSummary | null>(null)
+  const [connection, setConnection] = useState<GscConnection | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [backendUnavailable, setBackendUnavailable] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const [selectedRow, setSelectedRow] = useState<RankingRow | null>(null)
+  const [historyRange, setHistoryRange] = useState<'30' | '90'>('30')
+  const [historySeries, setHistorySeries] = useState<RankingHistorySeries[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
+  const [historyUnavailable, setHistoryUnavailable] = useState(false)
+  const rankingsBase = `${API_BASE}/${projectId}/rankings`
+  const gscStatusUrl = `${API_BASE}/${projectId}/gsc/status`
+
+  const loadRankings = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setBackendUnavailable(false)
+
+      const [connectionResult, rankingsResult] = await Promise.allSettled([
+        apiFetch<{ connection: GscConnection | null }>(gscStatusUrl),
+        apiFetch<RankingsResponse>(rankingsBase),
+      ])
+
+      if (connectionResult.status === 'fulfilled') {
+        setConnection(connectionResult.value.connection)
+      } else {
+        throw connectionResult.reason
+      }
+
+      if (rankingsResult.status === 'fulfilled') {
+        setRows(rankingsResult.value.rows ?? [])
+        setSummary(rankingsResult.value.summary ?? null)
+      } else if (
+        rankingsResult.reason instanceof ApiError &&
+        rankingsResult.reason.status === 404
+      ) {
+        setBackendUnavailable(true)
+        setRows([])
+        setSummary(null)
+      } else {
+        throw rankingsResult.reason
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ranking-Daten konnten nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [gscStatusUrl, rankingsBase])
+
+  useEffect(() => {
+    loadRankings()
+  }, [loadRankings])
+
+  const loadHistory = useCallback(
+    async (row: RankingRow, range: '30' | '90') => {
+      try {
+        setHistoryLoading(true)
+        setHistoryError(null)
+        setHistoryUnavailable(false)
+
+        const params = new URLSearchParams({
+          keyword_id: row.keywordId,
+          days: range,
+        })
+
+        const data = await apiFetch<RankingHistoryResponse>(`${rankingsBase}/history?${params.toString()}`)
+        setHistorySeries(data.series ?? [])
+      } catch (err) {
+        if (err instanceof ApiError && err.status === 404) {
+          setHistoryUnavailable(true)
+          setHistorySeries([])
+          return
+        }
+
+        setHistoryError(
+          err instanceof Error ? err.message : 'Verlauf konnte nicht geladen werden.'
+        )
+      } finally {
+        setHistoryLoading(false)
+      }
+    },
+    [rankingsBase]
+  )
+
+  useEffect(() => {
+    if (!selectedRow) return
+    loadHistory(selectedRow, historyRange)
+  }, [historyRange, loadHistory, selectedRow])
+
+  async function handleRefresh() {
+    try {
+      setRefreshing(true)
+      await apiFetch(`${rankingsBase}/refresh`, { method: 'POST' })
+      toast({
+        title: 'Tracking gestartet',
+        description: 'Die Aktualisierung wurde angestossen und erscheint nach Abschluss automatisch im Dashboard.',
+      })
+      loadRankings()
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 404) {
+        toast({
+          title: 'Backend noch nicht bereit',
+          description: 'Der Refresh-Endpunkt fuer PROJ-27 ist noch nicht implementiert.',
+          variant: 'destructive',
+        })
+        return
+      }
+
+      toast({
+        title: 'Fehler',
+        description:
+          err instanceof Error ? err.message : 'Tracking konnte nicht gestartet werden.',
+        variant: 'destructive',
+      })
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  function openDetails(row: RankingRow) {
+    setSelectedRow(row)
+    setHistoryRange('30')
+    setHistorySeries([])
+    setHistoryError(null)
+    setHistoryUnavailable(false)
+  }
+
+  const effectiveLastTrackedAt =
+    summary?.lastTrackedAt ?? summary?.lastSuccessfulRunAt ?? project.last_tracking_run ?? null
+  const status = summary?.status ?? (effectiveLastTrackedAt ? 'success' : 'idle')
+  const gscReady = Boolean(connection && connection.status === 'connected' && connection.selected_property)
+
+  if (loading) {
+    return (
+      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <CardContent className="space-y-4 p-6">
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-16 w-full rounded-2xl" />
+          <Skeleton className="h-72 w-full rounded-2xl" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="rounded-2xl">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Fehler</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={loadRankings}>
+            Erneut versuchen
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (!gscReady) {
+    return (
+      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#f7f3ed]">
+            <Link2 className="h-7 w-7 text-[#a35a34]" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-slate-950">
+              Search Console noch nicht eingerichtet
+            </h2>
+            <p className="max-w-xl text-sm leading-7 text-slate-600">
+              Bevor Rankings geladen werden koennen, braucht dieses Projekt eine verbundene Google-Search-Console-Property.
+            </p>
+          </div>
+          <Button
+            onClick={onOpenIntegrations}
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+          >
+            Zu den Integrationen
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (backendUnavailable) {
+    return (
+      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-base font-semibold">Rankings</CardTitle>
+              <p className="mt-1 text-sm text-slate-500">
+                Die UI ist vorbereitet, die neuen PROJ-27-Read-Endpunkte fehlen noch.
+              </p>
+            </div>
+            <RankingsStatusBadge status="idle" />
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert className="rounded-2xl border-amber-200 bg-amber-50">
+            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <AlertTitle className="text-amber-800">Backend noch ausstehend</AlertTitle>
+            <AlertDescription className="text-amber-700">
+              Sobald die Endpunkte fuer `GET /rankings`, `GET /rankings/history` und `POST /rankings/refresh` vorhanden sind, zeigt dieser Tab die Snapshot-Daten direkt an.
+            </AlertDescription>
+          </Alert>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            <MetricCard
+              label="Keywords im Projekt"
+              value={String(project.keyword_count)}
+              hint="Bereits fuer Tracking vorbereitet"
+            />
+            <MetricCard
+              label="Tracking-Intervall"
+              value={project.tracking_interval === 'weekly' ? 'Woechentlich' : 'Taeglich'}
+              hint="Kann im Einstellungen-Tab angepasst werden"
+            />
+            <MetricCard
+              label="Letzter Lauf"
+              value={effectiveLastTrackedAt ? formatRelativeTime(effectiveLastTrackedAt) : 'Ausstehend'}
+              hint={effectiveLastTrackedAt ? formatDate(effectiveLastTrackedAt) : 'Noch kein Snapshot'}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  return (
+    <>
+      <div className="space-y-4">
+        <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <CardTitle className="text-base font-semibold">Rankings</CardTitle>
+                  <RankingsStatusBadge status={status} />
+                </div>
+                <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Clock3 className="h-3.5 w-3.5" />
+                    Zuletzt aktualisiert: {effectiveLastTrackedAt ? formatRelativeTime(effectiveLastTrackedAt) : 'Ausstehend'}
+                  </span>
+                  {summary?.trackingInterval && (
+                    <span>Intervall: {summary.trackingInterval === 'daily' ? 'Taeglich' : 'Woechentlich'}</span>
+                  )}
+                  {connection?.selected_property && (
+                    <span className="truncate">Property: {connection.selected_property}</span>
+                  )}
+                </div>
+              </div>
+              {isAdmin && (
+                <Button
+                  onClick={handleRefresh}
+                  disabled={refreshing || status === 'running' || status === 'queued'}
+                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                >
+                  {refreshing ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <RefreshCcw className="mr-2 h-4 w-4" />
+                  )}
+                  Jetzt aktualisieren
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <MetricCard
+                label="Getrackte Keywords"
+                value={String(rows.length)}
+                hint={rows.length > 0 ? 'Aktuelle Snapshot-Zeilen' : 'Noch keine Messwerte'}
+              />
+              <MetricCard
+                label="Bestes Ranking"
+                value={
+                  rows
+                    .map((row) => row.currentPosition)
+                    .filter((value): value is number => value != null)
+                    .sort((a, b) => a - b)[0] != null
+                    ? formatPosition(
+                        rows
+                          .map((row) => row.currentPosition)
+                          .filter((value): value is number => value != null)
+                          .sort((a, b) => a - b)[0]
+                      )
+                    : 'Keine Daten'
+                }
+                hint="Niedrigere Position ist besser"
+              />
+              <MetricCard
+                label="Tracking-Intervall"
+                value={summary?.trackingInterval === 'weekly' ? 'Woechentlich' : 'Taeglich'}
+                hint="Steuert den automatischen Cron-Lauf"
+              />
+            </div>
+
+            {summary?.lastError && (
+              <Alert className="rounded-2xl border-amber-200 bg-amber-50">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <AlertTitle className="text-amber-800">Letzter Lauf mit Hinweis</AlertTitle>
+                <AlertDescription className="text-amber-700">
+                  {summary.lastError}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {rows.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-[#e6ddd0] bg-[#fffaf3] px-6 py-12 text-center">
+                <BarChart3 className="mx-auto h-10 w-10 text-[#0d9488]" />
+                <h3 className="mt-4 text-lg font-semibold text-slate-950">
+                  Erstes Tracking ausstehend
+                </h3>
+                <p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-slate-600">
+                  Sobald der erste Snapshot gespeichert wurde, erscheinen hier Positionen, Deltas und der Detailverlauf je Keyword.
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-[24px] border border-[#ece3d6]">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-[#fffaf3]">
+                      <TableHead>Keyword</TableHead>
+                      <TableHead>Position</TableHead>
+                      <TableHead>Delta</TableHead>
+                      <TableHead className="hidden md:table-cell">Aktualisiert</TableHead>
+                      <TableHead className="hidden lg:table-cell">Top-URL</TableHead>
+                      <TableHead className="w-24 text-right">Details</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rows.map((row) => (
+                      <TableRow key={row.keywordId}>
+                        <TableCell className="font-medium text-slate-900">{row.keyword}</TableCell>
+                        <TableCell className="font-medium text-slate-900">
+                          {formatPosition(row.currentPosition)}
+                        </TableCell>
+                        <TableCell>
+                          <PositionDeltaBadge delta={row.delta} />
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell text-slate-500">
+                          {row.lastTrackedAt ? formatRelativeTime(row.lastTrackedAt) : 'Ausstehend'}
+                        </TableCell>
+                        <TableCell className="hidden max-w-[260px] truncate lg:table-cell text-slate-500">
+                          {row.bestUrl ?? 'Keine URL'}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="rounded-full"
+                            onClick={() => openDetails(row)}
+                          >
+                            Details
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <Sheet
+        open={selectedRow !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedRow(null)
+            setHistorySeries([])
+            setHistoryError(null)
+            setHistoryUnavailable(false)
+          }
+        }}
+      >
+        <SheetContent side="right" className="w-full overflow-y-auto border-l-[#e6ddd0] p-0 sm:max-w-2xl">
+          {selectedRow && (
+            <div className="flex h-full flex-col">
+              <SheetHeader className="border-b border-[#ece3d6] px-6 py-5">
+                <SheetTitle>{selectedRow.keyword}</SheetTitle>
+                <SheetDescription>
+                  Verlauf fuer {historyRange} Tage mit aktueller Position {formatPosition(selectedRow.currentPosition)}.
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="space-y-5 p-6">
+                <div className="flex flex-wrap items-center gap-3">
+                  <PositionDeltaBadge delta={selectedRow.delta} />
+                  <Badge variant="outline" className="rounded-full border-[#e6ddd0] bg-[#fffaf3] text-slate-600">
+                    Letzte Messung: {selectedRow.lastTrackedAt ? formatDate(selectedRow.lastTrackedAt) : 'Ausstehend'}
+                  </Badge>
+                  <div className="ml-auto flex rounded-full bg-[#f7f3ed] p-1">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        'rounded-full px-4',
+                        historyRange === '30' && 'bg-white shadow-sm'
+                      )}
+                      onClick={() => setHistoryRange('30')}
+                    >
+                      30 Tage
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={cn(
+                        'rounded-full px-4',
+                        historyRange === '90' && 'bg-white shadow-sm'
+                      )}
+                      onClick={() => setHistoryRange('90')}
+                    >
+                      90 Tage
+                    </Button>
+                  </div>
+                </div>
+
+                {historyLoading ? (
+                  <div className="space-y-3">
+                    <Skeleton className="h-[260px] w-full rounded-[24px]" />
+                    <Skeleton className="h-16 w-full rounded-2xl" />
+                  </div>
+                ) : historyError ? (
+                  <Alert variant="destructive" className="rounded-2xl">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertTitle>Fehler</AlertTitle>
+                    <AlertDescription>{historyError}</AlertDescription>
+                  </Alert>
+                ) : historyUnavailable ? (
+                  <Alert className="rounded-2xl border-amber-200 bg-amber-50">
+                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                    <AlertTitle className="text-amber-800">Verlauf folgt mit Backend</AlertTitle>
+                    <AlertDescription className="text-amber-700">
+                      Der History-Endpunkt fuer PROJ-27 ist noch nicht vorhanden. Das Sheet ist bereits vorbereitet und verwendet die Live-Daten, sobald der Read-Endpoint geliefert wird.
+                    </AlertDescription>
+                  </Alert>
+                ) : historySeries.length === 0 ? (
+                  <div className="rounded-[24px] border border-dashed border-[#e6ddd0] bg-[#fffaf3] px-6 py-12 text-center">
+                    <Search className="mx-auto h-8 w-8 text-slate-300" />
+                    <p className="mt-3 text-sm text-slate-600">
+                      Fuer dieses Keyword liegen in dem Zeitraum noch keine Verlaufspunkte vor.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <RankingTrendChart
+                      title="Positionsverlauf"
+                      description="Je niedriger die Zahl, desto besser die Google-Position."
+                      series={historySeries}
+                    />
+
+                    <MetricCard
+                      label="Aktuelle Position"
+                      value={formatPosition(selectedRow.currentPosition)}
+                      hint="Aus dem neuesten Snapshot"
+                    />
+                  </>
+                )}
+              </div>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
+  )
+}
+
+function RankingsStatusBadge({ status }: { status: RankingRunStatus }) {
+  switch (status) {
+    case 'running':
+      return (
+        <Badge className="rounded-full bg-sky-50 text-sky-700 hover:bg-sky-50">
+          Laufend
+        </Badge>
+      )
+    case 'queued':
+      return (
+        <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
+          Geplant
+        </Badge>
+      )
+    case 'failed':
+      return (
+        <Badge className="rounded-full bg-red-50 text-red-700 hover:bg-red-50">
+          Fehler
+        </Badge>
+      )
+    case 'success':
+      return (
+        <Badge className="rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+          Bereit
+        </Badge>
+      )
+    case 'idle':
+    default:
+      return (
+        <Badge className="rounded-full bg-slate-100 text-slate-500 hover:bg-slate-100">
+          Ausstehend
+        </Badge>
+      )
+  }
+}
+
+function PositionDeltaBadge({ delta }: { delta: number | null | undefined }) {
+  const tone = getDeltaTone(delta)
+  const Icon = tone.icon
+
+  return (
+    <Badge className={cn('rounded-full', tone.className)}>
+      <Icon className="mr-1 h-3.5 w-3.5" />
+      {formatDelta(delta)}
+    </Badge>
+  )
+}
+
+function MetricCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string
+  value: string
+  hint: string
+}) {
+  return (
+    <div className="rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0d9488]">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
+      <p className="mt-1 text-sm text-slate-500">{hint}</p>
+    </div>
+  )
+}
+
+function RankingTrendChart({
+  title,
+  description,
+  series,
+}: {
+  title: string
+  description: string
+  series: RankingHistorySeries[]
+}) {
+  const width = 760
+  const height = 260
+  const padding = 28
+  const yMin = 1
+  const yMax = 100
+
+  const maxLength = Math.max(...series.map((item) => item.points.length), 0)
+  const ticks = [1, 10, 25, 50, 75, 100]
+
+  function xForIndex(index: number, count: number) {
+    if (count <= 1) return width / 2
+    return padding + (index / (count - 1)) * (width - padding * 2)
+  }
+
+  function yForPosition(position: number) {
+    const clamped = Math.min(Math.max(position, yMin), yMax)
+    return padding + ((clamped - yMin) / (yMax - yMin)) * (height - padding * 2)
+  }
+
+  function buildPath(points: RankingHistoryPoint[]) {
+    let path = ''
+    let hasOpenSegment = false
+
+    points.forEach((point, index) => {
+      if (point.position == null) {
+        hasOpenSegment = false
+        return
+      }
+
+      const x = xForIndex(index, points.length)
+      const y = yForPosition(point.position)
+      path += `${hasOpenSegment ? ' L' : 'M'} ${x} ${y}`
+      hasOpenSegment = true
+    })
+
+    return path.trim()
+  }
+
+  return (
+    <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold">{title}</CardTitle>
+        <p className="text-sm text-slate-500">{description}</p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="overflow-hidden rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+          <svg
+            viewBox={`0 0 ${width} ${height}`}
+            className="h-[260px] w-full"
+            role="img"
+            aria-label={title}
+          >
+            {ticks.map((tick) => {
+              const y = yForPosition(tick)
+              return (
+                <g key={tick}>
+                  <line
+                    x1={padding}
+                    x2={width - padding}
+                    y1={y}
+                    y2={y}
+                    stroke="#e6ddd0"
+                    strokeDasharray="4 4"
+                  />
+                  <text x={8} y={y + 4} fontSize="11" fill="#64748b">
+                    {tick}
+                  </text>
+                </g>
+              )
+            })}
+
+            {series.map((item, index) => {
+              const color = item.color ?? ['#0d9488', '#f97316', '#2563eb', '#dc2626'][index % 4]
+              return (
+                <g key={`${item.label}-${index}`}>
+                  <path
+                    d={buildPath(item.points)}
+                    fill="none"
+                    stroke={color}
+                    strokeWidth="3"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  {item.points.map((point, pointIndex) => {
+                    if (point.position == null) return null
+                    return (
+                      <circle
+                        key={`${item.label}-${pointIndex}`}
+                        cx={xForIndex(pointIndex, item.points.length)}
+                        cy={yForPosition(point.position)}
+                        r="4"
+                        fill={color}
+                      />
+                    )
+                  })}
+                </g>
+              )
+            })}
+          </svg>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {series.map((item, index) => {
+            const color = item.color ?? ['#0d9488', '#f97316', '#2563eb', '#dc2626'][index % 4]
+            return (
+              <div
+                key={`${item.label}-${index}-legend`}
+                className="inline-flex items-center gap-2 rounded-full border border-[#e6ddd0] bg-white px-3 py-1.5 text-xs text-slate-600"
+              >
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                {item.label}
+              </div>
+            )
+          })}
+        </div>
+
+        {maxLength > 0 && (
+          <div className="flex items-center justify-between text-xs text-slate-500">
+            <span>{series[0]?.points[0]?.trackedAt ? formatDate(series[0].points[0].trackedAt) : ''}</span>
+            <span>
+              {series[0]?.points[maxLength - 1]?.trackedAt
+                ? formatDate(series[0].points[maxLength - 1].trackedAt)
+                : ''}
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 
@@ -1184,6 +2025,9 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
   // Language / Country
   const [editLang, setEditLang] = useState(project.language_code)
   const [editCountry, setEditCountry] = useState(project.country_code)
+  const [editTrackingInterval, setEditTrackingInterval] = useState(
+    project.tracking_interval ?? 'daily'
+  )
   const [savingSettings, setSavingSettings] = useState(false)
 
   // Status toggle
@@ -1220,14 +2064,24 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
 
   async function handleSaveSettings(e: React.FormEvent) {
     e.preventDefault()
-    if (editLang === project.language_code && editCountry === project.country_code) return
+    if (
+      editLang === project.language_code &&
+      editCountry === project.country_code &&
+      editTrackingInterval === (project.tracking_interval ?? 'daily')
+    ) {
+      return
+    }
 
     try {
       setSavingSettings(true)
       await apiFetch(`${API_BASE}/${project.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ language_code: editLang, country_code: editCountry }),
+        body: JSON.stringify({
+          language_code: editLang,
+          country_code: editCountry,
+          tracking_interval: editTrackingInterval,
+        }),
       })
       toast({ title: 'Einstellungen gespeichert' })
       onUpdated()
@@ -1317,11 +2171,11 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
       {/* Language / Country */}
       <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Sprache & Region</CardTitle>
+          <CardTitle className="text-base font-semibold">Sprache, Region & Intervall</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSaveSettings} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid gap-3 md:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="settings-language">Sprache</Label>
                 <Select value={editLang} onValueChange={setEditLang} disabled={savingSettings}>
@@ -1352,12 +2206,36 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="settings-tracking-interval">Tracking-Intervall</Label>
+                <Select
+                  value={editTrackingInterval}
+                  onValueChange={(value) => setEditTrackingInterval(value as 'daily' | 'weekly')}
+                  disabled={savingSettings || !isAdmin}
+                >
+                  <SelectTrigger id="settings-tracking-interval">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="daily">Taeglich</SelectItem>
+                    <SelectItem value="weekly">Woechentlich</SelectItem>
+                  </SelectContent>
+                </Select>
+                {!isAdmin && (
+                  <p className="text-xs text-slate-500">
+                    Das Tracking-Intervall kann nur von Admins geaendert werden.
+                  </p>
+                )}
+              </div>
             </div>
             <Button
               type="submit"
               disabled={
                 savingSettings ||
-                (editLang === project.language_code && editCountry === project.country_code)
+                (!isAdmin && editTrackingInterval !== (project.tracking_interval ?? 'daily')) ||
+                (editLang === project.language_code &&
+                  editCountry === project.country_code &&
+                  editTrackingInterval === (project.tracking_interval ?? 'daily'))
               }
               className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
             >

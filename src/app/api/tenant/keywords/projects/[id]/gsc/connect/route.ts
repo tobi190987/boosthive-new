@@ -25,55 +25,72 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const tenantId = request.headers.get('x-tenant-id')
-  if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+  try {
+    const tenantId = request.headers.get('x-tenant-id')
+    if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
 
-  const rl = checkRateLimit(`gsc-connect:${tenantId}:${getClientIp(request)}`, GSC_CONNECT)
-  if (!rl.allowed) return rateLimitResponse(rl)
+    const rl = checkRateLimit(`gsc-connect:${tenantId}:${getClientIp(request)}`, GSC_CONNECT)
+    if (!rl.allowed) return rateLimitResponse(rl)
 
-  const authResult = await requireTenantAdmin(tenantId)
-  if ('error' in authResult) return authResult.error
+    const authResult = await requireTenantAdmin(tenantId)
+    if ('error' in authResult) return authResult.error
 
-  const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
-  if ('error' in moduleAccess) return moduleAccess.error
+    const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
+    if ('error' in moduleAccess) return moduleAccess.error
 
-  const parsedParams = paramsSchema.safeParse(await params)
-  if (!parsedParams.success) {
-    return NextResponse.json({ error: parsedParams.error.issues[0]?.message }, { status: 400 })
+    const parsedParams = paramsSchema.safeParse(await params)
+    if (!parsedParams.success) {
+      return NextResponse.json({ error: parsedParams.error.issues[0]?.message }, { status: 400 })
+    }
+
+    const { id: projectId } = parsedParams.data
+    const nonce = generateNonce()
+
+    const admin = createAdminClient()
+    const { data: project, error: projectError } = await admin
+      .from('keyword_projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('tenant_id', tenantId)
+      .single()
+
+    if (projectError) {
+      console.error('[gsc/connect] Projekt-Lookup fehlgeschlagen:', projectError)
+      return NextResponse.json({ error: 'Projekt konnte nicht geladen werden.' }, { status: 500 })
+    }
+
+    if (!project) {
+      return NextResponse.json({ error: 'Projekt nicht gefunden.' }, { status: 404 })
+    }
+
+    const state = createOAuthState({
+      projectId,
+      tenantId,
+      userId: authResult.auth.userId,
+      nonce,
+      issuedAt: Date.now(),
+    })
+
+    const url = buildAuthorizationUrl(state)
+    const response = NextResponse.json({ url })
+    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? ''
+    const isLocalhost = rootDomain.startsWith('localhost')
+    response.cookies.set(getOAuthNonceCookieName(nonce), authResult.auth.userId, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      domain:
+        process.env.NODE_ENV === 'production' && rootDomain && !isLocalhost
+          ? `.${rootDomain}`
+          : undefined,
+      path: '/api/gsc/callback',
+      maxAge: 10 * 60,
+    })
+    return response
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'OAuth-Flow konnte nicht gestartet werden.'
+    console.error('[gsc/connect] Unerwarteter Fehler:', error)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  const { id: projectId } = parsedParams.data
-  const nonce = generateNonce()
-
-  // Verify project belongs to this tenant
-  const admin = createAdminClient()
-  const { data: project } = await admin
-    .from('keyword_projects')
-    .select('id')
-    .eq('id', projectId)
-    .eq('tenant_id', tenantId)
-    .single()
-
-  if (!project) {
-    return NextResponse.json({ error: 'Projekt nicht gefunden.' }, { status: 404 })
-  }
-
-  const state = createOAuthState({
-    projectId,
-    tenantId,
-    userId: authResult.auth.userId,
-    nonce,
-    issuedAt: Date.now(),
-  })
-
-  const url = buildAuthorizationUrl(state)
-  const response = NextResponse.json({ url })
-  response.cookies.set(getOAuthNonceCookieName(nonce), authResult.auth.userId, {
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/api/gsc/callback',
-    maxAge: 10 * 60,
-  })
-  return response
 }

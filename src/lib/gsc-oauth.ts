@@ -274,6 +274,14 @@ export interface GscSiteEntry {
   permissionLevel: string
 }
 
+export interface GscSearchAnalyticsRow {
+  keys?: string[]
+  clicks?: number
+  impressions?: number
+  ctr?: number
+  position?: number
+}
+
 /**
  * Lists all verified sites/properties from Google Search Console.
  */
@@ -291,4 +299,93 @@ export async function listGscProperties(accessToken: string): Promise<GscSiteEnt
 
   const data = (await response.json()) as { siteEntry?: GscSiteEntry[] }
   return (data.siteEntry ?? []).filter((entry) => entry.permissionLevel !== 'siteUnverifiedUser')
+}
+
+export interface SearchAnalyticsQueryInput {
+  siteUrl: string
+  startDate: string
+  endDate: string
+  dimensions?: string[]
+  rowLimit?: number
+  country?: string
+  query?: string
+}
+
+export async function querySearchAnalytics(
+  accessToken: string,
+  input: SearchAnalyticsQueryInput
+): Promise<GscSearchAnalyticsRow[]> {
+  const body: Record<string, unknown> = {
+    startDate: input.startDate,
+    endDate: input.endDate,
+    dimensions: input.dimensions ?? ['page'],
+    rowLimit: input.rowLimit ?? 25,
+    dataState: 'final',
+  }
+
+  const dimensionFilterGroups: Array<{
+    groupType: 'and'
+    filters: Array<{
+      dimension: string
+      operator: 'equals'
+      expression: string
+    }>
+  }> = []
+
+  const filters: Array<{
+    dimension: string
+    operator: 'equals'
+    expression: string
+  }> = []
+
+  if (input.query) {
+    filters.push({
+      dimension: 'query',
+      operator: 'equals',
+      expression: input.query,
+    })
+  }
+
+  if (input.country) {
+    filters.push({
+      dimension: 'country',
+      operator: 'equals',
+      expression: input.country,
+    })
+  }
+
+  if (filters.length > 0) {
+    dimensionFilterGroups.push({
+      groupType: 'and',
+      filters,
+    })
+  }
+
+  if (dimensionFilterGroups.length > 0) {
+    body.dimensionFilterGroups = dimensionFilterGroups
+  }
+
+  const response = await fetch(
+    `${GSC_API_BASE}/sites/${encodeURIComponent(input.siteUrl)}/searchAnalytics/query`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    }
+  )
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      throw new TokenRevokedError('Access-Token abgelaufen oder widerrufen.')
+    }
+
+    const errorText = await response.text().catch(() => '')
+    throw new Error(`GSC Search Analytics Abfrage fehlgeschlagen: ${response.status} ${errorText}`)
+  }
+
+  const data = (await response.json()) as { rows?: GscSearchAnalyticsRow[] }
+  return data.rows ?? []
 }

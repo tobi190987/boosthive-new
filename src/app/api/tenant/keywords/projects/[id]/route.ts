@@ -32,6 +32,7 @@ const updateProjectSchema = z.object({
     .optional(),
   language_code: z.string().min(2).max(10).optional(),
   country_code: z.string().min(2).max(10).optional(),
+  tracking_interval: z.enum(['daily', 'weekly']).optional(),
   status: z.enum(['active', 'inactive']).optional(),
 })
 
@@ -72,6 +73,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       target_domain,
       language_code,
       country_code,
+      tracking_interval,
       status,
       last_tracking_run,
       created_at,
@@ -91,6 +93,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       target_domain: data.target_domain,
       language_code: data.language_code,
       country_code: data.country_code,
+      tracking_interval: data.tracking_interval,
       status: data.status,
       last_tracking_run: data.last_tracking_run,
       created_at: data.created_at,
@@ -138,6 +141,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if (parsed.data.target_domain !== undefined) updates.target_domain = parsed.data.target_domain
   if (parsed.data.language_code !== undefined) updates.language_code = parsed.data.language_code
   if (parsed.data.country_code !== undefined) updates.country_code = parsed.data.country_code
+  if (parsed.data.tracking_interval !== undefined) {
+    updates.tracking_interval = parsed.data.tracking_interval
+  }
   if (parsed.data.status !== undefined) updates.status = parsed.data.status
 
   const admin = createAdminClient()
