@@ -10,7 +10,12 @@ import {
   VISIBILITY_ANALYSIS_START,
   VISIBILITY_READ,
 } from '@/lib/rate-limit'
-import { normalizeAiModelId } from '@/lib/ai-visibility'
+import {
+  getVisibilityQueryLimitError,
+  MAX_AI_VISIBILITY_ITERATIONS,
+  MIN_AI_VISIBILITY_ITERATIONS,
+  normalizeAiModelId,
+} from '@/lib/ai-visibility'
 
 const MAX_CONCURRENT_ANALYSES = 2
 
@@ -23,8 +28,8 @@ const createAnalysisSchema = z.object({
   iterations: z.coerce
     .number()
     .int()
-    .min(5, 'Mindestens 5 Iterationen.')
-    .max(10, 'Maximal 10 Iterationen.'),
+    .min(MIN_AI_VISIBILITY_ITERATIONS, `Mindestens ${MIN_AI_VISIBILITY_ITERATIONS} Iteration.`)
+    .max(MAX_AI_VISIBILITY_ITERATIONS, `Maximal ${MAX_AI_VISIBILITY_ITERATIONS} Iterationen.`),
 })
 
 export async function GET(request: NextRequest) {
@@ -116,6 +121,11 @@ export async function POST(request: NextRequest) {
 
   const subjects = 1 + ((project.competitors as Array<{ name: string }>)?.length ?? 0)
   const progressTotal = project.keywords.length * models.length * iterations * subjects
+  const queryLimitError = getVisibilityQueryLimitError(progressTotal)
+
+  if (queryLimitError) {
+    return NextResponse.json({ error: queryLimitError }, { status: 400 })
+  }
 
   // Estimated cost: ~$0.001 per query
   const estimatedCost = progressTotal * 0.001

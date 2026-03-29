@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import {
+  getVisibilityQueryLimitError,
+  MAX_AI_VISIBILITY_ITERATIONS,
+  MIN_AI_VISIBILITY_ITERATIONS,
+} from '@/lib/ai-visibility'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { checkRateLimit, getClientIp, rateLimitResponse, VISIBILITY_ESTIMATE } from '@/lib/rate-limit'
@@ -7,7 +12,7 @@ import { checkRateLimit, getClientIp, rateLimitResponse, VISIBILITY_ESTIMATE } f
 const estimateSchema = z.object({
   keywords: z.array(z.string().min(1)).min(1).max(10),
   models: z.array(z.string().min(1)).min(1),
-  iterations: z.number().int().min(5).max(10),
+  iterations: z.number().int().min(MIN_AI_VISIBILITY_ITERATIONS).max(MAX_AI_VISIBILITY_ITERATIONS),
   competitor_count: z.number().int().min(0).max(3).optional().default(0),
 })
 
@@ -55,6 +60,7 @@ export async function POST(request: NextRequest) {
     total_queries: totalQueries,
     estimated_cost: Math.round(estimatedCost * 10000) / 10000,
     estimated_duration_minutes: estimatedDurationMinutes,
+    limit_error: getVisibilityQueryLimitError(totalQueries),
     breakdown: {
       keywords: keywords.length,
       models: models.length,

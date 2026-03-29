@@ -9,6 +9,12 @@ export interface AiModel {
   provider: string
 }
 
+export const DEFAULT_AI_MODEL_IDS = ['openai/gpt-4o']
+export const DEFAULT_AI_VISIBILITY_ITERATIONS = 3
+export const MIN_AI_VISIBILITY_ITERATIONS = 1
+export const MAX_AI_VISIBILITY_ITERATIONS = 5
+export const MAX_AI_VISIBILITY_TOTAL_QUERIES = 60
+
 const LEGACY_MODEL_ALIASES: Record<string, string> = {
   'google/gemini-pro-1.5': 'google/gemini-2.5-pro',
 }
@@ -106,6 +112,12 @@ export interface CostEstimate {
     iterations: number
     subjects: number // brand + competitors
   }
+}
+
+export function getVisibilityQueryLimitError(totalQueries: number): string | null {
+  if (totalQueries <= MAX_AI_VISIBILITY_TOTAL_QUERIES) return null
+
+  return `Diese Analyse wuerde ${totalQueries} API-Calls ausloesen. Aktuell sind maximal ${MAX_AI_VISIBILITY_TOTAL_QUERIES} API-Calls pro Lauf erlaubt, damit der Worker nicht ins Timeout laeuft.`
 }
 
 export function calculateCostEstimate(

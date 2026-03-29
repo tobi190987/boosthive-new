@@ -20,6 +20,11 @@ import {
 import {
   AI_MODELS,
   calculateCostEstimate,
+  DEFAULT_AI_MODEL_IDS,
+  DEFAULT_AI_VISIBILITY_ITERATIONS,
+  getVisibilityQueryLimitError,
+  MAX_AI_VISIBILITY_ITERATIONS,
+  MIN_AI_VISIBILITY_ITERATIONS,
   modelLabel,
   type AnalyticsStatus,
   statusColor,
@@ -429,8 +434,8 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
   const [websiteUrl, setWebsiteUrl] = useState('')
   const [competitors, setCompetitors] = useState<Competitor[]>([{ name: '', url: '' }])
   const [keywords, setKeywords] = useState<string[]>([''])
-  const [selectedModels, setSelectedModels] = useState<string[]>(AI_MODELS.map((m) => m.id))
-  const [iterations, setIterations] = useState(5)
+  const [selectedModels, setSelectedModels] = useState<string[]>(DEFAULT_AI_MODEL_IDS)
+  const [iterations, setIterations] = useState(DEFAULT_AI_VISIBILITY_ITERATIONS)
   const [submitting, setSubmitting] = useState(false)
   const [step, setStep] = useState<'form' | 'review'>('form')
 
@@ -440,8 +445,8 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
     setWebsiteUrl('')
     setCompetitors([{ name: '', url: '' }])
     setKeywords([''])
-    setSelectedModels(AI_MODELS.map((m) => m.id))
-    setIterations(5)
+    setSelectedModels(DEFAULT_AI_MODEL_IDS)
+    setIterations(DEFAULT_AI_VISIBILITY_ITERATIONS)
     setStep('form')
     setSubmitting(false)
   }
@@ -508,6 +513,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
     iterations,
     cleanCompetitors.length
   )
+  const estimateLimitError = getVisibilityQueryLimitError(estimate.total_api_calls)
 
   // ── Submit ──────────────────────────────────────────────────
   async function handleSubmit() {
@@ -772,7 +778,10 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {[5, 6, 7, 8, 9, 10].map((n) => (
+                    {Array.from(
+                      { length: MAX_AI_VISIBILITY_ITERATIONS - MIN_AI_VISIBILITY_ITERATIONS + 1 },
+                      (_, index) => MIN_AI_VISIBILITY_ITERATIONS + index
+                    ).map((n) => (
                       <SelectItem key={n} value={String(n)}>
                         {n} Iterationen
                       </SelectItem>
@@ -841,6 +850,13 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
               </p>
             </div>
 
+            {estimateLimitError && (
+              <Alert variant="destructive" className="rounded-xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{estimateLimitError}</AlertDescription>
+              </Alert>
+            )}
+
             {/* ── Keywords-Liste ──────────────────────────────── */}
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-slate-900">Keywords</h4>
@@ -897,7 +913,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={submitting}
+                disabled={submitting || Boolean(estimateLimitError)}
                 className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
               >
                 {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
@@ -947,8 +963,8 @@ function ProjectDetailView({
 
   // ── Dialog State fuer Neue Analyse ──────────────────────────
   const [newAnalysisOpen, setNewAnalysisOpen] = useState(false)
-  const [newAnalysisModels, setNewAnalysisModels] = useState<string[]>(AI_MODELS.map((m) => m.id))
-  const [newAnalysisIterations, setNewAnalysisIterations] = useState(5)
+  const [newAnalysisModels, setNewAnalysisModels] = useState<string[]>(DEFAULT_AI_MODEL_IDS)
+  const [newAnalysisIterations, setNewAnalysisIterations] = useState(DEFAULT_AI_VISIBILITY_ITERATIONS)
 
   const fetchDetail = useCallback(async () => {
     setLoading(true)
@@ -1080,6 +1096,13 @@ function ProjectDetailView({
   }
 
   const runningCount = analyses.filter((a) => a.status === 'running' || a.status === 'pending').length
+  const newAnalysisEstimate = calculateCostEstimate(
+    project.keywords.length,
+    newAnalysisModels.length,
+    newAnalysisIterations,
+    project.competitors.length
+  )
+  const newAnalysisLimitError = getVisibilityQueryLimitError(newAnalysisEstimate.total_api_calls)
   const reportableAnalyses = analyses.filter(
     (analysis) =>
       analysis.status === 'done' &&
@@ -1260,7 +1283,10 @@ function ProjectDetailView({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[5, 6, 7, 8, 9, 10].map((n) => (
+                  {Array.from(
+                    { length: MAX_AI_VISIBILITY_ITERATIONS - MIN_AI_VISIBILITY_ITERATIONS + 1 },
+                    (_, index) => MIN_AI_VISIBILITY_ITERATIONS + index
+                  ).map((n) => (
                     <SelectItem key={n} value={String(n)}>
                       {n} Iterationen
                     </SelectItem>
@@ -1274,16 +1300,17 @@ function ProjectDetailView({
               <div className="flex items-center gap-2">
                 <Calculator className="h-4 w-4 text-blue-600" />
                 <span className="text-sm font-semibold text-blue-900">
-                  {calculateCostEstimate(
-                    project.keywords.length,
-                    newAnalysisModels.length,
-                    newAnalysisIterations,
-                    project.competitors.length
-                  ).total_api_calls}{' '}
-                  API-Calls
+                  {newAnalysisEstimate.total_api_calls} API-Calls
                 </span>
               </div>
             </div>
+
+            {newAnalysisLimitError && (
+              <Alert variant="destructive" className="rounded-xl">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{newAnalysisLimitError}</AlertDescription>
+              </Alert>
+            )}
 
             {runningCount >= 2 && (
               <Alert className="rounded-xl">
@@ -1299,11 +1326,15 @@ function ProjectDetailView({
             <Button variant="outline" onClick={() => setNewAnalysisOpen(false)} className="rounded-full">
               Abbrechen
             </Button>
-            <Button
-              onClick={handleStartAnalysis}
-              disabled={startingAnalysis || newAnalysisModels.length === 0}
-              className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
-            >
+              <Button
+                onClick={handleStartAnalysis}
+                disabled={
+                  startingAnalysis ||
+                  newAnalysisModels.length === 0 ||
+                  Boolean(newAnalysisLimitError)
+                }
+                className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
+              >
               {startingAnalysis && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Analyse starten
             </Button>
