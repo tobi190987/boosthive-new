@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
   try {
     body = (await request.json()) as SuggestionPayload
   } catch {
-    return NextResponse.json({ error: 'Ungueltige Eingabedaten.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Eingabedaten.' }, { status: 400 })
   }
 
   if (!body.url || !Array.isArray(body.issues) || body.issues.length === 0) {

@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { processRankingRun } from '@/lib/keyword-rankings'
 
 const schema = z.object({
-  run_id: z.string().uuid('Ungueltige Run-ID.'),
+  run_id: z.string().uuid('Ungültige Run-ID.'),
 })
 
 export const maxDuration = 300
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = schema.safeParse(body)

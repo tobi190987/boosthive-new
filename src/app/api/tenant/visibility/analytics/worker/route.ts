@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { runAnalyticsProcessing } from '@/lib/visibility-analytics'
 
 const workerSchema = z.object({
-  analysis_id: z.string().uuid('Ungueltige analysis_id.'),
+  analysis_id: z.string().uuid('Ungültige analysis_id.'),
   force: z.boolean().optional().default(false),
 })
 
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = workerSchema.safeParse(body)

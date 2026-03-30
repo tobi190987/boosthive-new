@@ -370,7 +370,7 @@ export async function assertManualRefreshAllowed(projectId: string, tenantId: st
 
   if (runningError) throw new Error(runningError.message)
   if (runningRun) {
-    throw new Error('Fuer dieses Projekt laeuft bereits ein Tracking-Job.')
+    throw new Error('Für dieses Projekt läuft bereits ein Tracking-Job.')
   }
 
   const cooldownThreshold = new Date(Date.now() - MANUAL_REFRESH_COOLDOWN_MS).toISOString()
@@ -459,7 +459,7 @@ export async function processRankingRun(runId: string): Promise<RankingRunResult
 
     const connection = await loadConnection(project.id, project.tenant_id)
     if (!connection || !connection.selected_property || connection.status !== 'connected') {
-      const message = 'Keine aktive GSC-Property fuer dieses Projekt konfiguriert.'
+      const message = 'Keine aktive GSC-Property für dieses Projekt konfiguriert.'
       await updateRun(runId, {
         status: 'failed',
         completed_at: new Date().toISOString(),
@@ -719,7 +719,7 @@ export async function getRankingHistory(
       {
         label: 'Eigene Domain',
         domain: null,
-        color: '#0d9488',
+        color: '#2563eb',
         points: (snapshotsResult.data ?? []).map((snapshot) => ({
           trackedAt: snapshot.tracked_at,
           position:

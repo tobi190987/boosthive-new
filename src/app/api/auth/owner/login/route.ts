@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 5. Owner-Claims best effort aktualisieren.
-  // Die echte Autorisierung für den Owner-Bereich laeuft serverseitig über
+  // Die echte Autorisierung für den Owner-Bereich läuft serverseitig über
   // platform_admins. Wenn Claim-Update oder Session-Refresh in Produktion
   // fehlschlagen, soll der Login deshalb nicht komplett blockiert werden.
   try {

@@ -26,7 +26,7 @@ export async function POST(
   const { id: tenantId } = await params
 
   if (!UUID_REGEX.test(tenantId)) {
-    return NextResponse.json({ error: 'Ungueltige Tenant-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
   const supabaseAdmin = createAdminClient()

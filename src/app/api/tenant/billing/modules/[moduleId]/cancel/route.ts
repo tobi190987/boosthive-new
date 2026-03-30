@@ -19,7 +19,7 @@ export async function POST(
 ) {
   const { moduleId } = await params
   if (!UUID_REGEX.test(moduleId)) {
-    return NextResponse.json({ error: 'Ungueltige Modul-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Modul-ID.' }, { status: 400 })
   }
 
   const tenantId = request.headers.get('x-tenant-id')
@@ -60,7 +60,7 @@ export async function POST(
 
   if (booking.status !== 'active') {
     return NextResponse.json(
-      { error: 'Nur aktive Module koennen abbestellt werden.' },
+      { error: 'Nur aktive Module können abbestellt werden.' },
       { status: 400 }
     )
   }
@@ -106,7 +106,7 @@ export async function POST(
       stripeError
     )
     return NextResponse.json(
-      { error: 'Modul-Kuendigung konnte nicht durchgefuehrt werden.' },
+      { error: 'Modul-Kündigung konnte nicht durchgeführt werden.' },
       { status: 500 }
     )
   }

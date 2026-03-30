@@ -27,12 +27,12 @@ export async function GET(
   }
 
   if (payload.analysis.status !== 'done') {
-    return NextResponse.json({ error: 'Report ist erst nach abgeschlossener Analyse verfuegbar.' }, { status: 409 })
+    return NextResponse.json({ error: 'Report ist erst nach abgeschlossener Analyse verfügbar.' }, { status: 409 })
   }
 
   if (payload.analysis.analytics_status !== 'done' && payload.analysis.analytics_status !== 'partial') {
     return NextResponse.json(
-      { error: 'Report ist erst nach abgeschlossener Analytics-Berechnung verfuegbar.' },
+      { error: 'Report ist erst nach abgeschlossener Analytics-Berechnung verfügbar.' },
       { status: 409 }
     )
   }

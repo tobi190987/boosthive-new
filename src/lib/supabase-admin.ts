@@ -14,7 +14,7 @@ export function createAdminClient() {
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error(
-      'NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY muessen als Umgebungsvariablen gesetzt sein.'
+      'NEXT_PUBLIC_SUPABASE_URL und SUPABASE_SERVICE_ROLE_KEY müssen als Umgebungsvariablen gesetzt sein.'
     )
   }
 

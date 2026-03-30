@@ -11,7 +11,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, GSC_WRITE } from '@/lib/rate-limit'
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 export async function POST(

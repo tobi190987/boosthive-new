@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           : null,
     })
     return NextResponse.json(
-      { error: 'Dieser Tenant ist archiviert. Einladungen koennen aktuell nicht angenommen werden.' },
+      { error: 'Dieser Tenant ist archiviert. Einladungen können aktuell nicht angenommen werden.' },
       { status: 403 }
     )
   }

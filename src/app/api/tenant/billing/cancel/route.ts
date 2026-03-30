@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   const currentStatus = tenant.subscription_status as string | null
   if (currentStatus !== 'active') {
     return NextResponse.json(
-      { error: 'Nur aktive Abos koennen gekuendigt werden.' },
+      { error: 'Nur aktive Abos können gekündigt werden.' },
       { status: 400 }
     )
   }
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
   } catch (stripeError) {
     console.error('[POST /api/tenant/billing/cancel] Stripe-Fehler:', stripeError)
     return NextResponse.json(
-      { error: 'Kuendigung konnte nicht durchgefuehrt werden.' },
+      { error: 'Kündigung konnte nicht durchgeführt werden.' },
       { status: 500 }
     )
   }

@@ -104,7 +104,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (currentCount + newKeywords.length > KEYWORD_LIMIT) {
     return NextResponse.json(
       {
-        error: `Keyword-Limit (${KEYWORD_LIMIT}) wuerde ueberschritten. Aktuell: ${currentCount}, neu: ${newKeywords.length}.`,
+        error: `Keyword-Limit (${KEYWORD_LIMIT}) würde überschritten. Aktuell: ${currentCount}, neu: ${newKeywords.length}.`,
       },
       { status: 422 }
     )

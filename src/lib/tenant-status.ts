@@ -253,7 +253,7 @@ export function tenantStatusBadgeClass(status: string | null | undefined) {
     case 'inactive':
       return 'rounded-full bg-[#fff4ee] text-[#9f4f2d] hover:bg-[#fff4ee]'
     case 'setup_incomplete':
-      return 'rounded-full bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]'
+      return 'rounded-full bg-[#fff8ed] text-blue-600 hover:bg-[#fff8ed]'
     case 'billing_blocked':
       return 'rounded-full bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]'
     case 'archived':
@@ -268,7 +268,7 @@ export function tenantStatusTextClass(status: string | null | undefined) {
     case 'active':
       return 'text-emerald-700'
     case 'inactive':
-      return 'text-[#b85e34]'
+      return 'text-blue-600'
     case 'setup_incomplete':
       return 'text-[#a16207]'
     case 'billing_blocked':

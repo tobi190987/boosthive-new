@@ -6,7 +6,7 @@ import { getRankingsDashboard } from '@/lib/keyword-rankings'
 import { checkRateLimit, getClientIp, rateLimitResponse, VISIBILITY_READ } from '@/lib/rate-limit'
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 export async function GET(

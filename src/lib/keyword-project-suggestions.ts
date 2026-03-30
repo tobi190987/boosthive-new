@@ -44,7 +44,6 @@ const STOPWORDS = new Set([
   'ein',
   'eine',
   'für',
-  'fuer',
   'mit',
   'von',
   'bei',
@@ -61,7 +60,6 @@ const STOPWORDS = new Set([
   'jetzt',
   'alles',
   'über',
-  'ueber',
   'specialist',
   'spezialist',
   'performance',
@@ -261,7 +259,7 @@ async function generateWithClaude(input: {
     '- Liefere 5 bis 8 Keyword-Vorschläge.',
     '- Keywords sollen suchnah, konkret und für die gegebene Domain relevant sein.',
     '- Liefere maximal 3 Wettbewerber-Domains.',
-    '- Wettbewerber muessen als reine Domain ohne Protokoll zurueckkommen.',
+    '- Wettbewerber müssen als reine Domain ohne Protokoll zurückkommen.',
   ].join('\n')
 
   const errors: string[] = []
@@ -277,7 +275,7 @@ async function generateWithClaude(input: {
       body: JSON.stringify({
         model,
         system:
-          'Du bist ein praeziser deutscher SEO-Research-Assistent. Antworte ausschliesslich mit validem JSON ohne Markdown und ohne Zusatztext.',
+          'Du bist ein präziser deutscher SEO-Research-Assistent. Antworte ausschließlich mit validem JSON ohne Markdown und ohne Zusatztext.',
         max_tokens: 900,
         temperature: 0.2,
         messages: [{ role: 'user', content: prompt }],

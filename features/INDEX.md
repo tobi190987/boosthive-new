@@ -22,7 +22,7 @@
 | PROJ-8 | Owner Super-Admin Dashboard | Deployed | [PROJ-8-owner-super-admin-dashboard.md](PROJ-8-owner-super-admin-dashboard.md) | 2026-03-26 |
 | PROJ-9 | Tenant Dashboard Shell | Deployed | [PROJ-9-tenant-dashboard-shell.md](PROJ-9-tenant-dashboard-shell.md) | 2026-03-26 |
 | PROJ-10 | SEO Analyse Tool | Deployed | [PROJ-10-seo-analyse.md](PROJ-10-seo-analyse.md) | 2026-03-26 |
-| PROJ-11 | AI Performance Analyse | Planned | [PROJ-11-ai-performance-analyse.md](PROJ-11-ai-performance-analyse.md) | 2026-03-26 |
+| PROJ-11 | AI Performance Analyse | Deployed | [PROJ-11-ai-performance-analyse.md](PROJ-11-ai-performance-analyse.md) | 2026-03-26 |
 | PROJ-12 | AI Visibility Query Engine | Deployed | [PROJ-12-ai-visibility-query-engine.md](PROJ-12-ai-visibility-query-engine.md) | 2026-03-28 |
 | PROJ-13 | Tenant Detail Management | Deployed | [PROJ-13-tenant-detail-management.md](PROJ-13-tenant-detail-management.md) | 2026-03-27 |
 | PROJ-14 | Stripe Setup & Basis-Abo | Deployed | [PROJ-14-stripe-basis-abo.md](PROJ-14-stripe-basis-abo.md) | 2026-03-27 |
@@ -39,7 +39,8 @@
 | PROJ-25 | Keyword Project Management | Deployed | [PROJ-25-keyword-project-management.md](PROJ-25-keyword-project-management.md) | 2026-03-28 |
 | PROJ-26 | Google Search Console Integration | Deployed | [PROJ-26-google-search-console-integration.md](PROJ-26-google-search-console-integration.md) | 2026-03-28 |
 | PROJ-27 | Keyword Rankings Dashboard & History | Deployed | [PROJ-27-keyword-rankings-dashboard.md](PROJ-27-keyword-rankings-dashboard.md) | 2026-03-28 |
+| PROJ-28 | Globaler Kunden-Selektor | In Review | [PROJ-28-global-customer-selector.md](PROJ-28-global-customer-selector.md) | 2026-03-30 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-28
+## Next Available ID: PROJ-29

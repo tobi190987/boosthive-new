@@ -171,7 +171,7 @@ export async function runAnalyticsProcessing(
   }
 
   if (analysis.status !== 'done' && !options?.force) {
-    throw new Error('Analytics koennen erst nach abgeschlossener Analyse berechnet werden.')
+    throw new Error('Analytics können erst nach abgeschlossener Analyse berechnet werden.')
   }
 
   if (analysis.analytics_status === 'running' && !options?.force) {
@@ -374,9 +374,9 @@ async function classifySentimentForSubject(
   }
 
   const prompt = [
-    `Bewerte das Sentiment ausschliesslich fuer die Erwaehnung von "${subjectName}" in der folgenden KI-Antwort.`,
+    `Bewerte das Sentiment ausschließlich für die Erwähnung von "${subjectName}" in der folgenden KI-Antwort.`,
     'Ignoriere die Bewertung anderer Marken oder Wettbewerber in derselben Antwort.',
-    'Gib nur JSON im Format {"label":"positive|neutral|negative|unknown"} zurueck.',
+    'Gib nur JSON im Format {"label":"positive|neutral|negative|unknown"} zurück.',
     'Antwort:',
     response.slice(0, 4000),
   ].join('\n')
@@ -735,9 +735,9 @@ async function generateRecommendations(
   }
 
   const prompt = [
-    'Erzeuge mindestens 5 konkrete GEO-Empfehlungen fuer eine SEO-/AI-Visibility-Analyse.',
+    'Erzeuge mindestens 5 konkrete GEO-Empfehlungen für eine SEO-/AI-Visibility-Analyse.',
     'Gib nur JSON im Format {"recommendations":[{"priority":"high|medium|low","title":"...","description":"...","rationale":"...","recommendation_type":"content|schema|authority|source_gap|keyword_gap","related_keyword":"optional"}]}.',
-    'Die Empfehlungen muessen handlungsorientiert und spezifisch sein.',
+    'Die Empfehlungen müssen handlungsorientiert und spezifisch sein.',
     JSON.stringify(promptPayload),
   ].join('\n')
 
@@ -834,9 +834,9 @@ function buildHeuristicRecommendations(
   if (topGap) {
     recommendations.push({
       priority: 'high',
-      title: `Content-Luecke bei "${topGap.keyword}" schliessen`,
-      description: `Erstelle oder ueberarbeite eine Landingpage rund um "${topGap.keyword}" mit klarer Positionierung fuer ${project.brand_name}.`,
-      rationale: `${topGap.competitorName} wird fuer dieses Keyword deutlich haeufiger genannt als die Brand.`,
+      title: `Content-Lücke bei "${topGap.keyword}" schließen`,
+      description: `Erstelle oder überarbeite eine Landingpage rund um "${topGap.keyword}" mit klarer Positionierung für ${project.brand_name}.`,
+      rationale: `${topGap.competitorName} wird für dieses Keyword deutlich häufiger genannt als die Brand.`,
       recommendation_type: 'keyword_gap',
       related_keyword: topGap.keyword,
     })
@@ -848,7 +848,7 @@ function buildHeuristicRecommendations(
       priority: 'high',
       title: 'Vertrauenssignale und Proof Points ausbauen',
       description: 'Ergaenze Kundenbelege, Fallstudien, Preise und klare Nutzenargumente auf stark betroffenen Seiten.',
-      rationale: `Das negative Sentiment ist fuer "${negativeBrandRow.keyword}" ueberdurchschnittlich hoch.`,
+      rationale: `Das negative Sentiment ist für "${negativeBrandRow.keyword}" überdurchschnittlich hoch.`,
       recommendation_type: 'authority',
       related_keyword: negativeBrandRow.keyword,
     })
@@ -870,8 +870,8 @@ function buildHeuristicRecommendations(
 
   recommendations.push({
     priority: 'medium',
-    title: 'Schema.org-Markup fuer Kernseiten erweitern',
-    description: 'Nutze strukturierte Daten fuer Organization, Product oder LocalBusiness, damit Modelle die Brand leichter zuordnen koennen.',
+    title: 'Schema.org-Markup für Kernseiten erweitern',
+    description: 'Nutze strukturierte Daten für Organization, Product oder LocalBusiness, damit Modelle die Brand leichter zuordnen können.',
     rationale: 'Sauber ausgezeichnete Entitaeten verbessern die Wiedererkennbarkeit in generativen Antworten.',
     recommendation_type: 'schema',
     related_keyword: null,
@@ -879,8 +879,8 @@ function buildHeuristicRecommendations(
 
   recommendations.push({
     priority: 'medium',
-    title: 'FAQ-Content fuer haeufige Nutzerfragen anlegen',
-    description: 'Baue kurze, direkte Antwortformate fuer die staerksten Keywords, damit KIs klare Textbausteine finden.',
+    title: 'FAQ-Content für häufige Nutzerfragen anlegen',
+    description: 'Baue kurze, direkte Antwortformate für die stärksten Keywords, damit KIs klare Textbausteine finden.',
     rationale: 'Generative Systeme bevorzugen gut strukturierte, zitierbare Antworten.',
     recommendation_type: 'content',
     related_keyword: project.keywords?.[0] ?? null,
@@ -973,7 +973,7 @@ async function extractSourcesWithLlm(
   const prompt = [
     'Extrahiere genannte oder zitierte Quellen aus der folgenden KI-Antwort.',
     'Gib nur JSON im Format {"sources":[{"domain":"example.com","url":"https://example.com/optional"}]}.',
-    'Wenn keine Quellen genannt werden, gib {"sources":[]} zurueck.',
+    'Wenn keine Quellen genannt werden, gib {"sources":[]} zurück.',
     response.slice(0, 4000),
   ].join('\n')
 

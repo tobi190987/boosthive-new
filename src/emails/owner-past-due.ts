@@ -25,11 +25,11 @@ export function renderOwnerPastDueEmail({
       </p>
       <p style="margin:0 0 24px;">
         <a href="${safeUrl}" style="display:inline-block;padding:14px 22px;border-radius:999px;background:#1f2937;color:#ffffff;text-decoration:none;font-weight:700;">
-          Billing-Uebersicht oeffnen
+          Billing-Übersicht öffnen
         </a>
       </p>
       <p style="margin:0;font-size:14px;line-height:1.7;color:#475569;">
-        Falls der Button nicht funktioniert, oeffne: <a href="${safeUrl}" style="color:#0f766e;text-decoration:underline;">${safeUrl}</a>
+        Falls der Button nicht funktioniert, öffne: <a href="${safeUrl}" style="color:#0f766e;text-decoration:underline;">${safeUrl}</a>
       </p>
     `,
   })
@@ -39,7 +39,7 @@ export function renderOwnerPastDueEmail({
     '',
     'Der Tenant befindet sich jetzt im Status past_due.',
     '',
-    `Billing-Uebersicht: ${ownerDashboardUrl}`,
+    `Billing-Übersicht: ${ownerDashboardUrl}`,
   ].join('\n')
 
   return {

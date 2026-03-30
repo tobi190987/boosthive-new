@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltige Eingabedaten.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Eingabedaten.' }, { status: 400 })
   }
 
   const analysisId = body.analysisId?.trim()
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
   const rawUrls = (body.urls ?? []).map((url) => normalizeInputUrl(url)).filter(Boolean)
 
   if (!analysisId || rawUrls.length === 0) {
-    return NextResponse.json({ error: 'Bitte gib mindestens eine gueltige URL an.' }, { status: 400 })
+    return NextResponse.json({ error: 'Bitte gib mindestens eine gültige URL an.' }, { status: 400 })
   }
 
   const admin = createAdminClient()

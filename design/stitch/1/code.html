@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BoostHive | SEO Analysis Results</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Manrope:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#2563eb",
+                        "primary-hover": "#1d4ed8",
+                        "accent": "#0ea5e9",
+                        "surface": "#f8fafc",
+                        "surface-card": "#ffffff",
+                        "on-surface": "#0f172a",
+                        "on-surface-variant": "#64748b",
+                        "outline": "#e2e8f0",
+                        "secondary": "#6366f1",
+                        "tertiary": "#f97316",
+                        "error": "#ef4444"
+                    },
+                    fontFamily: {
+                        "headline": ["Manrope"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.375rem",
+                        "lg": "0.5rem",
+                        "xl": "1rem",
+                        "2xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    boxShadow: {
+                        "soft": "0 10px 25px -5px rgba(0, 0, 0, 0.04), 0 8px 10px -6px rgba(0, 0, 0, 0.04)",
+                        "glass": "inset 0 1px 1px 0 rgba(255, 255, 255, 0.3), 0 10px 15px -3px rgba(0, 0, 0, 0.1)"
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        .font-headline { font-family: 'Manrope', sans-serif; }
+        .gradient-bg {
+            background: radial-gradient(circle at top left, #f1f5f9 0%, #f8fafc 100%);
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased gradient-bg">
+<div class="flex min-h-screen">
+<!-- SideNavBar Component - Fixed full height -->
+<aside class="hidden md:flex flex-col h-screen sticky top-0 p-8 w-72 bg-white border-r border-slate-100 shadow-[20px_0_40px_-15px_rgba(0,0,0,0.02)]">
+<div class="flex items-center gap-3.5 mb-12">
+<div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-2xl">hub</span>
+</div>
+<div>
+<h1 class="font-headline font-extrabold text-slate-900 leading-tight tracking-tight text-xl">BoostHive</h1>
+<p class="text-[10px] uppercase tracking-[0.2em] text-on-surface-variant font-bold">Editorial AI</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-body text-sm font-semibold">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-primary bg-blue-50/50 rounded-xl font-semibold border border-blue-100/50 transition-all duration-200" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-body text-sm">SEO Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-body text-sm">Clients</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">campaign</span>
+<span class="font-body text-sm">Campaigns</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-slate-500 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all duration-200" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body text-sm">Settings</span>
+</a>
+</nav>
+<div class="pt-8 space-y-6">
+<button class="group w-full bg-slate-900 text-white py-3.5 rounded-2xl font-headline font-bold text-sm flex items-center justify-center gap-2 hover:bg-slate-800 transition-all duration-300 shadow-xl shadow-slate-200 active:scale-95">
+<span class="material-symbols-outlined text-lg text-blue-400 group-hover:rotate-12 transition-transform" style="font-variation-settings: 'FILL' 1;">add</span>
+                Create Campaign
+            </button>
+<div class="space-y-1">
+<a class="flex items-center gap-3 px-4 py-2.5 text-slate-400 hover:text-slate-600 text-sm transition-colors font-medium" href="#">
+<span class="material-symbols-outlined text-xl">support_agent</span>
+                    Help Center
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Canvas -->
+<main class="flex-1 flex flex-col min-w-0">
+<!-- TopNavBar Component -->
+<header class="bg-white/70 backdrop-blur-xl flex justify-between items-center w-full px-10 py-5 sticky top-0 z-50 border-b border-slate-100">
+<div class="flex items-center gap-6">
+<h1 class="font-headline font-extrabold text-2xl text-slate-900 tracking-tight">SEO Analysis Completed</h1>
+<span class="bg-primary/5 text-primary px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.15em] border border-primary/10">Live Report</span>
+</div>
+<div class="flex items-center gap-8">
+<div class="flex items-center gap-5">
+<button class="relative p-2 text-slate-400 hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-2xl">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full ring-4 ring-white"></span>
+</button>
+<div class="h-6 w-px bg-slate-200"></div>
+<div class="flex items-center gap-3 group cursor-pointer">
+<img alt="User Profile" class="w-10 h-10 rounded-2xl object-cover ring-4 ring-slate-50 group-hover:ring-primary/10 transition-all" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBoPIXYanbpb_2tXjsrVJzh5PnmJNQ9EoI6SU_EWRz1lNbYLA2d47KBBP2sr3-STFrZRatuFHcD-wQhKRbGw2wM4vOM83GZ0k1mGYjVN5nb6rRIZ1A1mIwYz4sWW5lrdEQlJQsSLp64SmbAoQN064f5xqDV2HBi8XSrU9PUm0c1TtgPZ5aV_AXMyb2O6prC0gEKrrLMpqI6K_tVNmbSxUxBsqnub4SkYmVls1mbJ7AeLhBWQcHO2r-S8l6Gpy1nJDKdXMcp1j1GwQKW"/>
+<span class="material-symbols-outlined text-slate-400 text-sm">expand_more</span>
+</div>
+</div>
+</div>
+</header>
+<div class="p-10 space-y-10 max-w-[1500px] mx-auto w-full">
+<!-- Hero Grid: Summary Score & Metrics -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Overall Score -->
+<div class="lg:col-span-4 bg-white p-10 rounded-[2rem] shadow-soft border border-slate-100 flex flex-col items-center justify-center text-center relative overflow-hidden group">
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-[5rem] -mr-12 -mt-12 transition-all duration-500 group-hover:bg-primary/10"></div>
+<div class="relative w-40 h-40 flex items-center justify-center mb-6">
+<svg class="w-full h-full transform -rotate-90">
+<circle class="text-slate-50" cx="80" cy="80" fill="transparent" r="72" stroke="currentColor" stroke-width="12"></circle>
+<circle class="text-primary" cx="80" cy="80" fill="transparent" r="72" stroke="currentColor" stroke-dasharray="452" stroke-dashoffset="31" stroke-linecap="round" stroke-width="12"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-headline text-5xl font-black text-slate-900">93</span>
+</div>
+</div>
+<h3 class="font-headline text-xl font-extrabold text-slate-900 mb-2">Overall SEO Score</h3>
+<p class="text-primary font-bold text-sm bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Strong Performance</p>
+</div>
+<!-- Detailed Quick Metrics -->
+<div class="lg:col-span-8 bg-white rounded-[2rem] p-10 shadow-soft border border-slate-100 grid grid-cols-1 md:grid-cols-3 gap-10">
+<div class="flex flex-col">
+<p class="font-label text-[10px] uppercase tracking-[0.15em] text-slate-400 font-bold mb-3">Pages Analyzed</p>
+<h4 class="font-headline text-5xl font-black text-slate-900 tracking-tight mb-6">98</h4>
+<div class="mt-auto flex items-center gap-2 px-3 py-1.5 bg-emerald-50 text-emerald-600 rounded-xl self-start">
+<span class="material-symbols-outlined text-base">check_circle</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Complete</span>
+</div>
+</div>
+<div class="flex flex-col md:border-l md:border-slate-100 md:pl-10">
+<p class="font-label text-[10px] uppercase tracking-[0.15em] text-slate-400 font-bold mb-3">Reachable</p>
+<h4 class="font-headline text-5xl font-black text-slate-900 tracking-tight mb-6">98</h4>
+<div class="mt-auto flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-xl self-start">
+<span class="material-symbols-outlined text-base">signal_cellular_alt</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">100% Online</span>
+</div>
+</div>
+<div class="flex flex-col md:border-l md:border-slate-100 md:pl-10">
+<p class="font-label text-[10px] uppercase tracking-[0.15em] text-slate-400 font-bold mb-3">Critical Issues</p>
+<h4 class="font-headline text-5xl font-black text-error tracking-tight mb-6">0</h4>
+<div class="mt-auto flex items-center gap-2 px-3 py-1.5 bg-slate-50 text-slate-600 rounded-xl self-start">
+<span class="material-symbols-outlined text-base">verified</span>
+<span class="text-[10px] font-bold uppercase tracking-wider">Healthy Status</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Technical SEO & Recommendations -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Technical Detail Column -->
+<div class="lg:col-span-5 bg-white p-10 rounded-[2rem] shadow-soft border border-slate-100">
+<div class="flex items-center justify-between mb-10">
+<h3 class="font-headline text-2xl font-extrabold text-slate-900 tracking-tight">Technical SEO</h3>
+<span class="material-symbols-outlined text-slate-300">verified_user</span>
+</div>
+<div class="space-y-6">
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-4">
+<div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined">bolt</span>
+</div>
+<span class="font-body font-bold text-slate-700">Performance</span>
+</div>
+<span class="font-headline font-black text-xl text-slate-900">91</span>
+</div>
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-4">
+<div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined">accessibility</span>
+</div>
+<span class="font-body font-bold text-slate-700">Accessibility</span>
+</div>
+<span class="font-headline font-black text-xl text-slate-900">98</span>
+</div>
+<div class="flex items-center justify-between group">
+<div class="flex items-center gap-4">
+<div class="w-11 h-11 rounded-2xl bg-blue-50 flex items-center justify-center text-primary group-hover:bg-primary group-hover:text-white transition-all duration-300">
+<span class="material-symbols-outlined">shield_check</span>
+</div>
+<span class="font-body font-bold text-slate-700">Best Practices</span>
+</div>
+<span class="font-headline font-black text-xl text-slate-900">100</span>
+</div>
+<div class="pt-8 mt-8 border-t border-slate-50">
+<div class="grid grid-cols-2 gap-4">
+<div class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50/50 p-3 rounded-xl">
+<span class="material-symbols-outlined text-emerald-500 text-sm">check</span> HTTPS
+                                </div>
+<div class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50/50 p-3 rounded-xl">
+<span class="material-symbols-outlined text-emerald-500 text-sm">check</span> Viewport
+                                </div>
+<div class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50/50 p-3 rounded-xl">
+<span class="material-symbols-outlined text-emerald-500 text-sm">check</span> Charset
+                                </div>
+<div class="flex items-center gap-2 text-xs font-bold text-slate-500 bg-slate-50/50 p-3 rounded-xl">
+<span class="material-symbols-outlined text-emerald-500 text-sm">check</span> Favicon
+                                </div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Recommendations -->
+<div class="lg:col-span-7 bg-slate-900 p-10 rounded-[2rem] shadow-2xl shadow-slate-200 relative overflow-hidden">
+<div class="absolute -top-10 -right-10 w-60 h-60 bg-primary/10 rounded-full blur-[100px]"></div>
+<div class="flex items-center gap-3 mb-10 relative z-10">
+<span class="material-symbols-outlined text-blue-400" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<h3 class="font-headline text-2xl font-extrabold text-white tracking-tight">Action Recommendations</h3>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-5 relative z-10">
+<div class="bg-white/5 border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-all duration-300 group cursor-pointer">
+<div class="flex items-start gap-4">
+<div class="p-2 bg-blue-500/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-xl">description</span>
+</div>
+<div>
+<h4 class="font-bold text-white text-sm mb-1.5">Meta Descriptions</h4>
+<p class="text-[11px] text-slate-400 leading-relaxed">12 pages are currently missing a defined meta description tag.</p>
+</div>
+</div>
+</div>
+<div class="bg-white/5 border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-all duration-300 group cursor-pointer">
+<div class="flex items-start gap-4">
+<div class="p-2 bg-blue-500/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-xl">format_h1</span>
+</div>
+<div>
+<h4 class="font-bold text-white text-sm mb-1.5">H1 Structure</h4>
+<p class="text-[11px] text-slate-400 leading-relaxed">Ensure every page has exactly one H1 tag for indexing.</p>
+</div>
+</div>
+</div>
+<div class="bg-white/5 border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-all duration-300 group cursor-pointer">
+<div class="flex items-start gap-4">
+<div class="p-2 bg-blue-500/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-xl">image</span>
+</div>
+<div>
+<h4 class="font-bold text-white text-sm mb-1.5">Optimize Alt Text</h4>
+<p class="text-[11px] text-slate-400 leading-relaxed">45 images are missing descriptive alternative text.</p>
+</div>
+</div>
+</div>
+<div class="bg-white/5 border border-white/10 p-5 rounded-2xl hover:bg-white/10 transition-all duration-300 group cursor-pointer">
+<div class="flex items-start gap-4">
+<div class="p-2 bg-blue-500/20 rounded-xl text-blue-400 group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined text-xl">link</span>
+</div>
+<div>
+<h4 class="font-bold text-white text-sm mb-1.5">Internal Linking</h4>
+<p class="text-[11px] text-slate-400 leading-relaxed">Improve page authority by linking to service pages.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Pages in Detail Table -->
+<section class="bg-white rounded-[2rem] shadow-soft border border-slate-100 overflow-hidden">
+<div class="p-10 border-b border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+<div>
+<h3 class="font-headline text-2xl font-extrabold text-slate-900 tracking-tight">Pages in Detail</h3>
+<p class="text-xs text-slate-400 font-medium mt-1">Granular analysis of individual URL performance.</p>
+</div>
+<div class="flex gap-4">
+<button class="px-6 py-3 bg-slate-50 hover:bg-slate-100 rounded-2xl text-slate-600 text-xs font-bold transition-all border border-slate-200/50">Export CSV</button>
+<button class="px-6 py-3 bg-primary hover:bg-primary-hover text-white rounded-2xl text-xs font-bold shadow-lg shadow-primary/20 transition-all active:scale-95">Full Report</button>
+</div>
+</div>
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50/50">
+<th class="px-10 py-6 font-label text-[10px] uppercase text-slate-400 font-black tracking-[0.2em]">URL Path</th>
+<th class="px-10 py-6 font-label text-[10px] uppercase text-slate-400 font-black tracking-[0.2em]">Score</th>
+<th class="px-10 py-6 font-label text-[10px] uppercase text-slate-400 font-black tracking-[0.2em]">Status</th>
+<th class="px-10 py-6 font-label text-[10px] uppercase text-slate-400 font-black tracking-[0.2em] text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-50">
+<!-- Needs Attention Entry -->
+<tr class="group hover:bg-blue-50/30 transition-all">
+<td class="px-10 py-6">
+<span class="font-body text-sm font-bold text-slate-900">/services/marketing-strategy</span>
+</td>
+<td class="px-10 py-6">
+<div class="flex items-center gap-4">
+<div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-error to-rose-400 shadow-sm" style="width: 70%"></div>
+</div>
+<span class="font-headline font-black text-sm text-slate-900">70</span>
+</div>
+</td>
+<td class="px-10 py-6">
+<span class="px-3 py-1 bg-error/5 text-error rounded-lg text-[10px] font-bold uppercase tracking-wider border border-error/10">Needs Attention</span>
+</td>
+<td class="px-10 py-6 text-right">
+<button class="text-primary hover:text-primary-hover font-black text-[11px] uppercase tracking-widest transition-colors">View Details</button>
+</td>
+</tr>
+<tr class="bg-slate-50/30">
+<td class="px-10 py-6" colspan="4">
+<div class="flex flex-col gap-4 pl-8 border-l-4 border-error/20 bg-white/50 p-6 rounded-2xl">
+<div class="flex items-center gap-3 text-xs font-semibold text-slate-600">
+<span class="material-symbols-outlined text-error text-lg" style="font-variation-settings: 'FILL' 1;">error</span>
+<span>Title tag too short (32 chars)</span>
+</div>
+<div class="flex items-center gap-3 text-xs font-semibold text-slate-600">
+<span class="material-symbols-outlined text-error text-lg" style="font-variation-settings: 'FILL' 1;">error</span>
+<span>Missing meta description</span>
+</div>
+<div class="flex items-center gap-3 text-xs font-semibold text-slate-600">
+<span class="material-symbols-outlined text-emerald-500 text-lg">check_circle</span>
+<span>H1 tag optimized</span>
+</div>
+</div>
+</td>
+</tr>
+<!-- Improving Entry -->
+<tr class="group hover:bg-blue-50/30 transition-all">
+<td class="px-10 py-6">
+<span class="font-body text-sm font-bold text-slate-900">/blog/seo-trends-2024</span>
+</td>
+<td class="px-10 py-6">
+<div class="flex items-center gap-4">
+<div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-primary to-accent shadow-sm" style="width: 77%"></div>
+</div>
+<span class="font-headline font-black text-sm text-slate-900">77</span>
+</div>
+</td>
+<td class="px-10 py-6">
+<span class="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-blue-100">Improving</span>
+</td>
+<td class="px-10 py-6 text-right">
+<button class="text-primary hover:text-primary-hover font-black text-[11px] uppercase tracking-widest transition-colors">View Details</button>
+</td>
+</tr>
+<!-- Optimized Entry -->
+<tr class="group hover:bg-blue-50/30 transition-all">
+<td class="px-10 py-6">
+<span class="font-body text-sm font-bold text-slate-900">/about-us</span>
+</td>
+<td class="px-10 py-6">
+<div class="flex items-center gap-4">
+<div class="w-32 h-2 bg-slate-100 rounded-full overflow-hidden">
+<div class="h-full bg-gradient-to-r from-emerald-400 to-teal-500 shadow-sm" style="width: 89%"></div>
+</div>
+<span class="font-headline font-black text-sm text-slate-900">89</span>
+</div>
+</td>
+<td class="px-10 py-6">
+<span class="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-emerald-100">Optimized</span>
+</td>
+<td class="px-10 py-6 text-right">
+<button class="text-primary hover:text-primary-hover font-black text-[11px] uppercase tracking-widest transition-colors">View Details</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="p-8 border-t border-slate-50 flex items-center justify-center">
+<nav class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors text-slate-400"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl bg-primary text-white font-black text-xs shadow-lg shadow-primary/20">1</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-xs font-bold text-slate-600">2</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-xs font-bold text-slate-600">3</button>
+<span class="px-2 text-slate-300">...</span>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 text-xs font-bold text-slate-600">10</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-slate-100 transition-colors text-slate-400"><span class="material-symbols-outlined">chevron_right</span></button>
+</nav>
+</div>
+</section>
+</div>
+</main>
+</div>
+</body></html>

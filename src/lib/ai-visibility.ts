@@ -117,7 +117,7 @@ export interface CostEstimate {
 export function getVisibilityQueryLimitError(totalQueries: number): string | null {
   if (totalQueries <= MAX_AI_VISIBILITY_TOTAL_QUERIES) return null
 
-  return `Diese Analyse wuerde ${totalQueries} API-Calls ausloesen. Aktuell sind maximal ${MAX_AI_VISIBILITY_TOTAL_QUERIES} API-Calls pro Lauf erlaubt, damit der Worker nicht ins Timeout laeuft.`
+  return `Diese Analyse würde ${totalQueries} API-Calls auslösen. Aktuell sind maximal ${MAX_AI_VISIBILITY_TOTAL_QUERIES} API-Calls pro Lauf erlaubt, damit der Worker nicht ins Timeout läuft.`
 }
 
 export function calculateCostEstimate(

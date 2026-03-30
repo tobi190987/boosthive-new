@@ -12,7 +12,7 @@ import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, GSC_WRITE } from '@/lib/rate-limit'
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 export async function DELETE(
@@ -49,7 +49,7 @@ export async function DELETE(
     .maybeSingle()
 
   if (!conn) {
-    return NextResponse.json({ error: 'Keine GSC-Verbindung fuer dieses Projekt.' }, { status: 404 })
+    return NextResponse.json({ error: 'Keine GSC-Verbindung für dieses Projekt.' }, { status: 404 })
   }
 
   const { error } = await admin

@@ -24,7 +24,7 @@ const createProjectSchema = z.object({
   website_url: z
     .union([z.string().trim().max(500), z.null(), z.undefined()])
     .transform((value) => normalizeUrl(value))
-    .refine((value) => value === null || z.string().url().safeParse(value).success, 'Ungueltige URL.'),
+    .refine((value) => value === null || z.string().url().safeParse(value).success, 'Ungültige URL.'),
   competitors: z
     .array(
       z.object({
@@ -32,7 +32,7 @@ const createProjectSchema = z.object({
         url: z
           .union([z.string().trim().max(500), z.null(), z.undefined()])
           .transform((value) => normalizeUrl(value) ?? '')
-          .refine((value) => value === '' || z.string().url().safeParse(value).success, 'Ungueltige URL.'),
+          .refine((value) => value === '' || z.string().url().safeParse(value).success, 'Ungültige URL.'),
       })
     )
     .max(3, 'Maximal 3 Wettbewerber.')
@@ -40,7 +40,7 @@ const createProjectSchema = z.object({
     .default([]),
   keywords: z
     .array(z.string().trim().min(1).max(300))
-    .min(1, 'Mindestens 1 Keyword wird benoetigt.')
+    .min(1, 'Mindestens 1 Keyword wird benötigt.')
     .max(10, 'Maximal 10 Keywords.'),
 })
 
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = createProjectSchema.safeParse(body)

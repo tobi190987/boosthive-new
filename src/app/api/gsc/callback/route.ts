@@ -54,18 +54,18 @@ export async function GET(request: NextRequest) {
     if (error === 'access_denied') {
       return NextResponse.redirect(new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'))
     }
-    return NextResponse.json({ error: 'Ungueltige Callback-Parameter.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Callback-Parameter.' }, { status: 400 })
   }
 
   // Verify state (CSRF protection)
   const payload = verifyOAuthState(state)
   if (!payload) {
-    return NextResponse.json({ error: 'Ungueltiger oder abgelaufener State-Parameter.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger oder abgelaufener State-Parameter.' }, { status: 400 })
   }
 
   const parsedPayload = stateProjectSchema.safeParse(payload)
   if (!parsedPayload.success) {
-    return NextResponse.json({ error: 'Ungueltiger State-Payload.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger State-Payload.' }, { status: 400 })
   }
 
   const { projectId, tenantId, userId } = parsedPayload.data
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!code) {
-    const response = NextResponse.json({ error: 'Ungueltige Callback-Parameter.' }, { status: 400 })
+    const response = NextResponse.json({ error: 'Ungültige Callback-Parameter.' }, { status: 400 })
     response.cookies.delete(nonceCookieName)
     return response
   }

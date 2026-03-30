@@ -28,7 +28,7 @@ const updateProjectSchema = z.object({
     .min(1)
     .max(253)
     .transform(normalizeDomain)
-    .refine((d) => DOMAIN_REGEX.test(d), 'Ungueltige Domain.')
+    .refine((d) => DOMAIN_REGEX.test(d), 'Ungültige Domain.')
     .optional(),
   language_code: z.string().min(2).max(10).optional(),
   country_code: z.string().min(2).max(10).optional(),

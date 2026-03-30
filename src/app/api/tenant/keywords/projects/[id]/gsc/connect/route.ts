@@ -18,7 +18,7 @@ import {
 } from '@/lib/gsc-oauth'
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 export async function POST(

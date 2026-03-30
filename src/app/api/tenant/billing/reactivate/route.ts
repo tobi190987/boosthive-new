@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
   const currentStatus = tenant.subscription_status as string | null
   if (currentStatus !== 'canceling') {
     return NextResponse.json(
-      { error: 'Nur Abos in Kuendigung koennen reaktiviert werden.' },
+      { error: 'Nur Abos in Kündigung können reaktiviert werden.' },
       { status: 400 }
     )
   }

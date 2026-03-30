@@ -63,6 +63,12 @@ export const VISIBILITY_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 100
 /** Visibility project mutations: 20 requests / min / tenant+IP */
 export const VISIBILITY_PROJECT_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
 
+/** Customer list reads: 60 requests / min / tenant+IP */
+export const CUSTOMERS_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** Customer mutations (create/update/delete): 30 requests / min / tenant+IP */
+export const CUSTOMERS_WRITE: RateLimitOptions = { limit: 30, windowMs: 60 * 1000 }
+
 /** Visibility analysis starts: 10 requests / 15 min / tenant+IP */
 export const VISIBILITY_ANALYSIS_START: RateLimitOptions = {
   limit: 10,

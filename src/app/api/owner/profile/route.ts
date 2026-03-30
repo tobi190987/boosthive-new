@@ -11,7 +11,7 @@ export async function PUT(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltige Eingabedaten.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Eingabedaten.' }, { status: 400 })
   }
 
   const parsed = BaseProfileSchema.safeParse(body)

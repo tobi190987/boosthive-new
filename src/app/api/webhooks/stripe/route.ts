@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
     console.error('[Stripe Webhook] Signatur-Validierung fehlgeschlagen:', message)
     return NextResponse.json(
-      { error: 'Ungueltige Webhook-Signatur.' },
+      { error: 'Ungültige Webhook-Signatur.' },
       { status: 400 }
     )
   }

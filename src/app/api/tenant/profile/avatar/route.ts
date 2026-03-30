@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json({ error: 'Das Bild darf maximal 2 MB gross sein.' }, { status: 400 })
+    return NextResponse.json({ error: 'Das Bild darf maximal 2 MB groß sein.' }, { status: 400 })
   }
 
   const extension = MIME_TO_EXTENSION[file.type]

@@ -17,7 +17,7 @@ export async function POST(
 ) {
   const { moduleId } = await params
   if (!UUID_REGEX.test(moduleId)) {
-    return NextResponse.json({ error: 'Ungueltige Modul-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Modul-ID.' }, { status: 400 })
   }
 
   const tenantId = request.headers.get('x-tenant-id')
@@ -77,7 +77,7 @@ export async function POST(
 
   if (booking.status !== 'canceling') {
     return NextResponse.json(
-      { error: 'Nur Module in Kuendigung koennen reaktiviert werden.' },
+      { error: 'Nur Module in Kündigung können reaktiviert werden.' },
       { status: 400 }
     )
   }
@@ -87,7 +87,7 @@ export async function POST(
     const periodEnd = new Date(booking.current_period_end)
     if (periodEnd <= new Date()) {
       return NextResponse.json(
-        { error: 'Die Kuendigungsfrist ist bereits abgelaufen. Bitte buche das Modul neu.' },
+        { error: 'Die Kündigungsfrist ist bereits abgelaufen. Bitte buche das Modul neu.' },
         { status: 400 }
       )
     }

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
   if (tenantStatusLookup.error || !tenantStatus || tenantStatus.effectiveStatus === 'archived') {
     return NextResponse.json(
-      { error: 'Dieser Tenant ist archiviert. Passwort-Resets sind aktuell nicht verfuegbar.' },
+      { error: 'Dieser Tenant ist archiviert. Passwort-Resets sind aktuell nicht verfügbar.' },
       { status: 403 }
     )
   }

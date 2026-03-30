@@ -23,7 +23,7 @@ const addCompetitorSchema = z.object({
     .min(1, 'Domain ist erforderlich.')
     .max(253)
     .transform(normalizeDomain)
-    .refine((d) => DOMAIN_REGEX.test(d), 'Ungueltige Domain (z. B. competitor.de).'),
+    .refine((d) => DOMAIN_REGEX.test(d), 'Ungültige Domain (z. B. competitor.de).'),
 })
 
 async function resolveProject(tenantId: string, projectId: string) {

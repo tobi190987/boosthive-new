@@ -33,7 +33,7 @@ export async function POST(
 
   if (analysis.status !== 'done') {
     return NextResponse.json(
-      { error: 'Analytics koennen erst nach abgeschlossener Analyse neu berechnet werden.' },
+      { error: 'Analytics können erst nach abgeschlossener Analyse neu berechnet werden.' },
       { status: 400 }
     )
   }

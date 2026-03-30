@@ -16,7 +16,7 @@ import { normalizeAiModelId } from '@/lib/ai-visibility'
  */
 
 const workerSchema = z.object({
-  analysis_id: z.string().uuid('Ungueltige analysis_id.'),
+  analysis_id: z.string().uuid('Ungültige analysis_id.'),
 })
 
 // Keep the internal timeout below Vercel's hard execution limit to avoid stuck "running" jobs.
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = workerSchema.safeParse(body)

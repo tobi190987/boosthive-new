@@ -33,14 +33,14 @@ export async function POST(
 
   const { id } = await params
   if (!isUuid(id)) {
-    return NextResponse.json({ error: 'Ungueltige Tenant-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
   let formData: FormData
   try {
     formData = await request.formData()
   } catch {
-    return NextResponse.json({ error: 'Ungueltige FormData.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige FormData.' }, { status: 400 })
   }
 
   const file = formData.get('file')
@@ -50,14 +50,14 @@ export async function POST(
 
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
     return NextResponse.json(
-      { error: `Ungueltiger Dateityp: ${file.type}. Erlaubt: PNG, JPEG, WebP, SVG.` },
+      { error: `Ungültiger Dateityp: ${file.type}. Erlaubt: PNG, JPEG, WebP, SVG.` },
       { status: 400 }
     )
   }
 
   if (file.size > MAX_FILE_SIZE) {
     return NextResponse.json(
-      { error: 'Datei zu gross. Maximal 2 MB erlaubt.' },
+      { error: 'Datei zu groß. Maximal 2 MB erlaubt.' },
       { status: 400 }
     )
   }
@@ -145,7 +145,7 @@ export async function DELETE(
 
   const { id } = await params
   if (!isUuid(id)) {
-    return NextResponse.json({ error: 'Ungueltige Tenant-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Tenant-ID.' }, { status: 400 })
   }
 
   const supabaseAdmin = createAdminClient()
@@ -196,7 +196,7 @@ export async function DELETE(
 
   if (updateError) {
     console.error('[DELETE /api/owner/tenants/[id]/logo] logo_url Reset fehlgeschlagen:', updateError)
-    return NextResponse.json({ error: 'Logo-URL konnte nicht zurueckgesetzt werden.' }, { status: 500 })
+    return NextResponse.json({ error: 'Logo-URL konnte nicht zurückgesetzt werden.' }, { status: 500 })
   }
 
   return NextResponse.json({ success: true })

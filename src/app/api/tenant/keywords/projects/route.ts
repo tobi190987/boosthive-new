@@ -30,7 +30,7 @@ const createProjectSchema = z.object({
     .min(1, 'Domain ist erforderlich.')
     .max(253)
     .transform(normalizeDomain)
-    .refine((d) => DOMAIN_REGEX.test(d), 'Ungueltige Domain (z. B. example.de).'),
+    .refine((d) => DOMAIN_REGEX.test(d), 'Ungültige Domain (z. B. example.de).'),
   language_code: z.string().min(2).max(10).default('de'),
   country_code: z.string().min(2).max(10).default('DE'),
 })

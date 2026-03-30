@@ -1,8 +1,8 @@
 # PROJ-11: AI Performance Analyse
 
-## Status: Planned
+## Status: Deployed
 **Created:** 2026-03-26
-**Last Updated:** 2026-03-26
+**Last Updated:** 2026-03-30
 
 ## Dependencies
 - Requires: PROJ-9 (Tenant Dashboard Shell) — Modul im Dashboard

@@ -14,7 +14,7 @@ import { listGscProperties, refreshAccessToken, TokenRevokedError } from '@/lib/
 import { encryptToken, decryptToken, isTokenDecryptError } from '@/lib/gsc-crypto'
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 function toSafeErrorMessage(error: unknown) {
@@ -57,7 +57,7 @@ export async function GET(
       .maybeSingle()
 
     if (!conn) {
-      return NextResponse.json({ error: 'Keine GSC-Verbindung fuer dieses Projekt.' }, { status: 404 })
+      return NextResponse.json({ error: 'Keine GSC-Verbindung für dieses Projekt.' }, { status: 404 })
     }
 
     if (conn.status === 'revoked') {

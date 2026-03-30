@@ -58,7 +58,7 @@ export function decryptToken(encryptedStr: string): string {
   const parts = encryptedStr.split(':')
 
   if (parts.length !== 3) {
-    throw new Error('Ungueltiges Token-Format.')
+    throw new Error('Ungültiges Token-Format.')
   }
 
   const iv = Buffer.from(parts[0], 'hex')
@@ -78,6 +78,6 @@ export function isTokenDecryptError(error: unknown): boolean {
   return (
     message.includes('unable to authenticate data') ||
     message.includes('unsupported state') ||
-    message.includes('ungueltiges token-format')
+    message.includes('ungültiges token-format')
   )
 }

@@ -13,7 +13,7 @@ import { decryptToken, encryptToken, isTokenDecryptError } from '@/lib/gsc-crypt
 import { listGscProperties, refreshAccessToken, TokenRevokedError } from '@/lib/gsc-oauth'
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 const schema = z.object({
@@ -68,7 +68,7 @@ export async function PATCH(
       .maybeSingle()
 
     if (!conn) {
-      return NextResponse.json({ error: 'Keine GSC-Verbindung fuer dieses Projekt.' }, { status: 404 })
+      return NextResponse.json({ error: 'Keine GSC-Verbindung für dieses Projekt.' }, { status: 404 })
     }
 
     if (conn.status === 'revoked') {
@@ -116,7 +116,7 @@ export async function PATCH(
 
       if (!isValidProperty) {
         return NextResponse.json(
-          { error: 'Die ausgewaehlte Property ist fuer dieses Google-Konto nicht verfuegbar.' },
+          { error: 'Die ausgewählte Property ist für dieses Google-Konto nicht verfügbar.' },
           { status: 422 }
         )
       }

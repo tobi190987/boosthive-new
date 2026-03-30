@@ -17,7 +17,7 @@ export async function POST(
 ) {
   const { moduleId } = await params
   if (!UUID_REGEX.test(moduleId)) {
-    return NextResponse.json({ error: 'Ungueltige Modul-ID.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültige Modul-ID.' }, { status: 400 })
   }
 
   const tenantId = request.headers.get('x-tenant-id')
@@ -104,7 +104,7 @@ export async function POST(
     }
     if (existingBooking.status === 'canceling') {
       return NextResponse.json(
-        { error: 'Dieses Modul laeuft gerade aus. Bitte nutze "Kuendigung aufheben" statt einer Neubuchung.' },
+        { error: 'Dieses Modul läuft gerade aus. Bitte nutze "Kündigung aufheben" statt einer Neubuchung.' },
         { status: 409 }
       )
     }

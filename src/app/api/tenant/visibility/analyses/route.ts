@@ -20,7 +20,7 @@ import {
 const MAX_CONCURRENT_ANALYSES = 2
 
 const createAnalysisSchema = z.object({
-  project_id: z.string().trim().uuid('Ungueltige project_id.'),
+  project_id: z.string().trim().uuid('Ungültige project_id.'),
   models: z
     .array(z.string().trim().min(1))
     .transform((models) => models.filter(Boolean))
@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = createAnalysisSchema.safeParse(body)

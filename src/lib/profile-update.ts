@@ -116,7 +116,7 @@ async function loadTenantStripeData(tenantId: string) {
   }
 
   if (!data) {
-    console.warn('[profile-update] Stripe-Tenantdatensatz fehlt fuer:', tenantId)
+    console.warn('[profile-update] Stripe-Tenantdatensatz fehlt für:', tenantId)
     return { data: null }
   }
 
@@ -139,7 +139,7 @@ async function assertAdminOnboardingReady(tenantId: string, billingAddress: Bill
 
   if (!tenantData?.stripe_customer_id) {
     console.warn(
-      '[profile-update] Kein stripe_customer_id hinterlegt; Stripe-Pruefung wird uebersprungen.'
+      '[profile-update] Kein stripe_customer_id hinterlegt; Stripe-Prüfung wird übersprungen.'
     )
     return { success: true as const }
   }
