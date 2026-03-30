@@ -15,7 +15,7 @@ const GENERIC_SUCCESS =
   'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 
 interface ForgotPasswordFormProps {
   action: string
@@ -63,17 +63,17 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
   return (
     <div className="space-y-5">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-xl border border-[#d1faf4] bg-[#f0fdfb] p-4">
-          <MailCheck className="h-4 w-4 text-[#0d9488]" />
-          <p className="mt-2.5 text-sm font-semibold text-slate-900">Kein Account-Leak</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <MailCheck className="h-4 w-4 text-blue-600" />
+          <p className="mt-2.5 text-sm font-semibold text-slate-900 dark:text-slate-100">Kein Account-Leak</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
             Die Rückmeldung bleibt neutral, egal ob die Adresse existiert oder nicht.
           </p>
         </div>
-        <div className="rounded-xl border border-[#d1faf4] bg-[#f0fdfb] p-4">
-          <ShieldCheck className="h-4 w-4 text-[#0d9488]" />
-          <p className="mt-2.5 text-sm font-semibold text-slate-900">Tenant-gebunden</p>
-          <p className="mt-1 text-xs leading-5 text-slate-500">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <ShieldCheck className="h-4 w-4 text-blue-600" />
+          <p className="mt-2.5 text-sm font-semibold text-slate-900 dark:text-slate-100">Tenant-gebunden</p>
+          <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
             Der Ablauf bleibt am richtigen Workspace und führt nicht aus dem Flow heraus.
           </p>
         </div>
@@ -87,13 +87,13 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
         )}
 
         {isSuccess && (
-          <Alert className="rounded-xl border-[#d1faf4] bg-[#f0fdfb] text-[#0d9488]">
+          <Alert className="rounded-xl border-blue-200 bg-blue-50 text-blue-600">
             <AlertDescription>{GENERIC_SUCCESS}</AlertDescription>
           </Alert>
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+          <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             E-Mail
           </Label>
           <Input
@@ -111,7 +111,7 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
 
         <Button
           type="submit"
-          className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
+          className="h-[48px] w-full rounded-xl bg-blue-600 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
           disabled={isSubmitting || isSuccess}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -119,9 +119,9 @@ export function ForgotPasswordForm({ action }: ForgotPasswordFormProps) {
         </Button>
       </form>
 
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         Zurück zum Login?{' '}
-        <Link href="/login" className="font-medium text-[#0d9488] underline-offset-4 hover:underline">
+        <Link href="/login" className="font-medium text-blue-600 underline-offset-4 hover:underline">
           Jetzt anmelden
         </Link>
       </p>

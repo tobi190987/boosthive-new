@@ -30,7 +30,7 @@ export function OwnerDashboardMetrics({
       value: String(totalTenants),
       hint: 'Alle aktuell registrierten Agenturen im System.',
       icon: Building2,
-      accent: 'text-[#0d9488] bg-[#f0fdfb]',
+      accent: 'text-blue-600 bg-blue-50',
     },
     {
       label: 'Aktive Tenants',
@@ -44,14 +44,14 @@ export function OwnerDashboardMetrics({
       value: String(inactiveTenants),
       hint: 'Deaktivierte Tenants mit blockierten neuen Logins.',
       icon: BarChart3,
-      accent: 'text-[#9f4f2d] bg-[#fff4ee]',
+      accent: 'text-blue-600 bg-amber-50',
     },
     {
       label: 'Gesamt-User',
       value: String(totalUsers),
       hint: 'Aktive Tenant-Members über alle Workspaces hinweg.',
       icon: Users,
-      accent: 'text-slate-700 bg-slate-100',
+      accent: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#1e2635]',
     },
   ]
 
@@ -60,14 +60,14 @@ export function OwnerDashboardMetrics({
       {metrics.map((metric) => (
         <Card
           key={metric.label}
-          className="rounded-[28px] border border-[#e7ddd1] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]"
+          className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft"
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 Platform Signal
               </p>
-              <CardTitle className="mt-2 text-base font-semibold text-slate-900">
+              <CardTitle className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
                 {metric.label}
               </CardTitle>
             </div>
@@ -76,8 +76,8 @@ export function OwnerDashboardMetrics({
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold tracking-tight text-slate-950">{metric.value}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{metric.hint}</p>
+            <p className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{metric.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{metric.hint}</p>
           </CardContent>
         </Card>
       ))}

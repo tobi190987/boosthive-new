@@ -301,7 +301,7 @@ export default function TenantsPage() {
             <Button
               type="button"
               variant={archivedFilter === "exclude" ? "default" : "outline"}
-              className={archivedFilter === "exclude" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-[#e6ddd0]"}
+              className={archivedFilter === "exclude" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-slate-100 dark:border-[#252d3a]"}
               onClick={() => setArchivedFilter("exclude")}
             >
               Nicht archiviert
@@ -309,7 +309,7 @@ export default function TenantsPage() {
             <Button
               type="button"
               variant={archivedFilter === "include" ? "default" : "outline"}
-              className={archivedFilter === "include" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-[#e6ddd0]"}
+              className={archivedFilter === "include" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-slate-100 dark:border-[#252d3a]"}
               onClick={() => setArchivedFilter("include")}
             >
               Alle
@@ -317,7 +317,7 @@ export default function TenantsPage() {
             <Button
               type="button"
               variant={archivedFilter === "only" ? "default" : "outline"}
-              className={archivedFilter === "only" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-[#e6ddd0]"}
+              className={archivedFilter === "only" ? "bg-[#1f2937] hover:bg-[#111827]" : "border-slate-100 dark:border-[#252d3a]"}
               onClick={() => setArchivedFilter("only")}
             >
               Nur archiviert
@@ -347,13 +347,13 @@ export default function TenantsPage() {
       )}
 
       {loading ? (
-        <div className="space-y-4 rounded-xl border bg-white p-5 shadow-sm">
+        <div className="space-y-4 rounded-xl border bg-white dark:bg-[#151c28] p-5 shadow-sm">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-14 rounded-xl" />
           ))}
         </div>
       ) : tenants.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border bg-white px-6 py-16 text-center shadow-sm">
+        <div className="flex flex-col items-center justify-center rounded-xl border bg-white dark:bg-[#151c28] px-6 py-16 text-center shadow-sm">
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50">
             <Building2 className="h-6 w-6 text-teal-500" />
           </div>

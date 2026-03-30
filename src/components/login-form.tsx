@@ -27,7 +27,7 @@ function sanitizeReturnTo(url: string, fallback: string): string {
 }
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 
 export function LoginForm({
   action,
@@ -76,9 +76,9 @@ export function LoginForm({
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {title && (
-        <div className="rounded-xl border border-[#d1faf4] bg-[#f0fdfb] px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#0d9488]">Arbeitsbereich</p>
-          <p className="mt-0.5 text-sm font-semibold text-slate-900">{title}</p>
+        <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">Arbeitsbereich</p>
+          <p className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
         </div>
       )}
 
@@ -90,14 +90,14 @@ export function LoginForm({
       )}
 
       {notice && !error && (
-        <Alert className="rounded-xl border-[#f1d4b7] bg-[#fff4ea] text-[#8c4a19]">
+        <Alert className="rounded-xl border-amber-200 bg-amber-50 text-amber-800">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{notice}</AlertDescription>
         </Alert>
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+        <Label htmlFor="email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
           E-Mail
         </Label>
         <Input
@@ -115,11 +115,11 @@ export function LoginForm({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-4">
-          <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+          <Label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Passwort
           </Label>
           {showForgotPasswordLink && (
-            <Link href="/forgot-password" className="text-sm font-medium text-[#0d9488] underline-offset-4 hover:underline">
+            <Link href="/forgot-password" className="text-sm font-medium text-blue-600 underline-offset-4 hover:underline">
               Passwort vergessen?
             </Link>
           )}
@@ -138,7 +138,7 @@ export function LoginForm({
           />
           <button
             type="button"
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
             onClick={() => setShowPassword((value) => !value)}
             tabIndex={-1}
             aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
@@ -151,7 +151,7 @@ export function LoginForm({
 
       <Button
         type="submit"
-        className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
+        className="h-[48px] w-full rounded-xl bg-blue-600 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

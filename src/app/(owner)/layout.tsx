@@ -31,7 +31,7 @@ export default async function OwnerLayout({
   const context = await requireOwnerShellContext()
 
   return (
-    <div className="min-h-screen bg-[#f7f2ea] text-slate-900">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="flex min-h-screen">
         <OwnerSidebar context={context} />
         <div className="flex min-h-screen min-w-0 flex-1 flex-col">

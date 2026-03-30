@@ -280,19 +280,19 @@ function auditEventLabel(eventType: OwnerAuditEventType) {
 function auditEventBadgeClass(eventType: OwnerAuditEventType) {
   switch (eventType) {
     case "tenant_deleted":
-      return "rounded-full bg-[#fff1ec] text-[#b85e34] hover:bg-[#fff1ec]"
+      return "rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50"
     case "tenant_archived":
-      return "rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100"
+      return "rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]"
     case "tenant_restored":
-      return "rounded-full bg-[#eef7f5] text-[#0d9488] hover:bg-[#eef7f5]"
+      return "rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50"
     case "tenant_admin_reassigned":
     case "tenant_admin_setup_resent":
-      return "rounded-full bg-[#eef4ff] text-[#3457c2] hover:bg-[#eef4ff]"
+      return "rounded-full bg-blue-50 text-blue-700 hover:bg-blue-50"
     case "tenant_created":
     case "tenant_status_updated":
-      return "rounded-full bg-[#f5efe6] text-[#7c4b28] hover:bg-[#f5efe6]"
+      return "rounded-full bg-blue-50 text-amber-800 hover:bg-blue-50"
     default:
-      return "rounded-full bg-[#eef7f5] text-[#0d9488] hover:bg-[#eef7f5]"
+      return "rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50"
   }
 }
 
@@ -843,8 +843,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-44 w-full rounded-[32px]" />
-        <Skeleton className="h-[520px] w-full rounded-[32px]" />
+        <Skeleton className="h-44 w-full rounded-[2rem]" />
+        <Skeleton className="h-[520px] w-full rounded-[2rem]" />
       </div>
     )
   }
@@ -852,14 +852,14 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
   if (!tenant && serverError) {
     return (
       <div className="space-y-6">
-        <Button variant="ghost" asChild className="-ml-3 w-fit text-slate-500 hover:text-slate-900">
+        <Button variant="ghost" asChild className="-ml-3 w-fit text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
           <Link href="/owner/tenants">
             <ArrowLeft className="mr-2 h-4 w-4" />
             Zurück zu Agenturen
           </Link>
         </Button>
 
-        <Alert variant="destructive" className="rounded-[24px] border-red-200 bg-red-50/80">
+        <Alert variant="destructive" className="rounded-2xl border-red-200 bg-red-50/80">
           <AlertTitle>Tenant-Details konnten nicht geladen werden</AlertTitle>
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
@@ -869,16 +869,16 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
 
   return (
     <div className="space-y-8">
-      <Button variant="ghost" asChild className="-ml-3 w-fit text-slate-500 hover:text-slate-900">
+      <Button variant="ghost" asChild className="-ml-3 w-fit text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
         <Link href="/owner/tenants">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Zurück zu Agenturen
         </Link>
       </Button>
 
-      <section className="relative overflow-hidden rounded-[34px] border border-[#ddd3c6] bg-[linear-gradient(135deg,#fffaf2_0%,#f5efe6_54%,#eef7f5_100%)] p-6 shadow-[0_24px_80px_rgba(89,71,42,0.08)] sm:p-8">
-        <div className="absolute left-[-2rem] top-[-2rem] h-36 w-36 rounded-full bg-[#1dbfaa]/12 blur-3xl" />
-        <div className="absolute bottom-[-3rem] right-[-2rem] h-40 w-40 rounded-full bg-[#eb6f3d]/12 blur-3xl" />
+      <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+        <div className="absolute left-[-2rem] top-[-2rem] h-36 w-36 rounded-full bg-blue-600/12 blur-3xl" />
+        <div className="absolute bottom-[-3rem] right-[-2rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
           <div className="min-w-0 space-y-4 xl:flex-1">
@@ -886,13 +886,13 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               Tenant Profile
             </Badge>
             <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                 Owner / Tenant Detail
               </p>
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-900">
+              <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
                 {tenant?.name ?? "Tenant-Details"}
               </h1>
-              <p className="max-w-2xl text-sm leading-6 text-slate-600">
+              <p className="max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Pflege Stammdaten, Rechnungsadresse, Kontaktinformationen und die
                 verantwortliche Admin-Person für diese Agentur.
               </p>
@@ -900,8 +900,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="grid w-full min-w-0 gap-3 sm:grid-cols-3 xl:max-w-[560px]">
-            <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                 Status
               </p>
               <p
@@ -915,35 +915,35 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               <Badge className={cn("mt-2 rounded-full", tenantStatusBadgeClass(tenant?.status))}>
                 {tenantStatusLabel(tenant?.status)}
               </Badge>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                 {tenantStatusDescription(tenant?.status)}
               </p>
             </div>
-            <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                 Erstellt
               </p>
-              <p className="mt-2 break-words text-base font-semibold text-slate-900 sm:text-lg">
+              <p className="mt-2 break-words text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg">
                 {tenant?.created_at ? formatDate(tenant.created_at) : "-"}
               </p>
             </div>
-            <div className="min-w-0 rounded-[24px] border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
               <div className="flex items-start justify-between gap-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                   Tenant-ID
                 </p>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 shrink-0 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                  className="h-7 w-7 shrink-0 rounded-full text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a] hover:text-slate-700 dark:hover:text-slate-300"
                   onClick={copyTenantId}
                   aria-label="Tenant-ID kopieren"
                 >
                   <Copy className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <p className="mt-2 break-all font-mono text-xs leading-5 text-slate-700 sm:text-sm">
+              <p className="mt-2 break-all font-mono text-xs leading-5 text-slate-700 dark:text-slate-300 sm:text-sm">
                 {tenant?.id ?? tenantId}
               </p>
             </div>
@@ -951,42 +951,42 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-[26px] border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
-            <Globe className="h-5 w-5 text-[#b85e34]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Subdomain und Einstieg</p>
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+            <Globe className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Subdomain und Einstieg</p>
             <a
               href={tenant?.slug ? tenantUrl(tenant.slug) : undefined}
               target="_blank"
               rel="noreferrer"
-              className="mt-1 block break-all text-sm leading-6 text-slate-600 underline-offset-4 hover:text-slate-900 hover:underline"
+              className="mt-1 block break-all text-sm leading-6 text-slate-600 dark:text-slate-300 underline-offset-4 hover:text-slate-900 dark:hover:text-slate-100 hover:underline"
             >
               {tenant?.slug ? tenantUrl(tenant.slug) : tenantHost}
             </a>
           </div>
-          <div className="rounded-[26px] border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
-            <Users2 className="h-5 w-5 text-[#0d9488]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Aktive Nutzerbasis</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{activeUsers}</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">aktive Accounts in dieser Agentur</p>
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+            <Users2 className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Aktive Nutzerbasis</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{activeUsers}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">aktive Accounts in dieser Agentur</p>
           </div>
-          <div className="rounded-[26px] border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
             <ShieldCheck className="h-5 w-5 text-[#1f2937]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Administrative Abdeckung</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{adminUsers}</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">aktive Admins mit Zugriff auf den Tenant</p>
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Administrative Abdeckung</p>
+            <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{adminUsers}</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">aktive Admins mit Zugriff auf den Tenant</p>
           </div>
         </div>
       </section>
 
       {serverError && tenant ? (
-        <Alert variant="destructive" className="rounded-[24px] border-red-200 bg-red-50/80">
+        <Alert variant="destructive" className="rounded-2xl border-red-200 bg-red-50/80">
           <AlertTitle>Aktion fehlgeschlagen</AlertTitle>
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       ) : null}
 
       {apiPendingMessage ? (
-        <Alert className="rounded-[24px] border-[#f0d2b8] bg-[#fff7ef] text-[#7c3d1d]">
+        <Alert className="rounded-2xl border-amber-200 bg-amber-50 text-amber-800">
           <AlertTriangle className="h-4 w-4" />
           <AlertTitle>Backend-Schritt noch offen</AlertTitle>
           <AlertDescription>{apiPendingMessage}</AlertDescription>
@@ -994,7 +994,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
       ) : null}
 
       {tenant?.is_archived ? (
-        <Alert className="rounded-[24px] border-slate-200 bg-slate-50 text-slate-700">
+        <Alert className="rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-700 dark:text-slate-300">
           <Archive className="h-4 w-4" />
           <AlertTitle>Dieser Tenant ist archiviert</AlertTitle>
           <AlertDescription>
@@ -1005,7 +1005,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
       ) : null}
 
       <Tabs defaultValue={initialTab} className="space-y-6">
-        <TabsList className="h-auto flex-wrap rounded-full bg-[#f4eee6] p-1">
+        <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
           <TabsTrigger value="general" className="rounded-full px-4 py-2">
             Allgemein
           </TabsTrigger>
@@ -1030,15 +1030,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsList>
 
         <TabsContent value="general" className="mt-0">
-          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#f5efe6] p-3 text-[#b85e34]">
+                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Allgemeine Angaben</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Allgemeine Angaben</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Name und Subdomain der Agentur können hier angepasst werden.
                   </p>
                 </div>
@@ -1090,7 +1090,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   </div>
 
                   {slugChanged ? (
-                    <Alert className="rounded-[24px] border-[#f0d2b8] bg-[#fff7ef] text-[#7c3d1d]">
+                    <Alert className="rounded-2xl border-amber-200 bg-amber-50 text-amber-800">
                       <AlertTriangle className="h-4 w-4" />
                       <AlertTitle>Subdomain wird geändert</AlertTitle>
                       <AlertDescription>
@@ -1116,15 +1116,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardContent>
           </Card>
           {/* Logo-Karte */}
-          <Card className="mt-4 rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="mt-4 rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#f5efe6] p-3 text-[#b85e34]">
+                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
                   <ImageIcon className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Agentur-Logo</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Agentur-Logo</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Wird auf der Login-Seite dieser Subdomain angezeigt.
                   </p>
                 </div>
@@ -1138,13 +1138,13 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   <img
                     src={tenant.logo_url}
                     alt="Aktuelles Logo"
-                    className="h-14 w-auto max-w-[200px] rounded-xl border border-[#e7ddd1] object-contain p-2"
+                    className="h-14 w-auto max-w-[200px] rounded-xl border border-slate-100 dark:border-[#252d3a] object-contain p-2"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="gap-1.5 text-slate-500 hover:text-red-600"
+                    className="gap-1.5 text-slate-500 dark:text-slate-400 hover:text-red-600"
                     disabled={uploadingLogo}
                     onClick={deleteLogo}
                   >
@@ -1161,13 +1161,13 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   <img
                     src={logoPreview}
                     alt="Logo Vorschau"
-                    className="h-14 w-auto max-w-[200px] rounded-xl border border-[#e7ddd1] object-contain p-2"
+                    className="h-14 w-auto max-w-[200px] rounded-xl border border-slate-100 dark:border-[#252d3a] object-contain p-2"
                   />
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="gap-1.5 text-slate-500"
+                    className="gap-1.5 text-slate-500 dark:text-slate-400"
                     onClick={() => {
                       setLogoFile(null)
                       if (logoPreview) URL.revokeObjectURL(logoPreview)
@@ -1186,7 +1186,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 <button
                   type="button"
                   onClick={() => logoFileInputRef.current?.click()}
-                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-[#e7ddd1] px-4 py-3 text-sm text-slate-500 transition hover:border-[#b85e34]/50 hover:text-[#b85e34]"
+                  className="flex w-full cursor-pointer items-center gap-3 rounded-xl border border-dashed border-slate-100 dark:border-[#252d3a] px-4 py-3 text-sm text-slate-500 dark:text-slate-400 transition hover:border-blue-600/50 hover:text-blue-600"
                 >
                   <ImageIcon className="h-4 w-4 shrink-0" />
                   {tenant?.logo_url ? "Neues Logo hochladen" : "Logo hochladen"} · PNG, JPG, SVG · max. 2 MB
@@ -1216,15 +1216,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardContent>
           </Card>
 
-          <Card className="mt-4 rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="mt-4 rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-slate-100 p-3 text-slate-700">
+                <div className="rounded-2xl bg-slate-100 dark:bg-[#1e2635] p-3 text-slate-700 dark:text-slate-300">
                   <Archive className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Archivierung & Lebenszyklus</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Archivierung & Lebenszyklus</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Archivierte Tenants verschwinden aus der Standardansicht, bleiben für Support aber wiederherstellbar.
                   </p>
                 </div>
@@ -1232,33 +1232,33 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardHeader>
             <CardContent className="space-y-5">
               <div className="grid gap-4 md:grid-cols-3">
-                <div className="rounded-2xl border border-[#ece2d5] bg-[#fcfaf6] px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Archivstatus</p>
-                  <p className="mt-2 text-base font-semibold text-slate-900">
+                <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Archivstatus</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {tenant?.is_archived ? "Archiviert" : "Aktiv sichtbar"}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-[#ece2d5] bg-[#fcfaf6] px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Archiviert am</p>
-                  <p className="mt-2 text-base font-semibold text-slate-900">
+                <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Archiviert am</p>
+                  <p className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {tenant?.archived_at ? formatDateTime(tenant.archived_at) : "Noch nicht archiviert"}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-[#ece2d5] bg-[#fcfaf6] px-4 py-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Archivgrund</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Archivgrund</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {tenant?.archive_reason || "Kein Grund hinterlegt"}
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-[#ece2d5] bg-[#fffaf3] p-5">
-                <p className="text-sm font-semibold text-slate-900">
+              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {tenant?.is_archived
                     ? "Der Tenant liegt aktuell im Archiv."
                     : "Dieser Tenant ist aktuell im normalen Betrieb sichtbar."}
                 </p>
-                <p className="mt-2 text-sm leading-6 text-slate-600">
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                   {tenant?.is_archived
                     ? "Wiederherstellen bringt den Tenant zurück in Listen und erlaubt wieder reguläre Nutzung. Eine harte Löschung ist nur hier als separater, bewusster Schritt möglich."
                     : "Archivieren blendet den Tenant in Owner-Listen standardmäßig aus und blockiert neue Logins, ohne Stammdaten oder Audit-Historie zu verlieren."}
@@ -1272,7 +1272,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       <AlertDialogTrigger asChild>
                         <Button
                           type="button"
-                          className="rounded-full bg-[#0d9488] px-5 hover:bg-[#0b7c72]"
+                          className="rounded-full bg-blue-600 px-5 hover:bg-blue-700"
                           disabled={lifecycleAction !== null}
                         >
                           {lifecycleAction === "restore" ? (
@@ -1283,7 +1283,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                           Wiederherstellen
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Tenant wiederherstellen?</AlertDialogTitle>
                           <AlertDialogDescription className="leading-6">
@@ -1293,7 +1293,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                           <AlertDialogAction
-                            className="rounded-full bg-[#0d9488] text-white hover:bg-[#0b7c72]"
+                            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
                             onClick={() => void runLifecycleAction("restore")}
                           >
                             Wiederherstellen
@@ -1318,7 +1318,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                           Endgültig löschen
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Tenant endgültig löschen?</AlertDialogTitle>
                           <AlertDialogDescription className="leading-6">
@@ -1328,7 +1328,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                           <AlertDialogAction
-                            className="rounded-full bg-[#9f4f2d] text-white hover:bg-[#7c3d1d]"
+                            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
                             onClick={() => void runLifecycleAction("hard-delete")}
                           >
                             Endgültig löschen
@@ -1343,7 +1343,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-full border-[#9f4f2d] text-[#9f4f2d] hover:bg-[#fff3ee] hover:text-[#7c3d1d]"
+                        className="rounded-full border-amber-300 text-blue-600 hover:bg-amber-50 hover:text-amber-800"
                         disabled={lifecycleAction !== null}
                       >
                         {lifecycleAction === "archive" ? (
@@ -1354,7 +1354,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         Tenant archivieren
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+                    <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Tenant archivieren?</AlertDialogTitle>
                         <AlertDialogDescription className="leading-6">
@@ -1364,7 +1364,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       <AlertDialogFooter>
                         <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                         <AlertDialogAction
-                          className="rounded-full bg-[#9f4f2d] text-white hover:bg-[#7c3d1d]"
+                          className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
                           onClick={() => void runLifecycleAction("archive")}
                         >
                           Archivieren
@@ -1379,15 +1379,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-0">
-          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#eef7f5] p-3 text-[#0d9488]">
+                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
                   <MapPin className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Rechnungsadresse</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Rechnungsadresse</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Optionaler Billing-Bereich für Buchhaltung und Vertragsdaten.
                   </p>
                 </div>
@@ -1516,15 +1516,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="contact" className="mt-0">
-          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#f1f7ff] p-3 text-[#2b6cb0]">
+                <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
                   <Phone className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Kontaktdaten</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Kontaktdaten</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Damit Owner und Team die Agentur schnell erreichen können.
                   </p>
                 </div>
@@ -1598,41 +1598,41 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
 
         <TabsContent value="admin" className="mt-0">
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+            <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
               <CardHeader className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="rounded-2xl bg-[#eef4ff] p-3 text-[#3457c2]">
+                  <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
                     <ShieldCheck className="h-5 w-5" />
                   </div>
                   <div>
-                    <CardTitle className="text-xl text-slate-900">Aktueller Haupt-Admin</CardTitle>
-                    <p className="text-sm text-slate-500">
+                    <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Aktueller Haupt-Admin</CardTitle>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Diese Person hat aktuell die administrative Hauptverantwortung.
                     </p>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="rounded-[26px] border border-[#e8eef9] bg-[#f8fbff] p-5">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
                   <div className="flex items-start gap-4">
-                    <div className="rounded-2xl bg-white p-3 text-[#3457c2] shadow-sm">
+                    <div className="rounded-2xl bg-white dark:bg-[#151c28] p-3 text-blue-700 shadow-sm">
                       <UserRound className="h-5 w-5" />
                     </div>
                     <div className="space-y-3">
                       <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                           Name
                         </p>
-                        <p className="mt-1 text-lg font-semibold text-slate-900">
+                        <p className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-100">
                           {tenant?.currentAdmin?.name || "Noch nicht verfügbar"}
                         </p>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Mail className="h-4 w-4 text-slate-400" />
+                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <Mail className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                         <span>{tenant?.currentAdmin?.email || "Keine E-Mail geladen"}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-slate-600">
-                        <Globe className="h-4 w-4 text-slate-400" />
+                      <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                        <Globe className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                         <span>{tenant?.slug ? `${tenant.slug}.boost-hive.de` : tenantHost}</span>
                       </div>
                     </div>
@@ -1641,17 +1641,17 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               </CardContent>
             </Card>
 
-            <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+            <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
               <CardHeader className="space-y-3">
-                <CardTitle className="text-xl text-slate-900">Neuen Admin zuweisen</CardTitle>
-                <p className="text-sm text-slate-500">
+                <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Neuen Admin zuweisen</CardTitle>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Der bisherige Admin bleibt im Tenant und wird dabei auf die Rolle Member umgestellt.
                 </p>
               </CardHeader>
               <CardContent>
                 <Form {...adminForm}>
                   <form onSubmit={adminForm.handleSubmit(submitAdmin)} className="space-y-6">
-                    <Alert className="rounded-[22px] border-[#d8e5ff] bg-[#f5f8ff] text-[#2c4a99]">
+                    <Alert className="rounded-[22px] border-blue-200 bg-blue-50 text-blue-800">
                       <ShieldCheck className="h-4 w-4" />
                       <AlertTitle>Owner-Aktion</AlertTitle>
                       <AlertDescription>
@@ -1693,15 +1693,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="users" className="mt-0">
-          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#eef7f5] p-3 text-[#0d9488]">
+                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
                   <Users2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Alle User dieser Agentur</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Alle User dieser Agentur</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Owner sehen hier alle Accounts inklusive Rolle, Status und Löschoption.
                   </p>
                 </div>
@@ -1709,10 +1709,10 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardHeader>
             <CardContent>
               {tenant?.users?.length ? (
-                <div className="overflow-hidden rounded-[24px] border border-[#efe6d9]">
+                <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a]">
                   <div className="overflow-x-auto">
                     <div className="min-w-[760px]">
-                      <div className="grid grid-cols-[minmax(0,1.4fr)_120px_120px_180px_92px] gap-4 border-b border-[#efe6d9] bg-[#fcfaf6] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
+                      <div className="grid grid-cols-[minmax(0,1.4fr)_120px_120px_180px_92px] gap-4 border-b border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-5 py-3 text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                         <p>User</p>
                         <p>Rolle</p>
                         <p>Status</p>
@@ -1720,28 +1720,28 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         <p className="text-right">Aktion</p>
                       </div>
 
-                      <div className="divide-y divide-[#f2eadf]">
+                      <div className="divide-y divide-slate-100">
                         {tenant.users.map((user) => {
                           const isPending = deletingUserId === user.userId
 
                           return (
                             <div
                               key={user.memberId}
-                              className="grid grid-cols-[minmax(0,1.4fr)_120px_120px_180px_92px] gap-4 px-5 py-4 text-sm text-slate-600"
+                              className="grid grid-cols-[minmax(0,1.4fr)_120px_120px_180px_92px] gap-4 px-5 py-4 text-sm text-slate-600 dark:text-slate-300"
                             >
                               <div className="min-w-0">
-                                <p className="truncate font-semibold text-slate-900">
+                                <p className="truncate font-semibold text-slate-900 dark:text-slate-100">
                                   {user.name || user.email || "Unbekannter User"}
                                 </p>
-                                <p className="truncate text-slate-500">{user.email || user.userId}</p>
+                                <p className="truncate text-slate-500 dark:text-slate-400">{user.email || user.userId}</p>
                               </div>
 
                               <div>
                                 <Badge
                                   className={
                                     user.role === "admin"
-                                      ? "rounded-full bg-[#eef4ff] text-[#3457c2] hover:bg-[#eef4ff]"
-                                      : "rounded-full bg-[#eef7f5] text-[#0d9488] hover:bg-[#eef7f5]"
+                                      ? "rounded-full bg-blue-50 text-blue-700 hover:bg-blue-50"
+                                      : "rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50"
                                   }
                                 >
                                   {memberRoleCopy(user.role)}
@@ -1753,14 +1753,14 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                                   className={
                                     user.status === "active"
                                       ? "rounded-full bg-[#eff8f2] text-[#166534] hover:bg-[#eff8f2]"
-                                      : "rounded-full bg-[#fff4ee] text-[#9f4f2d] hover:bg-[#fff4ee]"
+                                      : "rounded-full bg-amber-50 text-blue-600 hover:bg-amber-50"
                                   }
                                 >
                                   {memberStatusCopy(user.status)}
                                 </Badge>
                               </div>
 
-                              <div className="text-slate-500">
+                              <div className="text-slate-500 dark:text-slate-400">
                                 {formatDateTime(user.joinedAt || user.invitedAt)}
                               </div>
 
@@ -1769,7 +1769,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                                   type="button"
                                   variant="ghost"
                                   size="icon"
-                                  className="h-9 w-9 rounded-full text-[#b85e34] hover:bg-[#fff4ee] hover:text-[#9f4f2d]"
+                                  className="h-9 w-9 rounded-full text-blue-600 hover:bg-amber-50 hover:text-blue-600"
                                   disabled={isPending}
                                   onClick={() => setConfirmDeleteUser(user)}
                                   aria-label={`User ${user.email || user.userId} löschen`}
@@ -1789,9 +1789,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   </div>
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
-                  <p className="text-lg font-semibold text-slate-900">Keine User gefunden</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-12 text-center">
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Keine User gefunden</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                     Für diese Agentur wurden aktuell keine zugeordneten User geladen.
                   </p>
                 </div>
@@ -1801,15 +1801,15 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="audit" className="mt-0">
-          <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+          <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="rounded-2xl bg-[#f5efe6] p-3 text-[#b85e34]">
+                <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
                   <Clock3 className="h-5 w-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl text-slate-900">Owner-Historie</CardTitle>
-                  <p className="text-sm text-slate-500">
+                  <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Owner-Historie</CardTitle>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Die letzten Owner-Aktionen rund um diese Agentur werden hier nachvollziehbar protokolliert.
                   </p>
                 </div>
@@ -1821,7 +1821,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   {tenant.auditLogs.map((log) => (
                     <div
                       key={log.id}
-                      className="rounded-[24px] border border-[#efe6d9] bg-[#fcfaf6] p-5"
+                      className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-5"
                     >
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                         <div className="space-y-3">
@@ -1829,23 +1829,23 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                             <Badge className={auditEventBadgeClass(log.event_type)}>
                               {auditEventLabel(log.event_type)}
                             </Badge>
-                            <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400">
+                            <span className="text-xs font-medium uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                               {formatDateTime(log.created_at)}
                             </span>
                           </div>
-                          <p className="text-sm leading-6 text-slate-700">
+                          <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
                             {formatAuditLogDescription(log)}
                           </p>
                         </div>
 
-                        <div className="rounded-2xl bg-white px-4 py-3 text-xs leading-5 text-slate-500 shadow-sm">
+                        <div className="rounded-2xl bg-white dark:bg-[#151c28] px-4 py-3 text-xs leading-5 text-slate-500 dark:text-slate-400 shadow-sm">
                           <p>
-                            <span className="font-semibold text-slate-700">Actor:</span>{" "}
+                            <span className="font-semibold text-slate-700 dark:text-slate-300">Actor:</span>{" "}
                             {log.actor_user_id ?? "unbekannt"}
                           </p>
                           {log.target_user_id ? (
                             <p>
-                              <span className="font-semibold text-slate-700">Target:</span>{" "}
+                              <span className="font-semibold text-slate-700 dark:text-slate-300">Target:</span>{" "}
                               {log.target_user_id}
                             </p>
                           ) : null}
@@ -1855,9 +1855,9 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                   ))}
                 </div>
               ) : (
-                <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
-                  <p className="text-lg font-semibold text-slate-900">Noch keine Historie vorhanden</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-12 text-center">
+                  <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Noch keine Historie vorhanden</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                     Sobald Owner-Aktionen auf dieser Agentur ausgeführt werden, erscheinen sie hier chronologisch.
                   </p>
                 </div>
@@ -1880,7 +1880,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
           <AlertDialogHeader>
             <AlertDialogTitle>User wirklich löschen?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
@@ -1892,7 +1892,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+              className="rounded-full bg-blue-600 hover:bg-blue-700"
               onClick={async () => {
                 if (!confirmDeleteUser) return
                 await deleteUser(confirmDeleteUser)
@@ -2010,15 +2010,15 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-48 rounded-[28px]" />
-        <Skeleton className="h-32 rounded-[28px]" />
+        <Skeleton className="h-48 rounded-[2rem]" />
+        <Skeleton className="h-32 rounded-[2rem]" />
       </div>
     )
   }
 
   if (error && !data) {
     return (
-      <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+      <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Fehler</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
@@ -2028,10 +2028,10 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
 
   if (!data) {
     return (
-      <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
+      <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-12 text-center">
         <CreditCard className="mx-auto h-8 w-8 text-slate-300" />
-        <p className="mt-3 text-sm font-semibold text-slate-700">Keine Billing-Daten</p>
-        <p className="mt-1 text-sm text-slate-500">
+        <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Keine Billing-Daten</p>
+        <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
           Fuer diesen Tenant liegen noch keine Abo-Informationen vor.
         </p>
       </div>
@@ -2043,11 +2043,11 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
       case "active":
         return "Aktiv"
       case "past_due":
-        return "Ueberfaellig"
+        return "Überfällig"
       case "canceling":
-        return "In Kuendigung"
+        return "In Kündigung"
       case "canceled":
-        return "Gekuendigt"
+        return "Gekündigt"
       default:
         return "Kein Abo"
     }
@@ -2056,11 +2056,11 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
   function subStatusBadgeClasses(status: string) {
     switch (status) {
       case "active":
-        return "bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]"
+        return "bg-blue-50 text-blue-600 hover:bg-blue-50"
       case "past_due":
-        return "bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]"
+        return "bg-red-50 text-[#dc2626] hover:bg-red-50"
       case "canceling":
-        return "bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]"
+        return "bg-blue-50 text-blue-600 hover:bg-blue-50"
       case "canceled":
         return "bg-[#f1f5f9] text-[#64748b] hover:bg-[#f1f5f9]"
       default:
@@ -2084,11 +2084,11 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
   function accessBadgeClasses(state: string) {
     switch (state) {
       case "accessible":
-        return "bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]"
+        return "bg-blue-50 text-blue-600 hover:bg-blue-50"
       case "manual_locked":
-        return "bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]"
+        return "bg-red-50 text-[#dc2626] hover:bg-red-50"
       case "billing_blocked":
-        return "bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]"
+        return "bg-blue-50 text-blue-600 hover:bg-blue-50"
       default:
         return "bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#f1f5f9]"
     }
@@ -2099,30 +2099,30 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
   return (
     <div className="space-y-6">
       {error && (
-        <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Subscription Status */}
-        <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+        <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardHeader className="space-y-3">
-            <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
-              <CreditCard className="h-5 w-5 text-[#0d9488]" />
+            <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
+              <CreditCard className="h-5 w-5 text-blue-600" />
               Abo-Status
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Status</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">Status</span>
               <Badge className={`rounded-full ${subStatusBadgeClasses(data.subscriptionStatus)}`}>
                 {subStatusLabel(data.subscriptionStatus)}
               </Badge>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Naechste Abrechnung</span>
-              <span className="text-sm font-semibold text-slate-900">
+              <span className="text-sm text-slate-600 dark:text-slate-300">Naechste Abrechnung</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {data.subscriptionPeriodEnd
                   ? new Intl.DateTimeFormat("de-DE", { dateStyle: "long" }).format(
                       new Date(data.subscriptionPeriodEnd)
@@ -2131,8 +2131,8 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Gesamtbetrag / Periode</span>
-              <span className="text-sm font-semibold text-slate-900">
+              <span className="text-sm text-slate-600 dark:text-slate-300">Gesamtbetrag / Periode</span>
+              <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {data.totalAmount > 0
                   ? new Intl.NumberFormat("de-DE", {
                       style: "currency",
@@ -2143,7 +2143,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
             </div>
 
             {data.subscriptionStatus === "past_due" && (
-              <div className="rounded-2xl bg-[#fef2f2] px-4 py-3 text-sm text-[#dc2626]">
+              <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-[#dc2626]">
                 <AlertTriangle className="mb-1 inline h-4 w-4" /> Die letzte Zahlung dieses
                 Tenants ist fehlgeschlagen.
               </div>
@@ -2152,23 +2152,23 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
         </Card>
 
         {/* Access Override */}
-        <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+        <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardHeader className="space-y-3">
-            <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
-              <ShieldCheck className="h-5 w-5 text-[#b85e34]" />
+            <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
+              <ShieldCheck className="h-5 w-5 text-blue-600" />
               Zugang
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">Zugangs-Status</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">Zugangs-Status</span>
               <Badge className={`rounded-full ${accessBadgeClasses(data.accessState)}`}>
                 {accessLabel(data.accessState)}
               </Badge>
             </div>
 
             {data.ownerLockedAt && (
-              <div className="rounded-2xl bg-[#fef2f2] px-4 py-3 text-sm text-[#dc2626]">
+              <div className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-[#dc2626]">
                 <Lock className="mb-1 inline h-4 w-4" /> Manuell gesperrt am{" "}
                 {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(
                   new Date(data.ownerLockedAt)
@@ -2187,7 +2187,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
                 {isLocked ? (
                   <Button
                     variant="outline"
-                    className="w-full rounded-full border-[#0d9488] text-[#0d9488] hover:bg-[#edf8f6] hover:text-[#0b7c72]"
+                    className="w-full rounded-full border-blue-600 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
                     disabled={lockLoading}
                   >
                     {lockLoading ? (
@@ -2212,15 +2212,15 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
                   </Button>
                 )}
               </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+              <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
                 <AlertDialogHeader>
                   <AlertDialogTitle>
                     {isLocked ? "Tenant freischalten?" : "Tenant sperren?"}
                   </AlertDialogTitle>
                   <AlertDialogDescription className="leading-6">
                     {isLocked
-                      ? "Der Tenant erhaelt wieder Zugang zur Plattform, sofern der Billing-Status dies zulässt."
-                      : "Der Tenant verliert sofort den Zugang zur Plattform, unabhaengig vom Abo-Status. Das Abo bei Stripe bleibt davon unberuehrt."}
+                      ? "Der Tenant erhält wieder Zugang zur Plattform, sofern der Billing-Status dies zulässt."
+                      : "Der Tenant verliert sofort den Zugang zur Plattform, unabhängig vom Abo-Status. Das Abo bei Stripe bleibt davon unberührt."}
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -2229,8 +2229,8 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
                     className={cn(
                       "rounded-full",
                       isLocked
-                        ? "bg-[#0d9488] text-white hover:bg-[#0b7c72]"
-                        : "bg-[#9f4f2d] text-white hover:bg-[#7c3d1d]"
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "bg-blue-600 text-white hover:bg-blue-700"
                     )}
                     onClick={() => void (isLocked ? handleUnlock() : handleLock())}
                   >
@@ -2244,19 +2244,19 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
       </div>
 
       {/* Module Breakdown */}
-      <Card className="rounded-[30px] border-[#e7ddd1] bg-white shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
+      <Card className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardHeader className="space-y-3">
-          <CardTitle className="flex items-center gap-3 text-lg text-slate-950">
-            <Package className="h-5 w-5 text-[#b85e34]" />
+          <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
+            <Package className="h-5 w-5 text-blue-600" />
             Gebuchte Module
           </CardTitle>
         </CardHeader>
         <CardContent>
           {data.modules.length === 0 ? (
-            <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-10 text-center">
+            <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-10 text-center">
               <Package className="mx-auto h-8 w-8 text-slate-300" />
-              <p className="mt-3 text-sm font-semibold text-slate-700">Keine Module gebucht</p>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Keine Module gebucht</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Dieser Tenant hat noch keine zusaetzlichen Module abonniert.
               </p>
             </div>
@@ -2265,11 +2265,11 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
               {data.modules.map((mod) => (
                 <div
                   key={mod.id}
-                  className="flex items-center justify-between rounded-2xl border border-[#e6ddd0] bg-[#fffdf9] px-4 py-3"
+                  className="flex items-center justify-between rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3"
                 >
                   <div>
-                    <p className="text-sm font-semibold text-slate-900">{mod.name}</p>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mod.name}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       {mod.status === "active"
                         ? "Aktiv"
                         : mod.status === "canceling"
@@ -2278,13 +2278,13 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-sm font-semibold text-slate-900">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {new Intl.NumberFormat("de-DE", {
                         style: "currency",
                         currency: mod.currency.toUpperCase(),
                       }).format(mod.price / 100)}
                     </p>
-                    <p className="text-xs text-slate-500">/ 4 Wochen</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">/ 4 Wochen</p>
                   </div>
                 </div>
               ))}

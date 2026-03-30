@@ -273,7 +273,7 @@ function getDeltaTone(delta: number | null | undefined) {
   if (delta == null || delta === 0) {
     return {
       label: 'Kein Vergleich',
-      className: 'bg-slate-100 text-slate-500 hover:bg-slate-100',
+      className: 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]',
       icon: Minus,
     }
   }
@@ -451,7 +451,7 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-[24px] border border-[#e6ddd0]">
+            <Card key={i} className="rounded-2xl border border-slate-100 dark:border-[#252d3a]">
               <CardHeader>
                 <Skeleton className="h-5 w-32" />
               </CardHeader>
@@ -488,18 +488,18 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#0d9488]">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">
             SEO-Analyse
           </p>
-          <h1 className="text-2xl font-semibold text-slate-950">Keywordranking</h1>
-          <p className="mt-1 text-sm text-slate-500">
+          <h1 className="text-2xl font-semibold text-slate-950 dark:text-slate-50">Keywordranking</h1>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             Verwalte Keyword-Projekte als Unterbereich deiner SEO-Analyse.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Badge
             variant="outline"
-            className="rounded-full border-[#e6ddd0] bg-[#fffaf3] px-3 py-1 text-xs text-slate-600"
+            className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-1 text-xs text-slate-600 dark:text-slate-300"
           >
             {projects.length}/{PROJECT_LIMIT} Projekte
           </Badge>
@@ -523,22 +523,22 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
           <AlertCircle className="h-4 w-4 text-amber-600" />
           <AlertTitle className="text-amber-800">Projektlimit erreicht</AlertTitle>
           <AlertDescription className="text-amber-700">
-            Du hast das Maximum von {PROJECT_LIMIT} Projekten erreicht. Loesche ein bestehendes Projekt oder kontaktiere den Support fuer ein Upgrade.
+            Du hast das Maximum von {PROJECT_LIMIT} Projekten erreicht. Lösche ein bestehendes Projekt oder kontaktiere den Support für ein Upgrade.
           </AlertDescription>
         </Alert>
       )}
 
       {/* Empty state */}
       {projects.length === 0 ? (
-        <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#edf8f6]">
-              <Search className="h-7 w-7 text-[#0d9488]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
+              <Search className="h-7 w-7 text-blue-600" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-slate-950">Noch keine Projekte</h2>
-              <p className="max-w-md text-sm leading-7 text-slate-600">
-                Erstelle dein erstes Keyword-Projekt, um Rankings fuer eine Domain zu tracken und mit Wettbewerbern zu vergleichen.
+              <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">Noch keine Projekte</h2>
+              <p className="max-w-md text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Erstelle dein erstes Keyword-Projekt, um Rankings für eine Domain zu tracken und mit Wettbewerbern zu vergleichen.
               </p>
             </div>
             {isAdmin && (
@@ -561,17 +561,17 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
               type="button"
               onClick={() => onOpenProject(project.id)}
               className="text-left"
-              aria-label={`Projekt ${project.name} oeffnen`}
+              aria-label={`Projekt ${project.name} öffnen`}
             >
               <Card
                 className={cn(
-                  'rounded-[24px] border border-[#e6ddd0] bg-white transition-all hover:border-[#0d9488]/30 hover:shadow-md',
+                  'rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] transition-all hover:border-blue-600/30 hover:shadow-md',
                   project.status === 'inactive' && 'opacity-60'
                 )}
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-semibold text-slate-900 leading-tight">
+                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">
                       {project.name}
                     </CardTitle>
                     <Badge
@@ -579,7 +579,7 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
                         'shrink-0 rounded-full text-xs',
                         project.status === 'active'
                           ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-                          : 'bg-slate-100 text-slate-500 hover:bg-slate-100'
+                          : 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                       )}
                     >
                       {project.status === 'active' ? 'Aktiv' : 'Inaktiv'}
@@ -587,11 +587,11 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <Globe className="h-3.5 w-3.5 text-slate-400" />
+                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                    <Globe className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                     <span className="truncate">{project.target_domain}</span>
                   </div>
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                     <span>
                       {LANGUAGES.find((l) => l.code === project.language_code)?.label ?? project.language_code}
                     </span>
@@ -599,13 +599,13 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
                       {COUNTRIES.find((c) => c.code === project.country_code)?.label ?? project.country_code}
                     </span>
                   </div>
-                  <Separator className="bg-[#ebe2d5]" />
-                  <div className="flex items-center gap-4 text-xs text-slate-500">
+                  <Separator className="bg-slate-100 dark:bg-[#1e2635]" />
+                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                     <span>{project.keyword_count} Keywords</span>
                     <span>{project.competitor_count} Wettbewerber</span>
                   </div>
                   {project.last_tracking_run && (
-                    <p className="text-xs text-slate-400">
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
                       Letzter Lauf: {formatDate(project.last_tracking_run)}
                     </p>
                   )}
@@ -668,7 +668,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
     const normalized = normalizeDomain(domain)
     if (!isValidDomain(normalized)) {
-      setFieldError('Bitte eine gueltige Domain eingeben (z. B. example.de).')
+      setFieldError('Bitte eine gültige Domain eingeben (z. B. example.de).')
       return
     }
 
@@ -703,11 +703,11 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
         onOpenChange(v)
       }}
     >
-      <DialogContent className="rounded-[24px] sm:max-w-md">
+      <DialogContent className="rounded-2xl sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Neues Keyword-Projekt</DialogTitle>
           <DialogDescription>
-            Erstelle ein Projekt, um Keywords und Wettbewerber fuer eine Domain zu tracken.
+            Erstelle ein Projekt, um Keywords und Wettbewerber für eine Domain zu tracken.
           </DialogDescription>
         </DialogHeader>
 
@@ -733,7 +733,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
               onChange={(e) => setDomain(e.target.value)}
               disabled={saving}
             />
-            <p className="text-xs text-slate-500">Ohne https:// oder www.</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">Ohne https:// oder www.</p>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -857,7 +857,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           <Skeleton className="h-6 w-48" />
         </div>
         <Skeleton className="h-10 w-64" />
-        <Skeleton className="h-64 w-full rounded-[24px]" />
+        <Skeleton className="h-64 w-full rounded-2xl" />
       </div>
     )
   }
@@ -892,8 +892,8 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-xl font-semibold text-slate-950">{project.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+            <h1 className="text-xl font-semibold text-slate-950 dark:text-slate-50">{project.name}</h1>
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <Globe className="h-3.5 w-3.5" />
               <span>{project.target_domain}</span>
               <span className="text-slate-300">|</span>
@@ -912,7 +912,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
             'w-fit rounded-full text-xs',
             project.status === 'active'
               ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-              : 'bg-slate-100 text-slate-500 hover:bg-slate-100'
+              : 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
           )}
         >
           {project.status === 'active' ? 'Aktiv' : 'Inaktiv'}
@@ -921,7 +921,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-[#f7f3ed] p-1">
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
           <TabsTrigger value="rankings" className="rounded-full data-[state=active]:bg-white">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
             Rankings
@@ -1097,7 +1097,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
       if (err instanceof ApiError && err.status === 404) {
         toast({
           title: 'Backend noch nicht bereit',
-          description: 'Der Refresh-Endpunkt fuer PROJ-27 ist noch nicht implementiert.',
+          description: 'Der Refresh-Endpunkt für PROJ-27 ist noch nicht implementiert.',
           variant: 'destructive',
         })
         return
@@ -1129,7 +1129,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
 
   if (loading) {
     return (
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardContent className="space-y-4 p-6">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-16 w-full rounded-2xl" />
@@ -1156,17 +1156,17 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
 
   if (!gscReady) {
     return (
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#f7f3ed]">
-            <Link2 className="h-7 w-7 text-[#a35a34]" />
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28]">
+            <Link2 className="h-7 w-7 text-slate-400 dark:text-slate-500" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-slate-950">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
               Search Console noch nicht eingerichtet
             </h2>
-            <p className="max-w-xl text-sm leading-7 text-slate-600">
-              Bevor Rankings geladen werden koennen, braucht dieses Projekt eine verbundene Google-Search-Console-Property.
+            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              Bevor Rankings geladen werden können, braucht dieses Projekt eine verbundene Google-Search-Console-Property.
             </p>
           </div>
           <Button
@@ -1182,12 +1182,12 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
 
   if (backendUnavailable) {
     return (
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-3">
             <div>
               <CardTitle className="text-base font-semibold">Rankings</CardTitle>
-              <p className="mt-1 text-sm text-slate-500">
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                 Die UI ist vorbereitet, die neuen PROJ-27-Read-Endpunkte fehlen noch.
               </p>
             </div>
@@ -1228,7 +1228,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
   return (
     <>
       <div className="space-y-4">
-        <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2">
@@ -1236,7 +1236,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                   <CardTitle className="text-base font-semibold">Rankings</CardTitle>
                   <RankingsStatusBadge status={status} />
                 </div>
-                <div className="flex flex-wrap gap-3 text-sm text-slate-500">
+                <div className="flex flex-wrap gap-3 text-sm text-slate-500 dark:text-slate-400">
                   <span className="inline-flex items-center gap-1.5">
                     <Clock3 className="h-3.5 w-3.5" />
                     Zuletzt aktualisiert: {effectiveLastTrackedAt ? formatRelativeTime(effectiveLastTrackedAt) : 'Ausstehend'}
@@ -1307,20 +1307,20 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
             )}
 
             {rows.length === 0 ? (
-              <div className="rounded-[24px] border border-dashed border-[#e6ddd0] bg-[#fffaf3] px-6 py-12 text-center">
-                <BarChart3 className="mx-auto h-10 w-10 text-[#0d9488]" />
-                <h3 className="mt-4 text-lg font-semibold text-slate-950">
+              <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6 py-12 text-center">
+                <BarChart3 className="mx-auto h-10 w-10 text-blue-600" />
+                <h3 className="mt-4 text-lg font-semibold text-slate-950 dark:text-slate-50">
                   Erstes Tracking ausstehend
                 </h3>
-                <p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-slate-600">
+                <p className="mx-auto mt-2 max-w-lg text-sm leading-7 text-slate-600 dark:text-slate-300">
                   Sobald der erste Snapshot gespeichert wurde, erscheinen hier Positionen, Deltas und der Detailverlauf je Keyword.
                 </p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-[24px] border border-[#ece3d6]">
+              <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a]">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-[#fffaf3]">
+                    <TableRow className="bg-white dark:bg-[#151c28]">
                       <TableHead>Keyword</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Delta</TableHead>
@@ -1332,17 +1332,17 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                   <TableBody>
                     {rows.map((row) => (
                       <TableRow key={row.keywordId}>
-                        <TableCell className="font-medium text-slate-900">{row.keyword}</TableCell>
-                        <TableCell className="font-medium text-slate-900">
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-100">{row.keyword}</TableCell>
+                        <TableCell className="font-medium text-slate-900 dark:text-slate-100">
                           {formatPosition(row.currentPosition)}
                         </TableCell>
                         <TableCell>
                           <PositionDeltaBadge delta={row.delta} />
                         </TableCell>
-                        <TableCell className="hidden md:table-cell text-slate-500">
+                        <TableCell className="hidden md:table-cell text-slate-500 dark:text-slate-400">
                           {row.lastTrackedAt ? formatRelativeTime(row.lastTrackedAt) : 'Ausstehend'}
                         </TableCell>
-                        <TableCell className="hidden max-w-[260px] truncate lg:table-cell text-slate-500">
+                        <TableCell className="hidden max-w-[260px] truncate lg:table-cell text-slate-500 dark:text-slate-400">
                           {row.bestUrl ?? 'Keine URL'}
                         </TableCell>
                         <TableCell className="text-right">
@@ -1376,10 +1376,10 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
           }
         }}
       >
-        <SheetContent side="right" className="w-full overflow-y-auto border-l-[#e6ddd0] p-0 sm:max-w-2xl">
+        <SheetContent side="right" className="w-full overflow-y-auto border-l-slate-100 p-0 sm:max-w-2xl">
           {selectedRow && (
             <div className="flex h-full flex-col">
-              <SheetHeader className="border-b border-[#ece3d6] px-6 py-5">
+              <SheetHeader className="border-b border-slate-100 dark:border-[#252d3a] px-6 py-5">
                 <SheetTitle>{selectedRow.keyword}</SheetTitle>
                 <SheetDescription>
                   Verlauf fuer {historyRange} Tage mit aktueller Position {formatPosition(selectedRow.currentPosition)}.
@@ -1389,17 +1389,17 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
               <div className="space-y-5 p-6">
                 <div className="flex flex-wrap items-center gap-3">
                   <PositionDeltaBadge delta={selectedRow.delta} />
-                  <Badge variant="outline" className="rounded-full border-[#e6ddd0] bg-[#fffaf3] text-slate-600">
+                  <Badge variant="outline" className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300">
                     Letzte Messung: {selectedRow.lastTrackedAt ? formatDate(selectedRow.lastTrackedAt) : 'Ausstehend'}
                   </Badge>
-                  <div className="ml-auto flex rounded-full bg-[#f7f3ed] p-1">
+                  <div className="ml-auto flex rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className={cn(
                         'rounded-full px-4',
-                        historyRange === '30' && 'bg-white shadow-sm'
+                        historyRange === '30' && 'bg-white dark:bg-[#151c28] shadow-sm'
                       )}
                       onClick={() => setHistoryRange('30')}
                     >
@@ -1411,7 +1411,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                       size="sm"
                       className={cn(
                         'rounded-full px-4',
-                        historyRange === '90' && 'bg-white shadow-sm'
+                        historyRange === '90' && 'bg-white dark:bg-[#151c28] shadow-sm'
                       )}
                       onClick={() => setHistoryRange('90')}
                     >
@@ -1422,7 +1422,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
 
                 {historyLoading ? (
                   <div className="space-y-3">
-                    <Skeleton className="h-[260px] w-full rounded-[24px]" />
+                    <Skeleton className="h-[260px] w-full rounded-2xl" />
                     <Skeleton className="h-16 w-full rounded-2xl" />
                   </div>
                 ) : historyError ? (
@@ -1436,13 +1436,13 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                     <AlertCircle className="h-4 w-4 text-amber-600" />
                     <AlertTitle className="text-amber-800">Verlauf folgt mit Backend</AlertTitle>
                     <AlertDescription className="text-amber-700">
-                      Der History-Endpunkt fuer PROJ-27 ist noch nicht vorhanden. Das Sheet ist bereits vorbereitet und verwendet die Live-Daten, sobald der Read-Endpoint geliefert wird.
+                      Der History-Endpunkt für PROJ-27 ist noch nicht vorhanden. Das Sheet ist bereits vorbereitet und verwendet die Live-Daten, sobald der Read-Endpoint geliefert wird.
                     </AlertDescription>
                   </Alert>
                 ) : historySeries.length === 0 ? (
-                  <div className="rounded-[24px] border border-dashed border-[#e6ddd0] bg-[#fffaf3] px-6 py-12 text-center">
+                  <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6 py-12 text-center">
                     <Search className="mx-auto h-8 w-8 text-slate-300" />
-                    <p className="mt-3 text-sm text-slate-600">
+                    <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
                       Fuer dieses Keyword liegen in dem Zeitraum noch keine Verlaufspunkte vor.
                     </p>
                   </div>
@@ -1480,7 +1480,7 @@ function RankingsStatusBadge({ status }: { status: RankingRunStatus }) {
       )
     case 'queued':
       return (
-        <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
+        <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
           Geplant
         </Badge>
       )
@@ -1499,7 +1499,7 @@ function RankingsStatusBadge({ status }: { status: RankingRunStatus }) {
     case 'idle':
     default:
       return (
-        <Badge className="rounded-full bg-slate-100 text-slate-500 hover:bg-slate-100">
+        <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
           Ausstehend
         </Badge>
       )
@@ -1528,10 +1528,10 @@ function MetricCard({
   hint: string
 }) {
   return (
-    <div className="rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#0d9488]">{label}</p>
-      <p className="mt-2 text-2xl font-semibold text-slate-950">{value}</p>
-      <p className="mt-1 text-sm text-slate-500">{hint}</p>
+    <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">{label}</p>
+      <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{value}</p>
+      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{hint}</p>
     </div>
   )
 }
@@ -1584,13 +1584,13 @@ function RankingTrendChart({
   }
 
   return (
-    <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">{title}</CardTitle>
-        <p className="text-sm text-slate-500">{description}</p>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="overflow-hidden rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+        <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
           <svg
             viewBox={`0 0 ${width} ${height}`}
             className="h-[260px] w-full"
@@ -1606,7 +1606,7 @@ function RankingTrendChart({
                     x2={width - padding}
                     y1={y}
                     y2={y}
-                    stroke="#e6ddd0"
+                    stroke="#e2e8f0"
                     strokeDasharray="4 4"
                   />
                   <text x={8} y={y + 4} fontSize="11" fill="#64748b">
@@ -1617,7 +1617,7 @@ function RankingTrendChart({
             })}
 
             {series.map((item, index) => {
-              const color = item.color ?? ['#0d9488', '#f97316', '#2563eb', '#dc2626'][index % 4]
+              const color = item.color ?? ['#2563eb', '#f97316', '#2563eb', '#dc2626'][index % 4]
               return (
                 <g key={`${item.label}-${index}`}>
                   <path
@@ -1648,11 +1648,11 @@ function RankingTrendChart({
 
         <div className="flex flex-wrap gap-2">
           {series.map((item, index) => {
-            const color = item.color ?? ['#0d9488', '#f97316', '#2563eb', '#dc2626'][index % 4]
+            const color = item.color ?? ['#2563eb', '#f97316', '#2563eb', '#dc2626'][index % 4]
             return (
               <div
                 key={`${item.label}-${index}-legend`}
-                className="inline-flex items-center gap-2 rounded-full border border-[#e6ddd0] bg-white px-3 py-1.5 text-xs text-slate-600"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300"
               >
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
                 {item.label}
@@ -1662,7 +1662,7 @@ function RankingTrendChart({
         </div>
 
         {maxLength > 0 && (
-          <div className="flex items-center justify-between text-xs text-slate-500">
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>{series[0]?.points[0]?.trackedAt ? formatDate(series[0].points[0].trackedAt) : ''}</span>
             <span>
               {series[0]?.points[maxLength - 1]?.trackedAt
@@ -1810,7 +1810,7 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
 
   if (loading) {
     return (
-      <Card className="rounded-[24px] border border-[#e6ddd0]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a]">
         <CardContent className="space-y-3 p-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-10 w-full" />
@@ -1836,13 +1836,13 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
   }
 
   return (
-    <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Keywords</CardTitle>
           <Badge
             variant="outline"
-            className="rounded-full border-[#e6ddd0] bg-[#fffaf3] text-xs text-slate-600"
+            className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-xs text-slate-600 dark:text-slate-300"
           >
             {keywords.length}/{KEYWORD_LIMIT}
           </Badge>
@@ -1872,18 +1872,18 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
           </Button>
         </form>
 
-        <div className="rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+        <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-                <Sparkles className="h-4 w-4 text-[#0f766e]" />
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                <Sparkles className="h-4 w-4 text-blue-600" />
                 Keyword-Vorschläge
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Generiere passende Suchbegriffe direkt aus dem Inhalt von {targetDomain}.
               </p>
               {suggestionUrl && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   Quelle: {suggestionUrl} {suggestionSource === 'anthropic' ? '· KI-gestützt' : '· heuristisch'}
                 </p>
               )}
@@ -1909,11 +1909,11 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
               {suggestions.map((item) => (
                 <div
                   key={item.keyword}
-                  className="flex flex-col gap-3 rounded-2xl border border-[#e6ddd0] bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900">{item.keyword}</p>
-                    <p className="text-sm text-slate-500">{item.reason}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{item.keyword}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{item.reason}</p>
                   </div>
                   <Button
                     type="button"
@@ -1937,14 +1937,14 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
 
         {atLimit && (
           <p className="text-xs text-amber-600">
-            Keyword-Limit erreicht ({KEYWORD_LIMIT}). Loesche bestehende Keywords, um neue hinzuzufuegen.
+            Keyword-Limit erreicht ({KEYWORD_LIMIT}). Lösche bestehende Keywords, um neue hinzuzufügen.
           </p>
         )}
 
         {keywords.length === 0 ? (
           <div className="py-8 text-center">
             <Search className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-2 text-sm text-slate-500">Noch keine Keywords hinzugefügt.</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Noch keine Keywords hinzugefügt.</p>
           </div>
         ) : (
           <Table>
@@ -1959,7 +1959,7 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
               {keywords.map((kw) => (
                 <TableRow key={kw.id}>
                   <TableCell className="font-medium">{kw.keyword}</TableCell>
-                  <TableCell className="hidden text-slate-500 sm:table-cell">
+                  <TableCell className="hidden text-slate-500 dark:text-slate-400 sm:table-cell">
                     {formatDate(kw.created_at)}
                   </TableCell>
                   <TableCell>
@@ -1968,8 +1968,8 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
                       size="icon"
                       onClick={() => handleDelete(kw)}
                       disabled={deletingId === kw.id}
-                      className="h-8 w-8 text-slate-400 hover:text-red-600"
-                      aria-label={`Keyword "${kw.keyword}" loeschen`}
+                      className="h-8 w-8 text-slate-400 dark:text-slate-500 hover:text-red-600"
+                      aria-label={`Keyword "${kw.keyword}" löschen`}
                     >
                       {deletingId === kw.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -2139,7 +2139,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
 
   if (loading) {
     return (
-      <Card className="rounded-[24px] border border-[#e6ddd0]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a]">
         <CardContent className="space-y-3 p-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-10 w-full" />
@@ -2165,13 +2165,13 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
   }
 
   return (
-    <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Wettbewerber</CardTitle>
           <Badge
             variant="outline"
-            className="rounded-full border-[#e6ddd0] bg-[#fffaf3] text-xs text-slate-600"
+            className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-xs text-slate-600 dark:text-slate-300"
           >
             {competitors.length}/{COMPETITOR_LIMIT}
           </Badge>
@@ -2201,18 +2201,18 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
           </Button>
         </form>
 
-        <div className="rounded-[20px] border border-[#ece3d6] bg-[#fffaf3] p-4">
+        <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
-              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900">
-                <Sparkles className="h-4 w-4 text-[#0f766e]" />
+              <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
+                <Sparkles className="h-4 w-4 text-blue-600" />
                 Wettbewerber-Vorschläge
               </div>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Leite potenzielle Wettbewerber aus Angebot und Positionierung von {targetDomain} ab.
               </p>
               {suggestionUrl && (
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   Quelle: {suggestionUrl} {suggestionSource === 'anthropic' ? '· KI-gestützt' : '· heuristisch'}
                 </p>
               )}
@@ -2238,11 +2238,11 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
               {suggestions.map((item) => (
                 <div
                   key={item.domain}
-                  className="flex flex-col gap-3 rounded-2xl border border-[#e6ddd0] bg-white p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
-                    <p className="font-medium text-slate-900">{item.domain}</p>
-                    <p className="text-sm text-slate-500">{item.reason}</p>
+                    <p className="font-medium text-slate-900 dark:text-slate-100">{item.domain}</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">{item.reason}</p>
                   </div>
                   <Button
                     type="button"
@@ -2266,14 +2266,14 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
 
         {atLimit && (
           <p className="text-xs text-amber-600">
-            Wettbewerber-Limit erreicht ({COMPETITOR_LIMIT}). Loesche bestehende Eintraege, um neue hinzuzufuegen.
+            Wettbewerber-Limit erreicht ({COMPETITOR_LIMIT}). Lösche bestehende Einträge, um neue hinzuzufügen.
           </p>
         )}
 
         {competitors.length === 0 ? (
           <div className="py-8 text-center">
             <Globe className="mx-auto h-8 w-8 text-slate-300" />
-            <p className="mt-2 text-sm text-slate-500">Noch keine Wettbewerber hinzugefügt.</p>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Noch keine Wettbewerber hinzugefügt.</p>
           </div>
         ) : (
           <Table>
@@ -2288,7 +2288,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
               {competitors.map((comp) => (
                 <TableRow key={comp.id}>
                   <TableCell className="font-medium">{comp.domain}</TableCell>
-                  <TableCell className="hidden text-slate-500 sm:table-cell">
+                  <TableCell className="hidden text-slate-500 dark:text-slate-400 sm:table-cell">
                     {formatDate(comp.created_at)}
                   </TableCell>
                   <TableCell>
@@ -2297,8 +2297,8 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
                       size="icon"
                       onClick={() => handleDelete(comp)}
                       disabled={deletingId === comp.id}
-                      className="h-8 w-8 text-slate-400 hover:text-red-600"
-                      aria-label={`Wettbewerber "${comp.domain}" loeschen`}
+                      className="h-8 w-8 text-slate-400 dark:text-slate-500 hover:text-red-600"
+                      aria-label={`Wettbewerber "${comp.domain}" löschen`}
                     >
                       {deletingId === comp.id ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -2457,7 +2457,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
   return (
     <div className="space-y-6">
       {/* Rename */}
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Projektname</CardTitle>
         </CardHeader>
@@ -2483,7 +2483,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
       </Card>
 
       {/* Language / Country */}
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Sprache, Region & Intervall</CardTitle>
         </CardHeader>
@@ -2536,7 +2536,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
                   </SelectContent>
                 </Select>
                 {!isAdmin && (
-                  <p className="text-xs text-slate-500">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     Das Tracking-Intervall kann nur von Admins geaendert werden.
                   </p>
                 )}
@@ -2562,15 +2562,15 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
 
       {/* Status toggle */}
       {isAdmin && (
-        <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">Projektstatus</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
                 {project.status === 'active'
-                  ? 'Das Projekt ist aktiv und wird beim naechsten Tracking-Lauf beruecksichtigt.'
+                  ? 'Das Projekt ist aktiv und wird beim nächsten Tracking-Lauf berücksichtigt.'
                   : 'Das Projekt ist deaktiviert und wird nicht getrackt.'}
               </p>
             </div>
@@ -2589,14 +2589,14 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
 
       {/* Delete */}
       {isAdmin && (
-        <Card className="rounded-[24px] border border-red-200 bg-white">
+        <Card className="rounded-2xl border border-red-200 bg-white dark:bg-[#151c28]">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold text-red-700">Gefahrenzone</CardTitle>
           </CardHeader>
           <CardContent className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-slate-600">
-                Projekt unwiderruflich loeschen. Alle Keywords, Wettbewerber und historische Ranking-Daten gehen verloren.
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Projekt unwiderruflich löschen. Alle Keywords, Wettbewerber und historische Ranking-Daten gehen verloren.
               </p>
             </div>
             <Button
@@ -2605,7 +2605,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
               className="shrink-0 rounded-full"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Loeschen
+              Löschen
             </Button>
           </CardContent>
         </Card>
@@ -2613,9 +2613,9 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
 
       {/* Delete confirmation dialog */}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <DialogContent className="rounded-[24px] sm:max-w-md">
+        <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Projekt loeschen?</DialogTitle>
+            <DialogTitle>Projekt löschen?</DialogTitle>
             <DialogDescription>
               Das Projekt <strong>&quot;{project.name}&quot;</strong> wird unwiderruflich geloescht. Alle zugehoerigen Keywords, Wettbewerber und historische Ranking-Daten werden ebenfalls entfernt. Diese Aktion kann nicht rueckgaengig gemacht werden.
             </DialogDescription>
@@ -2636,7 +2636,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
               className="rounded-full"
             >
               {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Endgueltig loeschen
+              Endgültig löschen
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -2677,7 +2677,7 @@ function GscStatusBadge({ status }: { status: GscStatus }) {
     case 'not_connected':
     default:
       return (
-        <Badge className="rounded-full bg-slate-100 text-slate-500 hover:bg-slate-100">
+        <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
           Nicht verbunden
         </Badge>
       )
@@ -2839,7 +2839,7 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
   // Loading skeleton
   if (loading) {
     return (
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardHeader>
           <Skeleton className="h-5 w-48" />
         </CardHeader>
@@ -2874,11 +2874,11 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
   return (
     <div className="space-y-6">
       {/* GSC Integration Card */}
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f7f3ed]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-[#151c28]">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -2888,27 +2888,27 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
               </div>
               <div>
                 <CardTitle className="text-base font-semibold">Google Search Console</CardTitle>
-                <p className="text-sm text-slate-500">Ranking-Daten automatisch abrufen</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">Ranking-Daten automatisch abrufen</p>
               </div>
             </div>
             <GscStatusBadge status={gscStatus} />
           </div>
         </CardHeader>
 
-        <Separator className="bg-[#ebe2d5]" />
+        <Separator className="bg-slate-100 dark:bg-[#1e2635]" />
 
         <CardContent className="pt-5">
           {/* Not connected */}
           {!connection && (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
-                <Link2 className="h-6 w-6 text-slate-400" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28]">
+                <Link2 className="h-6 w-6 text-slate-400 dark:text-slate-500" />
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-900">
+                <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                   Keine Verbindung hergestellt
                 </p>
-                <p className="max-w-sm text-sm text-slate-500">
+                <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
                   Verbinde ein Google-Konto, um Ranking-Daten aus der Search Console automatisch abzurufen.
                 </p>
               </div>
@@ -2949,15 +2949,15 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                 </AlertTitle>
                 <AlertDescription className="text-amber-700">
                   {connection.status === 'expired'
-                    ? 'Das Zugriffstoken fuer die Search Console ist abgelaufen. Bitte verbinde das Google-Konto erneut.'
+                    ? 'Das Zugriffstoken für die Search Console ist abgelaufen. Bitte verbinde das Google-Konto erneut.'
                     : 'Der Zugriff auf die Search Console wurde widerrufen. Bitte verbinde das Google-Konto erneut.'}
                 </AlertDescription>
               </Alert>
 
-              <div className="flex items-center gap-3 rounded-xl bg-slate-50 p-4">
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-[#151c28] p-4">
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-700">Verbundenes Konto</p>
-                  <p className="truncate text-sm text-slate-500">{connection.google_email}</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Verbundenes Konto</p>
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">{connection.google_email}</p>
                 </div>
               </div>
 
@@ -3010,10 +3010,10 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                   </svg>
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-700">Verbundenes Google-Konto</p>
-                  <p className="truncate text-sm text-slate-500">{connection.google_email}</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Verbundenes Google-Konto</p>
+                  <p className="truncate text-sm text-slate-500 dark:text-slate-400">{connection.google_email}</p>
                 </div>
-                <p className="shrink-0 text-xs text-slate-400">
+                <p className="shrink-0 text-xs text-slate-400 dark:text-slate-500">
                   Verbunden am {formatDate(connection.connected_at)}
                 </p>
               </div>
@@ -3023,13 +3023,13 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                 <Label htmlFor="gsc-property-select">Aktive Property</Label>
                 {isAdmin ? (
                   <>
-                    <p className="text-sm text-slate-500">
-                      Waehle die Domain, fuer die Ranking-Daten abgerufen werden sollen.
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Wähle die Domain, für die Ranking-Daten abgerufen werden sollen.
                     </p>
                     {loadingProperties ? (
                       <div className="flex items-center gap-2 py-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
-                        <span className="text-sm text-slate-500">Properties werden geladen...</span>
+                        <Loader2 className="h-4 w-4 animate-spin text-slate-400 dark:text-slate-500" />
+                        <span className="text-sm text-slate-500 dark:text-slate-400">Properties werden geladen...</span>
                       </div>
                     ) : properties.length === 0 ? (
                       <Alert className="rounded-2xl">
@@ -3052,9 +3052,9 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                           {properties.map((prop) => (
                             <SelectItem key={prop.siteUrl} value={prop.siteUrl}>
                               <span className="flex items-center gap-2">
-                                <Globe className="h-3.5 w-3.5 text-slate-400" />
+                                <Globe className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
                                 <span>{prop.siteUrl}</span>
-                                <span className="text-xs text-slate-400">
+                                <span className="text-xs text-slate-400 dark:text-slate-500">
                                   ({formatGscPermissionLevel(prop.permissionLevel)})
                                 </span>
                               </span>
@@ -3065,19 +3065,19 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                     )}
                     {properties.some((prop) => prop.permissionLevel === 'siteUnverifiedUser') && (
                       <p className="text-xs text-amber-700">
-                        Einige Properties wurden von Google als nicht verifiziert markiert. Diese koennen in der Regel keine Ranking-Daten liefern.
+                        Einige Properties wurden von Google als nicht verifiziert markiert. Diese können in der Regel keine Ranking-Daten liefern.
                       </p>
                     )}
                     {savingProperty && (
-                      <p className="flex items-center gap-2 text-xs text-slate-500">
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <Loader2 className="h-3 w-3 animate-spin" />
                         Property wird gespeichert...
                       </p>
                     )}
                   </>
                 ) : (
-                  <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">
+                  <div className="rounded-xl bg-slate-50 dark:bg-[#151c28] p-4">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       {connection.selected_property
                         ? connection.selected_property
                         : 'Es wurde noch keine aktive Property ausgewaehlt.'}
@@ -3086,14 +3086,14 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                 )}
               </div>
 
-              {isAdmin && <Separator className="bg-[#ebe2d5]" />}
+              {isAdmin && <Separator className="bg-slate-100 dark:bg-[#1e2635]" />}
 
               {/* Disconnect */}
               {isAdmin && (
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-slate-700">Verbindung trennen</p>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Verbindung trennen</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Entfernt die Google-Verbindung und loescht alle gespeicherten Tokens.
                     </p>
                   </div>
@@ -3114,7 +3114,7 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
 
       {/* Disconnect confirmation dialog */}
       <Dialog open={isAdmin && disconnectOpen} onOpenChange={setDisconnectOpen}>
-        <DialogContent className="rounded-[24px] sm:max-w-md">
+        <DialogContent className="rounded-2xl sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Verbindung trennen?</DialogTitle>
             <DialogDescription>

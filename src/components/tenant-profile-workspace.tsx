@@ -137,7 +137,7 @@ function RequiredLabel({
   return (
     <Label htmlFor={htmlFor} className="flex items-center gap-1.5">
       <span>{children}</span>
-      <span aria-hidden="true" className="text-[#c2410c]">
+      <span aria-hidden="true" className="text-red-600">
         *
       </span>
       <span className="sr-only">Pflichtfeld</span>
@@ -146,7 +146,7 @@ function RequiredLabel({
 }
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 const billingCountryOptions = [{ value: 'Deutschland', label: 'Deutschland' }] as const
 const AVATAR_PREVIEW_SIZE = 280
 const AVATAR_EXPORT_SIZE = 512
@@ -400,7 +400,7 @@ export function TenantProfileWorkspace({
         throw new Error('Erlaubt sind PNG, JPG und WEBP bis 2 MB.')
       }
       if (file.size > 2 * 1024 * 1024) {
-        throw new Error('Das Bild darf maximal 2 MB gross sein.')
+        throw new Error('Das Bild darf maximal 2 MB groß sein.')
       }
 
       const imageMeta = await loadImageMeta(file)
@@ -705,7 +705,7 @@ export function TenantProfileWorkspace({
   const isAdmin = initialData.role === 'admin'
   const billingCountry = watch('billing_country')
   const submitLabel =
-    mode === 'onboarding' ? 'Onboarding abschliessen' : 'Profil speichern'
+    mode === 'onboarding' ? 'Onboarding abschließen' : 'Profil speichern'
   const avatarPreviewTransform = avatarCropDraft
     ? getAvatarTransform(
         avatarCropDraft.imageWidth,
@@ -727,19 +727,19 @@ export function TenantProfileWorkspace({
           }
         }}
       >
-        <DialogContent className="max-w-2xl rounded-[32px] border border-[#e6ddcf] bg-[#fffaf4] p-0 shadow-[0_24px_80px_rgba(68,48,24,0.22)]">
+        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-0 shadow-soft">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-xl text-slate-900">Profilbild anpassen</DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-slate-600">
+            <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">Profilbild anpassen</DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               Richte dein Bild in der runden Maske aus. Du kannst es horizontal, vertikal und per Zoom anpassen.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
             <div className="flex justify-center">
-              <div className="relative rounded-[30px] border border-[#eadfce] bg-[radial-gradient(circle_at_top,_#fffdf9,_#f5ede1)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+              <div className="relative rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 shadow-soft">
                 <div
-                  className="relative overflow-hidden rounded-full border-4 border-white bg-[#ede4d7] shadow-[0_16px_40px_rgba(92,63,28,0.18)]"
+                  className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-[#1e2635] shadow-soft"
                   style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
                 >
                   {avatarCropDraft && avatarPreviewTransform && (
@@ -763,14 +763,14 @@ export function TenantProfileWorkspace({
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-[24px] border border-[#eadfce] bg-white/85 p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <Move className="h-4 w-4 text-[#9c4f2c]" />
+              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white/85 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <Move className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Bild verschieben
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm text-slate-600">
+                    <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
                       <Label htmlFor="avatar-crop-x">Links / Rechts</Label>
                       <span>{avatarCropX}%</span>
                     </div>
@@ -782,11 +782,11 @@ export function TenantProfileWorkspace({
                       step={1}
                       value={avatarCropX}
                       onChange={(event) => setAvatarCropX(Number(event.target.value))}
-                      className="h-2 w-full cursor-pointer accent-[#b85e34]"
+                      className="h-2 w-full cursor-pointer accent-blue-600"
                     />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm text-slate-600">
+                    <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
                       <Label htmlFor="avatar-crop-y">Oben / Unten</Label>
                       <span>{avatarCropY}%</span>
                     </div>
@@ -798,20 +798,20 @@ export function TenantProfileWorkspace({
                       step={1}
                       value={avatarCropY}
                       onChange={(event) => setAvatarCropY(Number(event.target.value))}
-                      className="h-2 w-full cursor-pointer accent-[#b85e34]"
+                      className="h-2 w-full cursor-pointer accent-blue-600"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-[#dceee9] bg-white/85 p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <ZoomIn className="h-4 w-4 text-[#0d9488]" />
+              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white/85 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <ZoomIn className="h-4 w-4 text-blue-600" />
                   Zoom
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm text-slate-600">
-                    <Label htmlFor="avatar-crop-zoom">Ausschnitt vergroessern</Label>
+                  <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+                    <Label htmlFor="avatar-crop-zoom">Ausschnitt vergrößern</Label>
                     <span>{avatarCropZoom.toFixed(1)}x</span>
                   </div>
                   <input
@@ -822,22 +822,22 @@ export function TenantProfileWorkspace({
                     step={0.1}
                     value={avatarCropZoom}
                     onChange={(event) => setAvatarCropZoom(Number(event.target.value))}
-                    className="h-2 w-full cursor-pointer accent-[#0d9488]"
+                    className="h-2 w-full cursor-pointer accent-blue-600"
                   />
                 </div>
               </div>
 
-              <p className="text-sm leading-6 text-slate-500">
+              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Der markierte runde Bereich entspricht deinem finalen Profilbild in Sidebar und Account.
               </p>
             </div>
           </div>
 
-          <DialogFooter className="border-t border-[#eadfce] bg-white/70 px-6 py-4">
+          <DialogFooter className="border-t border-slate-100 dark:border-[#252d3a] bg-white/70 px-6 py-4">
             <Button
               type="button"
               variant="outline"
-              className="rounded-full border-[#d8d0c3] bg-white"
+              className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
               onClick={closeAvatarCropDialog}
               disabled={avatarPending}
             >
@@ -857,22 +857,22 @@ export function TenantProfileWorkspace({
       </Dialog>
 
       <div className="space-y-6">
-      <Card className="rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardHeader className="space-y-3">
           <div className="flex items-center gap-2">
-            <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">
+            <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
               {mode === 'onboarding' ? 'Erster Login' : 'Profil'}
             </Badge>
-            <Badge className="rounded-full bg-[#f6efe4] text-[#8b5e34] hover:bg-[#f6efe4]">
+            <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
               {isAdmin ? 'Admin' : 'Member'}
             </Badge>
           </div>
-          <CardTitle className="text-2xl text-slate-900">
+          <CardTitle className="text-2xl text-slate-900 dark:text-slate-100">
             {mode === 'onboarding'
               ? `Willkommen bei ${initialData.tenantName}`
               : 'Persönliche Daten und Profilbild'}
           </CardTitle>
-          <p className="text-sm leading-6 text-slate-600">
+          <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
             {mode === 'onboarding'
               ? 'Bitte vervollständige jetzt dein Profil. Vorname und Nachname sind für alle verpflichtend.'
               : 'Hier kannst du deine persönlichen Daten jederzeit aktualisieren.'}
@@ -888,7 +888,7 @@ export function TenantProfileWorkspace({
                 </Alert>
               )}
               {success && (
-                <Alert className="rounded-2xl border-[#d1faf4] bg-[#f0fdfb] text-[#0f766e]">
+                <Alert className="rounded-2xl border-blue-200 bg-blue-50 text-blue-600">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>{success}</AlertDescription>
                 </Alert>
@@ -903,18 +903,18 @@ export function TenantProfileWorkspace({
           >
             <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
-                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                   Profilbild
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Optional, aber hilfreich für Sidebar und Team-Kontext.
                 </p>
               </div>
-              <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+              <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                  <Avatar className="h-24 w-24 border border-[#dceee9] shadow-sm">
+                  <Avatar className="h-24 w-24 border border-slate-100 dark:border-[#252d3a] shadow-sm">
                     <AvatarImage src={avatarUrl ?? undefined} alt="Profilbild" />
-                    <AvatarFallback className="bg-[#e8f8f3] text-xl font-semibold text-[#0d9488]">
+                    <AvatarFallback className="bg-blue-50 text-xl font-semibold text-blue-600">
                       {getUserInitials(
                         {
                           first_name: initialData.firstName,
@@ -929,7 +929,7 @@ export function TenantProfileWorkspace({
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-full border-[#d8d0c3] bg-white"
+                        className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={avatarPending}
                       >
@@ -944,7 +944,7 @@ export function TenantProfileWorkspace({
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-[#ead4c8] bg-white text-[#9f4a24]"
+                          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300"
                           onClick={() => void removeAvatar()}
                           disabled={avatarPending}
                         >
@@ -953,7 +953,7 @@ export function TenantProfileWorkspace({
                         </Button>
                       )}
                     </div>
-                    <p className="text-sm text-slate-500">PNG, JPG oder WEBP bis 2 MB.</p>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">PNG, JPG oder WEBP bis 2 MB.</p>
                     <input
                       ref={fileInputRef}
                       type="file"
@@ -969,16 +969,16 @@ export function TenantProfileWorkspace({
             {isAdmin && mode !== 'onboarding' && (
               <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                     Agentur-Logo
                   </h2>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Das Logo erscheint in der Sidebar und auf den öffentlichen Auth-Seiten eures Tenants.
                   </p>
                 </div>
-                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <div className="flex h-24 w-32 items-center justify-center rounded-[24px] border border-[#eadfce] bg-white px-4 shadow-sm">
+                    <div className="flex h-24 w-32 items-center justify-center rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 shadow-sm">
                       {tenantLogoUrl ? (
                         <Image
                           src={tenantLogoUrl}
@@ -989,7 +989,7 @@ export function TenantProfileWorkspace({
                           unoptimized
                         />
                       ) : (
-                        <div className="text-center text-sm text-slate-400">Noch kein Logo hinterlegt</div>
+                        <div className="text-center text-sm text-slate-400 dark:text-slate-500">Noch kein Logo hinterlegt</div>
                       )}
                     </div>
                     <div className="space-y-3">
@@ -997,7 +997,7 @@ export function TenantProfileWorkspace({
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-[#d8d0c3] bg-white"
+                          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                           onClick={() => tenantLogoInputRef.current?.click()}
                           disabled={tenantLogoPending}
                         >
@@ -1008,7 +1008,7 @@ export function TenantProfileWorkspace({
                           <Button
                             type="button"
                             variant="outline"
-                            className="rounded-full border-[#ead4c8] bg-white text-[#9f4a24]"
+                            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300"
                             onClick={() => void removeTenantLogo()}
                             disabled={tenantLogoPending}
                           >
@@ -1017,7 +1017,7 @@ export function TenantProfileWorkspace({
                           </Button>
                         )}
                       </div>
-                      <p className="text-sm text-slate-500">PNG, JPG, WEBP oder SVG bis 2 MB.</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">PNG, JPG, WEBP oder SVG bis 2 MB.</p>
                       <input
                         ref={tenantLogoInputRef}
                         type="file"
@@ -1033,14 +1033,14 @@ export function TenantProfileWorkspace({
 
             <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
-                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                   Persönliche Daten
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Diese Angaben erscheinen in deinem Profil und in der Sidebar.
                 </p>
               </div>
-              <div className="grid gap-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5 md:grid-cols-2">
+              <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">Vorname</Label>
                   <Input id="first_name" className={fieldClassName} {...register('first_name')} />
@@ -1062,16 +1062,16 @@ export function TenantProfileWorkspace({
               <>
                 <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                   <div className="space-y-2">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                       Rechnungsadresse
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Diese Angaben sind für Admins verpflichtend. Mit * markierte Felder müssen ausgefüllt werden.
                     </p>
                   </div>
-                  <div className="grid gap-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5 md:grid-cols-2">
+                  <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 md:grid-cols-2">
                     {mode === 'onboarding' && (
-                      <div className="md:col-span-2 rounded-2xl border border-[#f1d4b7] bg-[#fff4ea] px-4 py-3 text-sm text-[#8c4a19]">
+                      <div className="md:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                         Rechnungsdaten sind für Admins Pflichtfelder und werden benötigt, bevor das Onboarding abgeschlossen werden kann.
                       </div>
                     )}
@@ -1170,14 +1170,14 @@ export function TenantProfileWorkspace({
               <div className="space-y-10 pt-8">
                 <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                   <div className="space-y-2">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                       Login-E-Mail
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Diese Adresse verwendest du für den Login in deinen Workspace.
                     </p>
                   </div>
-                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                  <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
                     <form
                       className="grid gap-4 md:grid-cols-2"
                       onSubmit={emailForm.handleSubmit(onSubmitEmail)}
@@ -1211,7 +1211,7 @@ export function TenantProfileWorkspace({
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                             onClick={() => setShowCurrentEmailPassword((value) => !value)}
                             aria-label={
                               showCurrentEmailPassword
@@ -1233,12 +1233,12 @@ export function TenantProfileWorkspace({
                         )}
                       </div>
                       <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Zur Sicherheit bestätigen wir die Änderung mit deinem aktuellen Passwort.
                         </p>
                         <Button
                           type="submit"
-                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                          className="rounded-full bg-blue-600 px-5 hover:bg-blue-700"
                           disabled={emailForm.formState.isSubmitting}
                         >
                           {emailForm.formState.isSubmitting ? (
@@ -1253,14 +1253,14 @@ export function TenantProfileWorkspace({
 
                 <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                   <div className="space-y-2">
-                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                    <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                       Passwort
                     </h2>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
                     </p>
                   </div>
-                  <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                  <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
                     <form
                       className="grid gap-4 md:grid-cols-2"
                       onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
@@ -1278,7 +1278,7 @@ export function TenantProfileWorkspace({
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                             onClick={() => setShowCurrentPassword((value) => !value)}
                             aria-label={
                               showCurrentPassword
@@ -1312,7 +1312,7 @@ export function TenantProfileWorkspace({
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                             onClick={() => setShowNewPassword((value) => !value)}
                             aria-label={
                               showNewPassword
@@ -1346,7 +1346,7 @@ export function TenantProfileWorkspace({
                           />
                           <button
                             type="button"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                             onClick={() => setShowConfirmPassword((value) => !value)}
                             aria-label={
                               showConfirmPassword
@@ -1368,12 +1368,12 @@ export function TenantProfileWorkspace({
                         )}
                       </div>
                       <div className="md:col-span-2 flex flex-wrap items-center justify-between gap-3 pt-2">
-                        <p className="text-sm text-slate-500">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
                           Das neue Passwort muss mindestens 8 Zeichen lang sein.
                         </p>
                         <Button
                           type="submit"
-                          className="rounded-full bg-[#0f766e] px-5 hover:bg-[#0d5f59]"
+                          className="rounded-full bg-blue-600 px-5 hover:bg-blue-700"
                           disabled={passwordForm.formState.isSubmitting}
                         >
                           {passwordForm.formState.isSubmitting ? (
@@ -1392,32 +1392,32 @@ export function TenantProfileWorkspace({
           {isAdmin && (
             <section className="grid gap-6 pt-6 lg:grid-cols-[220px_minmax(0,1fr)]">
               <div className="space-y-2">
-                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                   Abrechnung
                 </h2>
-                <p className="text-sm text-slate-500">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   {mode === 'onboarding'
                     ? 'Hinterlege deine Zahlungsmethode und wähle mindestens ein Modul aus, das du abonnieren möchtest.'
                     : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
                 </p>
               </div>
-              <div className="space-y-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+              <div className="space-y-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <CreditCard className="h-4 w-4 text-[#b85e34]" />
-                      <span className="text-sm font-semibold text-slate-900">Zahlungsmethode</span>
+                      <CreditCard className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Zahlungsmethode</span>
                       <Badge
                         className={
                           billing?.payment_method
-                            ? 'rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]'
-                            : 'rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]'
+                            ? 'rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50'
+                            : 'rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                         }
                       >
                         {billing?.payment_method ? 'Verbunden' : 'Fehlt'}
                       </Badge>
                     </div>
-                    <p className="text-sm text-slate-600">
+                    <p className="text-sm text-slate-600 dark:text-slate-300">
                       {billingLoading
                         ? 'Stripe-Status wird geladen...'
                         : formatCard(billing?.payment_method ?? null)}
@@ -1437,7 +1437,7 @@ export function TenantProfileWorkspace({
                 </div>
 
                 {showStripeForm && (
-                  <div className="rounded-[24px] border border-[#e8dece] bg-white p-4">
+                  <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
                     <StripeCardForm
                       onCancel={() => setShowStripeForm(false)}
                       onSuccess={() => {
@@ -1451,14 +1451,14 @@ export function TenantProfileWorkspace({
 
                 {/* Module selection — only during onboarding */}
                 {mode === 'onboarding' && (billing?.modules ?? []).length > 0 && (
-                  <div className="space-y-3 border-t border-[#efe5d8] pt-4">
+                  <div className="space-y-3 border-t border-slate-100 dark:border-[#252d3a] pt-4">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold text-slate-900">Module auswählen</span>
-                      <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8] text-[11px]">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Module auswählen</span>
+                      <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a] text-[11px]">
                         Pflichtfeld
                       </Badge>
                     </div>
-                    <p className="text-xs text-slate-500">
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
                       Mindestens ein Modul ist erforderlich. Der Basis-Plan (29 €) ist immer inklusive.
                     </p>
                     <div className="space-y-2">
@@ -1477,8 +1477,8 @@ export function TenantProfileWorkspace({
                             }
                             className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
                               selected
-                                ? 'border-[#1f2937] bg-[#f7f3ed]'
-                                : 'border-[#e6ddd0] bg-white hover:border-[#d4c9bb]'
+                                ? 'border-[#1f2937] bg-slate-50 dark:bg-[#151c28]'
+                                : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:border-slate-200'
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -1494,15 +1494,15 @@ export function TenantProfileWorkspace({
                                 )}
                               </div>
                               <div className="min-w-0 flex-1">
-                                <p className="text-sm font-semibold text-slate-900">{mod.name}</p>
-                                <p className="text-xs text-slate-500">{mod.description}</p>
+                                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mod.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{mod.description}</p>
                               </div>
-                              <span className="shrink-0 text-sm font-semibold text-slate-900">
+                              <span className="shrink-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
                                 {new Intl.NumberFormat('de-DE', {
                                   style: 'currency',
                                   currency: mod.currency.toUpperCase(),
                                 }).format(mod.price / 100)}
-                                <span className="font-normal text-slate-400"> / 4 Wo.</span>
+                                <span className="font-normal text-slate-400 dark:text-slate-500"> / 4 Wo.</span>
                               </span>
                             </div>
                           </button>
@@ -1515,8 +1515,8 @@ export function TenantProfileWorkspace({
             </section>
           )}
 
-          <div className="mt-10 flex flex-col gap-3 border-t border-[#efe5d8] pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-2 text-sm text-slate-500">
+          <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <UserRound className="h-4 w-4" />
               {mode === 'onboarding'
                 ? 'Nach dem Abschluss kannst du alles später im Profil ändern.'
@@ -1524,12 +1524,12 @@ export function TenantProfileWorkspace({
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {mode !== 'onboarding' && (
-                <TenantLogoutButton className="h-[48px] rounded-xl border-[#e3daca] bg-white px-6" />
+                <TenantLogoutButton className="h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6" />
               )}
               <Button
                 type="submit"
                 form="tenant-profile-form"
-                className="h-[48px] rounded-xl bg-[#1dbfaa] px-6 text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
+                className="h-[48px] rounded-xl bg-blue-600 px-6 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
                 disabled={isSaving}
               >
                 {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

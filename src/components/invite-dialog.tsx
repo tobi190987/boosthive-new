@@ -77,13 +77,13 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
           Member einladen
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-[28px] border-[#e0d6c8] bg-[#fffdf9] p-0 sm:max-w-[560px]">
+      <DialogContent className="rounded-[2rem] border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-0 sm:max-w-[560px]">
         <form onSubmit={handleSubmit}>
-          <DialogHeader className="space-y-3 border-b border-[#ece2d5] px-6 py-6 text-left">
-            <DialogTitle className="text-2xl font-semibold text-slate-950">
+          <DialogHeader className="space-y-3 border-b border-slate-100 dark:border-[#252d3a] px-6 py-6 text-left">
+            <DialogTitle className="text-2xl font-semibold text-slate-950 dark:text-slate-50">
               Mitglied einladen
             </DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-slate-600">
+            <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               Gib E-Mail-Adresse und Rolle an. Das Mitglied erhält eine Einladungsmail mit einem
               Aktivierungslink.
             </DialogDescription>
@@ -97,7 +97,7 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
 
           <div className="space-y-5 px-6 py-6">
             <div className="space-y-2">
-              <Label htmlFor="invite-email" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="invite-email" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 E-Mail-Adresse
               </Label>
               <Input
@@ -106,23 +106,23 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="teammitglied@agentur.de"
-                className="h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6]"
+                className="h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]"
                 required
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="invite-role" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="invite-role" className="text-sm font-medium text-slate-700 dark:text-slate-300">
                 Rolle
               </Label>
               <Select value={role} onValueChange={(value: 'admin' | 'member') => setRole(value)}>
                 <SelectTrigger
                   id="invite-role"
-                  className="h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6]"
+                  className="h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]"
                 >
                   <SelectValue placeholder="Rolle wählen" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-[#ddd3c5]">
+                <SelectContent className="rounded-2xl border-slate-200 dark:border-[#252d3a]">
                   <SelectItem value="member">Member</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
@@ -130,11 +130,11 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
             </div>
           </div>
 
-          <DialogFooter className="border-t border-[#ece2d5] px-6 py-5 sm:justify-between">
+          <DialogFooter className="border-t border-slate-100 dark:border-[#252d3a] px-6 py-5 sm:justify-between">
             <Button
               type="button"
               variant="ghost"
-              className="rounded-full text-slate-500 hover:bg-[#f5efe6] hover:text-slate-900"
+              className="rounded-full text-slate-500 dark:text-slate-400 hover:bg-blue-50 hover:text-slate-900 dark:hover:text-slate-100"
               onClick={() => {
                 resetForm()
                 setOpen(false)
@@ -145,7 +145,7 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
             <Button
               type="submit"
               disabled={loading}
-              className="rounded-full bg-[#b85e34] px-5 text-white hover:bg-[#9f4f2d]"
+              className="rounded-full bg-blue-600 px-5 text-white hover:bg-blue-600"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Einladung versenden

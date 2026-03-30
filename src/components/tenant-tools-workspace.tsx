@@ -222,7 +222,7 @@ function MarkdownInsights({ text }: { text: string }) {
 
         if (line.startsWith('## ')) {
           return (
-            <h3 key={`${line}-${index}`} className="text-sm font-semibold text-slate-900">
+            <h3 key={`${line}-${index}`} className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               {line.replace(/^## /, '')}
             </h3>
           )
@@ -232,16 +232,16 @@ function MarkdownInsights({ text }: { text: string }) {
           return (
             <div
               key={`${line}-${index}`}
-              className="flex items-start gap-2 text-sm leading-6 text-slate-600"
+              className="flex items-start gap-2 text-sm leading-6 text-slate-600 dark:text-slate-300"
             >
-              <span className="mt-[9px] h-1.5 w-1.5 rounded-full bg-[#0d9488]" />
+              <span className="mt-[9px] h-1.5 w-1.5 rounded-full bg-blue-600" />
               <span>{line.replace(/^- /, '')}</span>
             </div>
           )
         }
 
         return (
-          <p key={`${line}-${index}`} className="text-sm leading-6 text-slate-600">
+          <p key={`${line}-${index}`} className="text-sm leading-6 text-slate-600 dark:text-slate-300">
             {line}
           </p>
         )
@@ -276,27 +276,27 @@ function CriticalProblemList({
             className={cn(
               'group flex w-full items-center justify-between gap-3 rounded-[22px] border px-3.5 py-3 text-left transition',
               isActive
-                ? 'border-[#d7efe9] bg-[linear-gradient(135deg,#f2fbf8_0%,#e7f7f2_100%)] text-[#0d7d72]'
-                : 'border-[#ead9cb] bg-[linear-gradient(135deg,#fffaf6_0%,#fff3eb_100%)] text-slate-800 hover:border-[#d9c0ad] hover:bg-[linear-gradient(135deg,#fff7f1_0%,#ffefe4_100%)]'
+                ? 'border-blue-100 bg-blue-50 text-blue-600'
+                : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-800 dark:text-slate-200 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2635]'
             )}
           >
             <div className="flex min-w-0 items-start gap-3">
               <div
                 className={cn(
-                  'mt-0.5 flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-[18px] border',
+                  'mt-0.5 flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl border',
                   isActive
-                    ? 'border-[#bde3dc] bg-white text-[#0d9488]'
-                    : 'border-[#efd8c7] bg-white/80 text-[#b85e34]'
+                    ? 'border-blue-200 bg-white dark:bg-[#151c28] text-blue-600'
+                    : 'border-slate-200 dark:border-[#252d3a] bg-white/80 text-blue-600'
                 )}
               >
                 <AlertCircle className="h-4 w-4" />
               </div>
               <div className="min-w-0">
-                <p className={cn('text-sm font-semibold', isActive ? 'text-[#0f766e]' : 'text-slate-900')}>
+                <p className={cn('text-sm font-semibold', isActive ? 'text-blue-600' : 'text-slate-900 dark:text-slate-100')}>
                   {filter.label}
                 </p>
                 {isActive ? (
-                  <p className="mt-0.5 text-[11px] leading-4.5 text-[#0d7d72]/80">
+                  <p className="mt-0.5 text-[11px] leading-4.5 text-blue-600/80">
                     Aktiv. Im Detailbereich siehst du jetzt zuerst genau diese Seiten.
                   </p>
                 ) : null}
@@ -306,8 +306,8 @@ function CriticalProblemList({
               className={cn(
                 'flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition',
                 isActive
-                  ? 'border-[#bde3dc] bg-white text-[#0d9488]'
-                  : 'border-[#e6d6c8] bg-white/80 text-slate-400 group-hover:text-slate-600'
+                  ? 'border-blue-200 bg-white dark:bg-[#151c28] text-blue-600'
+                  : 'border-slate-200 dark:border-[#252d3a] bg-white/80 text-slate-400 dark:text-slate-500 group-hover:text-slate-600 dark:hover:text-slate-300'
               )}
             >
               <ArrowRight className={cn('h-4 w-4 transition-transform', isActive && 'rotate-90')} />
@@ -354,7 +354,7 @@ function IssueList({ issues }: { issues: string[] }) {
       {issues.map((issue) => (
         <div
           key={issue}
-          className="flex items-start gap-2 rounded-2xl border border-[#f2ddd0] bg-[#fff6f0] px-4 py-3 text-sm text-[#9a5a32]"
+          className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{issue}</span>
@@ -418,7 +418,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
   }
 
   return (
-    <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+    <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -436,10 +436,10 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
               {page.error ? '!' : page.score}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-slate-900">
+              <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {pageTitle || 'Kein Title vorhanden'}
               </p>
-              <p className="truncate text-xs text-slate-500">{page.url}</p>
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">{page.url}</p>
             </div>
           </div>
         </div>
@@ -450,75 +450,75 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
               : `${page.issues.length} Problem${page.issues.length === 1 ? '' : 'e'}`}
           </Badge>
           {open ? (
-            <ChevronUp className="h-4 w-4 text-slate-400" />
+            <ChevronUp className="h-4 w-4 text-slate-400 dark:text-slate-500" />
           ) : (
-            <ChevronDown className="h-4 w-4 text-slate-400" />
+            <ChevronDown className="h-4 w-4 text-slate-400 dark:text-slate-500" />
           )}
         </div>
       </button>
 
       {open && (
-        <CardContent className="space-y-5 border-t border-[#efe7dc] pt-5">
+        <CardContent className="space-y-5 border-t border-slate-100 dark:border-[#252d3a] pt-5">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 <Type className="h-3.5 w-3.5" />
                 Title
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 {pageTitle || 'Nicht vorhanden'}
               </p>
             </div>
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 <Type className="h-3.5 w-3.5" />
                 Meta Description
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 {pageMetaDescription || 'Nicht vorhanden'}
               </p>
             </div>
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 <Globe className="h-3.5 w-3.5" />
                 Headings
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 H1: {page.h1s.length} · H2: {page.h2s.length}
               </p>
-              <div className="mt-2 space-y-2 text-sm leading-6 text-slate-700">
+              <div className="mt-2 space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 <p>
-                  <span className="font-medium text-slate-900">H1:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">H1:</span>{' '}
                   {page.h1s.length > 0 ? page.h1s.join(' | ') : 'Nicht vorhanden'}
                 </p>
                 <p>
-                  <span className="font-medium text-slate-900">H2:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">H2:</span>{' '}
                   {page.h2s.length > 0 ? page.h2s.join(' | ') : 'Nicht vorhanden'}
                 </p>
               </div>
             </div>
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 <ImageIcon className="h-3.5 w-3.5" />
                 Bilder
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 {page.images.withoutAlt} ohne Alt-Text von {page.images.total}
               </p>
             </div>
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 <FileSearch className="h-3.5 w-3.5" />
                 Inhalt
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">{page.wordCount} Wörter</p>
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">{page.wordCount} Wörter</p>
             </div>
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 <Link2 className="h-3.5 w-3.5" />
                 Links
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-700">
+              <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                 Intern {page.internalLinks} · Extern {page.externalLinks}
               </p>
             </div>
@@ -534,7 +534,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
                 variant="outline"
                 onClick={() => void generateActions()}
                 disabled={actionsLoading}
-                className="rounded-full border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72] hover:bg-[#e4f5f1]"
+                className="rounded-full border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-50"
               >
                 {actionsLoading ? (
                   <>
@@ -553,7 +553,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
               href={page.url}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-full border border-[#ded4c7] bg-white px-3 py-1 text-xs font-medium text-slate-600 transition hover:bg-[#f7f3ed]"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 transition hover:bg-slate-50 dark:hover:bg-[#1e2635]"
             >
               URL öffnen
               <ExternalLink className="h-3.5 w-3.5" />
@@ -563,61 +563,61 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
           <IssueList issues={page.issues} />
 
           {actions ? (
-            <div className="space-y-4 rounded-[24px] border border-[#d7efe9] bg-[#f4fbf8] p-4">
+            <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-[#0d9488]" />
-                <p className="text-sm font-semibold text-slate-900">KI-Verbesserungsvorschläge</p>
+                <Sparkles className="h-4 w-4 text-blue-600" />
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">KI-Verbesserungsvorschläge</p>
                 <Badge
                   className={cn(
                     'rounded-full',
                     actions.source === 'anthropic'
-                      ? 'bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]'
-                      : 'bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]'
+                      ? 'bg-blue-50 text-blue-600 hover:bg-blue-50'
+                      : 'bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                   )}
                 >
                   {actions.source === 'anthropic' ? 'Claude' : 'Fallback'}
                 </Badge>
               </div>
-              <p className="text-sm leading-6 text-slate-600">{actions.summary}</p>
+              <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{actions.summary}</p>
               {actions.debug ? (
-                <div className="rounded-2xl border border-[#f2ddd0] bg-[#fff6f0] px-4 py-3 text-xs leading-5 text-[#9a5a32]">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
                   Debug: {actions.debug}
                 </div>
               ) : null}
               <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-white dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Neuer Title
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {sanitizeSeoText(actions.improvedTitle)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-white dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Neue Meta Description
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {sanitizeSeoText(actions.improvedMetaDescription)}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-white p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-white dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Neue H1
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">{actions.improvedH1}</p>
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">{actions.improvedH1}</p>
                 </div>
               </div>
               <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                   Weitere Ideen
                 </p>
                 {actions.contentIdeas.map((idea) => (
                   <div
                     key={idea}
-                    className="flex items-start gap-2 rounded-2xl bg-white px-4 py-3 text-sm text-slate-600"
+                    className="flex items-start gap-2 rounded-2xl bg-white dark:bg-[#151c28] px-4 py-3 text-sm text-slate-600 dark:text-slate-300"
                   >
-                    <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#0d9488]" />
+                    <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-blue-600" />
                     <span>{idea}</span>
                   </div>
                 ))}
@@ -795,7 +795,7 @@ function SeoResultsView({
           type="button"
           variant="outline"
           onClick={onBack}
-          className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
+          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
         >
           <ArrowLeft className="h-4 w-4" />
           Zur Übersicht
@@ -804,7 +804,7 @@ function SeoResultsView({
           type="button"
           variant="outline"
           onClick={handleExportPdf}
-          className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
+          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
         >
           PDF speichern
         </Button>
@@ -824,9 +824,9 @@ function SeoResultsView({
         </div>
       </div>
 
-      <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardHeader>
-          <CardTitle className="text-xl text-slate-950">SEO-Analyse abgeschlossen</CardTitle>
+          <CardTitle className="text-xl text-slate-950 dark:text-slate-50">SEO-Analyse abgeschlossen</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-5 xl:grid-cols-[180px_1fr] xl:items-start">
           <div className="flex items-start justify-center xl:justify-start">
@@ -837,38 +837,38 @@ function SeoResultsView({
               )}
             >
               <span className={cn('text-4xl font-bold', tone.text)}>{result.overallScore}</span>
-              <span className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <span className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 {scoreLabel(result.overallScore)}
               </span>
             </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-3">
-            <div className="rounded-2xl bg-[#f7f3ed] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 Seiten
               </p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">{result.totalPages}</p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">Analysierte URLs im Lauf</p>
+              <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">{result.totalPages}</p>
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Analysierte URLs im Lauf</p>
             </div>
-            <div className="rounded-2xl bg-[#edf8f6] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-blue-50 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 Erreichbar
               </p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">
+              <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
                 {result.pages.filter((page) => !page.error).length}
               </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                 Öffentlich abrufbare Seiten
               </p>
             </div>
-            <div className="rounded-2xl bg-[#fff1e8] p-4">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="rounded-2xl bg-slate-100 dark:bg-[#1e2635] p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 Kritisch
               </p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">
+              <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
                 {result.pages.filter((page) => page.score < 60 || page.error).length}
               </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
+              <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
                 Seiten mit hohem Handlungsbedarf
               </p>
             </div>
@@ -877,10 +877,10 @@ function SeoResultsView({
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="rounded-[28px] border border-[#e6ddd0] bg-[#fffdf9] shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
-              <AlertCircle className="h-5 w-5 text-[#b85e34]" />
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
               Kritische Probleme
             </CardTitle>
           </CardHeader>
@@ -893,10 +893,10 @@ function SeoResultsView({
           </CardContent>
         </Card>
 
-        <Card className="rounded-[28px] border border-[#e6ddd0] bg-[#fffdf9] shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
-              <Sparkles className="h-5 w-5 text-[#b85e34]" />
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
+              <Sparkles className="h-5 w-5 text-blue-600" />
               Handlungsempfehlungen
             </CardTitle>
           </CardHeader>
@@ -912,10 +912,10 @@ function SeoResultsView({
       </div>
 
       {result.technicalSeo && (
-        <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
-              <Zap className="h-5 w-5 text-[#0d9488]" />
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
+              <Zap className="h-5 w-5 text-blue-600" />
               Technisches SEO
             </CardTitle>
           </CardHeader>
@@ -931,33 +931,33 @@ function SeoResultsView({
                   const description = getLighthouseScoreDescription(String(label))
 
                   return (
-                    <div key={String(label)} className="rounded-2xl bg-[#f7f3ed] p-4">
+                    <div key={String(label)} className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
                       <div className="flex items-center gap-2">
-                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                           {String(label)}
                         </p>
                         {description ? (
                           <div className="group/info relative">
                             <button
                               type="button"
-                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+                              className="inline-flex h-5 w-5 items-center justify-center rounded-full text-slate-400 dark:text-slate-500 transition hover:text-slate-600 dark:hover:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
                               aria-label={`Erklärung zu ${String(label)}`}
                             >
                               <Info className="h-3.5 w-3.5" />
                             </button>
-                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-56 -translate-x-1/2 rounded-xl border border-[#ded4c7] bg-white px-3 py-2 text-xs font-normal normal-case tracking-normal text-slate-700 opacity-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
+                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-20 w-56 -translate-x-1/2 rounded-xl border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-2 text-xs font-normal normal-case tracking-normal text-slate-700 dark:text-slate-300 opacity-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
                               {description}
                             </div>
                           </div>
                         ) : null}
                       </div>
-                      <p className="mt-2 text-2xl font-semibold text-slate-900">{value ?? '—'}</p>
+                      <p className="mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">{value ?? '—'}</p>
                     </div>
                   )
                 })}
               </div>
             ) : (
-              <Alert className="rounded-[24px] border-[#e6ddd0] bg-[#f7f3ed]">
+              <Alert className="rounded-2xl border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
                 <AlertCircle className="h-4 w-4" />
                 <AlertTitle>Lighthouse nicht konfiguriert</AlertTitle>
                 <AlertDescription>
@@ -977,8 +977,8 @@ function SeoResultsView({
                     className={cn(
                       'rounded-2xl border px-4 py-3 text-sm',
                       check.ok
-                        ? 'border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72]'
-                        : 'border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32]'
+                        ? 'border-blue-100 bg-blue-50 text-blue-600'
+                        : 'border-amber-200 bg-amber-50 text-amber-800'
                     )}
                   >
                     <div className="flex items-center gap-2 font-medium">
@@ -998,7 +998,7 @@ function SeoResultsView({
                             >
                               <Info className="h-3.5 w-3.5" />
                             </button>
-                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] right-0 z-20 w-56 rounded-xl border border-[#ded4c7] bg-white px-3 py-2 text-xs font-normal leading-5 text-slate-700 opacity-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
+                            <div className="pointer-events-none absolute bottom-[calc(100%+8px)] right-0 z-20 w-56 rounded-xl border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-2 text-xs font-normal leading-5 text-slate-700 dark:text-slate-300 opacity-0 shadow-[0_16px_40px_rgba(15,23,42,0.12)] transition-opacity duration-150 group-hover/info:opacity-100 group-focus-within/info:opacity-100">
                               {description}
                             </div>
                           </div>
@@ -1016,23 +1016,23 @@ function SeoResultsView({
       <div className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">Seiten im Detail</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Seiten im Detail</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               {activeProblemFilter
                 ? `Gefiltert nach: ${activeProblemFilter.label}. Diese Seiten stehen jetzt zuerst im Fokus.`
                 : 'Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.'}
             </p>
           </div>
-          <Badge className="rounded-full bg-[#f7f3ed] text-slate-600 hover:bg-[#f7f3ed]">
+          <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
             {(detailsPage - 1) * DETAIL_PAGE_SIZE + 1}-
             {Math.min(detailsPage * DETAIL_PAGE_SIZE, matchingPages.length)} von {matchingPages.length}
           </Badge>
         </div>
         {activeProblemFilter ? (
-          <div className="flex flex-wrap items-center gap-3 rounded-[24px] border border-[#d7efe9] bg-[#edf8f6] px-4 py-3 text-sm text-[#0d7d72]">
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-600">
             <span>{activeProblemFilter.label}</span>
             {hiddenPagesCount > 0 ? (
-              <span className="text-[#0f766e]">
+              <span className="text-blue-600">
                 {hiddenPagesCount} weitere Seiten sind aktuell ausgeblendet.
               </span>
             ) : null}
@@ -1040,7 +1040,7 @@ function SeoResultsView({
               type="button"
               variant="outline"
               onClick={() => handleProblemFilterSelect(null)}
-              className="rounded-full border-[#bde3dc] bg-white text-[#0d7d72] hover:bg-white"
+              className="rounded-full border-blue-200 bg-white dark:bg-[#151c28] text-blue-600 hover:bg-white dark:hover:bg-[#1e2635]"
             >
               Filter zurücksetzen
             </Button>
@@ -1060,7 +1060,7 @@ function SeoResultsView({
                     setDetailsPage((current) => Math.max(1, current - 1))
                   }}
                   className={cn(
-                    'rounded-full border border-[#ded4c7] bg-white text-slate-700 hover:bg-[#f7f3ed]',
+                    'rounded-full border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
                     detailsPage === 1 && 'pointer-events-none opacity-50'
                   )}
                 />
@@ -1078,8 +1078,8 @@ function SeoResultsView({
                     className={cn(
                       'rounded-full',
                       page === detailsPage
-                        ? 'border-[#0d9488] bg-[#edf8f6] text-[#0d9488]'
-                        : 'text-slate-600 hover:bg-[#f7f3ed]'
+                        ? 'border-blue-600 bg-blue-50 text-blue-600'
+                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]'
                     )}
                   >
                     {page}
@@ -1095,7 +1095,7 @@ function SeoResultsView({
                     setDetailsPage((current) => Math.min(totalDetailPages, current + 1))
                   }}
                   className={cn(
-                    'rounded-full border border-[#ded4c7] bg-white text-slate-700 hover:bg-[#f7f3ed]',
+                    'rounded-full border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
                     detailsPage === totalDetailPages && 'pointer-events-none opacity-50'
                   )}
                 />
@@ -1138,21 +1138,21 @@ function SeoReportContent({
   })
 
   return (
-    <div className="mx-auto w-full max-w-[210mm] bg-white p-8 text-slate-900">
-      <section className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-[linear-gradient(135deg,#fffaf2_0%,#f6efe5_52%,#edf6f4_100%)] p-8">
+    <div className="mx-auto w-full max-w-[210mm] bg-white dark:bg-[#151c28] p-8 text-slate-900 dark:text-slate-100">
+      <section className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-8">
         <div className="flex items-start justify-between gap-6">
           <div className="space-y-4">
             <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
               SEO-Analyse Report
             </Badge>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                 {tenantName} / {tenantSlug}
               </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950">
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
                 SEO-Analyse
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
                 Sauber aufbereiteter Report mit Prioritäten, technischen Checks und den
                 wichtigsten Problemseiten.
               </p>
@@ -1167,9 +1167,9 @@ function SeoReportContent({
                 className="max-h-16 max-w-[180px] object-contain"
               />
             ) : (
-              <div className="rounded-2xl border border-[#ded4c7] bg-white px-4 py-3 text-right">
-                <p className="text-sm font-semibold text-slate-900">{tenantName}</p>
-                <p className="text-xs text-slate-500">Agentur Branding</p>
+              <div className="rounded-2xl border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 py-3 text-right">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{tenantName}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Agentur Branding</p>
               </div>
             )}
           </div>
@@ -1177,26 +1177,26 @@ function SeoReportContent({
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
           <div className="rounded-2xl bg-white/90 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Domain
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">
+            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
               {extractHostname(sourceUrl) ?? 'Nicht verfügbar'}
             </p>
           </div>
           <div className="rounded-2xl bg-white/90 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Crawl-Modus
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">
+            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
               {crawlMode ? formatCrawlModeLabel(crawlMode) : 'Nicht verfügbar'}
             </p>
           </div>
           <div className="rounded-2xl bg-white/90 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Erstellt am
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">
+            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
               {createdAt ? formatDate(createdAt) : 'Nicht verfügbar'}
             </p>
           </div>
@@ -1212,31 +1212,31 @@ function SeoReportContent({
             )}
           >
             <span className={cn('text-4xl font-bold', tone.text)}>{result.overallScore}</span>
-            <span className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <span className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               {scoreLabel(result.overallScore)}
             </span>
           </div>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
-          <div className="print-avoid-break rounded-2xl bg-[#f7f3ed] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+          <div className="print-avoid-break rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Seiten
             </p>
-            <p className="mt-2 text-xl font-semibold text-slate-900">{result.totalPages}</p>
+            <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">{result.totalPages}</p>
           </div>
-          <div className="print-avoid-break rounded-2xl bg-[#edf8f6] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+          <div className="print-avoid-break rounded-2xl bg-blue-50 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Erreichbar
             </p>
-            <p className="mt-2 text-xl font-semibold text-slate-900">
+            <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
               {result.pages.filter((page) => !page.error).length}
             </p>
           </div>
-          <div className="print-avoid-break rounded-2xl bg-[#fff1e8] p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+          <div className="print-avoid-break rounded-2xl bg-slate-100 dark:bg-[#1e2635] p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Kritisch
             </p>
-            <p className="mt-2 text-xl font-semibold text-slate-900">
+            <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
               {result.pages.filter((page) => page.score < 60 || page.error).length}
             </p>
           </div>
@@ -1244,10 +1244,10 @@ function SeoReportContent({
       </section>
 
       <section className="mt-6 grid gap-4 xl:grid-cols-2">
-        <Card className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-[#fffdf9] shadow-none">
+        <Card className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-none">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
-              <AlertCircle className="h-5 w-5 text-[#b85e34]" />
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
+              <AlertCircle className="h-5 w-5 text-blue-600" />
               Kritische Probleme
             </CardTitle>
           </CardHeader>
@@ -1256,10 +1256,10 @@ function SeoReportContent({
           </CardContent>
         </Card>
 
-        <Card className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-[#fffdf9] shadow-none">
+        <Card className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-none">
           <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950">
-              <Sparkles className="h-5 w-5 text-[#b85e34]" />
+            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
+              <Sparkles className="h-5 w-5 text-blue-600" />
               Handlungsempfehlungen
             </CardTitle>
           </CardHeader>
@@ -1276,10 +1276,10 @@ function SeoReportContent({
 
       {result.technicalSeo ? (
         <section className="mt-6">
-          <Card className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-white shadow-none">
+          <Card className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-none">
             <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-base text-slate-950">
-                <Zap className="h-5 w-5 text-[#0d9488]" />
+              <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
+                <Zap className="h-5 w-5 text-blue-600" />
                 Technisches SEO
               </CardTitle>
             </CardHeader>
@@ -1294,8 +1294,8 @@ function SeoReportContent({
                       className={cn(
                         'print-avoid-break rounded-2xl border px-4 py-3 text-sm',
                         check.ok
-                          ? 'border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72]'
-                          : 'border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32]'
+                          ? 'border-blue-100 bg-blue-50 text-blue-600'
+                          : 'border-amber-200 bg-amber-50 text-amber-800'
                       )}
                     >
                       <div className="flex items-center gap-2 font-medium">
@@ -1320,23 +1320,23 @@ function SeoReportContent({
 
       <section className="mt-6 space-y-4">
         <div className="print-avoid-break">
-          <h2 className="text-lg font-semibold text-slate-950">Seiten im Detail</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Seiten im Detail</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.
           </p>
         </div>
         {printablePages.map((page) => (
           <Card
             key={page.url}
-            className="print-avoid-break rounded-[28px] border border-[#e6ddd0] bg-white shadow-none"
+            className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-none"
           >
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
-                  <CardTitle className="text-base text-slate-950">
+                  <CardTitle className="text-base text-slate-950 dark:text-slate-50">
                     {sanitizeSeoText(page.title) || extractHostname(page.url) || 'Seite'}
                   </CardTitle>
-                  <p className="mt-1 break-all text-sm text-slate-500">{page.url}</p>
+                  <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">{page.url}</p>
                 </div>
                 <Badge className={cn('rounded-full', scoreTone(page.score).badge)}>
                   Score {page.score}
@@ -1345,35 +1345,35 @@ function SeoReportContent({
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-2xl bg-[#f7f3ed] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Title
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {sanitizeSeoText(page.title) || 'Kein Title gefunden'}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[#f7f3ed] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Meta Description
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {sanitizeSeoText(page.metaDescription) || 'Keine Meta Description gefunden'}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[#f7f3ed] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Headlines
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {page.h1s.length} H1 / {page.h2s.length} H2
                   </p>
                 </div>
-                <div className="rounded-2xl bg-[#f7f3ed] p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                     Content
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700">
+                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
                     {page.wordCount} Wörter, {page.images.total} Bilder, {page.images.withoutAlt}{' '}
                     ohne Alt
                   </p>
@@ -1403,7 +1403,7 @@ function AnalysisHistoryRow({
     analysis.overallScore !== null ? scoreTone(analysis.overallScore) : scoreTone(0)
 
   return (
-    <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+    <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
       <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
         <div className="flex items-center gap-4">
           <div
@@ -1411,56 +1411,56 @@ function AnalysisHistoryRow({
               'flex h-12 w-12 items-center justify-center rounded-2xl border text-base font-bold',
               analysis.status === 'done'
                 ? `${tone.bg} ${tone.text}`
-                : 'border-[#dceee9] bg-[#edf8f6] text-[#0d9488]'
+                : 'border-slate-100 dark:border-[#252d3a] bg-blue-50 text-blue-600'
             )}
           >
             {analysis.status === 'running' ? (
               <Loader2 className="h-5 w-5 animate-spin" />
             ) : analysis.status === 'error' ? (
-              <AlertCircle className="h-5 w-5 text-[#b85e34]" />
+              <AlertCircle className="h-5 w-5 text-blue-600" />
             ) : (
               analysis.overallScore ?? '—'
             )}
           </div>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-sm font-semibold text-slate-900">
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {analysis.config.urls[0] ?? 'SEO Analyse'}
               </p>
-              <Badge className="rounded-full bg-[#f7f3ed] text-slate-600 hover:bg-[#f7f3ed]">
+              <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
                 {formatCrawlModeLabel(analysis.config.crawlMode)}
               </Badge>
               {analysis.status === 'running' && (
-                <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">
+                <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
                   Läuft
                 </Badge>
               )}
               {analysis.status === 'error' && (
-                <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
+                <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
                   Fehler
                 </Badge>
               )}
             </div>
-            <p className="mt-1 text-xs text-slate-500">{formatDate(analysis.createdAt)}</p>
+            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{formatDate(analysis.createdAt)}</p>
           </div>
         </div>
 
         <div className="flex-1">
           {analysis.status === 'running' && (
             <div className="space-y-2">
-              <Progress value={progress} className="h-2 bg-[#ece4d8]" />
-              <p className="text-xs text-slate-500">
+              <Progress value={progress} className="h-2 bg-slate-200 dark:bg-[#252d3a]" />
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {analysis.pagesCrawled} / {analysis.pagesTotal || '?'} Seiten
               </p>
             </div>
           )}
           {analysis.status === 'done' && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               {analysis.totalPages ?? analysis.pagesCrawled} Seiten analysiert
             </p>
           )}
           {analysis.status === 'error' && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               Die Analyse konnte nicht abgeschlossen werden.
             </p>
           )}
@@ -1468,7 +1468,7 @@ function AnalysisHistoryRow({
 
         <div className="flex items-center gap-2">
           {(analysis.status === 'done' || analysis.status === 'running') && (
-            <Button asChild variant="outline" className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white">
+            <Button asChild variant="outline" className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]">
               <Link href={href}>{analysis.status === 'running' ? 'Live-Ansicht' : 'Öffnen'}</Link>
             </Button>
           )}
@@ -1476,7 +1476,7 @@ function AnalysisHistoryRow({
             type="button"
             variant="outline"
             onClick={onDelete}
-            className="rounded-full border-[#f2ddd0] bg-white text-[#a35a34] hover:bg-[#fff6f0]"
+            className="rounded-full border-amber-200 bg-white dark:bg-[#151c28] text-slate-400 dark:text-slate-500 hover:bg-amber-50"
           >
             Löschen
           </Button>
@@ -1873,8 +1873,8 @@ function SeoAnalysisWorkspace({
 
   if (detailLoading) {
     return (
-      <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
-        <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Analyse wird geladen
         </CardContent>
@@ -1889,26 +1889,26 @@ function SeoAnalysisWorkspace({
         : 0
 
     return (
-      <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardContent className="flex flex-col items-center gap-6 px-6 py-14 text-center">
           <div className="relative flex h-24 w-24 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-[#dceee9]" />
-            <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-[#0d9488]" />
-            <Search className="h-8 w-8 text-[#0d9488]" />
+            <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-[#252d3a]" />
+            <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-blue-600" />
+            <Search className="h-8 w-8 text-blue-600" />
           </div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-semibold text-slate-950">SEO-Analyse läuft</h2>
-            <p className="text-sm leading-6 text-slate-600">
+            <h2 className="text-2xl font-semibold text-slate-950 dark:text-slate-50">SEO-Analyse läuft</h2>
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               {runningSummary?.pagesTotal
                 ? `${runningSummary.pagesCrawled} von ${runningSummary.pagesTotal} Seiten analysiert`
                 : 'Sitemap und Seiten werden gerade eingelesen.'}
             </p>
           </div>
           <div className="w-full max-w-md space-y-2">
-            <Progress value={progress} className="h-2 bg-[#ece4d8]" />
-            <p className="text-xs text-slate-500">{progress}%</p>
+            <Progress value={progress} className="h-2 bg-slate-200 dark:bg-[#252d3a]" />
+            <p className="text-xs text-slate-500 dark:text-slate-400">{progress}%</p>
           </div>
-          <p className="max-w-md text-xs leading-6 text-slate-500">
+          <p className="max-w-md text-xs leading-6 text-slate-500 dark:text-slate-400">
             Die Analyse läuft serverseitig weiter. Du kannst die Seite offen lassen oder später in
             den Verlauf zurückkehren.
           </p>
@@ -1916,7 +1916,7 @@ function SeoAnalysisWorkspace({
             type="button"
             variant="outline"
             onClick={() => router.push('/tools/seo-analyse')}
-            className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
+            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
           >
             <ArrowLeft className="h-4 w-4" />
             Zurück zum Verlauf
@@ -1928,11 +1928,11 @@ function SeoAnalysisWorkspace({
 
   if (initialAnalysisId) {
     return (
-      <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
           <div className="space-y-2">
-            <h2 className="text-xl font-semibold text-slate-950">Analyse nicht verfügbar</h2>
-            <p className="max-w-2xl text-sm leading-7 text-slate-600">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">Analyse nicht verfügbar</h2>
+            <p className="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
               Diese SEO-Analyse konnte nicht geladen werden oder gehört nicht zu deinem Tenant.
             </p>
           </div>
@@ -1940,7 +1940,7 @@ function SeoAnalysisWorkspace({
             type="button"
             variant="outline"
             onClick={() => router.push('/tools/seo-analyse')}
-            className="rounded-full border-[#ded4c7] bg-white text-slate-700 hover:bg-white"
+            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
           >
             <ArrowLeft className="h-4 w-4" />
             Zurück zum Verlauf
@@ -1952,16 +1952,16 @@ function SeoAnalysisWorkspace({
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl text-slate-950">
-            <Search className="h-5 w-5 text-[#0d9488]" />
+          <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
+            <Search className="h-5 w-5 text-blue-600" />
             Neue SEO-Analyse starten
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
           {error && (
-            <Alert className="rounded-[24px] border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32] [&>svg]:text-[#9a5a32]">
+            <Alert className="rounded-2xl border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-800">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Analyse konnte nicht gestartet werden</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
@@ -1969,7 +1969,7 @@ function SeoAnalysisWorkspace({
           )}
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">Crawl-Modus</label>
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Crawl-Modus</label>
             <div className="grid gap-3 md:grid-cols-3">
               {[
                 {
@@ -1993,21 +1993,21 @@ function SeoAnalysisWorkspace({
                   type="button"
                   onClick={() => setCrawlMode(mode.value as SeoCrawlMode)}
                   className={cn(
-                    'rounded-[24px] border px-4 py-4 text-left transition',
+                    'rounded-2xl border px-4 py-4 text-left transition',
                     crawlMode === mode.value
-                      ? 'border-[#0d9488] bg-[#edf8f6]'
-                      : 'border-[#e6ddd0] bg-[#fffdf9] hover:border-[#d7ccbc]'
+                      ? 'border-blue-600 bg-blue-50'
+                      : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] hover:border-slate-200'
                   )}
                 >
-                  <p className="text-sm font-semibold text-slate-900">{mode.label}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{mode.description}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mode.label}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{mode.description}</p>
                 </button>
               ))}
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
               {crawlMode === 'multiple' ? 'URLs (eine pro Zeile)' : 'URL'}
             </label>
             {crawlMode === 'multiple' ? (
@@ -2015,14 +2015,14 @@ function SeoAnalysisWorkspace({
                 value={urlInput}
                 onChange={(event) => setUrlInput(event.target.value)}
                 placeholder={'https://example.com/\nhttps://example.com/kontakt'}
-                className="min-h-[150px] rounded-[24px] border-[#ded4c7] bg-[#fffdf9] text-slate-900 placeholder:text-slate-400"
+                className="min-h-[150px] rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
               />
             ) : (
               <Input
                 value={urlInput}
                 onChange={(event) => setUrlInput(event.target.value)}
                 placeholder="https://example.com"
-                className="h-12 rounded-[24px] border-[#ded4c7] bg-[#fffdf9] text-slate-900 placeholder:text-slate-400"
+                className="h-12 rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
               />
             )}
 
@@ -2031,10 +2031,10 @@ function SeoAnalysisWorkspace({
                 className={cn(
                   'rounded-2xl border px-4 py-3 text-sm',
                   estimateLoading
-                    ? 'border-[#e6ddd0] bg-[#f7f3ed] text-slate-500'
+                    ? 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-500 dark:text-slate-400'
                     : hasSitemap
-                      ? 'border-[#d7efe9] bg-[#edf8f6] text-[#0d7d72]'
-                      : 'border-[#f2ddd0] bg-[#fff6f0] text-[#9a5a32]'
+                      ? 'border-blue-100 bg-blue-50 text-blue-600'
+                      : 'border-amber-200 bg-amber-50 text-amber-800'
                 )}
               >
                 {estimateLoading ? (
@@ -2081,7 +2081,7 @@ function SeoAnalysisWorkspace({
                 </>
               )}
             </Button>
-            <p className="text-xs leading-6 text-slate-500">
+            <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
               Unterstützt Title, Meta-Description, Heading-Struktur, Links, Alt-Texte,
               Canonical, Open Graph und technische Checks.
             </p>
@@ -2092,32 +2092,32 @@ function SeoAnalysisWorkspace({
       <div className="space-y-4">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <h2 className="text-lg font-semibold text-slate-950">Analysen-Verlauf</h2>
-            <p className="text-sm text-slate-500">
+            <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Analysen-Verlauf</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Vergangene und laufende SEO-Analysen für diesen Tenant.
             </p>
           </div>
-          <Badge className="rounded-full bg-[#f7f3ed] text-slate-600 hover:bg-[#f7f3ed]">
+          <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
             {analyses.length} Einträge
           </Badge>
         </div>
 
         {loading ? (
-          <Card className="rounded-[28px] border border-[#e6ddd0] bg-white">
-            <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+            <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Verlauf wird geladen
             </CardContent>
           </Card>
         ) : analyses.length === 0 ? (
-          <Card className="rounded-[28px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#edf8f6]">
-                <Search className="h-6 w-6 text-[#0d9488]" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
+                <Search className="h-6 w-6 text-blue-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-slate-900">Noch keine SEO-Analysen</p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Noch keine SEO-Analysen</p>
+                <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
                   Starte oben deine erste Analyse und speichere die Ergebnisse direkt im Tenant.
                 </p>
               </div>
@@ -2173,14 +2173,14 @@ export function TenantToolsWorkspace({
           initialAnalysisId={initialAnalysisId}
         />
       ) : (
-        <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#f7f3ed]">
-              <Lock className="h-7 w-7 text-[#a35a34]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28]">
+              <Lock className="h-7 w-7 text-slate-400 dark:text-slate-500" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-xl font-semibold text-slate-950">SEO Analyse ist noch gesperrt</h2>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600">
+              <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">SEO Analyse ist noch gesperrt</h2>
+              <p className="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
                 Das Modul ist bereits vorbereitet, aber für diesen Tenant noch nicht aktiv. Nach
                 der Buchung steht dir hier direkt die Analyse-Oberfläche mit Verlauf und
                 Ergebnisansicht zur Verfügung.
@@ -2194,7 +2194,7 @@ export function TenantToolsWorkspace({
                 </Link>
               </Button>
             ) : (
-              <Badge className="rounded-full bg-[#fff1e8] text-[#a35a34] hover:bg-[#fff1e8]">
+              <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
                 Bitte Admin kontaktieren
               </Badge>
             )}

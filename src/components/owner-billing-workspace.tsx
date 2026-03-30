@@ -103,13 +103,13 @@ function formatAmount(amount: number, currency: string) {
 function subscriptionBadge(status: string) {
   switch (status) {
     case 'active':
-      return <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">Aktiv</Badge>
+      return <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">Aktiv</Badge>
     case 'past_due':
-      return <Badge className="rounded-full bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]">Ueberfaellig</Badge>
+      return <Badge className="rounded-full bg-red-50 text-[#dc2626] hover:bg-red-50">Überfällig</Badge>
     case 'canceling':
-      return <Badge className="rounded-full bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]">In Kuendigung</Badge>
+      return <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">In Kündigung</Badge>
     case 'canceled':
-      return <Badge className="rounded-full bg-[#f1f5f9] text-[#64748b] hover:bg-[#f1f5f9]">Gekuendigt</Badge>
+      return <Badge className="rounded-full bg-[#f1f5f9] text-[#64748b] hover:bg-[#f1f5f9]">Gekündigt</Badge>
     default:
       return <Badge className="rounded-full bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#f1f5f9]">Kein Abo</Badge>
   }
@@ -118,11 +118,11 @@ function subscriptionBadge(status: string) {
 function accessBadge(state: string) {
   switch (state) {
     case 'accessible':
-      return <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">Zugang aktiv</Badge>
+      return <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">Zugang aktiv</Badge>
     case 'manual_locked':
-      return <Badge className="rounded-full bg-[#fef2f2] text-[#dc2626] hover:bg-[#fef2f2]">Gesperrt</Badge>
+      return <Badge className="rounded-full bg-red-50 text-[#dc2626] hover:bg-red-50">Gesperrt</Badge>
     case 'billing_blocked':
-      return <Badge className="rounded-full bg-[#fff8ed] text-[#b85e34] hover:bg-[#fff8ed]">Billing-Block</Badge>
+      return <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">Billing-Block</Badge>
     default:
       return <Badge className="rounded-full bg-[#f1f5f9] text-[#94a3b8] hover:bg-[#f1f5f9]">{state}</Badge>
   }
@@ -139,28 +139,28 @@ function BillingMetricsRow({ metrics }: { metrics: BillingMetrics }) {
       value: String(metrics.active),
       hint: 'Tenants mit laufendem Basis-Plan.',
       icon: CreditCard,
-      accent: 'text-[#0d9488] bg-[#f0fdfb]',
+      accent: 'text-blue-600 bg-blue-50',
     },
     {
-      label: 'Ueberfaellig',
+      label: 'Überfällig',
       value: String(metrics.pastDue),
       hint: 'Tenants mit fehlgeschlagener Zahlung.',
       icon: AlertTriangle,
-      accent: 'text-[#dc2626] bg-[#fef2f2]',
+      accent: 'text-[#dc2626] bg-red-50',
     },
     {
-      label: 'In Kuendigung',
+      label: 'In Kündigung',
       value: String(metrics.canceling),
-      hint: 'Abo laeuft zum Periodenende aus.',
+      hint: 'Abo läuft zum Periodenende aus.',
       icon: DollarSign,
-      accent: 'text-[#b85e34] bg-[#fff8ed]',
+      accent: 'text-blue-600 bg-blue-50',
     },
     {
       label: 'Manuell gesperrt',
       value: String(metrics.manualLocked),
       hint: 'Vom Owner gesperrte Tenants.',
       icon: Lock,
-      accent: 'text-slate-700 bg-slate-100',
+      accent: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#1e2635]',
     },
   ]
 
@@ -169,14 +169,14 @@ function BillingMetricsRow({ metrics }: { metrics: BillingMetrics }) {
       {items.map((item) => (
         <Card
           key={item.label}
-          className="rounded-[28px] border border-[#e7ddd1] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]"
+          className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft"
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 Billing
               </p>
-              <CardTitle className="mt-2 text-base font-semibold text-slate-900">
+              <CardTitle className="mt-2 text-base font-semibold text-slate-900 dark:text-slate-100">
                 {item.label}
               </CardTitle>
             </div>
@@ -185,8 +185,8 @@ function BillingMetricsRow({ metrics }: { metrics: BillingMetrics }) {
             </div>
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-semibold tracking-tight text-slate-950">{item.value}</p>
-            <p className="mt-2 text-sm leading-6 text-slate-500">{item.hint}</p>
+            <p className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{item.value}</p>
+            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{item.hint}</p>
           </CardContent>
         </Card>
       ))}
@@ -302,22 +302,22 @@ export function OwnerBillingWorkspace() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-[34px] border border-[#ddd3c6] bg-[linear-gradient(135deg,#fffaf2_0%,#f4efe7_52%,#eef7f5_100%)] p-6 shadow-[0_24px_80px_rgba(89,71,42,0.08)] sm:p-8">
-        <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-[#1dbfaa]/12 blur-3xl" />
-        <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-[#eb6f3d]/12 blur-3xl" />
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+        <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-600/12 blur-3xl" />
+        <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative max-w-3xl space-y-4">
           <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
             Owner Billing
           </Badge>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
               Abrechnung / Super Admin
             </p>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-              Billing-Uebersicht aller Tenants
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
+              Billing-Übersicht aller Tenants
             </h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
               Alle Tenant-Abos auf einen Blick. Erkenne kritische Faelle wie Zahlungsausfaelle oder
               auslaufende Abos sofort und greife bei Bedarf ein.
             </p>
@@ -325,30 +325,30 @@ export function OwnerBillingWorkspace() {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <Card className="rounded-[26px] border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
             <CardContent className="p-5">
-              <CreditCard className="h-5 w-5 text-[#b85e34]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900">DB-basierte Uebersicht</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <CreditCard className="h-5 w-5 text-blue-600" />
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">DB-basierte Übersicht</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Alle Daten kommen aus der synchronisierten Datenbank, nicht aus Live-Stripe-Calls.
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-[26px] border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
             <CardContent className="p-5">
-              <Shield className="h-5 w-5 text-[#0d9488]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900">Manuelle Sperrung</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Tenants koennen unabhaengig vom Stripe-Status gesperrt und freigeschaltet werden.
+              <Shield className="h-5 w-5 text-blue-600" />
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Manuelle Sperrung</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Tenants können unabhängig vom Stripe-Status gesperrt und freigeschaltet werden.
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-[26px] border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
             <CardContent className="p-5">
               <AlertTriangle className="h-5 w-5 text-[#1f2937]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900">Kritische Faelle</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
-                Tenants mit Zahlungsproblemen oder Kuendigungen werden visuell hervorgehoben.
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Kritische Faelle</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                Tenants mit Zahlungsproblemen oder Kündigungen werden visuell hervorgehoben.
               </p>
             </CardContent>
           </Card>
@@ -356,7 +356,7 @@ export function OwnerBillingWorkspace() {
       </section>
 
       {error && (
-        <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -365,28 +365,28 @@ export function OwnerBillingWorkspace() {
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-40 rounded-[28px]" />
+              <Skeleton key={index} className="h-40 rounded-[2rem]" />
             ))}
           </div>
-          <Skeleton className="h-80 rounded-[30px]" />
+          <Skeleton className="h-80 rounded-[2rem]" />
         </div>
       ) : (
         <>
           <BillingMetricsRow metrics={metrics} />
 
-          <Card className="rounded-[30px] border border-[#e7ddd1] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardContent className="space-y-5 p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                     Tenant Billing
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
                     Abo-Status aller Agenturen
                   </h2>
                 </div>
                 <div className="relative w-full max-w-md">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <Input
                     value={query}
                     onChange={(e) => {
@@ -394,7 +394,7 @@ export function OwnerBillingWorkspace() {
                       setPage(1)
                     }}
                     placeholder="Nach Tenant-Name oder Subdomain suchen"
-                    className="h-12 rounded-full border-[#ded4c7] bg-[#fcfaf6] pl-11"
+                    className="h-12 rounded-full border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] pl-11"
                     aria-label="Tenant-Suche"
                   />
                 </div>
@@ -407,7 +407,7 @@ export function OwnerBillingWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto flex-wrap rounded-full bg-[#f4eee6] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
                     Alle
                   </TabsTrigger>
@@ -415,13 +415,13 @@ export function OwnerBillingWorkspace() {
                     Aktiv
                   </TabsTrigger>
                   <TabsTrigger value="past_due" className="rounded-full px-4 py-2">
-                    Ueberfaellig
+                    Überfällig
                   </TabsTrigger>
                   <TabsTrigger value="canceling" className="rounded-full px-4 py-2">
-                    In Kuendigung
+                    In Kündigung
                   </TabsTrigger>
                   <TabsTrigger value="canceled" className="rounded-full px-4 py-2">
-                    Gekuendigt
+                    Gekündigt
                   </TabsTrigger>
                   <TabsTrigger value="none" className="rounded-full px-4 py-2">
                     Kein Abo
@@ -436,7 +436,7 @@ export function OwnerBillingWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto flex-wrap rounded-full bg-[#eef4f2] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
                     Alle Zugaenge
                   </TabsTrigger>
@@ -452,19 +452,19 @@ export function OwnerBillingWorkspace() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                 <p>Billing-Daten basieren auf dem synchronisierten DB-Stand und sind fuer den Owner zentral lesbar.</p>
                 <p>{rangeLabel}</p>
               </div>
 
               {/* Table */}
               {tenants.length === 0 ? (
-                <div className="rounded-[24px] border border-dashed border-[#ddd1c4] bg-[#fcfaf6] px-6 py-12 text-center">
+                <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-12 text-center">
                   <Building2 className="mx-auto h-8 w-8 text-slate-300" />
-                  <p className="mt-3 text-sm font-semibold text-slate-700">
+                  <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Keine Tenants gefunden
                   </p>
-                  <p className="mt-1 text-sm text-slate-500">
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                     Passe deine Filter an oder lege neue Tenants an.
                   </p>
                 </div>
@@ -472,35 +472,35 @@ export function OwnerBillingWorkspace() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-[#efe6d9]">
-                        <TableHead className="text-slate-500">Tenant</TableHead>
-                        <TableHead className="text-slate-500">Abo-Status</TableHead>
-                        <TableHead className="text-center text-slate-500">Module</TableHead>
-                        <TableHead className="text-slate-500">Naechste Abrechnung</TableHead>
-                        <TableHead className="text-right text-slate-500">Betrag/Periode</TableHead>
-                        <TableHead className="text-slate-500">Zugang</TableHead>
-                        <TableHead className="text-right text-slate-500">Aktion</TableHead>
+                      <TableRow className="border-slate-100 dark:border-[#252d3a]">
+                        <TableHead className="text-slate-500 dark:text-slate-400">Tenant</TableHead>
+                        <TableHead className="text-slate-500 dark:text-slate-400">Abo-Status</TableHead>
+                        <TableHead className="text-center text-slate-500 dark:text-slate-400">Module</TableHead>
+                        <TableHead className="text-slate-500 dark:text-slate-400">Naechste Abrechnung</TableHead>
+                        <TableHead className="text-right text-slate-500 dark:text-slate-400">Betrag/Periode</TableHead>
+                        <TableHead className="text-slate-500 dark:text-slate-400">Zugang</TableHead>
+                        <TableHead className="text-right text-slate-500 dark:text-slate-400">Aktion</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {tenants.map((t) => (
-                        <TableRow key={t.id} className="border-[#efe6d9]">
+                        <TableRow key={t.id} className="border-slate-100 dark:border-[#252d3a]">
                           <TableCell>
                             <div>
-                              <p className="font-semibold text-slate-900">{t.name}</p>
-                              <p className="text-xs text-slate-500">{t.slug}.boost-hive.de</p>
+                              <p className="font-semibold text-slate-900 dark:text-slate-100">{t.name}</p>
+                              <p className="text-xs text-slate-500 dark:text-slate-400">{t.slug}.boost-hive.de</p>
                             </div>
                           </TableCell>
                           <TableCell>{subscriptionBadge(t.subscriptionStatus)}</TableCell>
                           <TableCell className="text-center">
-                            <span className="text-sm font-semibold text-slate-700">
+                            <span className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                               {t.moduleCount}
                             </span>
                           </TableCell>
-                          <TableCell className="text-sm text-slate-600">
+                          <TableCell className="text-sm text-slate-600 dark:text-slate-300">
                             {formatDate(t.nextBillingAt)}
                           </TableCell>
-                          <TableCell className="text-right text-sm font-semibold text-slate-900">
+                          <TableCell className="text-right text-sm font-semibold text-slate-900 dark:text-slate-100">
                             {t.totalAmount > 0
                               ? formatAmount(t.totalAmount, t.currency)
                               : '--'}
@@ -511,7 +511,7 @@ export function OwnerBillingWorkspace() {
                               asChild
                               size="sm"
                               variant="outline"
-                              className="rounded-full border-[#ded4c7]"
+                              className="rounded-full border-slate-200 dark:border-[#252d3a]"
                             >
                               <Link href={`/owner/tenants/${t.id}?tab=subscription`}>
                                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
@@ -527,15 +527,15 @@ export function OwnerBillingWorkspace() {
               )}
 
               {/* Pagination */}
-              <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-500">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Seite {pagination.page} von {pagination.totalPages}
                 </p>
                 <div className="flex gap-3">
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-[#ded4c7] bg-white"
+                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                     onClick={() => setPage((c) => Math.max(1, c - 1))}
                     disabled={page <= 1}
                   >
@@ -544,7 +544,7 @@ export function OwnerBillingWorkspace() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-[#ded4c7] bg-white"
+                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                     onClick={() => setPage((c) => Math.min(pagination.totalPages, c + 1))}
                     disabled={page >= pagination.totalPages}
                   >

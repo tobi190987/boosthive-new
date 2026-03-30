@@ -18,7 +18,7 @@ interface ResetPasswordFormProps {
 }
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 
 export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -197,13 +197,13 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start gap-3 rounded-xl border border-[#d1faf4] bg-[#f0fdfb] p-4">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1dbfaa]/20">
-          <KeyRound className="h-4 w-4 text-[#0d9488]" />
+      <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600/20">
+          <KeyRound className="h-4 w-4 text-blue-600" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-900">Neues Passwort festlegen</p>
-          <p className="mt-0.5 text-xs leading-5 text-slate-500">
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Neues Passwort festlegen</p>
+          <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">
             Nutze ein starkes Passwort, damit der Zugang zu deinem Workspace sofort wieder sicher ist.
           </p>
         </div>
@@ -211,7 +211,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         {isPreparingRecoverySession && (
-          <Alert className="rounded-xl border-[#d1faf4] bg-[#f0fdfb] text-[#0d9488]">
+          <Alert className="rounded-xl border-blue-200 bg-blue-50 text-blue-600">
             <Loader2 className="h-4 w-4 animate-spin" />
             <AlertDescription>Recovery-Link wird geprüft, einen Moment bitte.</AlertDescription>
           </Alert>
@@ -232,7 +232,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
         )}
 
         {isSuccess && (
-          <Alert className="rounded-xl border-[#d1faf4] bg-[#f0fdfb] text-[#0d9488]">
+          <Alert className="rounded-xl border-blue-200 bg-blue-50 text-blue-600">
             <CheckCircle2 className="h-4 w-4" />
             <AlertDescription>
               Dein Passwort wurde aktualisiert. Du kannst dich jetzt neu anmelden.
@@ -241,7 +241,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+          <Label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Neues Passwort
           </Label>
           <div className="relative">
@@ -257,7 +257,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
               onClick={() => setShowPassword((value) => !value)}
               aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
             >
@@ -268,7 +268,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
+          <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Passwort bestätigen
           </Label>
           <div className="relative">
@@ -284,7 +284,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
               onClick={() => setShowConfirmPassword((value) => !value)}
               aria-label={showConfirmPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
             >
@@ -296,7 +296,7 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
 
         <Button
           type="submit"
-          className="h-[48px] w-full rounded-xl bg-[#1dbfaa] text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896] disabled:opacity-60"
+          className="h-[48px] w-full rounded-xl bg-blue-600 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
           disabled={isSubmitting || isSuccess || isPreparingRecoverySession}
         >
           {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -304,9 +304,9 @@ export function ResetPasswordForm({ action, token }: ResetPasswordFormProps) {
         </Button>
       </form>
 
-      <p className="text-sm text-slate-500">
+      <p className="text-sm text-slate-500 dark:text-slate-400">
         Link abgelaufen?{' '}
-        <Link href="/forgot-password" className="font-medium text-[#0d9488] underline-offset-4 hover:underline">
+        <Link href="/forgot-password" className="font-medium text-blue-600 underline-offset-4 hover:underline">
           Neuen Reset anfordern
         </Link>
       </p>

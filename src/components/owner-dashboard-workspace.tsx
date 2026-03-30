@@ -259,9 +259,9 @@ export function OwnerDashboardWorkspace() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[34px] border border-[#ddd3c6] bg-[linear-gradient(135deg,#fffaf2_0%,#f4efe7_52%,#eef7f5_100%)] p-6 shadow-[0_24px_80px_rgba(89,71,42,0.08)] sm:p-8">
-        <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-[#1dbfaa]/12 blur-3xl" />
-        <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-[#eb6f3d]/12 blur-3xl" />
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+        <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-600/12 blur-3xl" />
+        <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-4">
@@ -269,13 +269,13 @@ export function OwnerDashboardWorkspace() {
               Owner Control
             </Badge>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                 Root Domain / Super Admin
               </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
                 Systemweite Tenant-Übersicht für BoostHive
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
                 Filtere aktive und inaktive Agenturen, springe in den Provisioning-Flow und behalte
                 den globalen Plattformzustand in einer klaren Owner-Oberflaeche im Blick.
               </p>
@@ -295,7 +295,7 @@ export function OwnerDashboardWorkspace() {
             <Button
               asChild
               variant="outline"
-              className="rounded-full border-[#ded4c7] bg-white/80 text-slate-700 hover:bg-white"
+              className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
             >
               <Link href="/owner/tenants">Tenant-Liste</Link>
             </Button>
@@ -303,29 +303,29 @@ export function OwnerDashboardWorkspace() {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <Card className="rounded-[26px] border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
             <CardContent className="p-5">
-              <Sparkles className="h-5 w-5 text-[#b85e34]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900">Metriken auf einen Blick</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <Sparkles className="h-5 w-5 text-blue-600" />
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Metriken auf einen Blick</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Total, aktive und derzeit blockierte Agenturen bleiben schnell scanbar.
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-[26px] border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
             <CardContent className="p-5">
-              <Search className="h-5 w-5 text-[#0d9488]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900">Suche und Filter</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <Search className="h-5 w-5 text-blue-600" />
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Suche und Filter</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Name und Subdomain werden jetzt über die Owner-API serverseitig gefiltert.
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-[26px] border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
             <CardContent className="p-5">
               <Building2 className="h-5 w-5 text-[#1f2937]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900">Statuswechsel mit Klarheit</p>
-              <p className="mt-1 text-sm leading-6 text-slate-600">
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Statuswechsel mit Klarheit</p>
+              <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Manuelle Statuswechsel bleiben bestaetigt, richer Sperrgruende werden sauber angezeigt.
               </p>
             </CardContent>
@@ -334,7 +334,7 @@ export function OwnerDashboardWorkspace() {
       </section>
 
       {error && (
-        <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -343,29 +343,29 @@ export function OwnerDashboardWorkspace() {
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-40 rounded-[28px]" />
+              <Skeleton key={index} className="h-40 rounded-[2rem]" />
             ))}
           </div>
-          <Skeleton className="h-32 rounded-[30px]" />
-          <Skeleton className="h-80 rounded-[30px]" />
+          <Skeleton className="h-32 rounded-[2rem]" />
+          <Skeleton className="h-80 rounded-[2rem]" />
         </div>
       ) : (
         <>
           <OwnerDashboardMetrics {...metrics} />
 
-          <Card className="rounded-[30px] border border-[#e7ddd1] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
             <CardContent className="space-y-5 p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                     Tenant Explorer
                   </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
                     Alle Agenturen im Owner-Blick
                   </h2>
                 </div>
                 <div className="relative w-full max-w-md">
-                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
                   <Input
                     value={query}
                     onChange={(event) => {
@@ -373,7 +373,7 @@ export function OwnerDashboardWorkspace() {
                       setPage(1)
                     }}
                     placeholder="Nach Tenant-Name oder Subdomain suchen"
-                    className="h-12 rounded-full border-[#ded4c7] bg-[#fcfaf6] pl-11"
+                    className="h-12 rounded-full border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] pl-11"
                   />
                 </div>
               </div>
@@ -385,7 +385,7 @@ export function OwnerDashboardWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto flex-wrap rounded-full bg-[#f4eee6] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
                     Alle
                   </TabsTrigger>
@@ -398,8 +398,8 @@ export function OwnerDashboardWorkspace() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-4 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-                <p>Suche, Filter und Member-Counts werden serverseitig konsistent fuer alle Agenturen geladen.</p>
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                <p>Suche, Filter und Member-Counts werden serverseitig konsistent für alle Agenturen geladen.</p>
                 <p>{rangeLabel}</p>
               </div>
 
@@ -423,15 +423,15 @@ export function OwnerDashboardWorkspace() {
                 onHardDeleteTenant={handleDeleteTenant}
               />
 
-              <div className="flex flex-col gap-3 border-t border-[#efe6d9] pt-5 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-sm text-slate-500">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-5 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
                   Seite {pagination.page} von {pagination.totalPages}
                 </p>
                 <div className="flex gap-3">
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-[#ded4c7] bg-white"
+                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={page <= 1}
                   >
@@ -440,7 +440,7 @@ export function OwnerDashboardWorkspace() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-[#ded4c7] bg-white"
+                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                     onClick={() =>
                       setPage((current) => Math.min(pagination.totalPages, current + 1))
                     }

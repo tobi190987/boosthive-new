@@ -18,6 +18,9 @@ export async function requireTenantModuleAccess(
   tenantId: string,
   moduleCode: string
 ): Promise<{ granted: true } | { error: NextResponse }> {
+  // DEV: all modules unlocked for all tenants
+  return { granted: true }
+
   const supabaseAdmin = createAdminClient()
   const eligibleCodes = MODULE_ACCESS_ALIASES[moduleCode] ?? [moduleCode]
 
@@ -27,7 +30,7 @@ export async function requireTenantModuleAccess(
     .select('id')
     .in('code', eligibleCodes)
 
-  if (modError || !mods || mods.length === 0) {
+  if (modError || !mods || (mods as Array<{ id: string }>).length === 0) {
     return {
       error: NextResponse.json(
         { error: 'Modul nicht gefunden.' },
@@ -36,7 +39,7 @@ export async function requireTenantModuleAccess(
     }
   }
 
-  const moduleIds = mods.map((mod) => mod.id)
+  const moduleIds = (mods as Array<{ id: string }>).map((mod) => mod.id)
 
   // Check the tenant's booking for any module that grants access.
   const { data: bookings, error: bookingError } = await supabaseAdmin
@@ -57,14 +60,15 @@ export async function requireTenantModuleAccess(
     }
   }
 
-  if (booking.status === 'active') {
+  const activeBooking = booking!
+  if (activeBooking.status === 'active') {
     return { granted: true }
   }
 
-  if (booking.status === 'canceling') {
+  if (activeBooking.status === 'canceling') {
     // Still accessible until period end
-    if (booking.current_period_end) {
-      const periodEnd = new Date(booking.current_period_end)
+    if (activeBooking.current_period_end) {
+      const periodEnd = new Date(activeBooking.current_period_end)
       if (periodEnd > new Date()) {
         return { granted: true }
       }
@@ -90,7 +94,10 @@ export async function requireTenantModuleAccess(
  * Useful for dashboard feature-gating without individual checks.
  */
 export async function getActiveModuleCodes(tenantId: string): Promise<string[]> {
+  // DEV: all modules unlocked for all tenants
   const supabaseAdmin = createAdminClient()
+  const { data: allMods } = await supabaseAdmin.from('modules').select('code')
+  if (allMods) return allMods.map((m) => m.code)
 
   const { data: bookings, error } = await supabaseAdmin
     .from('tenant_modules')

@@ -2,23 +2,23 @@ import Link from 'next/link'
 
 export default function DatenschutzPage() {
   return (
-    <main className="min-h-screen bg-[linear-gradient(135deg,#f7f2e9_0%,#f1eee8_52%,#eaf5f2_100%)] px-4 py-10 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[#f8fafc] px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="rounded-[36px] border border-[#dfd5c8] bg-[#fffdf9] p-8 shadow-[0_24px_80px_rgba(89,71,42,0.12)] sm:p-10">
+        <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-8 shadow-soft sm:p-10">
           <div className="space-y-8">
             <div className="space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                 Datenschutz
               </p>
               <h1 className="text-4xl font-semibold tracking-tight text-slate-950">
                 Datenschutzerklärung
               </h1>
-              <p className="max-w-2xl text-sm leading-7 text-slate-600">
+              <p className="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
                 Hier findest du die Datenschutzangaben für die temporäre Zugriffsschranke.
               </p>
             </div>
 
-            <div className="space-y-6 text-sm leading-7 text-slate-700">
+            <div className="space-y-6 text-sm leading-7 text-slate-700 dark:text-slate-300">
               <section className="space-y-2">
                 <h2 className="text-lg font-semibold text-slate-950">1. Datenschutz auf einen Blick</h2>
                 <p>
@@ -87,10 +87,10 @@ export default function DatenschutzPage() {
               </section>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 border-t border-[#ece2d5] pt-6 text-sm text-slate-600">
+            <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 dark:border-[#252d3a] pt-6 text-sm text-slate-600 dark:text-slate-300">
               <Link
                 href="/access"
-                className="font-medium text-[#b85e34] underline decoration-[#d7a182] underline-offset-4"
+                className="font-medium text-blue-600 underline decoration-blue-300 underline-offset-4"
               >
                 Zurück zur Access-Seite
               </Link>

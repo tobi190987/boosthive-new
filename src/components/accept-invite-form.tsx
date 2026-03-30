@@ -28,7 +28,7 @@ interface InvitationValidationState {
 }
 
 const fieldClassName =
-  'h-[52px] rounded-[18px] border-[#d5c8b7] bg-[#fcfaf6] px-4 text-[15px] shadow-[inset_0_1px_0_rgba(255,255,255,0.7)] transition placeholder:text-slate-400 focus-visible:border-[#b7673f] focus-visible:ring-[#b7673f]/25 focus-visible:ring-offset-0'
+  'h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 text-[15px] shadow-soft transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/25 focus-visible:ring-offset-0'
 
 export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -125,7 +125,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
   if (isSuccess) {
     return (
       <div className="space-y-6">
-        <Alert className="rounded-[24px] border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
+        <Alert className="rounded-2xl border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
             Deine Einladung für {validation?.tenantName ?? fallbackTenantName} wurde angenommen.
@@ -133,7 +133,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
           </AlertDescription>
         </Alert>
 
-        <Link href="/login" className="inline-flex font-medium text-[#9c4f2c] underline-offset-4 hover:underline">
+        <Link href="/login" className="inline-flex font-medium text-slate-500 dark:text-slate-400 underline-offset-4 hover:underline">
           Zur Login-Seite
         </Link>
       </div>
@@ -143,31 +143,31 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
   return (
     <div className="space-y-6">
       <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[22px] border border-[#eadfce] bg-[#fbf6ef] p-4">
-          <UserRoundPlus className="h-5 w-5 text-[#b85e34]" />
-          <p className="mt-3 text-sm font-semibold text-slate-900">Onboarding direkt im Link</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
+        <div className="rounded-[22px] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-4">
+          <UserRoundPlus className="h-5 w-5 text-blue-600" />
+          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Onboarding direkt im Link</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Das Passwort wird direkt beim ersten Einstieg gesetzt.
           </p>
         </div>
         <div className="rounded-[22px] border border-[#d7eadf] bg-[#eff8f2] p-4">
-          <ShieldCheck className="h-5 w-5 text-[#157f68]" />
-          <p className="mt-3 text-sm font-semibold text-slate-900">Token-basierter Einstieg</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600">
+          <ShieldCheck className="h-5 w-5 text-blue-600" />
+          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Token-basierter Einstieg</p>
+          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Die Annahme-Seite bleibt öffentlich, ohne vorherigen Login.
           </p>
         </div>
       </div>
 
       {isValidating && (
-        <Alert className="rounded-[24px] border-[#eadfce] bg-[#fbf6ef] text-slate-700">
+        <Alert className="rounded-2xl border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-700 dark:text-slate-300">
           <Loader2 className="h-4 w-4 animate-spin" />
           <AlertDescription>Einladung wird geprüft...</AlertDescription>
         </Alert>
       )}
 
       {!isValidating && !validation?.valid && (
-        <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
           <AlertDescription>
             {validation?.reason === 'expired'
               ? 'Diese Einladung ist abgelaufen. Bitte fordere bei einem Admin einen neuen Link an.'
@@ -181,7 +181,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
       )}
 
       {validation?.valid && (
-        <Alert className="rounded-[24px] border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
+        <Alert className="rounded-2xl border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
           <AlertDescription>
             Einladung für {validation.email} zu {validation.tenantName ?? fallbackTenantName} als{' '}
             {validation.role === 'admin' ? 'Admin' : 'Member'}.
@@ -190,7 +190,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
       )}
 
       {serverError && (
-        <Alert className="rounded-[24px] border-[#efc6b6] bg-[#fff0ea] text-[#8c3215]">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       )}
@@ -204,7 +204,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
         className="space-y-5"
       >
         <div className="space-y-2">
-          <label htmlFor="password" className="text-sm font-medium text-slate-700">
+          <label htmlFor="password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
             Passwort
           </label>
           <div className="relative">
@@ -218,7 +218,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
             />
             <button
               type="button"
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-900"
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-900 dark:hover:text-slate-100"
               onClick={() => setShowPassword((value) => !value)}
               aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
             >
@@ -230,7 +230,7 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
 
         <Button
           type="submit"
-          className="h-[52px] w-full rounded-[18px] bg-[#1f2937] text-white hover:bg-[#111827]"
+          className="h-[52px] w-full rounded-xl bg-[#1f2937] text-white hover:bg-[#111827]"
           onClick={() => {
             void submitInvitation()
           }}

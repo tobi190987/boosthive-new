@@ -37,7 +37,7 @@ export function TenantLogoutButton({
       type="button"
       variant="outline"
       className={cn(
-        'rounded-xl border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+        'rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
         className
       )}
       onClick={handleLogout}

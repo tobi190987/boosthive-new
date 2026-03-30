@@ -38,7 +38,7 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f0f4f8] px-4 py-8 sm:px-6 lg:px-10">
+    <main className="min-h-screen bg-[#f8fafc] px-4 py-8 sm:px-6 lg:px-10">
       <div className="mx-auto max-w-6xl">
 
         {/* Header */}
@@ -69,7 +69,7 @@ export default async function Home() {
           <div className="flex items-center gap-3">
             <Link
               href="/login"
-              className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm transition hover:border-slate-300"
             >
               Tenant Login
             </Link>
@@ -85,16 +85,16 @@ export default async function Home() {
         {/* Hero */}
         <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center mb-20">
           <div className="space-y-6">
-            <span className="inline-flex items-center rounded-full border border-[#d1faf4] bg-[#f0fdfb] px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-[#0d9488]">
+            <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.24em] text-blue-600">
               SaaS Platform
             </span>
             <div className="space-y-4">
-              <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-slate-900 sm:text-5xl">
+              <h1 className="max-w-2xl text-4xl font-semibold leading-tight tracking-tight text-slate-900 dark:text-slate-100 sm:text-5xl">
                 {tenant
                   ? `Willkommen bei ${tenant.slug}.`
                   : 'White-Label Marketing Plattform für Agenturen.'}
               </h1>
-              <p className="max-w-xl text-base leading-7 text-slate-500">
+              <p className="max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
                 {tenant
                   ? 'Melde dich in euren Workspace ein und arbeite in eurer eigenen, gebrandeten Umgebung.'
                   : 'Jede Agentur erhält ihre eigene Subdomain, ihr eigenes Branding und eine vollständig isolierte Arbeitsumgebung.'}
@@ -104,22 +104,22 @@ export default async function Home() {
             <div className="flex flex-wrap gap-3">
               <Link
                 href="/login"
-                className="inline-flex items-center gap-2 rounded-lg bg-[#1dbfaa] px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_14px_rgba(29,191,170,0.28)] transition hover:bg-[#18a896]"
+                className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700"
               >
                 Zum Login
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link
                 href="/owner/login"
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 shadow-sm transition hover:border-slate-300"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 shadow-sm transition hover:border-slate-300"
               >
                 Owner Bereich
               </Link>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_4px_24px_rgba(15,23,42,0.08)]">
-            <div className="flex items-center gap-3 mb-5 pb-5 border-b border-slate-100">
+          <div className="rounded-2xl border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-[0_4px_24px_rgba(15,23,42,0.08)]">
+            <div className="flex items-center gap-3 mb-5 pb-5 border-b border-slate-100 dark:border-[#252d3a]">
               {tenantLogoUrl ? (
                 <Image
                   src={tenantLogoUrl}
@@ -139,7 +139,7 @@ export default async function Home() {
                 />
               )}
               <div>
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                   {tenant ? `${tenant.slug}.boost-hive.de` : 'BoostHive Platform'}
                 </p>
                 <p className="text-xs text-slate-400">
@@ -149,13 +149,13 @@ export default async function Home() {
             </div>
             <div className="space-y-3">
               {features.map(({ icon: Icon, title, copy }) => (
-                <div key={title} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50 p-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0fdfb]">
-                    <Icon className="h-4 w-4 text-[#1dbfaa]" />
+                <div key={title} className="flex items-start gap-3 rounded-xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-50">
+                    <Icon className="h-4 w-4 text-blue-600" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-slate-800">{title}</p>
-                    <p className="mt-0.5 text-xs leading-5 text-slate-500">{copy}</p>
+                    <p className="mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{copy}</p>
                   </div>
                 </div>
               ))}

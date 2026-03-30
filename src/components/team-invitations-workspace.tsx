@@ -219,9 +219,9 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-[34px] border border-[#d9d1c6] bg-[linear-gradient(135deg,#fffaf2_0%,#f5efe6_55%,#eef6ef_100%)] p-6 shadow-[0_24px_80px_rgba(89,71,42,0.08)] sm:p-8">
-        <div className="absolute right-[-3rem] top-[-3rem] h-40 w-40 rounded-full bg-[#eb6f3d]/12 blur-3xl" />
-        <div className="absolute bottom-[-4rem] left-[-2rem] h-44 w-44 rounded-full bg-[#157f68]/10 blur-3xl" />
+      <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+        <div className="absolute right-[-3rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
+        <div className="absolute bottom-[-4rem] left-[-2rem] h-44 w-44 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-4">
@@ -229,13 +229,13 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
               Team Access
             </Badge>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
                 Settings / Team
               </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
                 Teammitglieder für {tenantSlug} verwalten
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
                 Admins sehen vorhandene User und offene Einladungen in einer gemeinsamen Liste,
                 können User entfernen und Einladungen direkt erneut versenden oder löschen.
               </p>
@@ -246,24 +246,24 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
-            <Sparkles className="h-5 w-5 text-[#b85e34]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">User und Einladungen zusammen</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+          <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">User und Einladungen zusammen</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
               Die Teamseite zeigt jetzt vorhandene Mitglieder und offene Einladungen in einer Sicht.
             </p>
           </div>
-          <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
-            <ShieldCheck className="h-5 w-5 text-[#157f68]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Status direkt erkennbar</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+          <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
+            <ShieldCheck className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Status direkt erkennbar</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
               Aktiv und Einladung offen sind klar getrennt und sofort scanbar.
             </p>
           </div>
-          <div className="rounded-[26px] border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
             <BellRing className="h-5 w-5 text-[#1f2937]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900">Aktionen direkt aus der Übersicht</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600">
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Aktionen direkt aus der Übersicht</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
               Neue Einladungen, Resend und Löschen laufen direkt über Tenant-APIs.
             </p>
           </div>
@@ -271,22 +271,22 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       </section>
 
       {error && (
-        <div className="rounded-[24px] border border-[#efc6b6] bg-[#fff0ea] px-5 py-4 text-sm text-[#8c3215] shadow-sm">
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm">
           {error}
         </div>
       )}
 
-      <div className="rounded-[24px] border border-[#dfd5c8] bg-[#fffdf9] px-5 py-4 text-sm text-slate-600 shadow-sm">
+      <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
         <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#157f68]" />
+          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
           <p>{activity}</p>
         </div>
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
-          <div className="flex items-center gap-3 text-slate-600">
-            <Loader2 className="h-5 w-5 animate-spin text-[#b85e34]" />
+        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
+            <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             Teamübersicht wird geladen...
           </div>
         </div>

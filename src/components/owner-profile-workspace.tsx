@@ -72,7 +72,7 @@ interface AccountEmailResponse extends ApiFormPayload {
 type OwnerProfileFormValues = Pick<ProfileUpdateInput, 'first_name' | 'last_name'>
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 bg-white px-4 text-[15px] text-slate-900 shadow-sm transition placeholder:text-slate-400 focus-visible:border-[#1dbfaa] focus-visible:ring-[#1dbfaa]/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 const AVATAR_PREVIEW_SIZE = 280
 const AVATAR_EXPORT_SIZE = 512
 const AVATAR_MIN_ZOOM = 1
@@ -278,7 +278,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
     }
 
     if (file.size > 2 * 1024 * 1024) {
-      setError('Das Bild darf maximal 2 MB gross sein.')
+      setError('Das Bild darf maximal 2 MB groß sein.')
       return
     }
 
@@ -470,19 +470,19 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           }
         }}
       >
-        <DialogContent className="max-w-2xl rounded-[32px] border border-[#e6ddcf] bg-[#fffaf4] p-0 shadow-[0_24px_80px_rgba(68,48,24,0.22)]">
+        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-0 shadow-soft">
           <DialogHeader className="px-6 pt-6">
-            <DialogTitle className="text-xl text-slate-900">Profilbild anpassen</DialogTitle>
-            <DialogDescription className="text-sm leading-6 text-slate-600">
+            <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">Profilbild anpassen</DialogTitle>
+            <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               Richte dein Bild in der runden Maske aus. Du kannst es horizontal, vertikal und per Zoom anpassen.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
             <div className="flex justify-center">
-              <div className="relative rounded-[30px] border border-[#eadfce] bg-[radial-gradient(circle_at_top,_#fffdf9,_#f5ede1)] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]">
+              <div className="relative rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 shadow-soft">
                 <div
-                  className="relative overflow-hidden rounded-full border-4 border-white bg-[#ede4d7] shadow-[0_16px_40px_rgba(92,63,28,0.18)]"
+                  className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-[#1e2635] shadow-soft"
                   style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
                 >
                   {avatarCropDraft && avatarPreviewTransform && (
@@ -506,14 +506,14 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-[24px] border border-[#eadfce] bg-white/85 p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <Move className="h-4 w-4 text-[#9c4f2c]" />
+              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white/85 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <Move className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Bild verschieben
                 </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm text-slate-600">
+                    <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
                       <Label htmlFor="owner-avatar-crop-x">Links / Rechts</Label>
                       <span>{avatarCropX}%</span>
                     </div>
@@ -525,11 +525,11 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                       step={1}
                       value={avatarCropX}
                       onChange={(event) => setAvatarCropX(Number(event.target.value))}
-                      className="h-2 w-full cursor-pointer accent-[#b85e34]"
+                      className="h-2 w-full cursor-pointer accent-blue-600"
                     />
                   </div>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm text-slate-600">
+                    <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
                       <Label htmlFor="owner-avatar-crop-y">Oben / Unten</Label>
                       <span>{avatarCropY}%</span>
                     </div>
@@ -541,20 +541,20 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                       step={1}
                       value={avatarCropY}
                       onChange={(event) => setAvatarCropY(Number(event.target.value))}
-                      className="h-2 w-full cursor-pointer accent-[#b85e34]"
+                      className="h-2 w-full cursor-pointer accent-blue-600"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-[#dceee9] bg-white/85 p-4">
-                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800">
-                  <ZoomIn className="h-4 w-4 text-[#0d9488]" />
+              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white/85 p-4">
+                <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  <ZoomIn className="h-4 w-4 text-blue-600" />
                   Zoom
                 </div>
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between text-sm text-slate-600">
-                    <Label htmlFor="owner-avatar-crop-zoom">Ausschnitt vergroessern</Label>
+                  <div className="flex items-center justify-between text-sm text-slate-600 dark:text-slate-300">
+                    <Label htmlFor="owner-avatar-crop-zoom">Ausschnitt vergrößern</Label>
                     <span>{avatarCropZoom.toFixed(1)}x</span>
                   </div>
                   <input
@@ -565,22 +565,22 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                     step={0.1}
                     value={avatarCropZoom}
                     onChange={(event) => setAvatarCropZoom(Number(event.target.value))}
-                    className="h-2 w-full cursor-pointer accent-[#0d9488]"
+                    className="h-2 w-full cursor-pointer accent-blue-600"
                   />
                 </div>
               </div>
 
-              <p className="text-sm leading-6 text-slate-500">
+              <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Der markierte runde Bereich entspricht deinem finalen Profilbild in Sidebar und Account.
               </p>
             </div>
           </div>
 
-          <DialogFooter className="border-t border-[#eadfce] bg-white/70 px-6 py-4">
+          <DialogFooter className="border-t border-slate-100 dark:border-[#252d3a] bg-white/70 px-6 py-4">
             <Button
               type="button"
               variant="outline"
-              className="rounded-full border-[#d8d0c3] bg-white"
+              className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
               onClick={closeAvatarCropDialog}
               disabled={avatarPending}
             >
@@ -600,20 +600,20 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
       </Dialog>
 
       <div className="space-y-6">
-        <Card className="rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardHeader className="space-y-3">
             <div className="flex items-center gap-2">
-              <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">
+              <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
                 Owner Profil
               </Badge>
-              <Badge className="rounded-full bg-[#f6efe4] text-[#8b5e34] hover:bg-[#f6efe4]">
+              <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
                 Plattform
               </Badge>
             </div>
-            <CardTitle className="text-2xl text-slate-900">
+            <CardTitle className="text-2xl text-slate-900 dark:text-slate-100">
               Persönliche Daten und Profilbild
             </CardTitle>
-            <p className="text-sm leading-6 text-slate-600">
+            <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">
               Hier kannst du deine persönlichen Daten als Plattform-Owner jederzeit aktualisieren.
             </p>
           </CardHeader>
@@ -627,7 +627,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                   </Alert>
                 )}
                 {success && (
-                  <Alert className="rounded-2xl border-[#d1faf4] bg-[#f0fdfb] text-[#0f766e]">
+                  <Alert className="rounded-2xl border-blue-200 bg-blue-50 text-blue-600">
                     <AlertCircle className="h-4 w-4" />
                     <AlertDescription>{success}</AlertDescription>
                   </Alert>
@@ -642,18 +642,18 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             >
               <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                     Profilbild
                   </h2>
-                  <p className="text-sm text-slate-500">
-                    Optional, aber hilfreich fuer Sidebar und Account-Kontext.
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Optional, aber hilfreich für Sidebar und Account-Kontext.
                   </p>
                 </div>
-                <div className="rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5">
+                <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <Avatar className="h-24 w-24 border border-[#dceee9] shadow-sm">
+                    <Avatar className="h-24 w-24 border border-slate-100 dark:border-[#252d3a] shadow-sm">
                       <AvatarImage src={avatarUrl ?? undefined} alt="Profilbild" />
-                      <AvatarFallback className="bg-[#e8f8f3] text-xl font-semibold text-[#0d9488]">
+                      <AvatarFallback className="bg-blue-50 text-xl font-semibold text-blue-600">
                         {getUserInitials(
                           {
                             first_name: form.watch('first_name'),
@@ -668,7 +668,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-[#d8d0c3] bg-white"
+                          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={avatarPending}
                         >
@@ -683,7 +683,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                           <Button
                             type="button"
                             variant="outline"
-                            className="rounded-full border-[#ead4c8] bg-white text-[#9f4a24]"
+                            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300"
                             onClick={() => void removeAvatar()}
                             disabled={avatarPending}
                           >
@@ -692,7 +692,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                           </Button>
                         )}
                       </div>
-                      <p className="text-sm text-slate-500">PNG, JPG oder WEBP bis 2 MB.</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">PNG, JPG oder WEBP bis 2 MB.</p>
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -707,14 +707,14 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
 
               <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
                 <div className="space-y-2">
-                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">
+                  <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                     Persönliche Daten
                   </h2>
-                  <p className="text-sm text-slate-500">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
                     Diese Angaben erscheinen in deinem Profil und in der Sidebar.
                   </p>
                 </div>
-                <div className="grid gap-4 rounded-[28px] border border-[#efe5d8] bg-[#fffaf4] p-5 md:grid-cols-2">
+                <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="owner-first_name">Vorname</Label>
                     <Input id="owner-first_name" className={fieldClassName} {...form.register('first_name')} />
@@ -736,9 +736,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <Card className="rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardHeader>
-            <CardTitle className="text-xl text-slate-900">Login-E-Mail</CardTitle>
+            <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Login-E-Mail</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="grid gap-4 md:grid-cols-2" onSubmit={emailForm.handleSubmit(onSubmitEmail)}>
@@ -769,7 +769,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                     onClick={() => setShowCurrentEmailPassword((value) => !value)}
                     aria-label={showCurrentEmailPassword ? 'Passwort ausblenden' : 'Passwort anzeigen'}
                   >
@@ -796,9 +796,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <Card className="rounded-[30px] border border-[#e4dbcf] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardHeader>
-            <CardTitle className="text-xl text-slate-900">Passwort ändern</CardTitle>
+            <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Passwort ändern</CardTitle>
           </CardHeader>
           <CardContent>
             <form className="grid gap-4 md:grid-cols-2" onSubmit={passwordForm.handleSubmit(onSubmitPassword)}>
@@ -815,7 +815,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                     onClick={() => setShowCurrentPassword((value) => !value)}
                     aria-label={showCurrentPassword ? 'Passwort ausblenden' : 'Passwort anzeigen'}
                   >
@@ -841,7 +841,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                     onClick={() => setShowNewPassword((value) => !value)}
                     aria-label={showNewPassword ? 'Passwort ausblenden' : 'Passwort anzeigen'}
                   >
@@ -865,7 +865,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:text-slate-700"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
                     onClick={() => setShowConfirmPassword((value) => !value)}
                     aria-label={showConfirmPassword ? 'Passwort ausblenden' : 'Passwort anzeigen'}
                   >
@@ -892,8 +892,8 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-[#efe5d8] pt-6 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
+        <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <AlertCircle className="h-4 w-4" />
             Änderungen werden sofort für deinen Owner-Zugang übernommen.
           </div>
@@ -901,7 +901,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             <Button
               type="button"
               variant="outline"
-              className="h-[48px] rounded-xl border-[#e3daca] bg-white px-6"
+              className="h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6"
               onClick={() => void handleLogout()}
               disabled={isLoggingOut}
             >

@@ -106,7 +106,7 @@ function analyticsStatusLabel(status: AnalyticsStatus) {
 
 function analyticsStatusColor(status: AnalyticsStatus) {
   const map: Record<AnalyticsStatus, string> = {
-    pending: 'bg-slate-100 text-slate-600',
+    pending: 'bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300',
     running: 'bg-blue-50 text-blue-700',
     done: 'bg-emerald-50 text-emerald-700',
     failed: 'bg-red-50 text-red-700',
@@ -251,7 +251,7 @@ function ProjectListView({
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Skeleton key={i} className="h-44 rounded-[24px]" />
+            <Skeleton key={i} className="h-44 rounded-2xl" />
           ))}
         </div>
       </div>
@@ -261,7 +261,7 @@ function ProjectListView({
   // ── Error ───────────────────────────────────────────────────
   if (error) {
     return (
-      <Alert variant="destructive" className="rounded-[24px]">
+      <Alert variant="destructive" className="rounded-2xl">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Fehler beim Laden</AlertTitle>
         <AlertDescription className="flex items-center gap-3">
@@ -277,14 +277,14 @@ function ProjectListView({
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-[32px] border border-[#e6ddd0] bg-[#fffdf9] shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-soft">
         <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl text-slate-950">
-            <Sparkles className="h-5 w-5 text-[#b85e34]" />
+          <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
+            <Sparkles className="h-5 w-5 text-blue-600" />
             AI Visibility
           </CardTitle>
         </CardHeader>
-        <CardContent className="text-sm leading-6 text-slate-600">
+        <CardContent className="text-sm leading-6 text-slate-600 dark:text-slate-300">
           <p>
             AI Visibility analysiert systematisch, wie führende KI-Modelle wie ChatGPT und Claude Ihre Marke wahrnehmen und im Vergleich zum Wettbewerb empfehlen. Daraus leitet es präzise Optimierungsvorschläge (GEO) ab, um Ihre Sichtbarkeit in generativen Antworten messbar zu steigern.
           </p>
@@ -293,8 +293,8 @@ function ProjectListView({
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-slate-900">Analyse-Projekte</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Analyse-Projekte</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             {projects.length === 0
               ? 'Erstelle dein erstes Projekt, um die KI-Sichtbarkeit zu messen.'
               : `${projects.length} Projekt${projects.length !== 1 ? 'e' : ''}`}
@@ -311,14 +311,14 @@ function ProjectListView({
 
       {/* ── Empty State ────────────────────────────────────── */}
       {projects.length === 0 && (
-        <Card className="rounded-[32px] border border-[#e6ddd0] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-[#edf8f6]">
-              <Eye className="h-7 w-7 text-[#0d9488]" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
+              <Eye className="h-7 w-7 text-blue-600" />
             </div>
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-slate-900">Noch keine Projekte</h3>
-              <p className="max-w-md text-sm leading-7 text-slate-500">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Noch keine Projekte</h3>
+              <p className="max-w-md text-sm leading-7 text-slate-500 dark:text-slate-400">
                 Erstelle ein Analyse-Projekt mit Brand-Name, Keywords und Wettbewerbern, um zu messen, wie sichtbar dein Kunde in KI-Antworten ist.
               </p>
             </div>
@@ -375,16 +375,16 @@ function ProjectCard({
           onClick()
         }
       }}
-      className="group cursor-pointer rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm transition hover:border-[#d7ccbc] hover:shadow-md"
+      className="group cursor-pointer rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm transition hover:border-slate-200 hover:shadow-md"
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
-            <CardTitle className="truncate text-base font-semibold text-slate-900">
+            <CardTitle className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
               {project.brand_name}
             </CardTitle>
             {project.website_url && (
-              <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-400">
+              <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-400 dark:text-slate-500">
                 <Globe className="h-3 w-3 shrink-0" />
                 {project.website_url}
               </p>
@@ -398,21 +398,21 @@ function ProjectCard({
           {project.keywords.slice(0, 3).map((kw) => (
             <Badge
               key={kw}
-              className="rounded-full bg-[#f7f3ed] px-2.5 py-0.5 text-[11px] font-medium text-slate-600 hover:bg-[#f7f3ed]"
+              className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
             >
               {kw}
             </Badge>
           ))}
           {project.keywords.length > 3 && (
-            <Badge className="rounded-full bg-[#f7f3ed] px-2.5 py-0.5 text-[11px] font-medium text-slate-400 hover:bg-[#f7f3ed]">
+            <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
               +{project.keywords.length - 3}
             </Badge>
           )}
         </div>
 
-        <Separator className="bg-[#ebe2d5]" />
+        <Separator className="bg-slate-100 dark:bg-[#1e2635]" />
 
-        <div className="flex items-center justify-between text-xs text-slate-400">
+        <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
             {formatDate(project.created_at)}
@@ -626,7 +626,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
           <div className="space-y-6">
             {/* ── Brand ──────────────────────────────────────── */}
             <fieldset className="space-y-3">
-              <legend className="text-sm font-semibold text-slate-900">Brand</legend>
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">Brand</legend>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="brand-name">Brand-Name *</Label>
@@ -660,9 +660,9 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
             {/* ── Wettbewerber ────────────────────────────────── */}
             <fieldset className="space-y-3">
-              <legend className="text-sm font-semibold text-slate-900">
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Wettbewerber{' '}
-                <span className="font-normal text-slate-400">(optional, max. 3)</span>
+                <span className="font-normal text-slate-400 dark:text-slate-500">(optional, max. 3)</span>
               </legend>
               <div className="space-y-2">
                 {competitors.map((comp, i) => (
@@ -689,7 +689,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                         size="icon"
                         onClick={() => removeCompetitor(i)}
                         aria-label={`Wettbewerber ${i + 1} entfernen`}
-                        className="mt-0.5 shrink-0 text-slate-400 hover:text-red-500"
+                        className="mt-0.5 shrink-0 text-slate-400 dark:text-slate-500 hover:text-red-500"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -709,11 +709,11 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
             {/* ── Keywords ────────────────────────────────────── */}
             <fieldset className="space-y-3">
-              <legend className="text-sm font-semibold text-slate-900">
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Keywords / Prompts *{' '}
-                <span className="font-normal text-slate-400">({keywords.length}/10)</span>
+                <span className="font-normal text-slate-400 dark:text-slate-500">({keywords.length}/10)</span>
               </legend>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Formuliere die Suchanfragen so, wie Nutzer sie einer KI stellen würden.
               </p>
               <div className="space-y-2">
@@ -732,7 +732,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                         size="icon"
                         onClick={() => removeKeyword(i)}
                         aria-label={`Keyword ${i + 1} entfernen`}
-                        className="shrink-0 text-slate-400 hover:text-red-500"
+                        className="shrink-0 text-slate-400 dark:text-slate-500 hover:text-red-500"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -752,7 +752,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
             {/* ── Modell-Auswahl ──────────────────────────────── */}
             <fieldset className="space-y-3">
-              <legend className="text-sm font-semibold text-slate-900">KI-Modelle *</legend>
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">KI-Modelle *</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {AI_MODELS.map((model) => (
                   <label
@@ -760,8 +760,8 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                     className={cn(
                       'flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition',
                       selectedModels.includes(model.id)
-                        ? 'border-[#0d9488] bg-[#edf8f6]'
-                        : 'border-[#e6ddd0] bg-white hover:border-[#d7ccbc]'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:border-slate-200'
                     )}
                   >
                     <Checkbox
@@ -770,8 +770,8 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                       aria-label={model.label}
                     />
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{model.label}</p>
-                      <p className="text-xs text-slate-400">{model.provider}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{model.label}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{model.provider}</p>
                     </div>
                   </label>
                 ))}
@@ -785,7 +785,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
             {/* ── Analyse-Einstellungen ────────────────────────── */}
             <fieldset className="space-y-3">
-              <legend className="text-sm font-semibold text-slate-900">Analyse-Einstellungen</legend>
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">Analyse-Einstellungen</legend>
               <div className="max-w-xs space-y-1.5">
                 <Label htmlFor="iterations">Iterationen pro Keyword/Modell</Label>
                 <Select value={String(iterations)} onValueChange={(v) => setIterations(Number(v))}>
@@ -803,7 +803,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                     ))}
                   </SelectContent>
                 </Select>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-400 dark:text-slate-500">
                   Mehr Iterationen = genauere Ergebnisse, aber mehr API-Calls.
                 </p>
               </div>
@@ -814,35 +814,35 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
         {step === 'review' && (
           <div className="space-y-5">
             {/* ── Zusammenfassung ─────────────────────────────── */}
-            <div className="rounded-xl border border-[#e6ddd0] bg-[#fffaf3] p-4 space-y-3">
-              <h4 className="text-sm font-semibold text-slate-900">Zusammenfassung</h4>
+            <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4 space-y-3">
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Zusammenfassung</h4>
 
               <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
                 <div>
-                  <span className="text-slate-400">Brand:</span>{' '}
-                  <span className="font-medium text-slate-900">{brandName}</span>
+                  <span className="text-slate-400 dark:text-slate-500">Brand:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{brandName}</span>
                 </div>
                 {websiteUrl && (
                   <div>
-                    <span className="text-slate-400">Website:</span>{' '}
-                    <span className="text-slate-700">{websiteUrl}</span>
+                    <span className="text-slate-400 dark:text-slate-500">Website:</span>{' '}
+                    <span className="text-slate-700 dark:text-slate-300">{websiteUrl}</span>
                   </div>
                 )}
                 <div>
-                  <span className="text-slate-400">Keywords:</span>{' '}
-                  <span className="font-medium text-slate-900">{cleanKeywords.length}</span>
+                  <span className="text-slate-400 dark:text-slate-500">Keywords:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{cleanKeywords.length}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Wettbewerber:</span>{' '}
-                  <span className="font-medium text-slate-900">{cleanCompetitors.length}</span>
+                  <span className="text-slate-400 dark:text-slate-500">Wettbewerber:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{cleanCompetitors.length}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Modelle:</span>{' '}
-                  <span className="font-medium text-slate-900">{selectedModels.length}</span>
+                  <span className="text-slate-400 dark:text-slate-500">Modelle:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{selectedModels.length}</span>
                 </div>
                 <div>
-                  <span className="text-slate-400">Iterationen:</span>{' '}
-                  <span className="font-medium text-slate-900">{iterations}</span>
+                  <span className="text-slate-400 dark:text-slate-500">Iterationen:</span>{' '}
+                  <span className="font-medium text-slate-900 dark:text-slate-100">{iterations}</span>
                 </div>
               </div>
             </div>
@@ -874,12 +874,12 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
             {/* ── Keywords-Liste ──────────────────────────────── */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-slate-900">Keywords</h4>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Keywords</h4>
               <div className="flex flex-wrap gap-1.5">
                 {cleanKeywords.map((kw, i) => (
                   <Badge
                     key={i}
-                    className="rounded-full bg-[#f7f3ed] px-2.5 py-0.5 text-xs text-slate-600 hover:bg-[#f7f3ed]"
+                    className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
                   >
                     {kw}
                   </Badge>
@@ -889,12 +889,12 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
 
             {/* ── Modelle-Liste ────────────────────────────────── */}
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-slate-900">Ausgewählte Modelle</h4>
+              <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Ausgewählte Modelle</h4>
               <div className="flex flex-wrap gap-1.5">
                 {selectedModels.map((id) => (
                   <Badge
                     key={id}
-                    className="rounded-full bg-[#edf8f6] px-2.5 py-0.5 text-xs text-[#0d9488] hover:bg-[#edf8f6]"
+                    className="rounded-full bg-blue-50 px-2.5 py-0.5 text-xs text-blue-600 hover:bg-blue-50"
                   >
                     {modelLabel(id)}
                   </Badge>
@@ -929,7 +929,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || Boolean(estimateLimitError)}
-                className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
+                className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
               >
                 {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
                 Analyse starten
@@ -976,7 +976,7 @@ function ProjectDetailView({
   const [startingAnalysis, setStartingAnalysis] = useState(false)
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(initialSelectedAnalysisId)
 
-  // ── Dialog State fuer Neue Analyse ──────────────────────────
+  // ── Dialog State für Neue Analyse ──────────────────────────
   const [newAnalysisOpen, setNewAnalysisOpen] = useState(false)
   const [newAnalysisModels, setNewAnalysisModels] = useState<string[]>(DEFAULT_AI_MODEL_IDS)
   const [newAnalysisIterations, setNewAnalysisIterations] = useState(DEFAULT_AI_VISIBILITY_ITERATIONS)
@@ -1016,9 +1016,9 @@ function ProjectDetailView({
     setSelectedAnalysisId(initialSelectedAnalysisId)
   }, [initialSelectedAnalysisId])
 
-  // ── Projekt loeschen ────────────────────────────────────────
+  // ── Projekt löschen ────────────────────────────────────────
   async function handleDelete() {
-    if (!window.confirm('Projekt und alle Analysen unwiderruflich loeschen?')) return
+    if (!window.confirm('Projekt und alle Analysen unwiderruflich löschen?')) return
     setDeleting(true)
     try {
       const res = await fetch(`/api/tenant/visibility/projects/${projectId}`, { method: 'DELETE' })
@@ -1031,7 +1031,7 @@ function ProjectDetailView({
     } catch (err) {
       toast({
         title: 'Fehler',
-        description: err instanceof Error ? err.message : 'Loeschen fehlgeschlagen.',
+        description: err instanceof Error ? err.message : 'Löschen fehlgeschlagen.',
         variant: 'destructive',
       })
     } finally {
@@ -1087,8 +1087,8 @@ function ProjectDetailView({
     return (
       <div className="space-y-4">
         <Skeleton className="h-8 w-64" />
-        <Skeleton className="h-40 rounded-[24px]" />
-        <Skeleton className="h-60 rounded-[24px]" />
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-60 rounded-2xl" />
       </div>
     )
   }
@@ -1101,7 +1101,7 @@ function ProjectDetailView({
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Zurück
         </Button>
-        <Alert variant="destructive" className="rounded-[24px]">
+        <Alert variant="destructive" className="rounded-2xl">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Fehler</AlertTitle>
           <AlertDescription>{error ?? 'Projekt nicht gefunden.'}</AlertDescription>
@@ -1136,9 +1136,9 @@ function ProjectDetailView({
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">{project.brand_name}</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{project.brand_name}</h2>
             {project.website_url && (
-              <p className="flex items-center gap-1 text-sm text-slate-400">
+              <p className="flex items-center gap-1 text-sm text-slate-400 dark:text-slate-500">
                 <Globe className="h-3.5 w-3.5" />
                 {project.website_url}
               </p>
@@ -1154,11 +1154,11 @@ function ProjectDetailView({
             className="rounded-full text-red-600 hover:bg-red-50 hover:text-red-700"
           >
             {deleting ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
-            Loeschen
+            Löschen
           </Button>
           <Button
             onClick={() => setNewAnalysisOpen(true)}
-            className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
+            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
             size="sm"
           >
             <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -1168,19 +1168,19 @@ function ProjectDetailView({
       </div>
 
       {/* ── Projekt-Info ──────────────────────────────────── */}
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
         <CardContent className="space-y-4 p-5">
           {/* Wettbewerber */}
           {project.competitors.length > 0 && (
             <div>
-              <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+              <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Wettbewerber
               </h4>
               <div className="flex flex-wrap gap-2">
                 {project.competitors.map((c, i) => (
                   <Badge
                     key={i}
-                    className="rounded-full bg-[#fff1e8] px-2.5 py-0.5 text-xs text-[#a35a34] hover:bg-[#fff1e8]"
+                    className="rounded-full bg-slate-100 dark:bg-[#1e2635] px-2.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]"
                   >
                     {c.name}
                     {c.url ? ` (${c.url})` : ''}
@@ -1191,14 +1191,14 @@ function ProjectDetailView({
           )}
           {/* Keywords */}
           <div>
-            <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               Keywords
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {project.keywords.map((kw, i) => (
                 <Badge
                   key={i}
-                  className="rounded-full bg-[#f7f3ed] px-2.5 py-0.5 text-xs text-slate-600 hover:bg-[#f7f3ed]"
+                  className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
                 >
                   {kw}
                 </Badge>
@@ -1209,14 +1209,14 @@ function ProjectDetailView({
       </Card>
 
       {/* ── Analyse-History ───────────────────────────────── */}
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold text-slate-900">Analysen</CardTitle>
+          <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">Analysen</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {analyses.length === 0 && (
-            <p className="py-6 text-center text-sm text-slate-400">
-              Noch keine Analysen durchgefuehrt.
+            <p className="py-6 text-center text-sm text-slate-400 dark:text-slate-500">
+              Noch keine Analysen durchgeführt.
             </p>
           )}
           {analyses.map((analysis) => (
@@ -1259,7 +1259,7 @@ function ProjectDetailView({
           <div className="space-y-4">
             {/* Modelle */}
             <fieldset className="space-y-2">
-              <legend className="text-sm font-semibold text-slate-900">KI-Modelle</legend>
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">KI-Modelle</legend>
               <div className="grid gap-2 sm:grid-cols-2">
                 {AI_MODELS.map((model) => (
                   <label
@@ -1267,8 +1267,8 @@ function ProjectDetailView({
                     className={cn(
                       'flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition',
                       newAnalysisModels.includes(model.id)
-                        ? 'border-[#0d9488] bg-[#edf8f6]'
-                        : 'border-[#e6ddd0] bg-white hover:border-[#d7ccbc]'
+                        ? 'border-blue-600 bg-blue-50'
+                        : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:border-slate-200'
                     )}
                   >
                     <Checkbox
@@ -1280,8 +1280,8 @@ function ProjectDetailView({
                       }
                     />
                     <div>
-                      <p className="text-sm font-medium text-slate-900">{model.label}</p>
-                      <p className="text-xs text-slate-400">{model.provider}</p>
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100">{model.label}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{model.provider}</p>
                     </div>
                   </label>
                 ))}
@@ -1349,7 +1349,7 @@ function ProjectDetailView({
                   newAnalysisModels.length === 0 ||
                   Boolean(newAnalysisLimitError)
                 }
-                className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
+                className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
               >
               {startingAnalysis && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Analyse starten
@@ -1386,13 +1386,13 @@ function AnalysisRow({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-4 rounded-xl border border-[#e6ddd0] p-3 text-left transition',
+        'flex w-full items-center gap-4 rounded-xl border border-slate-100 dark:border-[#252d3a] p-3 text-left transition',
         isActive
-          ? 'cursor-pointer bg-white hover:border-[#d7ccbc] hover:shadow-sm'
+          ? 'cursor-pointer bg-white dark:bg-[#151c28] hover:border-slate-200 hover:shadow-sm'
           : hasReport || analysis.analytics_status === 'pending' || analysis.analytics_status === 'running'
-            ? 'cursor-pointer bg-white hover:border-[#d7ccbc] hover:shadow-sm'
-            : 'cursor-default bg-[#fafaf9]',
-        isSelected && 'border-[#0d9488] bg-[#f2fbfa]'
+            ? 'cursor-pointer bg-white dark:bg-[#151c28] hover:border-slate-200 hover:shadow-sm'
+            : 'cursor-default bg-slate-50 dark:bg-[#151c28]',
+        isSelected && 'border-blue-600 bg-blue-50'
       )}
       aria-label={`Analyse vom ${formatDate(analysis.created_at)}, Status: ${statusLabel(analysis.status)}`}
     >
@@ -1411,23 +1411,23 @@ function AnalysisRow({
               {analyticsStatusLabel(analysis.analytics_status)}
             </Badge>
           )}
-          <span className="text-xs text-slate-400">{formatDate(analysis.created_at)}</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500">{formatDate(analysis.created_at)}</span>
         </div>
         <div className="mt-1.5 flex flex-wrap gap-1">
           {analysis.models.map((m) => (
             <Badge
               key={m}
-              className="rounded-full bg-[#f7f3ed] px-2 py-0 text-[10px] text-slate-500 hover:bg-[#f7f3ed]"
+              className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2 py-0 text-[10px] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
             >
               {modelLabel(m)}
             </Badge>
           ))}
-          <span className="text-[10px] text-slate-400">{analysis.iterations}x</span>
+          <span className="text-[10px] text-slate-400 dark:text-slate-500">{analysis.iterations}x</span>
         </div>
         {isActive && analysis.progress_total > 0 && (
           <div className="mt-2 flex items-center gap-2">
             <Progress value={progressPercent} className="h-1.5 flex-1" />
-            <span className="text-[11px] text-slate-400">{progressPercent}%</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500">{progressPercent}%</span>
           </div>
         )}
       </div>
@@ -1559,7 +1559,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
       <div className="space-y-4">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-6 w-full rounded-full" />
-        <Skeleton className="h-40 rounded-[24px]" />
+        <Skeleton className="h-40 rounded-2xl" />
       </div>
     )
   }
@@ -1572,7 +1572,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
           <ArrowLeft className="mr-1.5 h-4 w-4" />
           Zurück
         </Button>
-        <Alert variant="destructive" className="rounded-[24px]">
+        <Alert variant="destructive" className="rounded-2xl">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Fehler</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
@@ -1601,7 +1601,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Analyse-Fortschritt</h2>
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Analyse-Fortschritt</h2>
             <Badge className={cn('mt-1 rounded-full px-2.5 py-0.5', statusColor(status.status))}>
               {statusLabel(status.status)}
             </Badge>
@@ -1626,11 +1626,11 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
       </div>
 
       {/* ── Gesamtfortschritt ─────────────────────────────── */}
-      <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
         <CardContent className="space-y-3 p-5">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">Gesamtfortschritt</span>
-            <span className="text-sm font-semibold text-slate-900">
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Gesamtfortschritt</span>
+            <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
               {status.progress_done} / {status.progress_total}
             </span>
           </div>
@@ -1642,15 +1642,15 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
               isFailed && '[&>div]:bg-red-500'
             )}
           />
-          <p className="text-right text-xs text-slate-400">{progressPercent}%</p>
+          <p className="text-right text-xs text-slate-400 dark:text-slate-500">{progressPercent}%</p>
         </CardContent>
       </Card>
 
       {/* ── Modell-Fortschritt ─────────────────────────────── */}
       {status.model_progress.length > 0 && (
-        <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold text-slate-900">
+            <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Fortschritt pro Modell
             </CardTitle>
           </CardHeader>
@@ -1660,8 +1660,8 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
               return (
                 <div key={mp.model} className="space-y-1.5">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="font-medium text-slate-700">{modelLabel(mp.model)}</span>
-                    <span className="text-xs text-slate-400">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{modelLabel(mp.model)}</span>
+                    <span className="text-xs text-slate-400 dark:text-slate-500">
                       {mp.done}/{mp.total}
                     </span>
                   </div>
@@ -1675,7 +1675,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
 
       {/* ── Fertig-Meldung ─────────────────────────────────── */}
       {isDone && (
-        <Alert className="rounded-[24px] border-emerald-200 bg-emerald-50">
+        <Alert className="rounded-2xl border-emerald-200 bg-emerald-50">
           <Search className="h-4 w-4 text-emerald-600" />
           <AlertTitle className="text-emerald-800">Analyse abgeschlossen</AlertTitle>
           <AlertDescription className="text-emerald-700">
@@ -1688,7 +1688,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
         <div className="flex justify-end">
           <Button
             onClick={() => onOpenReport?.(analysisId)}
-            className="rounded-full bg-[#0d9488] text-white hover:bg-[#0d7d73]"
+            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
           >
             Zur Auswertung
           </Button>
@@ -1697,7 +1697,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
 
       {/* ── Fehler-Meldung ─────────────────────────────────── */}
       {isFailed && (
-        <Alert variant="destructive" className="rounded-[24px]">
+        <Alert variant="destructive" className="rounded-2xl">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Analyse fehlgeschlagen</AlertTitle>
           <AlertDescription>
@@ -1723,9 +1723,9 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
 
       {/* ── Fehler-Log ─────────────────────────────────────── */}
       {status.error_log.length > 0 && (
-        <Card className="rounded-[24px] border border-[#e6ddd0] bg-white shadow-sm">
+        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
               <AlertCircle className="h-4 w-4 text-amber-500" />
               Fehler-Log
               <Badge className="rounded-full bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700 hover:bg-amber-50">

@@ -62,22 +62,22 @@ export function PreviewAccessForm({ returnTo: rawReturnTo }: PreviewAccessFormPr
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       {error && (
-        <Alert className="rounded-2xl border-[#f1d4b7] bg-[#fff4ea] text-[#8c4a19]">
+        <Alert className="rounded-2xl border-amber-200 bg-amber-50 text-amber-800">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <div className="rounded-2xl border border-[#efe3d4] bg-[#fcf7f0] px-4 py-3 text-sm text-slate-600">
+      <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
         Temporärer Projektschutz aktiv. Nach Freigabe gelangst du automatisch zurück auf die angeforderte Seite.
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="preview-password" className="text-sm font-medium text-slate-700">
+        <Label htmlFor="preview-password" className="text-sm font-medium text-slate-700 dark:text-slate-300">
           Zugriffspasswort
         </Label>
         <div className="relative">
-          <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <LockKeyhole className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             id="preview-password"
             type="password"
@@ -85,7 +85,7 @@ export function PreviewAccessForm({ returnTo: rawReturnTo }: PreviewAccessFormPr
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Passwort eingeben"
             autoComplete="current-password"
-            className="h-[50px] rounded-2xl border-[#d8d0c5] bg-white pl-11 text-[15px] text-slate-900 shadow-sm"
+            className="h-[50px] rounded-2xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] pl-11 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm"
             disabled={isSubmitting}
           />
         </div>

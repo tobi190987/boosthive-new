@@ -126,12 +126,12 @@ export function OwnerTenantTable({
 
   if (tenants.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[30px] border border-dashed border-[#ddd1c4] bg-white px-6 py-16 text-center shadow-[0_16px_50px_rgba(89,71,42,0.06)]">
-        <div className="mb-4 rounded-full bg-[#f5efe6] p-4 text-[#b85e34]">
+      <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6 py-16 text-center shadow-soft">
+        <div className="mb-4 rounded-full bg-blue-50 p-4 text-blue-600">
           <SearchX className="h-6 w-6" />
         </div>
-          <h3 className="text-lg font-semibold text-slate-900">Keine Tenants im aktuellen Filter</h3>
-          <p className="mt-2 max-w-md text-sm leading-6 text-slate-500">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Keine Tenants im aktuellen Filter</h3>
+          <p className="mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
             {archivedFilter === 'only'
               ? 'Im Archiv ist aktuell kein Tenant sichtbar.'
               : 'Passe Suche oder Filter an, um weitere Agenturen zu sehen.'}
@@ -142,31 +142,31 @@ export function OwnerTenantTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded-[30px] border border-[#e7ddd1] bg-white shadow-[0_20px_60px_rgba(89,71,42,0.08)]">
-        <div className="flex flex-col gap-4 border-b border-[#ece2d5] px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="overflow-hidden rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-[#252d3a] px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#b85e34]">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
               Owner Directory
             </p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950">
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
               Agenturen im System
             </h2>
           </div>
           <div className="flex flex-wrap gap-3">
-            <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600">
+            <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
               {summary.active} aktiv
             </div>
-            <div className="rounded-full border border-[#e9ddcf] bg-[#faf5ee] px-4 py-2 text-sm text-slate-600">
+            <div className="rounded-full border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
               {summary.blocked} blockiert
             </div>
-            <div className="rounded-full border border-slate-200 bg-slate-100 px-4 py-2 text-sm text-slate-600">
+            <div className="rounded-full border border-slate-200 dark:border-[#252d3a] bg-slate-100 dark:bg-[#1e2635] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
               {summary.archived} archiviert
             </div>
             {bulkEditMode ? (
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#e6ddd0] bg-white"
+                className="border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                 onClick={onCancelBulkEdit}
                 disabled={bulkAction !== null}
               >
@@ -176,7 +176,7 @@ export function OwnerTenantTable({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#e6ddd0] bg-white"
+                className="border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
                 onClick={onStartBulkEdit}
               >
                 Mehrfach bearbeiten
@@ -186,8 +186,8 @@ export function OwnerTenantTable({
         </div>
 
         {bulkEditMode ? (
-          <div className="flex flex-col gap-3 border-b border-[#ece2d5] bg-[#fcfaf6] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-slate-600">
+          <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-sm text-slate-600 dark:text-slate-300">
               {selectedCount > 0
                 ? `${selectedCount} Agentur${selectedCount === 1 ? '' : 'en'} ausgewählt`
                 : 'Wähle Agenturen aus, um Sammelaktionen auszuführen.'}
@@ -196,14 +196,14 @@ export function OwnerTenantTable({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#e6ddd0]"
+                className="border-slate-100 dark:border-[#252d3a]"
                 onClick={selectedCount > 0 ? () => onToggleVisibleSelection(false) : onCancelBulkEdit}
               >
                 {selectedCount > 0 ? 'Auswahl aufheben' : 'Abbrechen'}
               </Button>
               <Button
                 type="button"
-                className="bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+                className="bg-blue-600 hover:bg-blue-700"
                 onClick={() => void onArchiveSelected()}
                 disabled={bulkAction !== null || selectedNotArchivedCount === 0}
               >
@@ -217,7 +217,7 @@ export function OwnerTenantTable({
               <Button
                 type="button"
                 variant="outline"
-                className="border-[#e6ddd0] text-[#9f4f2d]"
+                className="border-slate-100 dark:border-[#252d3a] text-blue-600"
                 onClick={() => void onDeleteSelected()}
                 disabled={bulkAction !== null || selectedArchivedCount === 0}
               >
@@ -257,7 +257,7 @@ export function OwnerTenantTable({
               const isPending = busyTenantId === tenant.id
 
               return (
-                <TableRow key={tenant.id} className="border-[#f0e9df] hover:bg-[#fcfaf6]">
+                <TableRow key={tenant.id} className="border-slate-100 dark:border-[#252d3a] hover:bg-slate-50 dark:hover:bg-[#1e2635]">
                   {bulkEditMode ? (
                     <TableCell className="pl-6">
                       <Checkbox
@@ -271,21 +271,21 @@ export function OwnerTenantTable({
                     <div>
                       <Link
                         href={`/owner/tenants/${tenant.id}`}
-                        className="font-medium text-slate-900 transition-colors hover:text-[#0d9488]"
+                        className="font-medium text-slate-900 dark:text-slate-100 transition-colors hover:text-blue-600"
                       >
                         {tenant.name}
                       </Link>
-                      <p className="text-sm text-slate-500">Tenant-ID: {tenant.id.slice(0, 8)}...</p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Tenant-ID: {tenant.id.slice(0, 8)}...</p>
                     </div>
                   </TableCell>
-                  <TableCell className="text-slate-600">{tenant.slug}.boost-hive.de</TableCell>
+                  <TableCell className="text-slate-600 dark:text-slate-300">{tenant.slug}.boost-hive.de</TableCell>
                   <TableCell>
                     <Badge className={tenantStatusBadgeClass(tenant.status)}>
                       {tenantStatusLabel(tenant.status)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-slate-500">{tenant.memberCount}</TableCell>
-                  <TableCell className="text-slate-500">{formatDate(tenant.created_at)}</TableCell>
+                  <TableCell className="text-slate-500 dark:text-slate-400">{tenant.memberCount}</TableCell>
+                  <TableCell className="text-slate-500 dark:text-slate-400">{formatDate(tenant.created_at)}</TableCell>
                   <TableCell className="pr-6">
                     <div className="flex justify-end">
                       <DropdownMenu>
@@ -304,7 +304,7 @@ export function OwnerTenantTable({
                             )}
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-2xl border-[#e6ddd0]">
+                        <DropdownMenuContent align="end" className="rounded-2xl border-slate-100 dark:border-[#252d3a]">
                           <DropdownMenuItem asChild>
                             <Link href={`/owner/tenants/${tenant.id}`} className="cursor-pointer">
                               <ExternalLink className="mr-2 h-4 w-4" />
@@ -346,7 +346,7 @@ export function OwnerTenantTable({
                             <>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
-                                className="cursor-pointer text-[#9f4f2d] focus:text-[#9f4f2d]"
+                                className="cursor-pointer text-blue-600 focus:text-blue-600"
                                 onClick={() => setDeleteTenant(tenant)}
                                 disabled={isPending}
                               >
@@ -375,7 +375,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirmTenant ? `Tenant ${ownerToggleTenantStatusLabel(confirmTenant.status).toLowerCase()}?` : 'Tenant-Status aendern?'}
@@ -383,7 +383,7 @@ export function OwnerTenantTable({
             <AlertDialogDescription className="leading-6">
               {confirmTenant
                 ? ownerToggleTenantStatusDescription(confirmTenant.status)
-                : 'Diese Statusaenderung wird fuer den Tenant bestaetigt.'}
+                : 'Diese Statusänderung wird für den Tenant bestätigt.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -411,7 +411,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
           <AlertDialogHeader>
             <AlertDialogTitle>Tenant archivieren?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
@@ -422,7 +422,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+              className="rounded-full bg-blue-600 hover:bg-blue-700"
               onClick={async () => {
                 if (!archiveTenant) return
                 await onArchiveTenant(archiveTenant)
@@ -444,7 +444,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
           <AlertDialogHeader>
             <AlertDialogTitle>Agentur aktivieren?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
@@ -454,7 +454,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-[#0d9488] hover:bg-[#0b7c72]"
+              className="rounded-full bg-blue-600 hover:bg-blue-700"
               onClick={async () => {
                 if (!restoreTenant) return
                 await onRestoreTenant(restoreTenant)
@@ -476,7 +476,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[28px] border-[#e7ddd1] bg-[#fffdf9]">
+        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {deleteTenant?.is_archived ? 'Tenant endgültig löschen?' : 'Tenant archivieren?'}
@@ -490,7 +490,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-[#9f4f2d] hover:bg-[#7c3d1d]"
+              className="rounded-full bg-blue-600 hover:bg-blue-700"
               onClick={async () => {
                 if (!deleteTenant) return
                 if (deleteTenant.is_archived) {
