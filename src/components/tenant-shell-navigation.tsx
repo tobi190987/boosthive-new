@@ -15,7 +15,6 @@ import {
   Lock,
   Menu,
   Search,
-  Sparkles,
   Users2,
 } from 'lucide-react'
 import { Sheet, SheetContent } from '@/components/ui/sheet'
@@ -92,8 +91,6 @@ function NavigationContent({
 }: TenantShellNavigationProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
   const sections = tenantNav(context)
-  const isToolsActive = pathname.startsWith('/tools')
-  const [toolsOpen, setToolsOpen] = useState(isToolsActive)
 
   return (
     <>
@@ -108,7 +105,7 @@ function NavigationContent({
             unoptimized
           />
         ) : (
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#edf8f6] text-xs font-semibold text-[#0d9488]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-xs font-semibold text-blue-600">
             {context.tenant.name.slice(0, 1).toUpperCase()}
           </div>
         )}
@@ -118,7 +115,7 @@ function NavigationContent({
         </div>
       </div>
 
-      <Separator className="bg-[#ebe2d5]" />
+      <Separator className="bg-slate-100" />
 
       <nav className="flex-1 px-3 py-3" aria-label="Tenant Navigation">
         <div className="space-y-6">
@@ -135,114 +132,93 @@ function NavigationContent({
                   className={cn(
                     'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
                     isNavActive(pathname, '/dashboard')
-                      ? 'bg-[#edf8f6] text-[#0d9488]'
-                      : 'text-slate-600 hover:bg-[#f7f3ed] hover:text-slate-900'
+                      ? 'bg-blue-50 text-blue-600'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   )}
                   aria-current={isNavActive(pathname, '/dashboard') ? 'page' : undefined}
                 >
                   <span className="flex items-center gap-3">
-                    <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-[#0d9488]' : 'text-slate-400')} />
+                    <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600' : 'text-slate-400')} />
                     Dashboard
                   </span>
                   <ChevronRight className="h-4 w-4 text-slate-300" />
                 </Link>
               </li>
 
-              {/* Tools — expandable category */}
-              <li>
-                <button
-                  type="button"
-                  onClick={() => setToolsOpen((v) => !v)}
-                  className={cn(
-                    'flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
-                    isToolsActive
-                      ? 'bg-[#edf8f6] text-[#0d9488]'
-                      : 'text-slate-600 hover:bg-[#f7f3ed] hover:text-slate-900'
-                  )}
-                >
-                  <span className="flex items-center gap-3">
-                    <Sparkles className={cn('h-4 w-4', isToolsActive ? 'text-[#0d9488]' : 'text-slate-400')} />
-                    Tools
-                  </span>
-                  <ChevronRight className={cn('h-4 w-4 text-slate-300 transition-transform', toolsOpen && 'rotate-90')} />
-                </button>
+              {/* Tools — direkte Menüpunkte */}
+              {TOOLS.map((tool) => {
+                const hasAccess = context.activeModuleCodes.includes(tool.moduleCode)
+                const active = isNavActive(pathname, tool.href)
 
-                {toolsOpen && (
-                  <ul className="ml-4 mt-1 space-y-0.5 border-l border-[#ebe2d5] pl-3">
-                    {TOOLS.map((tool) => {
-                      const hasAccess = context.activeModuleCodes.includes(tool.moduleCode)
-                      const active = isNavActive(pathname, tool.href)
+                return (
+                  <li key={tool.href}>
+                    <Link
+                      href={tool.href}
+                      onClick={onNavigate}
+                      className={cn(
+                        'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
+                        active
+                          ? 'bg-blue-50 text-blue-600'
+                          : hasAccess
+                            ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                            : 'text-slate-400 hover:bg-slate-50'
+                      )}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <span className="flex items-center gap-3">
+                        {hasAccess ? (
+                          <tool.icon className={cn('h-4 w-4', active ? 'text-blue-600' : 'text-slate-400')} />
+                        ) : (
+                          <Lock className="h-4 w-4 text-slate-300" />
+                        )}
+                        {tool.label}
+                      </span>
+                      {hasAccess ? (
+                        <ChevronRight className="h-4 w-4 text-slate-300" />
+                      ) : (
+                        <Lock className="h-3.5 w-3.5 text-slate-300" />
+                      )}
+                    </Link>
 
-                      return (
-                        <li key={tool.href}>
-                          <Link
-                            href={tool.href}
-                            onClick={onNavigate}
-                            className={cn(
-                              'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
-                              active
-                                ? 'bg-[#edf8f6] font-medium text-[#0d9488]'
-                                : hasAccess
-                                  ? 'text-slate-600 hover:bg-[#f7f3ed] hover:text-slate-900'
-                                  : 'text-slate-400 hover:bg-[#f7f3ed]'
-                            )}
-                            aria-current={active ? 'page' : undefined}
-                          >
-                            <span className="flex items-center gap-2.5">
-                              {hasAccess ? (
-                                <tool.icon className={cn('h-3.5 w-3.5', active ? 'text-[#0d9488]' : 'text-slate-400')} />
-                              ) : (
-                                <Lock className="h-3.5 w-3.5 text-slate-300" />
-                              )}
-                              {tool.label}
-                            </span>
-                            {!hasAccess && <Lock className="h-3 w-3 text-slate-300" />}
-                          </Link>
+                    {tool.children && tool.children.length > 0 && (
+                      <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-3">
+                        {tool.children.map((child) => {
+                          const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
+                          const childActive = isNavActive(pathname, child.href)
 
-                          {tool.children && tool.children.length > 0 ? (
-                            <ul className="ml-4 mt-1 space-y-0.5 border-l border-[#ebe2d5] pl-3">
-                              {tool.children.map((child) => {
-                                const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
-                                const childActive = isNavActive(pathname, child.href)
-
-                                return (
-                                  <li key={child.href}>
-                                    <Link
-                                      href={child.href}
-                                      onClick={onNavigate}
-                                      className={cn(
-                                        'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
-                                        childActive
-                                          ? 'bg-[#edf8f6] font-medium text-[#0d9488]'
-                                          : childHasAccess
-                                            ? 'text-slate-600 hover:bg-[#f7f3ed] hover:text-slate-900'
-                                            : 'text-slate-400 hover:bg-[#f7f3ed]'
-                                      )}
-                                      aria-current={childActive ? 'page' : undefined}
-                                    >
-                                      <span className="flex items-center gap-2.5">
-                                        {childHasAccess ? (
-                                          <child.icon
-                                            className={cn('h-3.5 w-3.5', childActive ? 'text-[#0d9488]' : 'text-slate-400')}
-                                          />
-                                        ) : (
-                                          <Lock className="h-3.5 w-3.5 text-slate-300" />
-                                        )}
-                                        {child.label}
-                                      </span>
-                                      {!childHasAccess && <Lock className="h-3 w-3 text-slate-300" />}
-                                    </Link>
-                                  </li>
-                                )
-                              })}
-                            </ul>
-                          ) : null}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                )}
-              </li>
+                          return (
+                            <li key={child.href}>
+                              <Link
+                                href={child.href}
+                                onClick={onNavigate}
+                                className={cn(
+                                  'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
+                                  childActive
+                                    ? 'bg-blue-50 font-medium text-blue-600'
+                                    : childHasAccess
+                                      ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                                      : 'text-slate-400 hover:bg-slate-50'
+                                )}
+                                aria-current={childActive ? 'page' : undefined}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  {childHasAccess ? (
+                                    <child.icon className={cn('h-3.5 w-3.5', childActive ? 'text-blue-600' : 'text-slate-400')} />
+                                  ) : (
+                                    <Lock className="h-3.5 w-3.5 text-slate-300" />
+                                  )}
+                                  {child.label}
+                                </span>
+                                {!childHasAccess && <Lock className="h-3 w-3 text-slate-300" />}
+                              </Link>
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
 
@@ -262,13 +238,13 @@ function NavigationContent({
                         className={cn(
                           'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
                           active
-                            ? 'bg-[#edf8f6] text-[#0d9488]'
-                            : 'text-slate-600 hover:bg-[#f7f3ed] hover:text-slate-900'
+                            ? 'bg-blue-50 text-blue-600'
+                            : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                         )}
                         aria-current={active ? 'page' : undefined}
                       >
                         <span className="flex items-center gap-3">
-                          <item.icon className={cn('h-4 w-4', active ? 'text-[#0d9488]' : 'text-slate-400')} />
+                          <item.icon className={cn('h-4 w-4', active ? 'text-blue-600' : 'text-slate-400')} />
                           {item.label}
                         </span>
                         <ChevronRight className="h-4 w-4 text-slate-300" />
@@ -282,18 +258,18 @@ function NavigationContent({
         </div>
       </nav>
 
-      <Separator className="bg-[#ebe2d5]" />
+      <Separator className="bg-slate-100" />
 
       <div className="p-4">
         <Link
           href="/settings/profile"
           onClick={onNavigate}
-          className="block rounded-[26px] border border-[#ebe2d5] bg-white p-3 shadow-sm transition hover:border-[#d7ccbc] hover:bg-[#fffdf9]"
+          className="block rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:border-slate-200 hover:bg-slate-50"
         >
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border border-[#dceee9]">
+            <Avatar className="h-10 w-10 border border-slate-100">
               <AvatarImage src={context.user.avatarUrl ?? undefined} alt={context.user.email} />
-              <AvatarFallback className="bg-[#e8f8f3] text-sm font-semibold text-[#0d9488]">
+              <AvatarFallback className="bg-blue-50 text-sm font-semibold text-blue-600">
                 {getUserInitials(
                   { first_name: context.user.firstName, last_name: context.user.lastName },
                   context.user.email
@@ -319,7 +295,7 @@ function NavigationContent({
 
 export function TenantSidebar(props: TenantShellNavigationProps) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-[#ebe2d5] bg-[#fffaf3] md:flex">
+    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white md:flex">
       <NavigationContent {...props} />
     </aside>
   )
@@ -329,7 +305,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-[#ebe2d5] bg-[#fffaf3]/95 px-4 backdrop-blur md:hidden">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-100 bg-white/95 px-4 backdrop-blur md:hidden">
       <Button
         type="button"
         variant="ghost"
@@ -347,14 +323,14 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
       </div>
 
       <div className="ml-auto">
-        <Badge className="rounded-full bg-[#edf8f6] text-[#0d9488] hover:bg-[#edf8f6]">
+        <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
           Workspace
         </Badge>
       </div>
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0">
-          <div className="flex h-full flex-col bg-[#fffaf3]">
+          <div className="flex h-full flex-col bg-white">
             <NavigationContent {...props} onNavigate={() => setOpen(false)} />
           </div>
         </SheetContent>
