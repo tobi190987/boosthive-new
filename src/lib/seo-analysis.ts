@@ -37,6 +37,7 @@ export interface SeoPageResult {
   score: number
   error?: string
   warning?: string
+  pagesAnalyzed?: number
 }
 
 export interface SeoAnalysisResult {

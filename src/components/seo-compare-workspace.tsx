@@ -379,15 +379,22 @@ function ComparisonTable({ data }: { data: ComparisonResult }) {
               <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 w-36">Metrik</th>
               {allResults.map((r, i) => (
                 <th key={r.url} className="px-4 py-3 text-left font-medium text-slate-800 dark:text-slate-200">
-                  <div className="flex items-center gap-1.5">
-                    {i === 0 && (
-                      <Badge className="rounded-full bg-blue-50 text-blue-700 hover:bg-blue-50 text-[10px] px-1.5 py-0">
-                        Eigene
-                      </Badge>
+                  <div className="flex flex-col gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      {i === 0 && (
+                        <Badge className="rounded-full bg-blue-50 text-blue-700 hover:bg-blue-50 text-[10px] px-1.5 py-0">
+                          Eigene
+                        </Badge>
+                      )}
+                      <span className="truncate max-w-[130px]" title={r.url}>
+                        {extractHostname(r.url)}
+                      </span>
+                    </div>
+                    {r.pagesAnalyzed !== undefined && r.pagesAnalyzed > 1 && (
+                      <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500">
+                        {r.pagesAnalyzed} Seiten
+                      </span>
                     )}
-                    <span className="truncate max-w-[130px]" title={r.url}>
-                      {extractHostname(r.url)}
-                    </span>
                   </div>
                 </th>
               ))}
@@ -634,6 +641,7 @@ export function SeoCompareWorkspace() {
   // Form state
   const [ownUrl, setOwnUrl] = useState('')
   const [competitorUrls, setCompetitorUrls] = useState<string[]>([''])
+  const [crawlMode, setCrawlMode] = useState<'single' | 'full-domain'>('single')
   const [submitting, setSubmitting] = useState(false)
   const [pendingUrls, setPendingUrls] = useState<string[]>([])
 
@@ -699,6 +707,8 @@ export function SeoCompareWorkspace() {
         body: JSON.stringify({
           ownUrl: trimmedOwn,
           competitorUrls: trimmedCompetitors,
+          crawlMode,
+          maxPages: 10,
           customerId: activeCustomer?.id ?? null,
         }),
       })
@@ -841,6 +851,31 @@ export function SeoCompareWorkspace() {
                 Wettbewerber hinzufügen
               </Button>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Analyse-Modus</label>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {[
+                { value: 'single', label: 'Einzelne Seite', description: 'Analysiert nur die angegebene URL.' },
+                { value: 'full-domain', label: 'Gesamte Domain', description: 'Crawlt bis zu 10 Seiten via Sitemap.' },
+              ].map((mode) => (
+                <button
+                  key={mode.value}
+                  type="button"
+                  onClick={() => setCrawlMode(mode.value as 'single' | 'full-domain')}
+                  className={cn(
+                    'rounded-2xl border px-4 py-4 text-left transition',
+                    crawlMode === mode.value
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/30'
+                      : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635] hover:border-slate-200 dark:hover:border-[#3a4456]'
+                  )}
+                >
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mode.label}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{mode.description}</p>
+                </button>
+              ))}
+            </div>
           </div>
 
           <Button

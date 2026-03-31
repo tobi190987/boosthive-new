@@ -2,7 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
-import { buildPageAnalysis, fetchPage, normalizeInputUrl, assertPublicUrl, type SeoPageResult } from '@/lib/seo-analysis'
+import {
+  assertPublicUrl,
+  buildPageAnalysis,
+  collectUrls,
+  fetchPage,
+  normalizeInputUrl,
+  type SeoPageResult,
+} from '@/lib/seo-analysis'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, SEO_COMPARE_START } from '@/lib/rate-limit'
 
@@ -11,8 +18,14 @@ export const maxDuration = 300
 const compareSchema = z.object({
   ownUrl: z.string().min(1).max(2048),
   competitorUrls: z.array(z.string().min(1).max(2048)).min(1).max(3),
+  crawlMode: z.enum(['single', 'full-domain']).optional().default('single'),
+  maxPages: z.number().int().min(1).max(20).optional().default(10),
   customerId: z.string().uuid().nullable().optional(),
 })
+
+// ---------------------------------------------------------------------------
+// Single page fetch + analyse
+// ---------------------------------------------------------------------------
 
 async function analyzeSingleUrl(url: string): Promise<SeoPageResult> {
   const pageResponse = await fetchPage(url)
@@ -64,6 +77,103 @@ async function analyzeSingleUrl(url: string): Promise<SeoPageResult> {
   return result
 }
 
+// ---------------------------------------------------------------------------
+// Domain crawl: collect pages + aggregate into one SeoPageResult
+// ---------------------------------------------------------------------------
+
+function aggregatePageResults(rootUrl: string, pages: SeoPageResult[]): SeoPageResult {
+  const reachable = pages.filter((p) => !p.error)
+
+  if (reachable.length === 0) {
+    return {
+      url: rootUrl,
+      title: '',
+      metaDescription: '',
+      h1s: [],
+      h2s: [],
+      images: { total: 0, withoutAlt: 0 },
+      wordCount: 0,
+      internalLinks: 0,
+      externalLinks: 0,
+      hasCanonical: false,
+      hasOgTags: false,
+      hasSchemaOrg: false,
+      issues: ['Alle Seiten nicht erreichbar'],
+      score: 0,
+      error: 'Alle Seiten nicht erreichbar',
+      pagesAnalyzed: 0,
+    }
+  }
+
+  const avg = (arr: number[]) => Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)
+  const majority = (arr: boolean[]) => arr.filter(Boolean).length / arr.length >= 0.5
+
+  // Use the homepage (first reachable) for single-value fields
+  const homepage = reachable[0]
+
+  return {
+    url: rootUrl,
+    title: homepage.title,
+    metaDescription: homepage.metaDescription,
+    h1s: homepage.h1s,
+    h2s: homepage.h2s,
+    score: avg(reachable.map((p) => p.score)),
+    wordCount: avg(reachable.map((p) => p.wordCount)),
+    images: {
+      total: reachable.reduce((s, p) => s + p.images.total, 0),
+      withoutAlt: reachable.reduce((s, p) => s + p.images.withoutAlt, 0),
+    },
+    internalLinks: avg(reachable.map((p) => p.internalLinks)),
+    externalLinks: avg(reachable.map((p) => p.externalLinks)),
+    hasCanonical: majority(reachable.map((p) => p.hasCanonical)),
+    hasOgTags: majority(reachable.map((p) => p.hasOgTags)),
+    hasSchemaOrg: majority(reachable.map((p) => p.hasSchemaOrg)),
+    issues: [],
+    pagesAnalyzed: reachable.length,
+  }
+}
+
+async function analyzeUrlOrDomain(
+  url: string,
+  crawlMode: 'single' | 'full-domain',
+  maxPages: number
+): Promise<SeoPageResult> {
+  if (crawlMode === 'single') {
+    return analyzeSingleUrl(url)
+  }
+
+  // Collect all URLs from sitemap (max maxPages)
+  let urlsToAnalyze: string[]
+  try {
+    urlsToAnalyze = await collectUrls([url], 'full-domain', maxPages)
+  } catch {
+    urlsToAnalyze = [url]
+  }
+
+  if (urlsToAnalyze.length === 0) urlsToAnalyze = [url]
+
+  // Validate all collected URLs (SSRF protection)
+  const safeUrls = urlsToAnalyze.filter((u) => {
+    try { assertPublicUrl(u); return true } catch { return false }
+  })
+
+  if (safeUrls.length === 0) return analyzeSingleUrl(url)
+
+  // Analyse in batches of 5 (same pattern as existing SEO tool)
+  const results: SeoPageResult[] = []
+  for (let i = 0; i < safeUrls.length; i += 5) {
+    const batch = safeUrls.slice(i, i + 5)
+    const batchResults = await Promise.all(batch.map(analyzeSingleUrl))
+    results.push(...batchResults)
+  }
+
+  return aggregatePageResults(url, results)
+}
+
+// ---------------------------------------------------------------------------
+// POST — run comparison
+// ---------------------------------------------------------------------------
+
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
@@ -95,6 +205,8 @@ export async function POST(request: NextRequest) {
 
   const ownUrl = normalizeInputUrl(parsed.data.ownUrl)
   const rawCompetitors = parsed.data.competitorUrls.map((u) => normalizeInputUrl(u)).filter(Boolean)
+  const crawlMode = parsed.data.crawlMode
+  const maxPages = Math.min(parsed.data.maxPages, 20)
   const customerId = parsed.data.customerId ?? null
 
   if (!ownUrl) {
@@ -115,13 +227,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  const allUrls = allNormalized
-  const uniqueUrls = new Set(allUrls)
-  if (uniqueUrls.size !== allUrls.length) {
+  const uniqueUrls = new Set(allNormalized)
+  if (uniqueUrls.size !== allNormalized.length) {
     return NextResponse.json({ error: 'Duplikat-URL erkannt. Bitte unterschiedliche URLs verwenden.' }, { status: 400 })
   }
 
-  const pageResults = await Promise.all(allUrls.map(analyzeSingleUrl))
+  const pageResults = await Promise.all(
+    allNormalized.map((url) => analyzeUrlOrDomain(url, crawlMode, maxPages))
+  )
 
   const allErrors = pageResults.every((p) => p.error)
   if (allErrors) {
@@ -151,9 +264,14 @@ export async function POST(request: NextRequest) {
     createdAt: saved.created_at,
     ownUrl,
     competitorUrls: rawCompetitors,
+    crawlMode,
     results: pageResults,
   })
 }
+
+// ---------------------------------------------------------------------------
+// GET — list comparisons
+// ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
