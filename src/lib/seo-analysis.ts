@@ -36,6 +36,7 @@ export interface SeoPageResult {
   issues: string[]
   score: number
   error?: string
+  warning?: string
 }
 
 export interface SeoAnalysisResult {
@@ -209,7 +210,54 @@ function resolveOriginVariants(rawUrl: string) {
   return variants
 }
 
-export async function fetchPage(url: string): Promise<{ html: string; status?: number } | { error: string; status: number } | null> {
+/**
+ * Validates that a URL points to a publicly routable address.
+ * Blocks localhost, loopback, private ranges, and link-local (AWS metadata) addresses
+ * to prevent SSRF attacks.
+ */
+export function assertPublicUrl(url: string): void {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    throw new Error('Ungültige URL.')
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error('Nur HTTP(S)-URLs sind erlaubt.')
+  }
+
+  const hostname = parsed.hostname.toLowerCase().replace(/^\[|\]$/g, '') // strip IPv6 brackets
+
+  if (hostname === 'localhost' || hostname === '0.0.0.0') {
+    throw new Error('Interne Adressen sind nicht erlaubt.')
+  }
+
+  // Block IPv6 loopback and private ranges
+  if (hostname === '::1' || hostname.startsWith('fc') || hostname.startsWith('fd')) {
+    throw new Error('Interne Adressen sind nicht erlaubt.')
+  }
+
+  // Block IPv4 private / reserved ranges
+  const parts = hostname.split('.').map(Number)
+  if (parts.length === 4 && parts.every((n) => Number.isFinite(n) && n >= 0 && n <= 255)) {
+    const [a, b] = parts
+    if (
+      a === 127 || // loopback
+      a === 10 || // RFC1918 private
+      a === 0 || // "this" network
+      (a === 172 && b >= 16 && b <= 31) || // RFC1918 private
+      (a === 192 && b === 168) || // RFC1918 private
+      (a === 169 && b === 254) || // link-local (AWS metadata: 169.254.169.254)
+      (a === 100 && b >= 64 && b <= 127) // shared address space RFC6598
+    ) {
+      throw new Error('Interne Adressen sind nicht erlaubt.')
+    }
+  }
+}
+
+export async function fetchPage(url: string): Promise<{ html: string; status?: number; warning?: string } | { error: string; status: number } | null> {
+  assertPublicUrl(url)
   const baseHeaders = {
     'User-Agent': USER_AGENT,
     Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -249,7 +297,12 @@ export async function fetchPage(url: string): Promise<{ html: string; status?: n
       lastStatus = response.status
 
       if (response.ok) {
-        return { html: await response.text(), status: response.status }
+        const html = await response.text()
+        // BUG-5: warn if page HTML is very large (> 2 MB)
+        if (html.length > 2 * 1024 * 1024) {
+          return { html, status: response.status, warning: 'Seite sehr groß — Ergebnisse möglicherweise unvollständig.' }
+        }
+        return { html, status: response.status }
       }
 
       // For some blocked pages, the body still contains parseable HTML

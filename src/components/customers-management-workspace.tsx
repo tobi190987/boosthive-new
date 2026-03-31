@@ -1,75 +1,91 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
-import { Pencil, Plus, Trash2, Users2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
 import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { useActiveCustomer, type Customer } from '@/lib/active-customer-context'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import { Search, Plus, Trash2, Users, Pencil, Globe } from 'lucide-react'
+import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
+import { useActiveCustomer } from '@/lib/active-customer-context'
 
-interface CustomerFormData {
+// Extended customer type for enhanced features
+interface CustomerExtended {
+  id: string
+  name: string
+  domain?: string | null
+  status: 'active' | 'paused'
+  created_at: string
+  updated_at: string
+  industry?: string
+  integration_count?: number
+  last_activity?: string
+}
+
+interface CustomerForm {
   name: string
   domain: string
+  industry: string
   status: 'active' | 'paused'
 }
 
-const emptyForm: CustomerFormData = { name: '', domain: '', status: 'active' }
-
-interface CustomersManagementWorkspaceProps {
-  isAdmin: boolean
+const emptyForm: CustomerForm = {
+  name: '',
+  domain: '',
+  industry: '',
+  status: 'active'
 }
 
-export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWorkspaceProps) {
-  const { customers, loading, refetchCustomers } = useActiveCustomer()
+export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) {
+  const { refetchCustomers: refetchSidebar } = useActiveCustomer()
+  const [customers, setCustomers] = useState<CustomerExtended[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
+  const [form, setForm] = useState<CustomerForm>(emptyForm)
+  const [editingCustomer, setEditingCustomer] = useState<CustomerExtended | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null)
-  const [deletingCustomer, setDeletingCustomer] = useState<Customer | null>(null)
-  const [form, setForm] = useState<CustomerFormData>(emptyForm)
+  const [deletingCustomer, setDeletingCustomer] = useState<CustomerExtended | null>(null)
+  const [detailCustomer, setDetailCustomer] = useState<CustomerExtended | null>(null)
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  // Refresh on mount
+  const refetchCustomers = useCallback(async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/tenant/customers')
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Fehler beim Laden der Kunden')
+      }
+      const data = await response.json()
+      setCustomers(data.customers || [])
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten.')
+      setCustomers([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     refetchCustomers()
   }, [refetchCustomers])
+
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         (customer.domain && customer.domain.toLowerCase().includes(searchQuery.toLowerCase()))
+    const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
+    return matchesSearch && matchesStatus
+  })
 
   const openCreate = useCallback(() => {
     setEditingCustomer(null)
@@ -77,19 +93,25 @@ export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWor
     setDialogOpen(true)
   }, [])
 
-  const openEdit = useCallback((customer: Customer) => {
+  const openEdit = useCallback((customer: CustomerExtended) => {
     setEditingCustomer(customer)
     setForm({
       name: customer.name,
-      domain: customer.domain ?? '',
+      domain: customer.domain || '',
+      industry: customer.industry || '',
       status: customer.status,
     })
     setDialogOpen(true)
   }, [])
 
-  const openDelete = useCallback((customer: Customer) => {
+  const openDelete = useCallback((customer: CustomerExtended) => {
     setDeletingCustomer(customer)
     setDeleteDialogOpen(true)
+  }, [])
+
+  const openDetail = useCallback((customer: CustomerExtended) => {
+    setDetailCustomer(customer)
+    setDetailDialogOpen(true)
   }, [])
 
   const handleSave = useCallback(async () => {
@@ -99,32 +121,31 @@ export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWor
     }
 
     setSaving(true)
-
     try {
       const isEdit = !!editingCustomer
       const url = isEdit
         ? `/api/tenant/customers/${editingCustomer.id}`
         : '/api/tenant/customers'
-      const method = isEdit ? 'PATCH' : 'POST'
-
-      const res = await fetch(url, {
+      const method = isEdit ? 'PUT' : 'POST'
+      
+      const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name.trim(),
-          domain: form.domain.trim() || null,
-          status: form.status,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(form),
       })
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
         throw new Error(data.error || 'Fehler beim Speichern')
       }
 
       toast.success(isEdit ? 'Kunde aktualisiert.' : 'Kunde angelegt.')
       setDialogOpen(false)
-      await refetchCustomers()
+      setForm(emptyForm)
+      setEditingCustomer(null)
+      await Promise.all([refetchCustomers(), refetchSidebar()])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten.')
     } finally {
@@ -136,21 +157,21 @@ export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWor
     if (!deletingCustomer) return
 
     setDeleting(true)
-
     try {
-      const res = await fetch(`/api/tenant/customers/${deletingCustomer.id}`, {
+      const response = await fetch(`/api/tenant/customers/${deletingCustomer.id}`, {
         method: 'DELETE',
+        headers: {}
       })
 
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || 'Fehler beim Loeschen')
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Fehler beim Löschen')
       }
 
-      toast.success('Kunde geloescht.')
+      toast.success('Kunde gelöscht')
       setDeleteDialogOpen(false)
       setDeletingCustomer(null)
-      await refetchCustomers()
+      await Promise.all([refetchCustomers(), refetchSidebar()])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten.')
     } finally {
@@ -158,120 +179,104 @@ export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWor
     }
   }, [deletingCustomer, refetchCustomers])
 
-  if (loading) {
-    return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft dark:border-slate-800 dark:bg-slate-950">
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
-          <Skeleton className="h-7 w-40" />
-          <Skeleton className="h-9 w-32 rounded-full" />
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-xl" />
-          ))}
-        </CardContent>
-      </Card>
-    )
-  }
-
   return (
-    <>
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft dark:border-slate-800 dark:bg-slate-950">
-        <CardHeader className="flex flex-row items-center justify-between pb-4">
-          <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100 dark:text-slate-100">
-            Kunden ({customers.length})
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="w-5 h-5" />
+            Kundenverwaltung
           </CardTitle>
-          {isAdmin && (
-            <Button
-              onClick={openCreate}
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-              size="sm"
-            >
-              <Plus className="mr-1.5 h-4 w-4" />
-              Kunde anlegen
-            </Button>
-          )}
         </CardHeader>
         <CardContent>
-          {customers.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 py-12 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28] dark:bg-slate-900">
-                <Users2 className="h-6 w-6 text-slate-400 dark:text-slate-500 dark:text-slate-500" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-900 dark:text-slate-100 dark:text-slate-100">
-                  Noch keine Kunden
-                </p>
-                <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400 dark:text-slate-400">
-                  Lege deinen ersten Kunden an, um mit den Analyse-Tools zu starten.
-                </p>
-              </div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                placeholder="Kunden suchen..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'paused')}>
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="active">Aktiv</SelectItem>
+                  <SelectItem value="paused">Pausiert</SelectItem>
+                </SelectContent>
+              </Select>
               {isAdmin && (
-                <Button
-                  onClick={openCreate}
-                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-                  size="sm"
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Ersten Kunden anlegen
+                <Button onClick={openCreate}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Neuer Kunde
                 </Button>
               )}
             </div>
+          </div>
+
+          {loading ? (
+            <div className="space-y-2 mt-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="h-14 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
+              ))}
+            </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="rounded-lg border mt-4">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[40%]">Name</TableHead>
-                    <TableHead className="w-[30%]">Domain</TableHead>
-                    <TableHead className="w-[15%]">Status</TableHead>
-                    {isAdmin && <TableHead className="w-[15%] text-right">Aktionen</TableHead>}
+                    <TableHead>Name</TableHead>
+                    <TableHead>Website</TableHead>
+                    <TableHead>Branche</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {customers.map((customer) => (
+                  {filteredCustomers.map((customer) => (
                     <TableRow key={customer.id}>
-                      <TableCell className="font-medium text-slate-900 dark:text-slate-100 dark:text-slate-100">
-                        {customer.name}
-                      </TableCell>
-                      <TableCell className="text-slate-500 dark:text-slate-400 dark:text-slate-400">
-                        {customer.domain || '\u2014'}
+                      <TableCell className="font-medium">{customer.name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-slate-400" />
+                          {customer.domain}
+                        </div>
                       </TableCell>
                       <TableCell>
-                        <Badge
-                          className={
-                            customer.status === 'active'
-                              ? 'rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 dark:hover:bg-emerald-950/30'
-                              : 'rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a] dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-800'
-                          }
-                        >
+                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                          {customer.industry || 'Nicht angegeben'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
                           {customer.status === 'active' ? 'Aktiv' : 'Pausiert'}
                         </Badge>
                       </TableCell>
-                      {isAdmin && (
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1">
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openDetail(customer)}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          {isAdmin && (
                             <Button
                               variant="ghost"
-                              size="icon"
-                              onClick={() => openEdit(customer)}
-                              aria-label={`${customer.name} bearbeiten`}
-                              className="h-8 w-8"
-                            >
-                              <Pencil className="h-4 w-4 text-slate-500 dark:text-slate-400" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
+                              size="sm"
                               onClick={() => openDelete(customer)}
-                              aria-label={`${customer.name} loeschen`}
-                              className="h-8 w-8 text-red-500 hover:text-red-600"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="w-4 h-4 text-red-500" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      )}
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -281,49 +286,49 @@ export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWor
         </CardContent>
       </Card>
 
-      {/* Create / Edit Dialog */}
+      {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>
               {editingCustomer ? 'Kunde bearbeiten' : 'Neuen Kunden anlegen'}
             </DialogTitle>
-            <DialogDescription>
-              {editingCustomer
-                ? 'Aendere die Kundendaten und speichere die Aenderungen.'
-                : 'Gib die Daten des neuen Kunden ein.'}
-            </DialogDescription>
           </DialogHeader>
-
-          <div className="space-y-4 py-2">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="customer-name">Name *</Label>
+              <Label htmlFor="name">Name *</Label>
               <Input
-                id="customer-name"
-                placeholder="z.B. Muster GmbH"
+                id="name"
                 value={form.name}
-                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                autoFocus
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="Kundenname"
+                disabled={saving}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="customer-domain">Domain (optional)</Label>
+              <Label htmlFor="domain">Website</Label>
               <Input
-                id="customer-domain"
-                placeholder="z.B. muster-gmbh.de"
+                id="domain"
                 value={form.domain}
-                onChange={(e) => setForm((f) => ({ ...f, domain: e.target.value }))}
+                onChange={(e) => setForm({ ...form, domain: e.target.value })}
+                placeholder="https://beispiel.de"
+                disabled={saving}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="customer-status">Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(val) =>
-                  setForm((f) => ({ ...f, status: val as 'active' | 'paused' }))
-                }
-              >
-                <SelectTrigger id="customer-status">
+              <Label htmlFor="industry">Branche</Label>
+              <Input
+                id="industry"
+                value={form.industry}
+                onChange={(e) => setForm({ ...form, industry: e.target.value })}
+                placeholder="z.B. E-Commerce"
+                disabled={saving}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={form.status} onValueChange={(value) => setForm({ ...form, status: value as 'active' | 'paused' })}>
+                <SelectTrigger disabled={saving}>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -333,44 +338,47 @@ export function CustomersManagementWorkspace({ isAdmin }: CustomersManagementWor
               </Select>
             </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Abbrechen
             </Button>
-            <Button
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-[#1f2937] text-white hover:bg-[#111827]"
-            >
-              {saving ? 'Speichert...' : editingCustomer ? 'Speichern' : 'Anlegen'}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? 'Speichern...' : 'Speichern'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
+      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Kunde loeschen?</AlertDialogTitle>
+            <AlertDialogTitle>Kunde löschen</AlertDialogTitle>
             <AlertDialogDescription>
-              Moechtest du &quot;{deletingCustomer?.name}&quot; wirklich loeschen? Die zugehoerigen
-              Analyse-Daten bleiben erhalten.
+              Möchtest du den Kunden &quot;{deletingCustomer?.name}&quot; wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleting}>Abbrechen</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
-              className="bg-red-600 text-white hover:bg-red-700"
-            >
-              {deleting ? 'Loescht...' : 'Loeschen'}
+            <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)} disabled={deleting}>
+              Abbrechen
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={deleting}>
+              {deleting ? 'Löschen...' : 'Löschen'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+
+      {/* Customer Detail - eigenes Dialog in CustomerDetailWorkspace */}
+      {detailCustomer && (
+        <CustomerDetailWorkspace
+          customer={detailCustomer}
+          open={detailDialogOpen}
+          isAdmin={isAdmin}
+          onClose={() => setDetailDialogOpen(false)}
+          onUpdate={refetchCustomers}
+        />
+      )}
+    </div>
   )
 }

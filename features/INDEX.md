@@ -40,7 +40,10 @@
 | PROJ-26 | Google Search Console Integration | Deployed | [PROJ-26-google-search-console-integration.md](PROJ-26-google-search-console-integration.md) | 2026-03-28 |
 | PROJ-27 | Keyword Rankings Dashboard & History | Deployed | [PROJ-27-keyword-rankings-dashboard.md](PROJ-27-keyword-rankings-dashboard.md) | 2026-03-28 |
 | PROJ-28 | Globaler Kunden-Selektor | In Review | [PROJ-28-global-customer-selector.md](PROJ-28-global-customer-selector.md) | 2026-03-30 |
+| PROJ-29 | Customer Database (CRM & Vault) | Deployed | [PROJ-29-customer-database.md](PROJ-29-customer-database.md) | 2026-03-30 |
+| PROJ-30 | SEO Competitor Analyse | In Review | [PROJ-30-seo-competitor-analyse.md](PROJ-30-seo-competitor-analyse.md) | 2026-03-30 |
+| PROJ-31 | Content Brief Generator | In Progress | [PROJ-31-content-brief-generator.md](PROJ-31-content-brief-generator.md) | 2026-03-30 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-29
+## Next Available ID: PROJ-32

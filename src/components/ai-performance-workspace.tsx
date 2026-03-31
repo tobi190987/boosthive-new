@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { PreviewResult, AnalyzeResult, CompareResult, KPIs, PerformanceAnalysis } from '@/lib/performance/types'
+import { useActiveCustomer } from '@/lib/active-customer-context'
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -673,6 +674,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
 // ─── Analyse tab ──────────────────────────────────────────────────────────────
 
 function AnalyseTab() {
+  const { activeCustomer } = useActiveCustomer()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<PreviewResult | null>(null)
@@ -722,6 +724,7 @@ function AnalyseTab() {
       fd.append('file', file)
       fd.append('filters', JSON.stringify({ active_only: activeOnly, campaigns: selectedCampaigns }))
       fd.append('client_label', clientLabel)
+      if (activeCustomer) fd.append('customer_id', activeCustomer.id)
       const res = await fetch('/api/tenant/performance/analyze', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Analyse fehlgeschlagen')
@@ -803,6 +806,7 @@ function AnalyseTab() {
 // ─── Vergleich tab ────────────────────────────────────────────────────────────
 
 function VergleichTab() {
+  const { activeCustomer } = useActiveCustomer()
   const [fileA, setFileA] = useState<File | null>(null)
   const [fileB, setFileB] = useState<File | null>(null)
   const [labelA, setLabelA] = useState('')
@@ -846,6 +850,7 @@ function VergleichTab() {
       fd.append('labelA', labelA || 'Zeitraum A')
       fd.append('labelB', labelB || 'Zeitraum B')
       fd.append('client_label', clientLabel)
+      if (activeCustomer) fd.append('customer_id', activeCustomer.id)
       const res = await fetch('/api/tenant/performance/compare', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Vergleich fehlgeschlagen')
@@ -986,6 +991,7 @@ function VergleichTab() {
 // ─── Verlauf tab ──────────────────────────────────────────────────────────────
 
 function VerlaufTab() {
+  const { activeCustomer } = useActiveCustomer()
   const [analyses, setAnalyses] = useState<PerformanceAnalysis[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -993,7 +999,10 @@ function VerlaufTab() {
   const [openLoading, setOpenLoading] = useState(false)
 
   useEffect(() => {
-    fetch('/api/tenant/performance/history')
+    const url = activeCustomer
+      ? `/api/tenant/performance/history?customer_id=${activeCustomer.id}`
+      : '/api/tenant/performance/history'
+    fetch(url)
       .then(r => r.json())
       .then(d => {
         if (d.error) throw new Error(d.error)
@@ -1001,7 +1010,7 @@ function VerlaufTab() {
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Fehler beim Laden'))
       .finally(() => setLoading(false))
-  }, [])
+  }, [activeCustomer])
 
   const handleOpen = async (id: string) => {
     setOpenLoading(true)
@@ -1071,7 +1080,7 @@ function VerlaufTab() {
           </div>
           <div>
             <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Noch keine Analysen gespeichert</p>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Starte eine Analyse im Tab „Analyse" oder „Vergleich".</p>
+            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Starte eine Analyse im Tab &bdquo;Analyse&ldquo; oder &bdquo;Vergleich&ldquo;.</p>
           </div>
         </CardContent>
       </Card>

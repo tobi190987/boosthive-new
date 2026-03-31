@@ -78,6 +78,9 @@ export const VISIBILITY_ANALYSIS_START: RateLimitOptions = {
 /** Visibility estimate calls: 30 requests / 15 min / tenant+IP */
 export const VISIBILITY_ESTIMATE: RateLimitOptions = { limit: 30, windowMs: 15 * 60 * 1000 }
 
+/** SEO competitor compare (expensive — 2–4 outbound fetches): 5 requests / 15 min / tenant+IP */
+export const SEO_COMPARE_START: RateLimitOptions = { limit: 5, windowMs: 15 * 60 * 1000 }
+
 /** GSC OAuth connect (starts OAuth flow): 5 requests / 15 min / tenant+IP */
 export const GSC_CONNECT: RateLimitOptions = { limit: 5, windowMs: 15 * 60 * 1000 }
 

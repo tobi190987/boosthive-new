@@ -46,6 +46,8 @@ import {
   PaginationPrevious,
 } from '@/components/ui/pagination'
 import { Textarea } from '@/components/ui/textarea'
+import { useActiveCustomer } from '@/lib/active-customer-context'
+import { SeoCompareWorkspace } from '@/components/seo-compare-workspace'
 
 type WorkspaceRole = 'admin' | 'member'
 type View =
@@ -1550,6 +1552,7 @@ function SeoAnalysisWorkspace({
   initialAnalysisId?: string
 }) {
   const router = useRouter()
+  const { activeCustomer } = useActiveCustomer()
   const [view, setView] = useState<View>({ type: 'list' })
   const [analyses, setAnalyses] = useState<SeoAnalysisSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -1560,6 +1563,7 @@ function SeoAnalysisWorkspace({
   const [crawlMode, setCrawlMode] = useState<SeoCrawlMode>('single')
   const isMountedRef = useRef(true)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const [activeTab, setActiveTab] = useState<'analyse' | 'compare'>('analyse')
   const { estimate, loading: estimateLoading, hasSitemap } = useSitemapEstimate(
     urlInput,
     crawlMode !== 'multiple'
@@ -1567,7 +1571,10 @@ function SeoAnalysisWorkspace({
 
   const loadAnalyses = useCallback(async () => {
     try {
-      const response = await fetch('/api/tenant/seo/analyses', { credentials: 'include' })
+      const url = activeCustomer
+        ? `/api/tenant/seo/analyses?customer_id=${activeCustomer.id}`
+        : '/api/tenant/seo/analyses'
+      const response = await fetch(url, { credentials: 'include' })
       if (!response.ok) {
         throw new Error('Verlauf konnte nicht geladen werden.')
       }
@@ -1580,7 +1587,7 @@ function SeoAnalysisWorkspace({
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [activeCustomer])
 
   useEffect(() => {
     isMountedRef.current = true
@@ -1826,6 +1833,7 @@ function SeoAnalysisWorkspace({
           urls,
           crawlMode,
           maxPages: 50,
+          customerId: activeCustomer?.id ?? null,
         }),
       })
 
@@ -1952,6 +1960,38 @@ function SeoAnalysisWorkspace({
 
   return (
     <div className="space-y-6">
+      {/* Tab switcher */}
+      <div className="flex gap-1 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635] p-1 w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTab('analyse')}
+          className={cn(
+            'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+            activeTab === 'analyse'
+              ? 'bg-white dark:bg-[#151c28] text-slate-900 dark:text-slate-100 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          )}
+        >
+          Analyse
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab('compare')}
+          className={cn(
+            'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+            activeTab === 'compare'
+              ? 'bg-white dark:bg-[#151c28] text-slate-900 dark:text-slate-100 shadow-sm'
+              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+          )}
+        >
+          Vergleich
+        </button>
+      </div>
+
+      {activeTab === 'compare' && <SeoCompareWorkspace />}
+
+      {activeTab === 'analyse' && (
+      <>
       <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
@@ -2142,6 +2182,8 @@ function SeoAnalysisWorkspace({
           ))
         )}
       </div>
+      </>
+      )}
     </div>
   )
 }
