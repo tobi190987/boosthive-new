@@ -260,18 +260,25 @@ function hasPreviewAccess(request: NextRequest): boolean {
   return request.cookies.get(PREVIEW_ACCESS_COOKIE)?.value === 'granted'
 }
 
-function hasInternalVisibilityWorkerAccess(request: NextRequest): boolean {
+function hasInternalWorkerAccess(request: NextRequest): boolean {
   const pathname = request.nextUrl.pathname
-  const isVisibilityWorkerRoute =
+
+  // Visibility workers
+  if (
     pathname === '/api/tenant/visibility/worker' ||
     pathname === '/api/tenant/visibility/analytics/worker'
+  ) {
+    const secret = process.env.VISIBILITY_WORKER_SECRET
+    return !!secret && request.headers.get('x-worker-secret') === secret
+  }
 
-  if (!isVisibilityWorkerRoute) return false
+  // Content Brief worker
+  if (pathname === '/api/tenant/content/worker') {
+    const secret = process.env.CONTENT_WORKER_SECRET
+    return !!secret && request.headers.get('x-worker-secret') === secret
+  }
 
-  const workerSecret = process.env.VISIBILITY_WORKER_SECRET
-  if (!workerSecret) return false
-
-  return request.headers.get('x-worker-secret') === workerSecret
+  return false
 }
 
 function isPreviewGateBypassPath(pathname: string): boolean {
@@ -310,7 +317,7 @@ export async function proxy(request: NextRequest) {
 
   if (
     !hasPreviewAccess(request) &&
-    !hasInternalVisibilityWorkerAccess(request) &&
+    !hasInternalWorkerAccess(request) &&
     !isPreviewGateBypassPath(pathname)
   ) {
     if (pathname.startsWith('/api/')) {

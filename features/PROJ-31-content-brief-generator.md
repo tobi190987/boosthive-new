@@ -1,6 +1,6 @@
 # PROJ-31: Content Brief Generator
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-30
 **Last Updated:** 2026-03-31
 
@@ -458,4 +458,14 @@ Keine — bestehende Infrastruktur (`openai`-Package via OpenRouter, `seo-analys
 - **Recommendation:** Deployment kann erfolgen.
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-03-31
+**Production URL:** https://boost-hive.de/tools/content-briefs
+**Vercel Deployment:** `dpl_FBstg8AUQQbbdfCGBznjeuStMZiP`
+**Commit:** `a46a7fa97d8a5627975f4403ffc0abd19e66d4df`
+
+### Pending Post-Deploy Steps
+- [ ] Apply `supabase/migrations/029_content_briefs.sql` in Supabase Dashboard (boosthive project)
+- [ ] Add `CONTENT_WORKER_SECRET` env var in Vercel Dashboard → Settings → Environment Variables
+- [ ] Optionally add `CONTENT_BRIEF_MODEL` (default: `anthropic/claude-3.5-sonnet`)
+- [ ] Verify `OPENROUTER_API_KEY` is set in Vercel env vars

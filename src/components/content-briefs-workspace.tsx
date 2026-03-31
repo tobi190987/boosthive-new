@@ -44,7 +44,6 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCustomer } from '@/lib/active-customer-context'
-import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -91,7 +90,12 @@ interface KeywordProject {
   id: string
   name: string
   target_domain: string
-  keywords: { id: string; keyword: string }[]
+  keyword_count: number
+}
+
+interface ProjectKeyword {
+  id: string
+  keyword: string
 }
 
 type View =
@@ -126,7 +130,7 @@ function langLabel(lang: string) {
   switch (lang) {
     case 'de': return 'Deutsch'
     case 'en': return 'Englisch'
-    case 'fr': return 'Franzoesisch'
+    case 'fr': return 'Französisch'
     case 'es': return 'Spanisch'
     case 'it': return 'Italienisch'
     default: return lang
@@ -152,7 +156,7 @@ function briefToMarkdown(brief: BriefDetail): string {
   const lines: string[] = []
   lines.push(`# Content Brief: ${brief.keyword}`)
   lines.push('')
-  lines.push(`**Sprache:** ${langLabel(brief.language)} | **Tonalitaet:** ${toneLabel(brief.tone)} | **Wortanzahl-Ziel:** ${brief.word_count_target}`)
+  lines.push(`**Sprache:** ${langLabel(brief.language)} | **Tonalität:** ${toneLabel(brief.tone)} | **Wortanzahl-Ziel:** ${brief.word_count_target}`)
   if (brief.target_url) lines.push(`**Ziel-URL:** ${brief.target_url}`)
   lines.push('')
 
@@ -169,7 +173,7 @@ function briefToMarkdown(brief: BriefDetail): string {
   lines.push('')
 
   // Meta Descriptions
-  lines.push(`## Meta-Description Vorschlaege`)
+  lines.push(`## Meta-Description Vorschläge`)
   b.meta_descriptions.forEach((m, i) => lines.push(`${i + 1}. ${m}`))
   lines.push('')
 
@@ -188,14 +192,14 @@ function briefToMarkdown(brief: BriefDetail): string {
 
   // Keywords
   lines.push(`## Kern-Keywords`)
-  lines.push(`| Keyword | Empfohlene Haeufigkeit |`)
+  lines.push(`| Keyword | Empfohlene Häufigkeit |`)
   lines.push(`|---------|----------------------|`)
   b.keywords.forEach((kw) => lines.push(`| ${kw.term} | ${kw.frequency} |`))
   lines.push('')
 
   // Internal Linking Hints
   if (b.internal_linking_hints && b.internal_linking_hints.length > 0) {
-    lines.push(`## Interne Verlinkungsvorschlaege`)
+    lines.push(`## Interne Verlinkungsvorschläge`)
     b.internal_linking_hints.forEach((hint) => lines.push(`- ${hint}`))
     lines.push('')
   }
@@ -257,8 +261,11 @@ export function ContentBriefsWorkspace() {
   // Keyword project import
   const [kwProjects, setKwProjects] = useState<KeywordProject[]>([])
   const [kwProjectsLoading, setKwProjectsLoading] = useState(false)
+  const [kwProjectsUnavailable, setKwProjectsUnavailable] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string>('')
   const [selectedKeywordFromProject, setSelectedKeywordFromProject] = useState<string>('')
+  const [kwKeywords, setKwKeywords] = useState<ProjectKeyword[]>([])
+  const [kwKeywordsLoading, setKwKeywordsLoading] = useState(false)
 
   // Delete confirmation
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -272,11 +279,13 @@ export function ContentBriefsWorkspace() {
   // ── Fetch briefs ──────────────────────────────────────────────────────────
 
   const fetchBriefs = useCallback(async () => {
-    if (!customerId) return
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/tenant/content/briefs?customer_id=${customerId}`)
+      const url = customerId
+        ? `/api/tenant/content/briefs?customer_id=${customerId}`
+        : `/api/tenant/content/briefs`
+      const res = await fetch(url)
       if (!res.ok) throw new Error('Briefs konnten nicht geladen werden.')
       const data = await res.json()
       setBriefs(data.briefs ?? [])
@@ -353,6 +362,7 @@ export function ContentBriefsWorkspace() {
     setTargetUrl('')
     setSelectedProjectId('')
     setSelectedKeywordFromProject('')
+    setKwKeywords([])
     setCreateStep(1)
   }
 
@@ -368,10 +378,11 @@ export function ContentBriefsWorkspace() {
 
   // Load keyword projects when switching to project source
   useEffect(() => {
-    if (keywordSource !== 'project' || kwProjects.length > 0 || kwProjectsLoading) return
+    if (keywordSource !== 'project' || kwProjects.length > 0 || kwProjectsLoading || kwProjectsUnavailable) return
     setKwProjectsLoading(true)
     fetch(`/api/tenant/keywords/projects?customer_id=${customerId}`)
       .then(async (res) => {
+        if (res.status === 403) { setKwProjectsUnavailable(true); return }
         if (!res.ok) throw new Error('Projekte konnten nicht geladen werden.')
         const data = await res.json()
         setKwProjects(data.projects ?? [])
@@ -380,7 +391,22 @@ export function ContentBriefsWorkspace() {
         toast({ title: 'Fehler', description: 'Keyword-Projekte konnten nicht geladen werden.', variant: 'destructive' })
       })
       .finally(() => setKwProjectsLoading(false))
-  }, [keywordSource, kwProjects.length, kwProjectsLoading, customerId, toast])
+  }, [keywordSource, kwProjects.length, kwProjectsLoading, kwProjectsUnavailable, customerId, toast])
+
+  // Load keywords when a project is selected
+  useEffect(() => {
+    if (!selectedProjectId) { setKwKeywords([]); return }
+    setKwKeywordsLoading(true)
+    setSelectedKeywordFromProject('')
+    fetch(`/api/tenant/keywords/projects/${selectedProjectId}/keywords`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error()
+        const data = await res.json()
+        setKwKeywords(data.keywords ?? [])
+      })
+      .catch(() => setKwKeywords([]))
+      .finally(() => setKwKeywordsLoading(false))
+  }, [selectedProjectId])
 
   const selectedProject = kwProjects.find((p) => p.id === selectedProjectId)
 
@@ -410,7 +436,7 @@ export function ContentBriefsWorkspace() {
         throw new Error(err.error ?? 'Brief konnte nicht erstellt werden.')
       }
       const data = await res.json()
-      toast({ title: 'Brief wird generiert', description: `Content Brief fuer "${effectiveKeyword}" wird erstellt.` })
+      toast({ title: 'Brief wird generiert', description: `Content Brief für "${effectiveKeyword}" wird erstellt.` })
       handleCreateClose()
       fetchBriefs()
       // Navigate to the new brief
@@ -432,8 +458,8 @@ export function ContentBriefsWorkspace() {
     setDeleting(true)
     try {
       const res = await fetch(`/api/tenant/content/briefs/${deleteId}`, { method: 'DELETE' })
-      if (!res.ok) throw new Error('Brief konnte nicht geloescht werden.')
-      toast({ title: 'Geloescht', description: 'Content Brief wurde entfernt.' })
+      if (!res.ok) throw new Error('Brief konnte nicht gelöscht werden.')
+      toast({ title: 'Gelöscht', description: 'Content Brief wurde entfernt.' })
       setDeleteId(null)
       if (view.type === 'detail' && view.briefId === deleteId) {
         setView({ type: 'list' })
@@ -441,7 +467,7 @@ export function ContentBriefsWorkspace() {
       }
       fetchBriefs()
     } catch (err) {
-      toast({ title: 'Fehler', description: err instanceof Error ? err.message : 'Fehler beim Loeschen', variant: 'destructive' })
+      toast({ title: 'Fehler', description: err instanceof Error ? err.message : 'Fehler beim Löschen', variant: 'destructive' })
     } finally {
       setDeleting(false)
     }
@@ -461,12 +487,6 @@ export function ContentBriefsWorkspace() {
     }
   }
 
-  // ── No customer selected ─────────────────────────────────────────────────
-
-  if (!activeCustomer) {
-    return <NoCustomerSelected toolName="Content Briefs" />
-  }
-
   // ── Detail view ───────────────────────────────────────────────────────────
 
   if (view.type === 'detail') {
@@ -480,7 +500,7 @@ export function ContentBriefsWorkspace() {
           className="gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurueck zur Uebersicht
+          Zurück zur Übersicht
         </Button>
 
         {detailLoading && !detail ? (
@@ -507,7 +527,7 @@ export function ContentBriefsWorkspace() {
                       <span className="text-slate-300 dark:text-slate-600">|</span>
                       <span>{toneLabel(detail.tone)}</span>
                       <span className="text-slate-300 dark:text-slate-600">|</span>
-                      <span>{detail.word_count_target} Woerter</span>
+                      <span>{detail.word_count_target} Wörter</span>
                       {detail.target_url && (
                         <>
                           <span className="text-slate-300 dark:text-slate-600">|</span>
@@ -558,7 +578,7 @@ export function ContentBriefsWorkspace() {
                       className="gap-2 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
                     >
                       <Trash2 className="h-4 w-4" />
-                      Loeschen
+                      Löschen
                     </Button>
                   </div>
                 </div>
@@ -627,10 +647,15 @@ export function ContentBriefsWorkspace() {
         <div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Content Briefs</h1>
           <p className="text-sm text-slate-500 dark:text-slate-400">
-            KI-generierte Content-Briefings fuer SEO-optimierte Inhalte
+            KI-generierte Content-Briefings für SEO-optimierte Inhalte
           </p>
         </div>
-        <Button onClick={handleCreateOpen} className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700">
+        <Button
+          onClick={handleCreateOpen}
+          disabled={!activeCustomer}
+          title={!activeCustomer ? 'Bitte zuerst einen Kunden auswählen' : undefined}
+          className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+        >
           <Plus className="h-4 w-4" />
           Neues Briefing
         </Button>
@@ -670,10 +695,15 @@ export function ContentBriefsWorkspace() {
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">Noch keine Content Briefs</h2>
               <p className="max-w-md text-sm leading-7 text-slate-500 dark:text-slate-400">
-                Erstelle dein erstes KI-generiertes Content Briefing, um strukturierte Inhalte fuer SEO zu planen.
+                Erstelle dein erstes KI-generiertes Content Briefing, um strukturierte Inhalte für SEO zu planen.
               </p>
             </div>
-            <Button onClick={handleCreateOpen} className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700">
+            <Button
+              onClick={handleCreateOpen}
+              disabled={!activeCustomer}
+              title={!activeCustomer ? 'Bitte zuerst einen Kunden auswählen' : undefined}
+              className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+            >
               <Plus className="h-4 w-4" />
               Erstes Briefing erstellen
             </Button>
@@ -725,8 +755,8 @@ export function ContentBriefsWorkspace() {
             <DialogTitle>Neues Content Briefing</DialogTitle>
             <DialogDescription>
               {createStep === 1
-                ? 'Gib ein Keyword ein oder waehle eines aus deinen Keyword-Projekten.'
-                : 'Passe die Optionen fuer dein Content Briefing an.'}
+                ? 'Gib ein Keyword ein oder wähle eines aus deinen Keyword-Projekten.'
+                : 'Passe die Optionen für dein Content Briefing an.'}
             </DialogDescription>
           </DialogHeader>
 
@@ -748,7 +778,7 @@ export function ContentBriefsWorkspace() {
                   className="rounded-full"
                   onClick={() => setKeywordSource('project')}
                 >
-                  Aus Projekt waehlen
+                  Aus Projekt wählen
                 </Button>
               </div>
 
@@ -768,7 +798,11 @@ export function ContentBriefsWorkspace() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {kwProjectsLoading ? (
+                  {kwProjectsUnavailable ? (
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      Keyword-Projekte nicht verfügbar. Bitte das Keywordranking-Modul aktivieren.
+                    </p>
+                  ) : kwProjectsLoading ? (
                     <div className="flex items-center gap-2 text-sm text-slate-500">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Projekte werden geladen...
@@ -781,9 +815,9 @@ export function ContentBriefsWorkspace() {
                     <>
                       <div className="space-y-2">
                         <Label>Projekt</Label>
-                        <Select value={selectedProjectId} onValueChange={(v) => { setSelectedProjectId(v); setSelectedKeywordFromProject('') }}>
+                        <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
                           <SelectTrigger className="rounded-xl">
-                            <SelectValue placeholder="Projekt waehlen..." />
+                            <SelectValue placeholder="Projekt wählen..." />
                           </SelectTrigger>
                           <SelectContent>
                             {kwProjects.map((p) => (
@@ -792,22 +826,28 @@ export function ContentBriefsWorkspace() {
                           </SelectContent>
                         </Select>
                       </div>
-                      {selectedProject && selectedProject.keywords.length > 0 && (
+                      {selectedProjectId && kwKeywordsLoading && (
+                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Keywords werden geladen...
+                        </div>
+                      )}
+                      {selectedProjectId && !kwKeywordsLoading && kwKeywords.length > 0 && (
                         <div className="space-y-2">
                           <Label>Keyword</Label>
                           <Select value={selectedKeywordFromProject} onValueChange={setSelectedKeywordFromProject}>
                             <SelectTrigger className="rounded-xl">
-                              <SelectValue placeholder="Keyword waehlen..." />
+                              <SelectValue placeholder="Keyword wählen..." />
                             </SelectTrigger>
                             <SelectContent>
-                              {selectedProject.keywords.map((kw) => (
+                              {kwKeywords.map((kw) => (
                                 <SelectItem key={kw.id} value={kw.keyword}>{kw.keyword}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
                         </div>
                       )}
-                      {selectedProject && selectedProject.keywords.length === 0 && (
+                      {selectedProjectId && !kwKeywordsLoading && kwKeywords.length === 0 && (
                         <p className="text-sm text-slate-500 dark:text-slate-400">Dieses Projekt hat noch keine Keywords.</p>
                       )}
                     </>
@@ -836,14 +876,14 @@ export function ContentBriefsWorkspace() {
                     <SelectContent>
                       <SelectItem value="de">Deutsch</SelectItem>
                       <SelectItem value="en">Englisch</SelectItem>
-                      <SelectItem value="fr">Franzoesisch</SelectItem>
+                      <SelectItem value="fr">Französisch</SelectItem>
                       <SelectItem value="es">Spanisch</SelectItem>
                       <SelectItem value="it">Italienisch</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Tonalitaet</Label>
+                  <Label>Tonalität</Label>
                   <Select value={tone} onValueChange={setTone}>
                     <SelectTrigger className="rounded-xl">
                       <SelectValue />
@@ -864,10 +904,10 @@ export function ContentBriefsWorkspace() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="500">500 Woerter</SelectItem>
-                    <SelectItem value="1000">1.000 Woerter</SelectItem>
-                    <SelectItem value="1500">1.500 Woerter</SelectItem>
-                    <SelectItem value="2000">2.000+ Woerter</SelectItem>
+                    <SelectItem value="500">500 Wörter</SelectItem>
+                    <SelectItem value="1000">1.000 Wörter</SelectItem>
+                    <SelectItem value="1500">1.500 Wörter</SelectItem>
+                    <SelectItem value="2000">2.000+ Wörter</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -891,7 +931,7 @@ export function ContentBriefsWorkspace() {
           <DialogFooter className="gap-2">
             {createStep === 2 && (
               <Button variant="outline" onClick={() => setCreateStep(1)} className="rounded-full">
-                Zurueck
+                Zurück
               </Button>
             )}
             {createStep === 1 ? (
@@ -976,7 +1016,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-emerald-500" />
-            Meta-Description Vorschlaege
+            Meta-Description Vorschläge
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -1034,7 +1074,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
               <thead>
                 <tr className="border-b border-slate-100 bg-slate-50 dark:border-[#252d3a] dark:bg-[#1e2635]">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Keyword</th>
-                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Empfohlene Haeufigkeit</th>
+                  <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Empfohlene Häufigkeit</th>
                 </tr>
               </thead>
               <tbody>
@@ -1159,9 +1199,9 @@ function DeleteConfirmDialog({
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
       <DialogContent className="sm:max-w-md rounded-[2rem]">
         <DialogHeader>
-          <DialogTitle>Brief loeschen?</DialogTitle>
+          <DialogTitle>Brief löschen?</DialogTitle>
           <DialogDescription>
-            Dieser Content Brief wird unwiderruflich geloescht. Diese Aktion kann nicht rueckgaengig gemacht werden.
+            Dieser Content Brief wird unwiderruflich gelöscht. Diese Aktion kann nicht rückgängig gemacht werden.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="gap-2">
@@ -1174,7 +1214,7 @@ function DeleteConfirmDialog({
           >
             {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
             <Trash2 className="h-4 w-4" />
-            Loeschen
+            Löschen
           </Button>
         </DialogFooter>
       </DialogContent>

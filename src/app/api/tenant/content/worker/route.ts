@@ -248,20 +248,29 @@ async function callOpenRouter(apiKey: string, model: string, prompt: string): Pr
       await sleep(BASE_BACKOFF_MS * Math.pow(2, attempt - 1))
     }
 
-    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://boost-hive.de',
-      },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 3000,
-        temperature: 0.3,
-      }),
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 80_000)
+
+    let response: Response
+    try {
+      response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        signal: controller.signal,
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL ?? 'https://boost-hive.de',
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 3000,
+          temperature: 0.3,
+        }),
+      })
+    } finally {
+      clearTimeout(timeout)
+    }
 
     if (response.status === 429) {
       lastError = new Error('Rate-Limit von OpenRouter erreicht.')

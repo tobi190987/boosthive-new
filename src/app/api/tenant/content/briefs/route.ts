@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
@@ -14,17 +14,17 @@ import {
 // ─── Zod Validation ──────────────────────────────────────────────────────────
 
 const createBriefSchema = z.object({
-  customer_id: z.string().uuid('Ungueltige Customer-ID.'),
+  customer_id: z.string().uuid('Ungültige Customer-ID.'),
   keyword: z
     .string()
     .trim()
     .min(2, 'Keyword muss mindestens 2 Zeichen haben.')
     .max(200, 'Keyword darf maximal 200 Zeichen haben.'),
   language: z
-    .enum(['de', 'en', 'fr', 'es', 'it'], { error: 'Ungueltige Sprache.' })
+    .enum(['de', 'en', 'fr', 'es', 'it'], { error: 'Ungültige Sprache.' })
     .default('de'),
   tone: z
-    .enum(['informativ', 'werblich', 'neutral'], { error: 'Ungueltige Tonalitaet.' })
+    .enum(['informativ', 'werblich', 'neutral'], { error: 'Ungültige Tonalität.' })
     .default('informativ'),
   word_count_target: z
     .number()
@@ -33,13 +33,17 @@ const createBriefSchema = z.object({
     .max(5000, 'Wortanzahl-Ziel darf maximal 5000 sein.')
     .default(1000),
   target_url: z
-    .string()
-    .trim()
-    .url('Ungueltige URL.')
-    .max(2000)
-    .nullable()
-    .optional()
-    .transform((v) => v || null),
+    .preprocess(
+      (v) => {
+        if (typeof v !== 'string') return v
+        const trimmed = v.trim()
+        if (!trimmed) return null
+        if (!/^https?:\/\//i.test(trimmed)) return `https://${trimmed}`
+        return trimmed
+      },
+      z.string().url('Ungültige URL.').max(2000).nullable().optional()
+    )
+    .transform((v) => v ?? null),
 })
 
 // ─── GET: List briefs ────────────────────────────────────────────────────────
@@ -98,7 +102,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'Ungueltiger JSON-Body.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger JSON-Body.' }, { status: 400 })
   }
 
   const parsed = createBriefSchema.safeParse(body)
@@ -146,10 +150,10 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Fire-and-forget: trigger the worker
-  triggerContentWorker(brief.id).catch((err) => {
+  // Schedule worker after response is sent (Next.js 15+ after())
+  after(() => triggerContentWorker(brief.id).catch((err) => {
     console.error('[content-briefs] Failed to trigger worker:', err)
-  })
+  }))
 
   return NextResponse.json({ brief }, { status: 201 })
 }

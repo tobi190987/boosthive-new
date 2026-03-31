@@ -96,6 +96,6 @@ CREATE TRIGGER content_briefs_updated_at
 
 -- ─── Module registration ────────────────────────────────────────────────────
 
-INSERT INTO modules (code, name, description, price_monthly)
-VALUES ('content_briefs', 'Content Brief Generator', 'KI-generierte Content-Briefings fuer SEO-optimierte Inhalte', 0)
+INSERT INTO modules (code, name, description, stripe_price_id, sort_order, is_active)
+VALUES ('content_briefs', 'Content Brief Generator', 'KI-generierte Content-Briefings fuer SEO-optimierte Inhalte', 'price_1TEy4BBqMa5Vx8VNcidWpuHa', 100, true)
 ON CONFLICT (code) DO NOTHING;

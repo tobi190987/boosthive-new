@@ -22,7 +22,7 @@ export default async function ContentBriefsPage() {
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">Content Briefs ist noch gesperrt</h2>
             <p className="max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Dieses Modul ist fuer deinen Workspace noch nicht gebucht. Buche es in der Abrechnung, um KI-generierte Content Briefings zu erstellen.
+              Dieses Modul ist für deinen Workspace noch nicht gebucht. Buche es in der Abrechnung, um KI-generierte Content Briefings zu erstellen.
             </p>
           </div>
           {isAdmin ? (

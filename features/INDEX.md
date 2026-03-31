@@ -42,7 +42,7 @@
 | PROJ-28 | Globaler Kunden-Selektor | In Review | [PROJ-28-global-customer-selector.md](PROJ-28-global-customer-selector.md) | 2026-03-30 |
 | PROJ-29 | Customer Database (CRM & Vault) | Deployed | [PROJ-29-customer-database.md](PROJ-29-customer-database.md) | 2026-03-30 |
 | PROJ-30 | SEO Competitor Analyse | Deployed | [PROJ-30-seo-competitor-analyse.md](PROJ-30-seo-competitor-analyse.md) | 2026-03-30 |
-| PROJ-31 | Content Brief Generator | In Review | [PROJ-31-content-brief-generator.md](PROJ-31-content-brief-generator.md) | 2026-03-30 |
+| PROJ-31 | Content Brief Generator | Deployed | [PROJ-31-content-brief-generator.md](PROJ-31-content-brief-generator.md) | 2026-03-30 |
 
 <!-- Add features above this line -->
 
