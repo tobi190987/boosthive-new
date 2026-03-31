@@ -89,6 +89,9 @@ export async function requireTenantModuleAccess(
   }
 }
 
+// Modules temporarily unlocked for all tenants (preview/beta access)
+const PREVIEW_MODULES = ['content_briefs']
+
 /**
  * Returns a list of active module codes for a tenant.
  * Useful for dashboard feature-gating without individual checks.
@@ -97,7 +100,7 @@ export async function getActiveModuleCodes(tenantId: string): Promise<string[]> 
   // DEV: all modules unlocked for all tenants
   const supabaseAdmin = createAdminClient()
   const { data: allMods } = await supabaseAdmin.from('modules').select('code')
-  if (allMods) return allMods.map((m) => m.code)
+  if (allMods) return [...new Set([...allMods.map((m) => m.code), ...PREVIEW_MODULES])]
 
   const { data: bookings, error } = await supabaseAdmin
     .from('tenant_modules')
@@ -105,10 +108,10 @@ export async function getActiveModuleCodes(tenantId: string): Promise<string[]> 
     .eq('tenant_id', tenantId)
     .in('status', ['active', 'canceling'])
 
-  if (error || !bookings) return []
+  if (error || !bookings) return [...PREVIEW_MODULES]
 
   const now = new Date()
-  return bookings
+  const bookedCodes = bookings
     .filter((b) => {
       if (b.status === 'active') return true
       if (b.status === 'canceling' && b.current_period_end) {
@@ -120,4 +123,5 @@ export async function getActiveModuleCodes(tenantId: string): Promise<string[]> 
       const modules = b.modules as unknown as { code: string }
       return modules.code
     })
+  return [...new Set([...bookedCodes, ...PREVIEW_MODULES])]
 }
