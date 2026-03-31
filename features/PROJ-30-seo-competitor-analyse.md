@@ -1,6 +1,6 @@
 # PROJ-30: SEO Competitor Analyse
 
-## Status: In Review
+## Status: Deployed
 **Created:** 2026-03-30
 **Last Updated:** 2026-03-31
 
@@ -394,4 +394,12 @@ Keine — bestehende Infrastruktur wird vollständig wiederverwendet.
 - **Recommendation:** BUG-7 (SSRF) und BUG-9 (Rate-Limiting) muessen vor Deployment behoben werden. BUG-6 (Zod-Validierung) sollte ebenfalls vor Deployment geloest werden. BUG-7 betrifft auch PROJ-10 und sollte zentral in `fetchPage` geloest werden.
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-03-31
+**Production URL:** https://boosthive-new-git-main-tobis-projects-24837701.vercel.app
+**Deployment ID:** dpl_2siP6XigrG4R8ydpRwyhyoY6sMmc
+**Commits:**
+- `62d539e` feat(PROJ-30): SEO Competitor Analyse — Side-by-Side Wettbewerbervergleich
+- `7cf4cf5` fix: add missing untracked files for Vercel build
+
+**Migration:** `028_seo_comparisons.sql` — muss manuell im Supabase SQL Editor angewendet werden (kein MCP-Zugriff auf das Projekt)
