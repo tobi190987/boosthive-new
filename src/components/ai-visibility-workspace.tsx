@@ -68,6 +68,7 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
+import { useActiveCustomer } from '@/lib/active-customer-context'
 
 type WorkspaceRole = 'admin' | 'member'
 
@@ -121,6 +122,7 @@ function analyticsStatusColor(status: AnalyticsStatus) {
 export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
   const [view, setView] = useState<View>({ type: 'list' })
   const { toast } = useToast()
+  const { activeCustomer } = useActiveCustomer()
 
   // ── Projekte ────────────────────────────────────────────────
   const [projects, setProjects] = useState<VisibilityProject[]>([])
@@ -131,7 +133,10 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
     setLoadingProjects(true)
     setProjectError(null)
     try {
-      const res = await fetch('/api/tenant/visibility/projects')
+      const url = activeCustomer
+        ? `/api/tenant/visibility/projects?customer_id=${activeCustomer.id}`
+        : '/api/tenant/visibility/projects'
+      const res = await fetch(url)
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
         throw new Error(body.error ?? `Fehler ${res.status}`)
@@ -143,7 +148,7 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
     } finally {
       setLoadingProjects(false)
     }
-  }, [])
+  }, [activeCustomer])
 
   useEffect(() => {
     fetchProjects()
@@ -443,6 +448,7 @@ interface CreateProjectDialogProps {
 
 function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDialogProps) {
   const { toast } = useToast()
+  const { activeCustomer } = useActiveCustomer()
 
   // ── Form-State ──────────────────────────────────────────────
   const [brandName, setBrandName] = useState('')
@@ -541,6 +547,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          customer_id: activeCustomer?.id ?? null,
           brand_name: brandName.trim(),
           website_url: websiteUrl.trim() || null,
           competitors: cleanCompetitors.map((c) => ({

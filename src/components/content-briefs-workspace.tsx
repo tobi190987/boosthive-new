@@ -9,6 +9,7 @@ import {
   Copy,
   Download,
   FileText,
+  Link,
   Loader2,
   Plus,
   Printer,
@@ -63,7 +64,7 @@ interface BriefSummary {
 interface BriefOutlineItem {
   h2: string
   description: string
-  h3s: { title: string; description: string }[]
+  h3s: string[]
 }
 
 interface BriefKeyword {
@@ -78,6 +79,7 @@ interface BriefJson {
   outline: BriefOutlineItem[]
   keywords: BriefKeyword[]
   competitor_hints: string | null
+  internal_linking_hints: string[] | null
   cta_recommendation: string
 }
 
@@ -178,8 +180,7 @@ function briefToMarkdown(brief: BriefDetail): string {
     lines.push(section.description)
     if (section.h3s && section.h3s.length > 0) {
       section.h3s.forEach((sub) => {
-        lines.push(`#### ${sub.title}`)
-        lines.push(sub.description)
+        lines.push(`#### ${sub}`)
       })
     }
     lines.push('')
@@ -191,6 +192,13 @@ function briefToMarkdown(brief: BriefDetail): string {
   lines.push(`|---------|----------------------|`)
   b.keywords.forEach((kw) => lines.push(`| ${kw.term} | ${kw.frequency} |`))
   lines.push('')
+
+  // Internal Linking Hints
+  if (b.internal_linking_hints && b.internal_linking_hints.length > 0) {
+    lines.push(`## Interne Verlinkungsvorschlaege`)
+    b.internal_linking_hints.forEach((hint) => lines.push(`- ${hint}`))
+    lines.push('')
+  }
 
   // Competitor Hints
   if (b.competitor_hints) {
@@ -1001,9 +1009,8 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
               {section.h3s && section.h3s.length > 0 && (
                 <ul className="ml-4 space-y-2 border-l-2 border-slate-100 dark:border-[#252d3a] pl-4">
                   {section.h3s.map((sub, j) => (
-                    <li key={j}>
-                      <p className="text-sm font-medium text-slate-700 dark:text-slate-300">H3: {sub.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{sub.description}</p>
+                    <li key={j} className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                      H3: {sub}
                     </li>
                   ))}
                 </ul>
@@ -1042,6 +1049,28 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
           </div>
         </CardContent>
       </Card>
+
+      {/* Internal Linking Hints */}
+      {brief.internal_linking_hints && brief.internal_linking_hints.length > 0 && (
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Link className="h-4 w-4 text-violet-500" />
+              Interne Verlinkungsvorschläge
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {brief.internal_linking_hints.map((hint, i) => (
+                <li key={i} className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300">
+                  <span className="mt-0.5 shrink-0 text-violet-400">→</span>
+                  {hint}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Competitor Hints */}
       {brief.competitor_hints && (

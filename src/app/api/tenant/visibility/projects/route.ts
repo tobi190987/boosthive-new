@@ -20,6 +20,7 @@ function normalizeUrl(value: string | null | undefined) {
 }
 
 const createProjectSchema = z.object({
+  customer_id: z.string().uuid().nullable().optional(),
   brand_name: z.string().trim().min(1, 'Brand-Name ist erforderlich.').max(200),
   website_url: z
     .union([z.string().trim().max(500), z.null(), z.undefined()])
@@ -57,15 +58,23 @@ export async function GET(request: NextRequest) {
   const moduleAccess = await requireTenantModuleAccess(tenantId, 'ai_visibility')
   if ('error' in moduleAccess) return moduleAccess.error
 
+  const customerId = request.nextUrl.searchParams.get('customer_id')
+
   const admin = createAdminClient()
 
   // Fetch projects with latest analysis status and analysis count via subqueries
-  const { data: projects, error } = await admin
+  let projectQuery = admin
     .from('visibility_projects')
     .select('*')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(100)
+
+  if (customerId) {
+    projectQuery = projectQuery.eq('customer_id', customerId)
+  }
+
+  const { data: projects, error } = await projectQuery
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -122,7 +131,7 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  const { brand_name, website_url, competitors, keywords } = parsed.data
+  const { customer_id, brand_name, website_url, competitors, keywords } = parsed.data
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -130,6 +139,7 @@ export async function POST(request: NextRequest) {
     .insert({
       tenant_id: tenantId,
       created_by: authResult.auth.userId,
+      customer_id: customer_id ?? null,
       brand_name,
       website_url: website_url ?? null,
       competitors,

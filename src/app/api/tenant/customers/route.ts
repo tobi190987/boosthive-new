@@ -12,7 +12,8 @@ import {
 
 const createCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Name ist erforderlich.').max(200),
-  domain: z.string().trim().max(500).optional().nullable(),
+  domain: z.string().trim().max(500).nullable().optional(),
+  industry: z.string().trim().max(200).nullable().optional(),
   status: z.enum(['active', 'paused']).default('active'),
 })
 
@@ -29,7 +30,17 @@ export async function GET(request: NextRequest) {
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('customers')
-    .select('id, name, domain, status, created_at, updated_at')
+    .select(`
+      id, 
+      name, 
+      domain, 
+      industry,
+      logo_url,
+      internal_notes,
+      status, 
+      created_at, 
+      updated_at
+    `)
     .eq('tenant_id', tenantId)
     .is('deleted_at', null)
     .order('name', { ascending: true })
@@ -64,8 +75,25 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: firstDetail ?? 'Validierungsfehler.', details }, { status: 400 })
   }
 
-  const { name, domain, status } = parsed.data
+  const { name, domain, industry, status } = parsed.data
   const admin = createAdminClient()
+
+  // Check for duplicate domain within same tenant (only if domain is provided)
+  if (domain && domain.trim()) {
+    const { data: existingCustomer } = await admin
+      .from('customers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('domain', domain.trim().toLowerCase())
+      .is('deleted_at', null)
+      .maybeSingle() // Use maybeSingle instead of single to avoid errors
+
+    if (existingCustomer) {
+      return NextResponse.json({ 
+        error: 'Ein Kunde mit dieser Website-URL existiert bereits.' 
+      }, { status: 409 })
+    }
+  }
 
   const { data, error } = await admin
     .from('customers')
@@ -74,9 +102,20 @@ export async function POST(request: NextRequest) {
       created_by: authResult.auth.userId,
       name,
       domain: domain ?? null,
+      industry: industry ?? null,
       status,
     })
-    .select('id, name, domain, status, created_at, updated_at')
+    .select(`
+      id, 
+      name, 
+      domain, 
+      industry,
+      logo_url,
+      internal_notes,
+      status, 
+      created_at, 
+      updated_at
+    `)
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CreditCard,
   Eye,
+  FileText,
   LayoutDashboard,
   Lock,
   Menu,
@@ -64,6 +65,7 @@ const TOOLS: ToolNavItem[] = [
   },
   { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
   { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
+  { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
 ]
 
 function roleLabel(role: TenantShellContext['membership']['role']) {

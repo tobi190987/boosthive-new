@@ -7,7 +7,7 @@ export interface TenantContext {
 
 /**
  * Reads tenant context from request headers in Server Components and Route Handlers.
- * Headers are injected by the middleware after successful tenant resolution.
+ * Headers are injected by middleware after successful tenant resolution.
  * Returns null if no tenant context is present (e.g. root domain requests).
  */
 export async function getTenantContext(): Promise<TenantContext | null> {

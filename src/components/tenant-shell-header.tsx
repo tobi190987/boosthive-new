@@ -25,10 +25,7 @@ export function TenantShellHeader({
             {eyebrow}
           </Badge>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
-              {context.tenant.name} / {context.tenant.slug}
-            </p>
-            <h1 className="mt-2 font-headline text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
+            <h1 className="font-headline text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
               {title}
             </h1>
             {description ? (

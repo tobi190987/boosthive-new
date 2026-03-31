@@ -101,6 +101,7 @@ export async function POST(request: NextRequest) {
     urls?: string[]
     crawlMode?: 'single' | 'multiple' | 'full-domain'
     maxPages?: number
+    customerId?: string | null
   }
 
   try {
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
   }
 
   const analysisId = body.analysisId?.trim()
+  const customerId = typeof body.customerId === 'string' ? body.customerId : null
   const crawlMode = body.crawlMode ?? 'single'
   const maxPages = Math.min(Math.max(body.maxPages ?? 10, 1), 50)
   const rawUrls = (body.urls ?? []).map((url) => normalizeInputUrl(url)).filter(Boolean)
@@ -124,6 +126,7 @@ export async function POST(request: NextRequest) {
     id: analysisId,
     tenant_id: tenantId,
     created_by: authResult.auth.userId,
+    customer_id: customerId,
     status: 'running',
     config: {
       urls: rawUrls,

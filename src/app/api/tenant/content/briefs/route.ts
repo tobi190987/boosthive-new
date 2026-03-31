@@ -115,6 +115,18 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
+  // BUG-3 fix: Verify that customer_id belongs to this tenant
+  const { data: customer } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customer_id)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  if (!customer) {
+    return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+  }
+
   // Insert the brief record with status "pending"
   const { data: brief, error } = await admin
     .from('content_briefs')

@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     if (!file) return NextResponse.json({ error: 'Keine Datei gefunden' }, { status: 400 })
 
     const clientLabel = String(formData.get('client_label') ?? '').trim() || null
+    const customerId = String(formData.get('customer_id') ?? '').trim() || null
 
     const content = await file.text()
     const { rows, meta } = parseCSV(content)
@@ -81,6 +82,7 @@ export async function POST(request: NextRequest) {
       .insert({
         tenant_id: tenantId,
         created_by: authResult.auth.userId,
+        customer_id: customerId,
         type: 'analyze',
         client_label: clientLabel,
         platform: meta.platform,

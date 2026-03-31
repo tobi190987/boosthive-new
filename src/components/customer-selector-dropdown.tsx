@@ -32,11 +32,15 @@ export function CustomerSelectorDropdown() {
 
   const handleSelect = useCallback(
     (customerId: string) => {
-      const customer = customers.find((c) => c.id === customerId) ?? null
-      setActiveCustomer(customer)
+      if (activeCustomer?.id === customerId) {
+        setActiveCustomer(null)
+      } else {
+        const customer = customers.find((c) => c.id === customerId) ?? null
+        setActiveCustomer(customer)
+      }
       setOpen(false)
     },
-    [customers, setActiveCustomer]
+    [activeCustomer, customers, setActiveCustomer]
   )
 
   if (loading) {
@@ -71,7 +75,7 @@ export function CustomerSelectorDropdown() {
             <>
               <Users2 className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 dark:text-slate-500" />
               <span className="min-w-0 flex-1 truncate text-slate-400 dark:text-slate-500 dark:text-slate-500">
-                {customers.length === 0 ? 'Noch keine Kunden' : 'Kunden waehlen...'}
+                {customers.length === 0 ? 'Noch keine Kunden' : 'Kunden wählen...'}
               </span>
             </>
           )}

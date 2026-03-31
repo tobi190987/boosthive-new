@@ -24,6 +24,7 @@ function normalizeDomain(raw: string): string {
 const DOMAIN_REGEX = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
 const createProjectSchema = z.object({
+  customer_id: z.string().uuid().nullable().optional(),
   name: z.string().min(1, 'Name ist erforderlich.').max(100, 'Name darf maximal 100 Zeichen haben.'),
   target_domain: z
     .string()
@@ -48,9 +49,11 @@ export async function GET(request: NextRequest) {
   const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
   if ('error' in moduleAccess) return moduleAccess.error
 
+  const customerId = request.nextUrl.searchParams.get('customer_id')
+
   const admin = createAdminClient()
 
-  const { data, error } = await admin
+  let query = admin
     .from('keyword_projects')
     .select(`
       id,
@@ -66,6 +69,12 @@ export async function GET(request: NextRequest) {
     `)
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
+
+  if (customerId) {
+    query = query.eq('customer_id', customerId)
+  }
+
+  const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -133,6 +142,7 @@ export async function POST(request: NextRequest) {
     .from('keyword_projects')
     .insert({
       tenant_id: tenantId,
+      customer_id: parsed.data.customer_id ?? null,
       name: parsed.data.name,
       target_domain: parsed.data.target_domain,
       language_code: parsed.data.language_code,

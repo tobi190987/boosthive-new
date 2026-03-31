@@ -284,6 +284,7 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname === '/api/auth/email-link' ||
     pathname === '/api/auth/password-reset/confirm' ||
     pathname.startsWith('/api/access') ||
+    pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
     STATIC_FILE_REGEX.test(pathname)

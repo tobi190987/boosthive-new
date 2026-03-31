@@ -62,6 +62,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useActiveCustomer } from '@/lib/active-customer-context'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -416,6 +417,7 @@ interface ProjectListProps {
 
 function ProjectList({ role, onOpenProject }: ProjectListProps) {
   const { toast } = useToast()
+  const { activeCustomer } = useActiveCustomer()
   const [projects, setProjects] = useState<KeywordProject[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -425,14 +427,17 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
     try {
       setLoading(true)
       setError(null)
-      const data = await apiFetch<{ projects: KeywordProject[] }>(API_BASE)
+      const url = activeCustomer
+        ? `${API_BASE}?customer_id=${activeCustomer.id}`
+        : API_BASE
+      const data = await apiFetch<{ projects: KeywordProject[] }>(url)
       setProjects(data.projects)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Projekte konnten nicht geladen werden.')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [activeCustomer])
 
   useEffect(() => {
     loadProjects()
@@ -641,6 +646,7 @@ interface CreateProjectDialogProps {
 
 function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDialogProps) {
   const { toast } = useToast()
+  const { activeCustomer } = useActiveCustomer()
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
   const [language, setLanguage] = useState('de')
@@ -682,6 +688,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
           target_domain: normalized,
           language_code: language,
           country_code: country,
+          customer_id: activeCustomer?.id ?? null,
         }),
       })
       toast({ title: 'Projekt erstellt', description: `"${trimmedName}" wurde angelegt.` })
@@ -1343,7 +1350,19 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                           {row.lastTrackedAt ? formatRelativeTime(row.lastTrackedAt) : 'Ausstehend'}
                         </TableCell>
                         <TableCell className="hidden max-w-[260px] truncate lg:table-cell text-slate-500 dark:text-slate-400">
-                          {row.bestUrl ?? 'Keine URL'}
+                          {row.bestUrl ? (
+                            <a
+                              href={row.bestUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 hover:text-slate-900 dark:hover:text-slate-100 hover:underline"
+                            >
+                              <span className="truncate max-w-[220px]">{row.bestUrl}</span>
+                              <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                            </a>
+                          ) : (
+                            'Keine URL'
+                          )}
                         </TableCell>
                         <TableCell className="text-right">
                           <Button
@@ -1551,6 +1570,14 @@ function RankingTrendChart({
   const yMin = 1
   const yMax = 100
 
+  const [tooltip, setTooltip] = useState<{
+    x: number
+    y: number
+    position: number
+    date: string
+    label: string
+  } | null>(null)
+
   const maxLength = Math.max(...series.map((item) => item.points.length), 0)
   const ticks = [1, 10, 25, 50, 75, 100]
 
@@ -1583,6 +1610,10 @@ function RankingTrendChart({
     return path.trim()
   }
 
+  const tooltipWidth = 130
+  const tooltipHeight = 44
+  const tooltipPadding = 6
+
   return (
     <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
       <CardHeader className="pb-3">
@@ -1596,6 +1627,7 @@ function RankingTrendChart({
             className="h-[260px] w-full"
             role="img"
             aria-label={title}
+            onMouseLeave={() => setTooltip(null)}
           >
             {ticks.map((tick) => {
               const y = yForPosition(tick)
@@ -1630,19 +1662,73 @@ function RankingTrendChart({
                   />
                   {item.points.map((point, pointIndex) => {
                     if (point.position == null) return null
+                    const cx = xForIndex(pointIndex, item.points.length)
+                    const cy = yForPosition(point.position)
                     return (
                       <circle
                         key={`${item.label}-${pointIndex}`}
-                        cx={xForIndex(pointIndex, item.points.length)}
-                        cy={yForPosition(point.position)}
-                        r="4"
+                        cx={cx}
+                        cy={cy}
+                        r="5"
                         fill={color}
+                        className="cursor-pointer"
+                        onMouseEnter={() =>
+                          setTooltip({
+                            x: cx,
+                            y: cy,
+                            position: point.position!,
+                            date: point.trackedAt ? formatDate(point.trackedAt) : '',
+                            label: item.label,
+                          })
+                        }
                       />
                     )
                   })}
                 </g>
               )
             })}
+
+            {tooltip && (() => {
+              const tx = Math.min(
+                Math.max(tooltip.x - tooltipWidth / 2, tooltipPadding),
+                width - tooltipWidth - tooltipPadding
+              )
+              const ty = tooltip.y - tooltipHeight - 10 < tooltipPadding
+                ? tooltip.y + 14
+                : tooltip.y - tooltipHeight - 10
+              return (
+                <g style={{ pointerEvents: 'none' }}>
+                  <rect
+                    x={tx}
+                    y={ty}
+                    width={tooltipWidth}
+                    height={tooltipHeight}
+                    rx="6"
+                    fill="#1f2937"
+                    opacity="0.92"
+                  />
+                  <text
+                    x={tx + tooltipWidth / 2}
+                    y={ty + 15}
+                    textAnchor="middle"
+                    fontSize="12"
+                    fontWeight="600"
+                    fill="white"
+                  >
+                    Position {tooltip.position}
+                  </text>
+                  <text
+                    x={tx + tooltipWidth / 2}
+                    y={ty + 31}
+                    textAnchor="middle"
+                    fontSize="11"
+                    fill="#94a3b8"
+                  >
+                    {tooltip.date}
+                  </text>
+                </g>
+              )
+            })()}
           </svg>
         </div>
 

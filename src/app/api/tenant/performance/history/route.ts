@@ -13,13 +13,21 @@ export async function GET(request: NextRequest) {
   const moduleAccess = await requireTenantModuleAccess(tenantId, 'ai_performance')
   if ('error' in moduleAccess) return moduleAccess.error
 
+  const customerId = request.nextUrl.searchParams.get('customer_id')
+
   const admin = createAdminClient()
-  const { data, error } = await admin
+  let query = admin
     .from('performance_analyses')
     .select('id, type, client_label, platform, meta, created_at')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(50)
+
+  if (customerId) {
+    query = query.eq('customer_id', customerId)
+  }
+
+  const { data, error } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

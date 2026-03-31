@@ -30,6 +30,7 @@ export async function POST(request: NextRequest) {
     const labelA = String(formData.get('labelA') ?? 'Zeitraum A')
     const labelB = String(formData.get('labelB') ?? 'Zeitraum B')
     const clientLabel = String(formData.get('client_label') ?? '').trim() || null
+    const customerId = String(formData.get('customer_id') ?? '').trim() || null
 
     const defaultFilters: Filters = { active_only: false, campaigns: [] }
 
@@ -103,6 +104,7 @@ export async function POST(request: NextRequest) {
       .insert({
         tenant_id: tenantId,
         created_by: authResult.auth.userId,
+        customer_id: customerId,
         type: 'compare',
         client_label: clientLabel,
         platform: metaA.platform,
