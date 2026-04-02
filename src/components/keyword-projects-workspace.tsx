@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from 'react'
 import {
+  ArrowUpDown,
   BarChart3,
   AlertCircle,
   ArrowLeft,
+  Check,
   Clock3,
   ExternalLink,
   Globe,
@@ -824,6 +826,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
   const [project, setProject] = useState<KeywordProject | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [gscReady, setGscReady] = useState<boolean | null>(null)
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab
     if (typeof window === 'undefined') return 'rankings'
@@ -847,9 +850,31 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
     }
   }, [projectId])
 
+  const loadGscStatus = useCallback(async () => {
+    try {
+      const data = await apiFetch<{ connection: { status: string; selected_property: string | null } | null }>(
+        `${API_BASE}/${projectId}/gsc/status`
+      )
+      const ready = !!(data.connection?.status === 'connected' && data.connection?.selected_property)
+      setGscReady(ready)
+    } catch {
+      setGscReady(false)
+    }
+  }, [projectId])
+
   useEffect(() => {
     loadProject()
   }, [loadProject])
+
+  useEffect(() => {
+    loadGscStatus()
+  }, [loadGscStatus])
+
+  useEffect(() => {
+    if (gscReady === false && activeTab === 'all-rankings') {
+      setActiveTab('rankings')
+    }
+  }, [gscReady, activeTab])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -939,6 +964,12 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           <TabsTrigger value="competitors" className="rounded-full data-[state=active]:bg-white">
             Wettbewerber
           </TabsTrigger>
+          {gscReady === true && (
+            <TabsTrigger value="all-rankings" className="rounded-full data-[state=active]:bg-white">
+              <Globe className="mr-1.5 h-3.5 w-3.5" />
+              Alle Rankings
+            </TabsTrigger>
+          )}
           <TabsTrigger value="settings" className="rounded-full data-[state=active]:bg-white">
             <Settings className="mr-1.5 h-3.5 w-3.5" />
             Einstellungen
@@ -964,6 +995,13 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
 
         <TabsContent value="competitors" className="mt-4">
           <CompetitorsTab projectId={projectId} targetDomain={project.target_domain} />
+        </TabsContent>
+
+        <TabsContent value="all-rankings" className="mt-4">
+          <AllRankingsTab
+            projectId={projectId}
+            onOpenIntegrations={() => setActiveTab('integrations')}
+          />
         </TabsContent>
 
         <TabsContent value="settings" className="mt-4">
@@ -2728,6 +2766,466 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// All Rankings (Discovery) Tab — PROJ-32
+// ---------------------------------------------------------------------------
+
+interface AllRankingsRow {
+  keyword: string
+  position: number | null
+  clicks: number
+  impressions: number
+  ctr: number
+  isTracked: boolean
+}
+
+type DiscoverySortKey = 'keyword' | 'position' | 'clicks' | 'impressions' | 'ctr'
+type SortDir = 'asc' | 'desc'
+
+interface AllRankingsTabProps {
+  projectId: string
+  onOpenIntegrations: () => void
+}
+
+const ROWS_PER_PAGE = 50
+
+function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) {
+  const { toast } = useToast()
+  const [rows, setRows] = useState<AllRankingsRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [gscNotReady, setGscNotReady] = useState(false)
+  const [gscRevoked, setGscRevoked] = useState(false)
+  const [days, setDays] = useState<'7' | '28' | '90'>('28')
+  const [limitReached, setLimitReached] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [sortKey, setSortKey] = useState<DiscoverySortKey>('clicks')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [visibleCount, setVisibleCount] = useState(ROWS_PER_PAGE)
+  const [addingKeywords, setAddingKeywords] = useState<Set<string>>(new Set())
+
+  const discoveryUrl = `${API_BASE}/${projectId}/gsc/all-rankings`
+
+  const loadData = useCallback(async (period: '7' | '28' | '90') => {
+    try {
+      setLoading(true)
+      setError(null)
+      setGscNotReady(false)
+      setGscRevoked(false)
+      setVisibleCount(ROWS_PER_PAGE)
+
+      const data = await apiFetch<{
+        rows: AllRankingsRow[]
+        limitReached: boolean
+        total: number
+      }>(`${discoveryUrl}?days=${period}`)
+
+      setRows(data.rows)
+      setLimitReached(data.limitReached)
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 422) {
+          setGscNotReady(true)
+          return
+        }
+        if (err.status === 403) {
+          setGscRevoked(true)
+          return
+        }
+      }
+      setError(err instanceof Error ? err.message : 'Daten konnten nicht geladen werden.')
+    } finally {
+      setLoading(false)
+    }
+  }, [discoveryUrl])
+
+  useEffect(() => {
+    loadData(days)
+  }, [days, loadData])
+
+  function handleSort(key: DiscoverySortKey) {
+    setVisibleCount(ROWS_PER_PAGE)
+    if (sortKey === key) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'keyword' ? 'asc' : 'desc')
+    }
+  }
+
+  async function handleAddKeyword(keyword: string) {
+    if (addingKeywords.has(keyword)) return
+    setAddingKeywords((prev) => new Set(prev).add(keyword))
+    try {
+      await apiFetch(`${API_BASE}/${projectId}/keywords`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ keyword }),
+      })
+      // Mark as tracked locally
+      setRows((prev) =>
+        prev.map((r) =>
+          r.keyword === keyword ? { ...r, isTracked: true } : r
+        )
+      )
+      toast({
+        title: 'Keyword hinzugefuegt',
+        description: `"${keyword}" wird jetzt getrackt.`,
+      })
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 409) {
+        // Already tracked — update UI
+        setRows((prev) =>
+          prev.map((r) =>
+            r.keyword === keyword ? { ...r, isTracked: true } : r
+          )
+        )
+        toast({
+          title: 'Bereits vorhanden',
+          description: `"${keyword}" ist bereits in der Keyword-Liste.`,
+        })
+      } else {
+        toast({
+          title: 'Fehler',
+          description: err instanceof Error ? err.message : 'Keyword konnte nicht hinzugefuegt werden.',
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setAddingKeywords((prev) => {
+        const next = new Set(prev)
+        next.delete(keyword)
+        return next
+      })
+    }
+  }
+
+  // Filter and sort
+  const filtered = rows.filter((r) =>
+    searchQuery.trim() === '' || r.keyword.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+
+  const sorted = [...filtered].sort((a, b) => {
+    const dir = sortDir === 'asc' ? 1 : -1
+    if (sortKey === 'keyword') {
+      return dir * a.keyword.localeCompare(b.keyword)
+    }
+    const aVal = a[sortKey] ?? Number.POSITIVE_INFINITY
+    const bVal = b[sortKey] ?? Number.POSITIVE_INFINITY
+    return dir * (aVal - bVal)
+  })
+
+  const visibleRows = sorted.slice(0, visibleCount)
+  const hasMore = visibleCount < sorted.length
+
+  // --- Loading State ---
+  if (loading) {
+    return (
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <CardContent className="space-y-4 p-6">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+            <span className="text-sm text-slate-500 dark:text-slate-400">
+              GSC-Daten werden geladen...
+            </span>
+          </div>
+          <Skeleton className="h-10 w-full rounded-xl" />
+          <Skeleton className="h-72 w-full rounded-xl" />
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // --- GSC Not Connected State ---
+  if (gscNotReady) {
+    return (
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#1e2635]">
+            <Link2 className="h-7 w-7 text-slate-400 dark:text-slate-500" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
+              Search Console nicht verbunden
+            </h2>
+            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              Um alle Rankings zu sehen, muss eine Google Search Console Property verbunden und ausgewaehlt sein.
+            </p>
+          </div>
+          <Button
+            onClick={onOpenIntegrations}
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+          >
+            Zu den Integrationen
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // --- GSC Revoked State ---
+  if (gscRevoked) {
+    return (
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30">
+            <Unlink className="h-7 w-7 text-red-400 dark:text-red-500" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
+              Verbindung widerrufen
+            </h2>
+            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              Die Google Search Console Verbindung wurde widerrufen. Bitte erneut verbinden.
+            </p>
+          </div>
+          <Button
+            onClick={onOpenIntegrations}
+            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+          >
+            Zu den Integrationen
+          </Button>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // --- Error State ---
+  if (error) {
+    return (
+      <Alert variant="destructive" className="rounded-2xl">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Fehler</AlertTitle>
+        <AlertDescription className="flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <Button variant="outline" size="sm" onClick={() => loadData(days)}>
+            Erneut versuchen
+          </Button>
+        </AlertDescription>
+      </Alert>
+    )
+  }
+
+  // --- Empty State ---
+  if (rows.length === 0) {
+    return (
+      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#1e2635]">
+            <Search className="h-7 w-7 text-slate-400 dark:text-slate-500" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
+              Keine Daten fuer diesen Zeitraum
+            </h2>
+            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+              Google Search Console hat fuer den gewaehlten Zeitraum keine Keyword-Daten geliefert. Versuche einen laengeren Zeitraum.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {days !== '90' && (
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={() => setDays('90')}
+              >
+                90 Tage anzeigen
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // --- Data Table ---
+  return (
+    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <CardHeader className="pb-3">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-base font-semibold">
+              Alle Rankings
+              <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">
+                ({sorted.length.toLocaleString('de-DE')} Keywords{filtered.length !== rows.length ? ` von ${rows.length.toLocaleString('de-DE')}` : ''})
+              </span>
+            </CardTitle>
+            {limitReached && (
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                Das Limit von 1.000 Keywords wurde erreicht. Moeglicherweise gibt es weitere Keywords.
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <Select value={days} onValueChange={(v) => setDays(v as '7' | '28' | '90')}>
+              <SelectTrigger className="w-[130px] rounded-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7">7 Tage</SelectItem>
+                <SelectItem value="28">28 Tage</SelectItem>
+                <SelectItem value="90">90 Tage</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              onClick={() => loadData(days)}
+              aria-label="Daten neu laden"
+            >
+              <RefreshCcw className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative mt-3">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Input
+            placeholder="Keywords durchsuchen..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value)
+                setVisibleCount(ROWS_PER_PAGE)
+              setVisibleCount(ROWS_PER_PAGE)
+            }}
+            className="rounded-full pl-10"
+          />
+        </div>
+      </CardHeader>
+
+      <CardContent className="px-0 pb-4">
+        {filtered.length === 0 ? (
+          <div className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+            Kein Keyword entspricht dem Suchbegriff &quot;{searchQuery}&quot;.
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="min-w-[200px]">
+                      <button
+                        className="flex items-center gap-1 hover:text-slate-950 dark:hover:text-slate-50"
+                        onClick={() => handleSort('keyword')}
+                      >
+                        Keyword
+                        <ArrowUpDown className={cn('h-3.5 w-3.5', sortKey === 'keyword' ? 'text-slate-950 dark:text-slate-50' : 'text-slate-300')} />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        className="ml-auto flex items-center gap-1 hover:text-slate-950 dark:hover:text-slate-50"
+                        onClick={() => handleSort('position')}
+                      >
+                        Position
+                        <ArrowUpDown className={cn('h-3.5 w-3.5', sortKey === 'position' ? 'text-slate-950 dark:text-slate-50' : 'text-slate-300')} />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        className="ml-auto flex items-center gap-1 hover:text-slate-950 dark:hover:text-slate-50"
+                        onClick={() => handleSort('clicks')}
+                      >
+                        Klicks
+                        <ArrowUpDown className={cn('h-3.5 w-3.5', sortKey === 'clicks' ? 'text-slate-950 dark:text-slate-50' : 'text-slate-300')} />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        className="ml-auto flex items-center gap-1 hover:text-slate-950 dark:hover:text-slate-50"
+                        onClick={() => handleSort('impressions')}
+                      >
+                        Impressionen
+                        <ArrowUpDown className={cn('h-3.5 w-3.5', sortKey === 'impressions' ? 'text-slate-950 dark:text-slate-50' : 'text-slate-300')} />
+                      </button>
+                    </TableHead>
+                    <TableHead className="text-right">
+                      <button
+                        className="ml-auto flex items-center gap-1 hover:text-slate-950 dark:hover:text-slate-50"
+                        onClick={() => handleSort('ctr')}
+                      >
+                        CTR
+                        <ArrowUpDown className={cn('h-3.5 w-3.5', sortKey === 'ctr' ? 'text-slate-950 dark:text-slate-50' : 'text-slate-300')} />
+                      </button>
+                    </TableHead>
+                    <TableHead className="w-[140px] text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {visibleRows.map((row) => (
+                    <TableRow key={row.keyword}>
+                      <TableCell className="max-w-[300px] truncate font-medium text-slate-950 dark:text-slate-50">
+                        {row.keyword}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.position != null ? row.position.toFixed(1) : '-'}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.clicks.toLocaleString('de-DE')}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.impressions.toLocaleString('de-DE')}
+                      </TableCell>
+                      <TableCell className="text-right tabular-nums">
+                        {row.ctr.toFixed(2)}%
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {row.isTracked ? (
+                          <Badge
+                            variant="outline"
+                            className="gap-1 rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400"
+                          >
+                            <Check className="h-3 w-3" />
+                            Wird getrackt
+                          </Badge>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-7 rounded-full text-xs"
+                            disabled={addingKeywords.has(row.keyword)}
+                            onClick={() => handleAddKeyword(row.keyword)}
+                          >
+                            {addingKeywords.has(row.keyword) ? (
+                              <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                            ) : (
+                              <Plus className="mr-1 h-3 w-3" />
+                            )}
+                            Tracken
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Load more */}
+            {hasMore && (
+              <div className="mt-4 flex justify-center px-6">
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={() => setVisibleCount((c) => c + ROWS_PER_PAGE)}
+                >
+                  Weitere {Math.min(ROWS_PER_PAGE, sorted.length - visibleCount)} anzeigen
+                  <span className="ml-1 text-slate-400">
+                    ({visibleCount} von {sorted.length.toLocaleString('de-DE')})
+                  </span>
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
   )
 }
 

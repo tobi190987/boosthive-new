@@ -755,6 +755,18 @@ export async function listDueProjects() {
     status: 'active' | 'inactive'
   }>
 
+  // Reset stuck runs (older than 30 min in queued/running) so they don't block forever
+  const stuckCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  await admin
+    .from('keyword_ranking_runs')
+    .update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_message: 'Timeout: Run wurde automatisch zurückgesetzt.',
+    })
+    .in('status', ['queued', 'running'])
+    .lt('created_at', stuckCutoff)
+
   const { data: runningRuns, error: runsError } = await admin
     .from('keyword_ranking_runs')
     .select('project_id')

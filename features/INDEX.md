@@ -43,7 +43,8 @@
 | PROJ-29 | Customer Database (CRM & Vault) | Deployed | [PROJ-29-customer-database.md](PROJ-29-customer-database.md) | 2026-03-30 |
 | PROJ-30 | SEO Competitor Analyse | Deployed | [PROJ-30-seo-competitor-analyse.md](PROJ-30-seo-competitor-analyse.md) | 2026-03-30 |
 | PROJ-31 | Content Brief Generator | Deployed | [PROJ-31-content-brief-generator.md](PROJ-31-content-brief-generator.md) | 2026-03-30 |
+| PROJ-32 | GSC Alle Rankings (Discovery View) | In Review | [PROJ-32-gsc-alle-rankings.md](PROJ-32-gsc-alle-rankings.md) | 2026-04-02 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-32
+## Next Available ID: PROJ-33
