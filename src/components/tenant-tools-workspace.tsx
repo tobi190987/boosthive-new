@@ -2035,7 +2035,7 @@ function SeoAnalysisWorkspace({
                   className={cn(
                     'rounded-2xl border px-4 py-4 text-left transition',
                     crawlMode === mode.value
-                      ? 'border-blue-600 bg-blue-50'
+                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950'
                       : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] hover:border-slate-200'
                   )}
                 >
