@@ -97,31 +97,8 @@ const PREVIEW_MODULES = ['content_briefs']
  * Useful for dashboard feature-gating without individual checks.
  */
 export async function getActiveModuleCodes(tenantId: string): Promise<string[]> {
-  // DEV: all modules unlocked for all tenants
+  // DEV: all modules unlocked for all tenants (matches requireTenantModuleAccess behaviour)
   const supabaseAdmin = createAdminClient()
   const { data: allMods } = await supabaseAdmin.from('modules').select('code')
-  if (allMods) return [...new Set([...allMods.map((m) => m.code), ...PREVIEW_MODULES])]
-
-  const { data: bookings, error } = await supabaseAdmin
-    .from('tenant_modules')
-    .select('module_id, status, current_period_end, modules!inner(code)')
-    .eq('tenant_id', tenantId)
-    .in('status', ['active', 'canceling'])
-
-  if (error || !bookings) return [...PREVIEW_MODULES]
-
-  const now = new Date()
-  const bookedCodes = bookings
-    .filter((b) => {
-      if (b.status === 'active') return true
-      if (b.status === 'canceling' && b.current_period_end) {
-        return new Date(b.current_period_end) > now
-      }
-      return false
-    })
-    .map((b) => {
-      const modules = b.modules as unknown as { code: string }
-      return modules.code
-    })
-  return [...new Set([...bookedCodes, ...PREVIEW_MODULES])]
+  return [...new Set([...(allMods?.map((m) => m.code) ?? []), ...PREVIEW_MODULES])]
 }

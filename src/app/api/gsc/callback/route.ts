@@ -78,11 +78,15 @@ export async function GET(request: NextRequest) {
     .eq('id', tenantId)
     .single()
 
-  const tenantSlug = tenant?.slug ?? 'unknown'
+  if (!tenant?.slug) {
+    return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 400 })
+  }
+
+  const tenantSlug = tenant.slug
   const nonceCookieName = getOAuthNonceCookieName(payload.nonce)
   const nonceCookie = request.cookies.get(nonceCookieName)
 
-  if (nonceCookie && nonceCookie.value !== userId) {
+  if (!nonceCookie || nonceCookie.value !== userId) {
     return NextResponse.redirect(
       buildRedirectUrl(tenantSlug, projectId, 'error', 'invalid_oauth_session')
     )

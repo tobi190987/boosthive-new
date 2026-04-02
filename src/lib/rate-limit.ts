@@ -15,6 +15,14 @@ interface RateLimitEntry {
 }
 
 const store = new Map<string, RateLimitEntry>()
+const STORE_MAX_ENTRIES = 10_000
+
+function pruneStore(): void {
+  const now = Date.now()
+  for (const [key, entry] of store.entries()) {
+    if (now > entry.resetAt) store.delete(key)
+  }
+}
 
 export function resetRateLimitStore() {
   store.clear()
@@ -105,6 +113,7 @@ export function checkRateLimit(key: string, options: RateLimitOptions): RateLimi
   const entry = store.get(key)
 
   if (!entry || now > entry.resetAt) {
+    if (store.size >= STORE_MAX_ENTRIES) pruneStore()
     store.set(key, { count: 1, resetAt: now + options.windowMs })
     return { allowed: true, remaining: options.limit - 1, resetAt: now + options.windowMs, limit: options.limit }
   }

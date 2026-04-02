@@ -156,13 +156,14 @@ export async function DELETE(
 
   const { id } = await params
   const admin = createAdminClient()
-  const { error } = await admin
+  const { error, count } = await admin
     .from('visibility_projects')
-    .delete()
+    .delete({ count: 'exact' })
     .eq('tenant_id', tenantId)
     .eq('id', id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (count === 0) return NextResponse.json({ error: 'Projekt nicht gefunden.' }, { status: 404 })
 
   return new NextResponse(null, { status: 204 })
 }
