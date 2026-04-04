@@ -159,6 +159,25 @@ function addMs(value: string, ms: number) {
   return new Date(new Date(value).getTime() + ms).toISOString()
 }
 
+function startOfUtcDay(value: string | Date) {
+  const date = new Date(value)
+  return Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate())
+}
+
+function diffUtcDays(from: string, to = new Date()) {
+  const msPerDay = 24 * 60 * 60 * 1000
+  return Math.floor((startOfUtcDay(to) - startOfUtcDay(from)) / msPerDay)
+}
+
+function isProjectDue(
+  project: Pick<ProjectRecord, 'tracking_interval' | 'last_tracking_run'>
+) {
+  if (!project.last_tracking_run) return true
+
+  const elapsedDays = diffUtcDays(project.last_tracking_run)
+  return project.tracking_interval === 'weekly' ? elapsedDays >= 7 : elapsedDays >= 1
+}
+
 function computeDelta(currentPosition: number | null, previousPosition: number | null) {
   if (currentPosition == null || previousPosition == null) return null
   return Number((currentPosition - previousPosition).toFixed(2))
@@ -775,20 +794,11 @@ export async function listDueProjects() {
   if (runsError) throw new Error(runsError.message)
 
   const blockedProjects = new Set((runningRuns ?? []).map((run) => run.project_id))
-  const now = Date.now()
 
   return activeProjects
     .filter((project) => {
       if (blockedProjects.has(project.id)) return false
-      if (!project.last_tracking_run) return true
-
-      const lastRunAt = new Date(project.last_tracking_run).getTime()
-      const thresholdMs =
-        project.tracking_interval === 'weekly'
-          ? 7 * 24 * 60 * 60 * 1000
-          : 24 * 60 * 60 * 1000
-
-      return now - lastRunAt >= thresholdMs
+      return isProjectDue(project)
     })
     .slice(0, CRON_BATCH_LIMIT)
 }
