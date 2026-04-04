@@ -1,4 +1,5 @@
 import crypto from 'crypto'
+import { renderApprovalDecisionEmail } from '@/emails/approval-decision'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { renderInvitationEmail } from '@/emails/invitation'
 import { renderModuleBookedEmail } from '@/emails/module-booked'
@@ -46,6 +47,18 @@ interface SendInvitationOptions {
   invitationUrl: string
   invitedByName: string
   token?: string
+}
+
+interface SendApprovalDecisionOptions {
+  to: string
+  tenantName: string
+  tenantSlug: string
+  customerName: string
+  contentTitle: string
+  contentTypeLabel: string
+  decision: 'approved' | 'changes_requested'
+  feedback?: string | null
+  contentUrl: string
 }
 
 type MailtrapMode = 'live' | 'sandbox'
@@ -313,6 +326,38 @@ export async function sendModuleBooked({
     html,
     text,
     category: 'module-booked',
+  })
+}
+
+export async function sendApprovalDecision({
+  to,
+  tenantName,
+  tenantSlug,
+  customerName,
+  contentTitle,
+  contentTypeLabel,
+  decision,
+  feedback,
+  contentUrl,
+}: SendApprovalDecisionOptions): Promise<void> {
+  const { subject, html, text } = renderApprovalDecisionEmail({
+    tenantName,
+    customerName,
+    contentTitle,
+    contentTypeLabel,
+    decision,
+    feedback,
+    contentUrl,
+  })
+
+  await sendEmail({
+    to,
+    tenantName,
+    tenantSlug,
+    subject,
+    html,
+    text,
+    category: 'approval-decision',
   })
 }
 

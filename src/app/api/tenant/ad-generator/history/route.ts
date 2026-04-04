@@ -50,6 +50,28 @@ export async function GET(request: NextRequest) {
   const { data, error } = await query
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  const generationIds = (data ?? []).map((row) => row.id)
+  const approvalMap = new Map<string, 'draft' | 'pending_approval' | 'approved' | 'changes_requested'>()
+
+  if (generationIds.length > 0) {
+    const { data: approvals } = await admin
+      .from('approval_requests')
+      .select('content_id, status, created_at')
+      .eq('tenant_id', tenantId)
+      .eq('content_type', 'ad_generation')
+      .in('content_id', generationIds)
+      .order('created_at', { ascending: false })
+
+    for (const approval of approvals ?? []) {
+      if (!approvalMap.has(approval.content_id)) {
+        approvalMap.set(
+          approval.content_id,
+          approval.status as 'draft' | 'pending_approval' | 'approved' | 'changes_requested'
+        )
+      }
+    }
+  }
+
   const generations = (data ?? [])
     .map((row) => {
       const briefing = isRecord(row.briefing) ? row.briefing : {}
@@ -67,6 +89,7 @@ export async function GET(request: NextRequest) {
         customer_name: extractCustomerName(row.customers),
         created_at: row.created_at,
         status: row.status as 'pending' | 'completed' | 'failed',
+        approval_status: approvalMap.get(row.id) ?? 'draft',
       }
     })
     .filter((entry) => (platformFilter ? entry.platforms.includes(platformFilter) : true))

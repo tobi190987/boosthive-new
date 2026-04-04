@@ -1,4 +1,9 @@
 import { createAdminClient } from '@/lib/supabase-admin'
+import {
+  getAdFieldDisplayLabel,
+  getAdTypeDisplayLabel,
+  getPlatformDisplayLabel,
+} from '@/lib/ad-limits'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 export const APPROVAL_CONTENT_TYPES = ['content_brief', 'ad_generation'] as const
@@ -29,6 +34,17 @@ export interface ApprovalRequestRecord {
   created_by_name: string | null
   created_at: string
   decided_at: string | null
+}
+
+export interface ApprovalHistoryEvent {
+  id: string
+  approval_request_id: string
+  tenant_id: string
+  event_type: 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated'
+  status_after: Exclude<ApprovalStatus, 'draft'>
+  feedback: string | null
+  actor_label: string | null
+  created_at: string
 }
 
 function escapeHtml(value: string): string {
@@ -90,7 +106,12 @@ function outlineCard(title: string, description: string, h3s: unknown): string {
   ].join('')
 }
 
-function adVariantCard(index: number, rows: Array<[string, unknown]>): string {
+function adVariantCardForType(
+  platformKey: string,
+  adTypeKey: string,
+  index: number,
+  rows: Array<[string, unknown]>
+): string {
   const content =
     rows.length === 0
       ? '<p class="approval-empty">-</p>'
@@ -110,7 +131,7 @@ function adVariantCard(index: number, rows: Array<[string, unknown]>): string {
 
             return [
               '<div class="approval-ad-field">',
-              `<div class="approval-ad-field__label">${escapeHtml(field)}</div>`,
+              `<div class="approval-ad-field__label">${escapeHtml(getAdFieldDisplayLabel(platformKey, adTypeKey, field))}</div>`,
               items ? `<ul class="approval-ad-field__values">${items}</ul>` : '<p class="approval-empty">-</p>',
               '</div>',
             ].join('')
@@ -252,7 +273,7 @@ function adResultToHtml(result: unknown): string {
         platformSections.push(
           [
             '<section class="approval-ad-type">',
-            `<div class="approval-ad-type__header"><h4>${escapeHtml(adTypeKey)}</h4></div>`,
+            `<div class="approval-ad-type__header"><h4>${escapeHtml(getAdTypeDisplayLabel(platformKey, adTypeKey))}</h4></div>`,
             '<div class="approval-ad-type__variants"><p class="approval-empty">-</p></div>',
             '</section>',
           ].join('')
@@ -263,16 +284,21 @@ function adResultToHtml(result: unknown): string {
       const variantCards = variants
         .map((variant, index) => {
           if (!variant || typeof variant !== 'object') {
-            return adVariantCard(index + 1, [])
+            return adVariantCardForType(platformKey, adTypeKey, index + 1, [])
           }
-          return adVariantCard(index + 1, Object.entries(variant as Record<string, unknown>))
+          return adVariantCardForType(
+            platformKey,
+            adTypeKey,
+            index + 1,
+            Object.entries(variant as Record<string, unknown>)
+          )
         })
         .join('')
 
       platformSections.push(
         [
           '<section class="approval-ad-type">',
-          `<div class="approval-ad-type__header"><h4>${escapeHtml(adTypeKey)}</h4></div>`,
+          `<div class="approval-ad-type__header"><h4>${escapeHtml(getAdTypeDisplayLabel(platformKey, adTypeKey))}</h4></div>`,
           `<div class="approval-ad-type__variants">${variantCards}</div>`,
           '</section>',
         ].join('')
@@ -284,7 +310,7 @@ function adResultToHtml(result: unknown): string {
     parts.push(
       [
         '<section class="approval-platform">',
-        `<div class="approval-platform__header"><h3>${escapeHtml(platformKey)}</h3></div>`,
+        `<div class="approval-platform__header"><h3>${escapeHtml(getPlatformDisplayLabel(platformKey))}</h3></div>`,
         `<div class="approval-platform__body">${platformSections.join('')}</div>`,
         '</section>',
       ].join('')
@@ -331,6 +357,37 @@ export async function loadApprovalByToken(token: string): Promise<ApprovalReques
 
   if (error || !data) return null
   return data as ApprovalRequestRecord
+}
+
+export async function loadApprovalHistory(approvalRequestId: string): Promise<ApprovalHistoryEvent[]> {
+  const admin = createAdminClient()
+  const { data, error } = await admin
+    .from('approval_request_events')
+    .select('id, approval_request_id, tenant_id, event_type, status_after, feedback, actor_label, created_at')
+    .eq('approval_request_id', approvalRequestId)
+    .order('created_at', { ascending: true })
+
+  if (error || !data) return []
+  return data as ApprovalHistoryEvent[]
+}
+
+export async function createApprovalHistoryEvent(input: {
+  approvalRequestId: string
+  tenantId: string
+  eventType: ApprovalHistoryEvent['event_type']
+  statusAfter: Exclude<ApprovalStatus, 'draft'>
+  feedback?: string | null
+  actorLabel?: string | null
+}): Promise<void> {
+  const admin = createAdminClient()
+  await admin.from('approval_request_events').insert({
+    approval_request_id: input.approvalRequestId,
+    tenant_id: input.tenantId,
+    event_type: input.eventType,
+    status_after: input.statusAfter,
+    feedback: input.feedback ?? null,
+    actor_label: input.actorLabel ?? null,
+  })
 }
 
 export async function loadContentForApproval(input: {

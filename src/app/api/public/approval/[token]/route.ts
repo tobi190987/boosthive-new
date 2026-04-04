@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
   ensurePublicApprovalAccess,
+  loadApprovalHistory,
   loadApprovalByToken,
   loadContentForApproval,
 } from '@/lib/approvals'
@@ -40,6 +41,7 @@ export async function GET(
 
   const contentTitle = latestContent.found ? latestContent.title : approval.content_title
   const contentHtml = latestContent.found ? latestContent.html : approval.content_html
+  const history = await loadApprovalHistory(approval.id)
 
   return NextResponse.json({
     tenant_name: tenantAccess.tenantName ?? 'Tenant',
@@ -50,5 +52,6 @@ export async function GET(
     content_html: contentHtml,
     feedback: approval.feedback,
     decided_at: approval.decided_at,
+    history,
   })
 }

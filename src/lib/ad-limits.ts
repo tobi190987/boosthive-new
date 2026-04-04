@@ -281,6 +281,35 @@ export const AD_PLATFORMS_MAP: Record<PlatformId, PlatformConfig> = {
   google,
 }
 
+function titleCaseFromId(value: string): string {
+  return value
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+export function getPlatformDisplayLabel(platformId: string): string {
+  return AD_PLATFORMS_MAP[platformId as PlatformId]?.label ?? titleCaseFromId(platformId)
+}
+
+export function getAdTypeDisplayLabel(platformId: string, adTypeId: string): string {
+  const platform = AD_PLATFORMS_MAP[platformId as PlatformId]
+  const adType = platform?.adTypes.find((entry) => entry.id === adTypeId)
+  return adType?.label ?? titleCaseFromId(adTypeId)
+}
+
+export function getAdFieldDisplayLabel(
+  platformId: string,
+  adTypeId: string,
+  fieldName: string
+): string {
+  const platform = AD_PLATFORMS_MAP[platformId as PlatformId]
+  const adType = platform?.adTypes.find((entry) => entry.id === adTypeId)
+  const field = adType?.fields.find((entry) => entry.name === fieldName)
+  return field?.label ?? titleCaseFromId(fieldName)
+}
+
 /** Get all ad types for given platforms, optionally filtered by category */
 export function getAdTypesForPlatforms(
   platformIds: PlatformId[],

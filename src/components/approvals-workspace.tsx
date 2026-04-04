@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type MouseEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   AlertCircle,
+  ArrowRight,
   Check,
   CheckSquare,
   Clock,
@@ -51,6 +52,31 @@ interface ApprovalItem {
   created_by_name: string
   created_at: string
   decided_at: string | null
+  history: Array<{
+    id: string
+    event_type: 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated'
+    status_after: ApprovalStatus
+    feedback: string | null
+    actor_label: string | null
+    created_at: string
+  }>
+}
+
+function historyLabel(type: ApprovalItem['history'][number]['event_type']) {
+  switch (type) {
+    case 'submitted':
+      return 'Angefragt'
+    case 'resubmitted':
+      return 'Erneut angefragt'
+    case 'approved':
+      return 'Freigegeben'
+    case 'changes_requested':
+      return 'Korrektur angefragt'
+    case 'content_updated':
+      return 'Überarbeitet'
+    default:
+      return type
+  }
 }
 
 function contentTypeLabel(type: string): string {
@@ -88,13 +114,20 @@ function formatDate(iso: string) {
 export function ApprovalsWorkspace() {
   const router = useRouter()
   const { toast } = useToast()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [approvals, setApprovals] = useState<ApprovalItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [customerFilter, setCustomerFilter] = useState<string>('all')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (activeCustomer) {
+      setCustomerFilter(activeCustomer.id)
+    }
+  }, [activeCustomer])
 
   const fetchApprovals = useCallback(async () => {
     setLoading(true)
@@ -103,7 +136,8 @@ export function ApprovalsWorkspace() {
       const params = new URLSearchParams()
       if (statusFilter !== 'all') params.set('status', statusFilter)
       if (typeFilter !== 'all') params.set('content_type', typeFilter)
-      if (activeCustomer?.id) params.set('customer_id', activeCustomer.id)
+      const effectiveCustomerId = activeCustomer?.id ?? (customerFilter !== 'all' ? customerFilter : null)
+      if (effectiveCustomerId) params.set('customer_id', effectiveCustomerId)
       const url = `/api/tenant/approvals${params.toString() ? `?${params}` : ''}`
       const res = await fetch(url)
       if (!res.ok) throw new Error('Freigaben konnten nicht geladen werden.')
@@ -114,7 +148,7 @@ export function ApprovalsWorkspace() {
     } finally {
       setLoading(false)
     }
-  }, [activeCustomer?.id, statusFilter, typeFilter])
+  }, [activeCustomer?.id, customerFilter, statusFilter, typeFilter])
 
   useEffect(() => {
     fetchApprovals()
@@ -192,6 +226,21 @@ export function ApprovalsWorkspace() {
             <SelectItem value="ad_generation">Ad-Text</SelectItem>
           </SelectContent>
         </Select>
+        {!activeCustomer && (
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-[220px] rounded-xl">
+              <SelectValue placeholder="Kunde filtern" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Kunden</SelectItem>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
       </div>
 
       {/* Error */}
@@ -266,9 +315,28 @@ export function ApprovalsWorkspace() {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate max-w-[200px] block">
-                      {item.content_title}
-                    </span>
+                    <div className="space-y-1.5">
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate max-w-[220px] block">
+                        {item.content_title}
+                      </span>
+                      {item.history.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {item.history.map((entry, index) => (
+                            <div key={entry.id} className="flex items-center gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className="rounded-full px-2 py-0.5 text-[10px] font-medium text-slate-500"
+                              >
+                                {historyLabel(entry.event_type)}
+                              </Badge>
+                              {index < item.history.length - 1 && (
+                                <ArrowRight className="h-3 w-3 text-slate-300" />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-slate-500 dark:text-slate-400">

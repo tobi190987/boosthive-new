@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
+  createApprovalHistoryEvent,
   ensurePublicApprovalAccess,
   loadApprovalByToken,
   updateContentApprovalStatus,
 } from '@/lib/approvals'
+import { buildTenantUrl, sendApprovalDecision } from '@/lib/email'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const tokenSchema = z.string().uuid('Ungültiger Freigabe-Token.')
@@ -13,6 +15,65 @@ function contentLink(contentType: string, contentId: string): string {
   return contentType === 'content_brief'
     ? `/tools/content-briefs?briefId=${contentId}`
     : `/tools/ad-generator?id=${contentId}`
+}
+
+function contentTypeLabel(contentType: string): string {
+  return contentType === 'content_brief' ? 'Content Briefing' : 'Ad'
+}
+
+function isMissingNotifyPreferenceColumn(error: { code?: string; message?: string } | null | undefined) {
+  return (
+    error?.code === '42703' ||
+    error?.message?.includes('notify_on_approval_decision') === true ||
+    error?.message?.includes("Could not find the 'notify_on_approval_decision' column") === true
+  )
+}
+
+async function notifyByEmailIfEnabled(params: {
+  tenantId: string
+  userId: string
+  customerName: string
+  contentTitle: string
+  contentType: string
+  contentId: string
+}) {
+  const admin = createAdminClient()
+  const [{ data: profile, error: profileError }, { data: tenant }, userResult] = await Promise.all([
+    admin
+      .from('user_profiles')
+      .select('notify_on_approval_decision')
+      .eq('user_id', params.userId)
+      .maybeSingle(),
+    admin
+      .from('tenants')
+      .select('name, slug')
+      .eq('id', params.tenantId)
+      .maybeSingle(),
+    admin.auth.admin.getUserById(params.userId),
+  ])
+
+  if (isMissingNotifyPreferenceColumn(profileError)) return
+  if (!profile?.notify_on_approval_decision) return
+
+  const email = userResult.data.user?.email
+  const tenantName = tenant?.name?.trim()
+  const tenantSlug = tenant?.slug?.trim()
+  if (!email || !tenantName || !tenantSlug) return
+
+  try {
+    await sendApprovalDecision({
+      to: email,
+      tenantName,
+      tenantSlug,
+      customerName: params.customerName,
+      contentTitle: params.contentTitle,
+      contentTypeLabel: contentTypeLabel(params.contentType),
+      decision: 'approved',
+      contentUrl: buildTenantUrl(tenantSlug, contentLink(params.contentType, params.contentId)),
+    })
+  } catch (error) {
+    console.error('[approval-email] Versand für Freigabe fehlgeschlagen:', error)
+  }
 }
 
 export async function POST(
@@ -67,6 +128,14 @@ export async function POST(
     status: 'approved',
   })
 
+  await createApprovalHistoryEvent({
+    approvalRequestId: approval.id,
+    tenantId: approval.tenant_id,
+    eventType: 'approved',
+    statusAfter: 'approved',
+    actorLabel: approval.customer_name?.trim() || 'Kunde',
+  })
+
   const customerName = approval.customer_name?.trim() || 'Ihr Kunde'
   const title = 'Element freigegeben'
   const body = `${customerName} hat ${approval.content_title} freigegeben.`
@@ -78,6 +147,15 @@ export async function POST(
     title,
     body,
     link: contentLink(approval.content_type, approval.content_id),
+  })
+
+  await notifyByEmailIfEnabled({
+    tenantId: approval.tenant_id,
+    userId: approval.created_by,
+    customerName,
+    contentTitle: approval.content_title,
+    contentType: approval.content_type,
+    contentId: approval.content_id,
   })
 
   return NextResponse.json({ status: 'approved' })

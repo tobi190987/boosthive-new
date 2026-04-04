@@ -3,6 +3,14 @@ import { isOnboardingComplete } from '@/lib/profile'
 import { requireTenantContext } from '@/lib/tenant'
 import { getActiveModuleCodes } from '@/lib/module-access'
 
+function isMissingNotifyPreferenceColumn(error: { code?: string; message?: string } | null | undefined) {
+  return (
+    error?.code === '42703' ||
+    error?.message?.includes('notify_on_approval_decision') === true ||
+    error?.message?.includes("Could not find the 'notify_on_approval_decision' column") === true
+  )
+}
+
 export type TenantShellRole = 'admin' | 'member'
 
 export interface TenantShellContext {
@@ -25,6 +33,7 @@ export interface TenantShellContext {
     firstName: string | null
     lastName: string | null
     avatarUrl: string | null
+    notifyOnApprovalDecision: boolean
   }
   membership: {
     role: TenantShellRole
@@ -75,6 +84,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
         firstName: 'Dev',
         lastName: 'User',
         avatarUrl: null,
+        notifyOnApprovalDecision: false,
       },
       membership: {
         role: 'admin' as TenantShellRole,
@@ -100,7 +110,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
     const [
       { data: tenantRecord, error: tenantError },
       { data: membership, error: membershipError },
-      { data: profile },
+      profileResult,
       activeModuleCodes,
     ] = await Promise.all([
       supabase
@@ -119,7 +129,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
         .single(),
       supabase
         .from('user_profiles')
-        .select('first_name, last_name, avatar_url')
+        .select('first_name, last_name, avatar_url, notify_on_approval_decision')
         .eq('user_id', user.id)
         .maybeSingle(),
       getActiveModuleCodes(tenant.id),
@@ -127,7 +137,23 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
 
     const tenantData = tenantRecord
     const membershipData = membership
-    const profileData = profile
+    let profileData:
+      | {
+          first_name: string | null
+          last_name: string | null
+          avatar_url: string | null
+          notify_on_approval_decision?: boolean | null
+        }
+      | null = profileResult.data
+
+    if (isMissingNotifyPreferenceColumn(profileResult.error)) {
+      const fallbackProfile = await supabase
+        .from('user_profiles')
+        .select('first_name, last_name, avatar_url')
+        .eq('user_id', user.id)
+        .maybeSingle()
+      profileData = fallbackProfile.data
+    }
 
     if (tenantError || !tenantData) {
       throw new Error('Tenant metadata could not be loaded for: tenant shell.')
@@ -164,6 +190,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
         firstName: profileData?.first_name ?? null,
         lastName: profileData?.last_name ?? null,
         avatarUrl: profileData?.avatar_url ?? null,
+        notifyOnApprovalDecision: profileData?.notify_on_approval_decision ?? false,
       },
       membership: {
         role: membershipData.role as TenantShellRole,
@@ -197,6 +224,7 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
           firstName: 'Dev',
           lastName: 'User',
           avatarUrl: null,
+          notifyOnApprovalDecision: false,
         },
         membership: {
           role: 'admin' as TenantShellRole,

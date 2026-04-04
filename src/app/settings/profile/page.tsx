@@ -15,6 +15,7 @@ export default async function ProfileSettingsPage() {
         firstName: context.user.firstName ?? '',
         lastName: context.user.lastName ?? '',
         avatarUrl: context.user.avatarUrl,
+        notifyOnApprovalDecision: context.user.notifyOnApprovalDecision,
         billingCompany: context.tenant.billingCompany ?? '',
         billingStreet: context.tenant.billingStreet ?? '',
         billingZip: context.tenant.billingZip ?? '',

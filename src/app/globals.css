@@ -160,14 +160,20 @@
 
   .approval-list li,
   .approval-sublist li {
-    @apply relative rounded-2xl border border-slate-200/70 bg-slate-50/85 py-3 pl-11 pr-4 text-sm leading-6 text-slate-700;
+    @apply grid grid-cols-[0.5rem_minmax(0,1fr)] items-start gap-x-4 rounded-2xl border border-slate-200/70 bg-slate-50/85 px-4 py-3 text-sm leading-6 text-slate-700;
   }
 
   .approval-list li::before,
-  .approval-sublist li::before,
+  .approval-sublist li::before {
+    content: '';
+    @apply mt-[0.55rem] block h-2 w-2 rounded-full bg-blue-500;
+  }
+
   .approval-ad-field__values li::before {
     content: '';
-    @apply absolute left-4 top-5 h-2 w-2 rounded-full bg-blue-500;
+    @apply absolute left-4 h-2 w-2 rounded-full bg-blue-500;
+    top: 0.95rem;
+    transform: translateY(-50%);
   }
 
   .approval-sublist li {
@@ -262,7 +268,7 @@
   }
 
   .approval-ad-field__values li {
-    @apply relative pl-7 text-sm leading-6 text-slate-700;
+    @apply relative min-h-6 pl-7 text-sm leading-6 text-slate-700;
   }
 
   .approval-empty {

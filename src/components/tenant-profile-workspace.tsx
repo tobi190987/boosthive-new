@@ -39,6 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { StripeCardForm } from '@/components/stripe-card-form'
+import { Switch } from '@/components/ui/switch'
 import { TenantLogoutButton } from '@/components/tenant-logout-button'
 import {
   applyServerFieldErrors,
@@ -100,6 +101,7 @@ interface TenantProfileWorkspaceProps {
     firstName: string
     lastName: string
     avatarUrl: string | null
+    notifyOnApprovalDecision: boolean
     billingCompany: string
     billingStreet: string
     billingZip: string
@@ -112,6 +114,7 @@ interface TenantProfileWorkspaceProps {
 interface ProfileFormValues {
   first_name: string
   last_name: string
+  notify_on_approval_decision: boolean
   billing_company: string
   billing_street: string
   billing_zip: string
@@ -297,6 +300,7 @@ export function TenantProfileWorkspace({
     defaultValues: {
       first_name: initialData.firstName,
       last_name: initialData.lastName,
+      notify_on_approval_decision: initialData.notifyOnApprovalDecision,
       billing_company: initialData.billingCompany,
       billing_street: initialData.billingStreet,
       billing_zip: initialData.billingZip,
@@ -704,6 +708,7 @@ export function TenantProfileWorkspace({
 
   const isAdmin = initialData.role === 'admin'
   const billingCountry = watch('billing_country')
+  const notifyOnApprovalDecision = watch('notify_on_approval_decision')
   const submitLabel =
     mode === 'onboarding' ? 'Onboarding abschließen' : 'Profil speichern'
   const avatarPreviewTransform = avatarCropDraft
@@ -1054,6 +1059,39 @@ export function TenantProfileWorkspace({
                   {errors.last_name && (
                     <p className="text-sm text-destructive">{errors.last_name.message}</p>
                   )}
+                </div>
+              </div>
+            </section>
+
+            <section className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+              <div className="space-y-2">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                  Benachrichtigungen
+                </h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Lege fest, ob du zusätzlich zur Dashboard-Benachrichtigung auch E-Mails erhalten möchtest.
+                </p>
+              </div>
+              <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+                <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-[#252d3a] dark:bg-[#1e2635]/50">
+                  <div className="space-y-1">
+                    <Label htmlFor="notify_on_approval_decision" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                      E-Mail bei Freigaben und Korrekturwünschen
+                    </Label>
+                    <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      Wenn ein Kunde eine Ad oder ein Content Briefing freigibt oder eine Korrektur anfragt, senden wir dir zusätzlich eine E-Mail.
+                    </p>
+                  </div>
+                  <Switch
+                    id="notify_on_approval_decision"
+                    checked={notifyOnApprovalDecision}
+                    onCheckedChange={(checked) =>
+                      setValue('notify_on_approval_decision', checked, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      })
+                    }
+                  />
                 </div>
               </div>
             </section>

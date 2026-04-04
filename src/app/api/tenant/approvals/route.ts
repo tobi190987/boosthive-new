@@ -4,6 +4,7 @@ import { requireTenantUser } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import {
   APPROVAL_CONTENT_TYPES,
+  createApprovalHistoryEvent,
   loadContentForApproval,
   updateContentApprovalStatus,
 } from '@/lib/approvals'
@@ -81,7 +82,45 @@ export async function GET(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ approvals: data ?? [] })
+  const approvals = data ?? []
+  const approvalIds = approvals.map((entry) => entry.id)
+
+  const historyMap = new Map<string, Array<{
+    id: string
+    event_type: 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated'
+    status_after: 'pending_approval' | 'approved' | 'changes_requested'
+    feedback: string | null
+    actor_label: string | null
+    created_at: string
+  }>>()
+
+  if (approvalIds.length > 0) {
+    const { data: events } = await admin
+      .from('approval_request_events')
+      .select('id, approval_request_id, event_type, status_after, feedback, actor_label, created_at')
+      .in('approval_request_id', approvalIds)
+      .order('created_at', { ascending: true })
+
+    for (const event of events ?? []) {
+      const current = historyMap.get(event.approval_request_id) ?? []
+      current.push({
+        id: event.id,
+        event_type: event.event_type as 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated',
+        status_after: event.status_after as 'pending_approval' | 'approved' | 'changes_requested',
+        feedback: event.feedback ?? null,
+        actor_label: event.actor_label ?? null,
+        created_at: event.created_at,
+      })
+      historyMap.set(event.approval_request_id, current)
+    }
+  }
+
+  return NextResponse.json({
+    approvals: approvals.map((entry) => ({
+      ...entry,
+      history: historyMap.get(entry.id) ?? [],
+    })),
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -180,6 +219,14 @@ export async function POST(request: NextRequest) {
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+    await createApprovalHistoryEvent({
+      approvalRequestId: updated.id,
+      tenantId,
+      eventType: 'resubmitted',
+      statusAfter: 'pending_approval',
+      actorLabel: createdByName,
+    })
+
     await updateContentApprovalStatus({
       tenantId,
       contentType: content_type,
@@ -213,6 +260,14 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 })
+
+  await createApprovalHistoryEvent({
+    approvalRequestId: inserted.id,
+    tenantId,
+    eventType: 'submitted',
+    statusAfter: 'pending_approval',
+    actorLabel: createdByName,
+  })
 
   await updateContentApprovalStatus({
     tenantId,

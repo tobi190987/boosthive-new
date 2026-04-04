@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertCircle,
   ArrowLeft,
@@ -13,6 +14,7 @@ import {
   Loader2,
   Megaphone,
   Plus,
+  RefreshCw,
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -43,7 +45,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { ApprovalSubmitPanel } from '@/components/approval-submit-panel'
-import type { ApprovalStatus } from '@/components/approval-status-badge'
+import { ApprovalStatusBadge, type ApprovalStatus } from '@/components/approval-status-badge'
 import {
   AD_PLATFORMS,
   AD_PLATFORMS_MAP,
@@ -91,6 +93,13 @@ interface ApprovalInfo {
   status: ApprovalStatus
   link: string | null
   feedback: string | null
+  history: Array<{
+    id: string
+    event_type: 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated'
+    feedback: string | null
+    actor_label: string | null
+    created_at: string
+  }>
 }
 
 interface GenerationSummary {
@@ -101,6 +110,7 @@ interface GenerationSummary {
   customer_name: string | null
   created_at: string
   status: 'pending' | 'completed' | 'failed'
+  approval_status: ApprovalStatus | 'draft'
 }
 
 interface GenerationDetail {
@@ -186,6 +196,9 @@ function platformLabel(id: PlatformId): string {
 // ─── Workspace Component ─────────────────────────────────────────────────────
 
 export function AdGeneratorWorkspace() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const { activeCustomer, customers, loading: customersLoading } = useActiveCustomer()
 
@@ -211,12 +224,14 @@ export function AdGeneratorWorkspace() {
   const [generationResult, setGenerationResult] = useState<GenerationResult | null>(null)
   const [generationDetail, setGenerationDetail] = useState<GenerationDetail | null>(null)
   const [generating, setGenerating] = useState(false)
+  const [currentApprovalStatus, setCurrentApprovalStatus] = useState<ApprovalStatus | 'draft' | null>(null)
 
   // History state
   const [history, setHistory] = useState<GenerationSummary[]>([])
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyFilterCustomer, setHistoryFilterCustomer] = useState<string>('all')
   const [historyFilterPlatform, setHistoryFilterPlatform] = useState<PlatformId | 'all'>('all')
+  const hideNavigationActions = view === 'results' && currentApprovalStatus === 'changes_requested'
 
   // Sync wizard customer with global selector
   useEffect(() => {
@@ -248,6 +263,13 @@ export function AdGeneratorWorkspace() {
       loadHistory()
     }
   }, [view, loadHistory])
+
+  useEffect(() => {
+    const generationIdFromUrl = searchParams.get('id')
+    if (!generationIdFromUrl) return
+    if (generationId === generationIdFromUrl && view === 'results') return
+    void openGeneration(generationIdFromUrl, { syncUrl: false })
+  }, [generationId, searchParams, view])
 
   // ─── Wizard: Platform toggle ─────────────────────────────────────────────
 
@@ -299,7 +321,9 @@ export function AdGeneratorWorkspace() {
       setGenerationId(id)
       setGenerationResult(result)
       setGenerationDetail(null)
+      setCurrentApprovalStatus('draft')
       setView('results')
+      router.replace(`${pathname}?id=${id}`, { scroll: false })
     } catch (err) {
       toast({
         title: 'Generierung fehlgeschlagen',
@@ -314,7 +338,10 @@ export function AdGeneratorWorkspace() {
 
   // ─── Open from History ───────────────────────────────────────────────────
 
-  async function openGeneration(id: string) {
+  async function openGeneration(id: string, options?: { syncUrl?: boolean }) {
+    if (options?.syncUrl !== false) {
+      router.replace(`${pathname}?id=${id}`, { scroll: false })
+    }
     setView('generating')
     setGenerating(true)
     try {
@@ -322,6 +349,7 @@ export function AdGeneratorWorkspace() {
       setGenerationId(id)
       setGenerationDetail(detail)
       setGenerationResult(detail.result)
+      setCurrentApprovalStatus(null)
       setView('results')
     } catch {
       toast({
@@ -330,6 +358,7 @@ export function AdGeneratorWorkspace() {
         variant: 'destructive',
       })
       setView('history')
+      router.replace(pathname, { scroll: false })
     } finally {
       setGenerating(false)
     }
@@ -347,7 +376,9 @@ export function AdGeneratorWorkspace() {
     setGenerationId(null)
     setGenerationResult(null)
     setGenerationDetail(null)
+    setCurrentApprovalStatus(null)
     setView('wizard')
+    router.replace(pathname, { scroll: false })
   }
 
   // ─── Render ──────────────────────────────────────────────────────────────
@@ -363,17 +394,20 @@ export function AdGeneratorWorkspace() {
           </p>
         </div>
         <div className="flex gap-2">
-          {view !== 'wizard' && view !== 'generating' && (
+          {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
             <Button
               variant="outline"
               className="rounded-full"
-              onClick={() => setView('history')}
+              onClick={() => {
+                setView('history')
+                router.replace(pathname, { scroll: false })
+              }}
             >
               <Clock className="mr-2 h-4 w-4" />
               History
             </Button>
           )}
-          {view !== 'wizard' && view !== 'generating' && (
+          {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
             <Button
               className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
               onClick={resetWizard}
@@ -419,7 +453,11 @@ export function AdGeneratorWorkspace() {
           platforms={selectedPlatforms}
           selectedAdTypes={selectedAdTypes}
           onNewGeneration={resetWizard}
-          onBackToHistory={() => setView('history')}
+          onBackToHistory={() => {
+            setView('history')
+            router.replace(pathname, { scroll: false })
+          }}
+          onApprovalStatusChange={setCurrentApprovalStatus}
         />
       )}
 
@@ -993,6 +1031,7 @@ interface ResultsViewProps {
   selectedAdTypes: SelectedAdType[]
   onNewGeneration: () => void
   onBackToHistory: () => void
+  onApprovalStatusChange?: (status: ApprovalStatus | 'draft' | null) => void
 }
 
 function ResultsView({
@@ -1004,9 +1043,12 @@ function ResultsView({
   selectedAdTypes: wizardAdTypes,
   onNewGeneration,
   onBackToHistory,
+  onApprovalStatusChange,
 }: ResultsViewProps) {
   const { toast } = useToast()
   const [approvalInfo, setApprovalInfo] = useState<ApprovalInfo | null>(null)
+  const [editableResult, setEditableResult] = useState<GenerationResult>(result)
+  const [savingEdits, setSavingEdits] = useState(false)
 
   // Use detail briefing if available (from history), otherwise wizard state
   const product = detail?.briefing?.product ?? wizardBriefing.product
@@ -1014,8 +1056,13 @@ function ResultsView({
   const adTypesUsed = detail?.briefing?.selectedAdTypes ?? wizardAdTypes
 
   useEffect(() => {
+    setEditableResult(result)
+  }, [result])
+
+  useEffect(() => {
     if (!generationId) {
       setApprovalInfo(null)
+      onApprovalStatusChange?.(null)
       return
     }
 
@@ -1034,14 +1081,17 @@ function ResultsView({
         const first = Array.isArray(data.approvals) ? data.approvals[0] : null
         if (cancelled) return
         if (!first) {
-          setApprovalInfo({ status: 'draft', link: null, feedback: null })
+          setApprovalInfo({ status: 'draft', link: null, feedback: null, history: [] })
+          onApprovalStatusChange?.('draft')
           return
         }
         setApprovalInfo({
           status: first.status as ApprovalStatus,
           link: `${window.location.origin}/approval/${first.public_token}`,
           feedback: first.feedback ?? null,
+          history: Array.isArray(first.history) ? first.history : [],
         })
+        onApprovalStatusChange?.(first.status as ApprovalStatus)
       } catch {
         // optional UI fetch
       }
@@ -1052,7 +1102,7 @@ function ResultsView({
     return () => {
       cancelled = true
     }
-  }, [generationId])
+  }, [generationId, onApprovalStatusChange])
 
   async function copyText(text: string) {
     try {
@@ -1080,6 +1130,85 @@ function ResultsView({
     }
     await copyText(lines.join('\n'))
   }
+
+  function updateFieldValue(
+    platformId: PlatformId,
+    adTypeId: string,
+    variantIndex: number,
+    fieldName: string,
+    value: string | string[],
+  ) {
+    setEditableResult((current) => ({
+      ...current,
+      [platformId]: {
+        ...current[platformId],
+        [adTypeId]: {
+          ...current[platformId]?.[adTypeId],
+          variants: current[platformId]?.[adTypeId]?.variants.map((variant, index) =>
+            index === variantIndex
+              ? {
+                  ...variant,
+                  [fieldName]: value,
+                }
+              : variant
+          ) as [VariantFields, VariantFields, VariantFields],
+        },
+      },
+    }))
+  }
+
+  async function persistEdits(resubmitAfterSave: boolean) {
+    if (!generationId) return
+    setSavingEdits(true)
+    try {
+      const saveRes = await fetch(`/api/tenant/ad-generator/${generationId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ result: editableResult }),
+      })
+
+      if (!saveRes.ok) {
+        const data = await saveRes.json().catch(() => ({}))
+        throw new Error(data.error || 'Änderungen konnten nicht gespeichert werden.')
+      }
+
+      toast({
+        title: 'Gespeichert',
+        description: resubmitAfterSave
+          ? 'Änderungen wurden gespeichert und erneut zur Freigabe eingereicht.'
+          : 'Änderungen wurden gespeichert.',
+      })
+
+      if (resubmitAfterSave) {
+        const resubmitRes = await fetch('/api/tenant/approvals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ content_type: 'ad_generation', content_id: generationId }),
+        })
+        if (!resubmitRes.ok) {
+          const data = await resubmitRes.json().catch(() => ({}))
+          throw new Error(data.error || 'Erneute Freigabe konnte nicht gestartet werden.')
+        }
+        const payload = await resubmitRes.json()
+        setApprovalInfo((prev) => ({
+          status: 'pending_approval',
+          link: payload.approval_link ?? prev?.link ?? null,
+          feedback: null,
+          history: prev?.history ?? [],
+        }))
+      }
+    } catch (error) {
+      toast({
+        title: 'Fehler',
+        description: error instanceof Error ? error.message : 'Änderungen konnten nicht gespeichert werden.',
+        variant: 'destructive',
+      })
+    } finally {
+      setSavingEdits(false)
+    }
+  }
+
+  const canEdit = approvalInfo?.status === 'changes_requested'
 
   return (
     <div className="space-y-6">
@@ -1111,21 +1240,73 @@ function ResultsView({
                         status: newStatus,
                         link: link ?? prev?.link ?? null,
                         feedback: newStatus === 'changes_requested' ? prev?.feedback ?? null : null,
+                        history: prev?.history ?? [],
                       }))
+                      onApprovalStatusChange?.(newStatus)
                     }}
                   />
                 </div>
               )}
+              {canEdit && (
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    onClick={() => void persistEdits(false)}
+                    disabled={savingEdits}
+                  >
+                    {savingEdits ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Änderungen speichern
+                  </Button>
+                  <Button
+                    className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                    onClick={() => void persistEdits(true)}
+                    disabled={savingEdits}
+                  >
+                    {savingEdits ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                    Speichern & zur Freigabe senden
+                  </Button>
+                </div>
+              )}
+              {approvalInfo?.history && approvalInfo.history.length > 0 && (
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    Freigabeverlauf
+                  </p>
+                  <div className="space-y-3">
+                    {approvalInfo.history.map((entry) => (
+                      <div key={entry.id} className="border-l-2 border-slate-200 pl-3">
+                        <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                          {entry.event_type === 'submitted'
+                            ? 'Freigabe angefordert'
+                            : entry.event_type === 'resubmitted'
+                              ? 'Freigabe erneut angefordert'
+                              : entry.event_type === 'approved'
+                                ? 'Freigabe erteilt'
+                                : entry.event_type === 'changes_requested'
+                                  ? 'Korrektur angefragt'
+                                  : 'Inhalt überarbeitet'}
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          {new Date(entry.created_at).toLocaleDateString('de-DE', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {entry.actor_label ? ` · ${entry.actor_label}` : ''}
+                        </p>
+                        {entry.feedback && (
+                          <p className="mt-1 text-sm text-slate-600 whitespace-pre-wrap">{entry.feedback}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                className="rounded-full"
-                onClick={onBackToHistory}
-              >
-                <Clock className="mr-2 h-4 w-4" />
-                History
-              </Button>
               {generationId && (
                 <Button
                   variant="outline"
@@ -1136,13 +1317,15 @@ function ResultsView({
                   Excel herunterladen
                 </Button>
               )}
-              <Button
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
-                onClick={onNewGeneration}
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                Neu erstellen
-              </Button>
+              {!canEdit && (
+                <Button
+                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                  onClick={onNewGeneration}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Neu erstellen
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>
@@ -1150,7 +1333,7 @@ function ResultsView({
 
       {/* Results per platform */}
       {platforms.map((pid) => {
-        const platformResult = result[pid]
+        const platformResult = editableResult[pid]
         if (!platformResult) return null
         const platform = AD_PLATFORMS_MAP[pid]
         if (!platform) return null
@@ -1204,6 +1387,14 @@ function ResultsView({
                                       text={v}
                                       limit={field.limit}
                                       onCopy={() => copyText(v)}
+                                      editable={canEdit}
+                                      onChange={(nextValue) => {
+                                        const nextValues = Array.isArray(variant[field.name])
+                                          ? [...(variant[field.name] as string[])]
+                                          : []
+                                        nextValues[mIdx] = nextValue
+                                        updateFieldValue(pid, adType.id, vIdx, field.name, nextValues)
+                                      }}
                                     />
                                   ))
                                 }
@@ -1214,6 +1405,10 @@ function ResultsView({
                                     text={typeof value === 'string' ? value : ''}
                                     limit={field.limit}
                                     onCopy={() => copyText(typeof value === 'string' ? value : '')}
+                                    editable={canEdit}
+                                    onChange={(nextValue) =>
+                                      updateFieldValue(pid, adType.id, vIdx, field.name, nextValue)
+                                    }
                                   />
                                 )
                               })}
@@ -1263,11 +1458,15 @@ function AdTextFieldDisplay({
   text,
   limit,
   onCopy,
+  editable = false,
+  onChange,
 }: {
   label: string
   text: string
   limit: number
   onCopy: () => void
+  editable?: boolean
+  onChange?: (value: string) => void
 }) {
   const charCount = [...text].length // Unicode-aware
   const isOver = charCount > limit
@@ -1300,9 +1499,17 @@ function AdTextFieldDisplay({
           </Button>
         </div>
       </div>
-      <p className="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words">
-        {text || <span className="text-slate-400 italic">Kein Text</span>}
-      </p>
+      {editable ? (
+        <Textarea
+          value={text}
+          onChange={(event) => onChange?.(event.target.value)}
+          className="min-h-[92px] rounded-xl border-slate-200 bg-white text-sm text-slate-900 dark:border-[#252d3a] dark:bg-[#151c28] dark:text-slate-100"
+        />
+      ) : (
+        <p className="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words">
+          {text || <span className="text-slate-400 italic">Kein Text</span>}
+        </p>
+      )}
     </div>
   )
 }
@@ -1437,8 +1644,8 @@ function HistoryView({
                   <p className="font-semibold text-slate-900 dark:text-slate-50 truncate">
                     {item.product}
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {item.platforms.map((pid) => (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {item.platforms.map((pid) => (
                       <Badge key={pid} variant="secondary" className="rounded-full text-[10px] px-2 py-0.5">
                         {platformLabel(pid)}
                       </Badge>
@@ -1447,6 +1654,9 @@ function HistoryView({
                       <Badge variant="outline" className="rounded-full text-[10px] px-2 py-0.5">
                         {item.customer_name}
                       </Badge>
+                    )}
+                    {item.approval_status !== 'draft' && (
+                      <ApprovalStatusBadge status={item.approval_status} />
                     )}
                   </div>
                 </div>

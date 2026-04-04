@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertCircle,
   ArrowLeft,
@@ -241,6 +242,9 @@ function downloadMarkdown(brief: BriefDetail) {
 // ─── Main component ─────────────────────────────────────────────────────────
 
 export function ContentBriefsWorkspace() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { activeCustomer } = useActiveCustomer()
   const { toast } = useToast()
 
@@ -309,12 +313,6 @@ export function ContentBriefsWorkspace() {
     fetchBriefs()
   }, [fetchBriefs])
 
-  // Reset view when customer changes
-  useEffect(() => {
-    setView({ type: 'list' })
-    setDetail(null)
-  }, [customerId])
-
   // ── Fetch detail ──────────────────────────────────────────────────────────
 
   const fetchDetail = useCallback(async (briefId: string) => {
@@ -354,6 +352,20 @@ export function ContentBriefsWorkspace() {
       // optional UI fetch
     }
   }, [])
+
+  useEffect(() => {
+    const briefIdFromUrl = searchParams.get('briefId')
+    if (!briefIdFromUrl) {
+      setView({ type: 'list' })
+      setDetail(null)
+      return
+    }
+
+    if (view.type !== 'detail' || view.briefId !== briefIdFromUrl) {
+      setView({ type: 'detail', briefId: briefIdFromUrl })
+      fetchDetail(briefIdFromUrl)
+    }
+  }, [fetchDetail, searchParams, view])
 
   useEffect(() => {
     if (view.type === 'detail') {
@@ -482,8 +494,7 @@ export function ContentBriefsWorkspace() {
       fetchBriefs()
       // Navigate to the new brief
       if (data.brief?.id) {
-        setView({ type: 'detail', briefId: data.brief.id })
-        fetchDetail(data.brief.id)
+        router.replace(`${pathname}?briefId=${data.brief.id}`, { scroll: false })
       }
     } catch (err) {
       toast({ title: 'Fehler', description: err instanceof Error ? err.message : 'Fehler beim Erstellen', variant: 'destructive' })
@@ -505,6 +516,7 @@ export function ContentBriefsWorkspace() {
       if (view.type === 'detail' && view.briefId === deleteId) {
         setView({ type: 'list' })
         setDetail(null)
+        router.replace(pathname, { scroll: false })
       }
       fetchBriefs()
     } catch (err) {
@@ -537,7 +549,11 @@ export function ContentBriefsWorkspace() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => { setView({ type: 'list' }); setDetail(null) }}
+                    onClick={() => {
+                      setView({ type: 'list' })
+                      setDetail(null)
+                      router.replace(pathname, { scroll: false })
+                    }}
           className="gap-2 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -778,8 +794,7 @@ export function ContentBriefsWorkspace() {
               key={brief.id}
               className="group cursor-pointer rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft transition-all hover:border-slate-200 hover:shadow-md dark:hover:border-[#2d3847]"
               onClick={() => {
-                setView({ type: 'detail', briefId: brief.id })
-                fetchDetail(brief.id)
+                router.replace(`${pathname}?briefId=${brief.id}`, { scroll: false })
               }}
             >
               <CardContent className="p-6">

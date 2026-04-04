@@ -31,6 +31,7 @@ export const ProfileUpdateSchema = BaseProfileSchema.extend({
   billing_city: trimmedOptional('Stadt', 80).optional(),
   billing_country: trimmedOptional('Land', 80).optional(),
   billing_vat_id: trimmedOptional('USt-IdNr.', 40).optional(),
+  notify_on_approval_decision: z.boolean().optional().default(false),
   complete_onboarding: z.boolean().optional().default(false),
 })
 

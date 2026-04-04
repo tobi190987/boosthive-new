@@ -25,6 +25,14 @@ interface TenantStripeData {
   stripe_customer_id: string | null
 }
 
+function isMissingNotifyPreferenceColumn(error: { code?: string; message?: string } | null | undefined) {
+  return (
+    error?.code === '42703' ||
+    error?.message?.includes('notify_on_approval_decision') === true ||
+    error?.message?.includes("Could not find the 'notify_on_approval_decision' column") === true
+  )
+}
+
 function errorResponse(error: string, status: number, details?: Record<string, string[] | undefined>) {
   return NextResponse.json(details ? { error, details } : { error }, { status })
 }
@@ -73,14 +81,28 @@ async function saveUserProfile(params: {
   firstName: string
   lastName: string
   avatarUrl: string | null
+  notifyOnApprovalDecision: boolean
 }) {
   const supabaseAdmin = createAdminClient()
-  const { error } = await supabaseAdmin.from('user_profiles').upsert({
+  const payload = {
     user_id: params.userId,
     first_name: params.firstName,
     last_name: params.lastName,
     avatar_url: params.avatarUrl,
-  })
+    notify_on_approval_decision: params.notifyOnApprovalDecision,
+  }
+
+  let { error } = await supabaseAdmin.from('user_profiles').upsert(payload)
+
+  if (isMissingNotifyPreferenceColumn(error)) {
+    const fallback = await supabaseAdmin.from('user_profiles').upsert({
+      user_id: params.userId,
+      first_name: params.firstName,
+      last_name: params.lastName,
+      avatar_url: params.avatarUrl,
+    })
+    error = fallback.error
+  }
 
   if (error) {
     console.error('[profile-update] Profil konnte nicht gespeichert werden:', error)
@@ -221,6 +243,7 @@ export async function executeTenantProfileUpdate(
     firstName: params.input.first_name,
     lastName: params.input.last_name,
     avatarUrl: existingAvatar.avatarUrl,
+    notifyOnApprovalDecision: params.input.notify_on_approval_decision ?? false,
   })
   if ('error' in profileSave) {
     return { error: profileSave.error! }

@@ -19,6 +19,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import {
+  getAdFieldDisplayLabel,
+  getAdTypeDisplayLabel,
+  getPlatformDisplayLabel,
+} from '@/lib/ad-limits'
 
 interface ApprovalData {
   tenant_name: string
@@ -28,6 +33,14 @@ interface ApprovalData {
   status: 'pending_approval' | 'approved' | 'changes_requested'
   content_html: string
   decided_at: string | null
+  history: Array<{
+    id: string
+    event_type: 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated'
+    status_after: 'pending_approval' | 'approved' | 'changes_requested'
+    feedback: string | null
+    actor_label: string | null
+    created_at: string
+  }>
 }
 
 interface ApprovalPublicPageProps {
@@ -121,8 +134,10 @@ function buildLegacyAdsHtml(rawHtml: string): string {
 
   const platforms: string[] = []
   let currentPlatform = ''
+  let currentPlatformId = ''
   let currentPlatformParts: string[] = []
   let currentType = ''
+  let currentTypeId = ''
   let currentTypeParts: string[] = []
 
   const flushType = () => {
@@ -141,19 +156,22 @@ function buildLegacyAdsHtml(rawHtml: string): string {
       `<section class="approval-platform"><div class="approval-platform__header"><h3>${currentPlatform}</h3></div><div class="approval-platform__body">${currentPlatformParts.join('') || '<p class="approval-empty">-</p>'}</div></section>`
     )
     currentPlatform = ''
+    currentPlatformId = ''
     currentPlatformParts = []
   }
 
   children.forEach((element) => {
     if (element.tagName === 'H3') {
       flushPlatform()
-      currentPlatform = element.textContent?.trim() || 'Plattform'
+      currentPlatformId = (element.textContent?.trim() || 'Plattform').toLowerCase()
+      currentPlatform = getPlatformDisplayLabel(currentPlatformId)
       return
     }
 
     if (element.tagName === 'H4') {
       flushType()
-      currentType = element.textContent?.trim() || 'Ad-Typ'
+      currentTypeId = element.textContent?.trim() || 'Ad-Typ'
+      currentType = getAdTypeDisplayLabel(currentPlatformId, currentTypeId)
       return
     }
 
@@ -170,7 +188,7 @@ function buildLegacyAdsHtml(rawHtml: string): string {
           const html = item.innerHTML
           const match = html.match(/<strong>(.*?)<\/strong>\s*:?\s*(.*)/i)
           if (match) {
-            return `<div class="approval-ad-field"><div class="approval-ad-field__label">${match[1]}</div><ul class="approval-ad-field__values"><li>${match[2]}</li></ul></div>`
+            return `<div class="approval-ad-field"><div class="approval-ad-field__label">${getAdFieldDisplayLabel(currentPlatformId, currentTypeId, match[1])}</div><ul class="approval-ad-field__values"><li>${match[2]}</li></ul></div>`
           }
           return `<div class="approval-ad-field"><ul class="approval-ad-field__values"><li>${html}</li></ul></div>`
         })
@@ -234,6 +252,37 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   useEffect(() => {
     fetchApproval()
   }, [fetchApproval])
+
+  const displayHtml = useMemo(() => {
+    if (!data) return ''
+    return beautifyApprovalHtml(data.content_html, data.content_type)
+  }, [data])
+
+  const formatHistoryLabel = (eventType: ApprovalData['history'][number]['event_type']) => {
+    switch (eventType) {
+      case 'submitted':
+        return 'Freigabe angefordert'
+      case 'resubmitted':
+        return 'Freigabe erneut angefordert'
+      case 'approved':
+        return 'Freigabe erteilt'
+      case 'changes_requested':
+        return 'Korrektur angefordert'
+      case 'content_updated':
+        return 'Inhalt überarbeitet'
+      default:
+        return eventType
+    }
+  }
+
+  const formatHistoryDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('de-DE', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
 
   const handleApprove = async () => {
     setSubmitting(true)
@@ -338,10 +387,6 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
 
   const alreadyDecided = data.status !== 'pending_approval'
   const contentTypeLabel = data.content_type === 'content_brief' ? 'Content Brief' : 'Ad-Text'
-  const displayHtml = useMemo(
-    () => beautifyApprovalHtml(data.content_html, data.content_type),
-    [data.content_html, data.content_type]
-  )
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 sm:py-12">
@@ -447,6 +492,44 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
             />
           </CardContent>
         </Card>
+
+        {data.history.length > 0 && (
+          <Card className="rounded-[2rem] border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)]">
+            <CardHeader className="border-b border-slate-100 px-6 py-5 sm:px-8">
+              <CardTitle className="text-lg font-semibold text-slate-900">Abnahmeverlauf</CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 py-6 sm:px-8">
+              <div className="space-y-4">
+                {data.history.map((entry, index) => (
+                  <div key={entry.id} className="relative pl-8">
+                    {index < data.history.length - 1 && (
+                      <div className="absolute left-[0.45rem] top-6 h-[calc(100%+0.5rem)] w-px bg-slate-200" />
+                    )}
+                    <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-white bg-blue-500 shadow-sm" />
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4">
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm font-semibold text-slate-900">
+                          {formatHistoryLabel(entry.event_type)}
+                        </p>
+                        <p className="text-xs text-slate-500">{formatHistoryDate(entry.created_at)}</p>
+                      </div>
+                      {entry.actor_label && (
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">
+                          {entry.actor_label}
+                        </p>
+                      )}
+                      {entry.feedback && (
+                        <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm leading-6 text-orange-900">
+                          {entry.feedback}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Action panel */}
         {!alreadyDecided && !actionDone && (

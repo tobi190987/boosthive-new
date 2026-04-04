@@ -4,6 +4,14 @@ import { executeTenantProfileUpdate } from '@/lib/profile-update'
 import { ProfileUpdateSchema } from '@/lib/schemas/profile'
 import { createAdminClient } from '@/lib/supabase-admin'
 
+function isMissingNotifyPreferenceColumn(error: { code?: string; message?: string } | null | undefined) {
+  return (
+    error?.code === '42703' ||
+    error?.message?.includes('notify_on_approval_decision') === true ||
+    error?.message?.includes("Could not find the 'notify_on_approval_decision' column") === true
+  )
+}
+
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
@@ -14,11 +22,34 @@ export async function GET(request: NextRequest) {
   if ('error' in authResult) return authResult.error
 
   const supabaseAdmin = createAdminClient()
-  const { data: profile } = await supabaseAdmin
+  let profile:
+    | {
+        first_name: string | null
+        last_name: string | null
+        avatar_url: string | null
+        notify_on_approval_decision?: boolean | null
+      }
+    | null = null
+  let profileError: { code?: string; message?: string } | null = null
+
+  const profileQuery = await supabaseAdmin
     .from('user_profiles')
-    .select('first_name, last_name, avatar_url')
+    .select('first_name, last_name, avatar_url, notify_on_approval_decision')
     .eq('user_id', authResult.auth.userId)
     .maybeSingle()
+
+  profile = profileQuery.data
+  profileError = profileQuery.error
+
+  if (isMissingNotifyPreferenceColumn(profileError)) {
+    const fallback = await supabaseAdmin
+      .from('user_profiles')
+      .select('first_name, last_name, avatar_url')
+      .eq('user_id', authResult.auth.userId)
+      .maybeSingle()
+    profile = fallback.data
+    profileError = fallback.error
+  }
 
   let tenant:
     | {
@@ -48,6 +79,7 @@ export async function GET(request: NextRequest) {
     first_name: profile?.first_name ?? '',
     last_name: profile?.last_name ?? '',
     avatar_url: profile?.avatar_url ?? null,
+    notify_on_approval_decision: profile?.notify_on_approval_decision ?? false,
     role: authResult.auth.role,
     billing_company: tenant?.billing_company ?? '',
     billing_street: tenant?.billing_street ?? '',
