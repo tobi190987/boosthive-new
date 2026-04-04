@@ -1244,7 +1244,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
             <AlertCircle className="h-4 w-4 text-amber-600" />
             <AlertTitle className="text-amber-800">Backend noch ausstehend</AlertTitle>
             <AlertDescription className="text-amber-700">
-              Sobald die Endpunkte fuer `GET /rankings`, `GET /rankings/history` und `POST /rankings/refresh` vorhanden sind, zeigt dieser Tab die Snapshot-Daten direkt an.
+              Sobald die Endpunkte für `GET /rankings`, `GET /rankings/history` und `POST /rankings/refresh` vorhanden sind, zeigt dieser Tab die Snapshot-Daten direkt an.
             </AlertDescription>
           </Alert>
 
@@ -1252,7 +1252,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
             <MetricCard
               label="Keywords im Projekt"
               value={String(project.keyword_count)}
-              hint="Bereits fuer Tracking vorbereitet"
+              hint="Bereits für Tracking vorbereitet"
             />
             <MetricCard
               label="Tracking-Intervall"
@@ -1439,7 +1439,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
               <SheetHeader className="border-b border-slate-100 dark:border-[#252d3a] px-6 py-5">
                 <SheetTitle>{selectedRow.keyword}</SheetTitle>
                 <SheetDescription>
-                  Verlauf fuer {historyRange} Tage mit aktueller Position {formatPosition(selectedRow.currentPosition)}.
+                  Verlauf für {historyRange} Tage mit aktueller Position {formatPosition(selectedRow.currentPosition)}.
                 </SheetDescription>
               </SheetHeader>
 
@@ -1500,7 +1500,7 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
                   <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6 py-12 text-center">
                     <Search className="mx-auto h-8 w-8 text-slate-300" />
                     <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
-                      Fuer dieses Keyword liegen in dem Zeitraum noch keine Verlaufspunkte vor.
+                      Für dieses Keyword liegen in dem Zeitraum noch keine Verlaufspunkte vor.
                     </p>
                   </div>
                 ) : (
@@ -2872,7 +2872,7 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
         )
       )
       toast({
-        title: 'Keyword hinzugefuegt',
+        title: 'Keyword hinzugefügt',
         description: `"${keyword}" wird jetzt getrackt.`,
       })
     } catch (err) {
@@ -3019,10 +3019,10 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
           </div>
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
-              Keine Daten fuer diesen Zeitraum
+              Keine Daten für diesen Zeitraum
             </h2>
             <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Google Search Console hat fuer den gewaehlten Zeitraum keine Keyword-Daten geliefert. Versuche einen laengeren Zeitraum.
+              Google Search Console hat für den gewählten Zeitraum keine Keyword-Daten geliefert. Versuche einen längeren Zeitraum.
             </p>
           </div>
           <div className="flex gap-2">
@@ -3055,7 +3055,7 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
             </CardTitle>
             {limitReached && (
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                Das Limit von 1.000 Keywords wurde erreicht. Moeglicherweise gibt es weitere Keywords.
+                Das Limit von 1.000 Keywords wurde erreicht. Möglicherweise gibt es weitere Keywords.
               </p>
             )}
           </div>
@@ -3514,7 +3514,7 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                   <AlertCircle className="h-4 w-4" />
                   <AlertTitle>Nicht verbunden</AlertTitle>
                   <AlertDescription>
-                    Fuer dieses Projekt ist noch keine Google-Search-Console-Verbindung eingerichtet. Bitte informiere einen Admin.
+                    Für dieses Projekt ist noch keine Google-Search-Console-Verbindung eingerichtet. Bitte informiere einen Admin.
                   </AlertDescription>
                 </Alert>
               )}
@@ -3630,7 +3630,7 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
                         disabled={savingProperty}
                       >
                         <SelectTrigger id="gsc-property-select" className="w-full sm:w-96">
-                          <SelectValue placeholder="Property auswaehlen..." />
+                          <SelectValue placeholder="Property auswählen..." />
                         </SelectTrigger>
                         <SelectContent>
                           {properties.map((prop) => (

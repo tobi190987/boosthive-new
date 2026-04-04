@@ -25,7 +25,7 @@ const GSC_DISCOVERY: RateLimitOptions = { limit: 10, windowMs: 60 * 60 * 1000 }
 const GSC_REFRESH_BUFFER_MS = 2 * 60 * 1000
 
 const paramsSchema = z.object({
-  id: z.string().uuid('Ungueltige Projekt-ID.'),
+  id: z.string().uuid('Ungültige Projekt-ID.'),
 })
 
 const querySchema = z.object({
@@ -70,7 +70,7 @@ export async function GET(
   const searchParams = Object.fromEntries(request.nextUrl.searchParams.entries())
   const parsedQuery = querySchema.safeParse(searchParams)
   if (!parsedQuery.success) {
-    return NextResponse.json({ error: 'Ungueltiger Zeitraum.' }, { status: 400 })
+    return NextResponse.json({ error: 'Ungültiger Zeitraum.' }, { status: 400 })
   }
 
   const days = parseInt(parsedQuery.data.days, 10)
@@ -99,7 +99,7 @@ export async function GET(
 
   if (!connection || connection.status !== 'connected' || !connection.selected_property) {
     return NextResponse.json(
-      { error: 'Keine aktive GSC-Verbindung fuer dieses Projekt.' },
+      { error: 'Keine aktive GSC-Verbindung für dieses Projekt.' },
       { status: 422 }
     )
   }
