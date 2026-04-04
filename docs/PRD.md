@@ -51,6 +51,8 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 | P2 | Customer Database (CRM & Vault) | Planned |
 | P2 | SEO Competitor Analyse | Planned |
 | P2 | Content Brief Generator | Planned |
+| P2 | Ad Text Generator | Planned |
+| P2 | Client Approval Hub (Freigabe-Workflow) | Planned |
 
 ## Success Metrics
 - **Technische Stabilität:** Zero-Downtime-Deployment, nachgewiesene Datenisolation zwischen Tenants
