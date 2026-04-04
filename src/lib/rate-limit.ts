@@ -104,6 +104,12 @@ export const CONTENT_BRIEFS_READ: RateLimitOptions = { limit: 60, windowMs: 60 *
 /** Content briefs mutations (create/delete): 20 requests / min / tenant+IP */
 export const CONTENT_BRIEFS_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
 
+/** Ad generator reads (history/detail/export): 60 requests / min / tenant+IP */
+export const AD_GENERATOR_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** Ad generator writes (generate): 20 requests / min / tenant+IP */
+export const AD_GENERATOR_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------

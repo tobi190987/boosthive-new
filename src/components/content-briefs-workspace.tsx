@@ -44,6 +44,8 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCustomer } from '@/lib/active-customer-context'
+import { ApprovalSubmitPanel } from '@/components/approval-submit-panel'
+import type { ApprovalStatus } from '@/components/approval-status-badge'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -84,6 +86,12 @@ interface BriefJson {
 
 interface BriefDetail extends BriefSummary {
   brief_json: BriefJson | null
+}
+
+interface ApprovalInfo {
+  status: ApprovalStatus
+  link: string | null
+  feedback: string | null
 }
 
 interface KeywordProject {
@@ -244,6 +252,7 @@ export function ContentBriefsWorkspace() {
   // Detail view
   const [detail, setDetail] = useState<BriefDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [approvalInfo, setApprovalInfo] = useState<ApprovalInfo | null>(null)
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false)
@@ -321,6 +330,38 @@ export function ContentBriefsWorkspace() {
       setDetailLoading(false)
     }
   }, [toast])
+
+  const fetchApprovalInfo = useCallback(async (briefId: string) => {
+    try {
+      const params = new URLSearchParams({
+        content_type: 'content_brief',
+        content_id: briefId,
+      })
+      const res = await fetch(`/api/tenant/approvals?${params.toString()}`)
+      if (!res.ok) return
+      const data = await res.json()
+      const first = Array.isArray(data.approvals) ? data.approvals[0] : null
+      if (!first) {
+        setApprovalInfo({ status: 'draft', link: null, feedback: null })
+        return
+      }
+      setApprovalInfo({
+        status: first.status as ApprovalStatus,
+        link: `${window.location.origin}/approval/${first.public_token}`,
+        feedback: first.feedback ?? null,
+      })
+    } catch {
+      // optional UI fetch
+    }
+  }, [])
+
+  useEffect(() => {
+    if (view.type === 'detail') {
+      fetchApprovalInfo(view.briefId)
+    } else {
+      setApprovalInfo(null)
+    }
+  }, [view, fetchApprovalInfo])
 
   // ── Polling for generating briefs ─────────────────────────────────────────
 
@@ -536,6 +577,24 @@ export function ContentBriefsWorkspace() {
                       )}
                     </div>
                     <p className="text-xs text-slate-400 dark:text-slate-500">Erstellt: {formatDate(detail.created_at)}</p>
+                    {detail.status === 'done' && approvalInfo && (
+                      <div className="pt-1">
+                        <ApprovalSubmitPanel
+                          contentType="content_brief"
+                          contentId={detail.id}
+                          approvalStatus={approvalInfo.status}
+                          approvalLink={approvalInfo.link}
+                          feedback={approvalInfo.feedback}
+                          onStatusChange={(newStatus, link) => {
+                            setApprovalInfo((prev) => ({
+                              status: newStatus,
+                              link: link ?? prev?.link ?? null,
+                              feedback: newStatus === 'changes_requested' ? prev?.feedback ?? null : null,
+                            }))
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
                     {detail.status === 'done' && (

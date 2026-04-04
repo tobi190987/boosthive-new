@@ -7,12 +7,14 @@ import { usePathname } from 'next/navigation'
 import {
   BarChart3,
   Bot,
+  CheckSquare,
   ChevronRight,
   CreditCard,
   Eye,
   FileText,
   LayoutDashboard,
   Lock,
+  Megaphone,
   Menu,
   Search,
   UserRound,
@@ -26,6 +28,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { getUserDisplayName, getUserInitials } from '@/lib/profile'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
+import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
@@ -66,6 +69,8 @@ const TOOLS: ToolNavItem[] = [
   { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
   { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
   { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
+  { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
+  { label: 'Freigaben', href: '/tools/approvals', icon: CheckSquare, moduleCode: 'content_briefs' },
 ]
 
 function roleLabel(role: TenantShellContext['membership']['role']) {
@@ -292,7 +297,10 @@ function NavigationContent({
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel(context.membership.role)}</p>
             </div>
-            <ThemeToggle className="ml-auto shrink-0" />
+            <div className="ml-auto flex items-center gap-1.5">
+              <NotificationBell />
+              <ThemeToggle className="shrink-0" />
+            </div>
           </div>
         </Link>
       </div>
@@ -329,7 +337,8 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
         <p className="truncate text-xs text-slate-500 dark:text-slate-400">{roleLabel(props.context.membership.role)}</p>
       </div>
 
-      <div className="ml-auto">
+      <div className="ml-auto flex items-center gap-2">
+        <NotificationBell />
         <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950/50">
           Workspace
         </Badge>
