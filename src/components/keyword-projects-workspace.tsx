@@ -1006,7 +1006,11 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="rankings" forceMount={mountedTabs.includes('rankings')} className="mt-4 data-[state=inactive]:hidden">
+        <TabsContent
+          value="rankings"
+          {...(mountedTabs.includes('rankings') ? { forceMount: true as const } : {})}
+          className="mt-4 data-[state=inactive]:hidden"
+        >
           <RankingsTab
             project={project}
             projectId={projectId}
@@ -1015,22 +1019,38 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           />
         </TabsContent>
 
-        <TabsContent value="keywords" forceMount={mountedTabs.includes('keywords')} className="mt-4 data-[state=inactive]:hidden">
+        <TabsContent
+          value="keywords"
+          {...(mountedTabs.includes('keywords') ? { forceMount: true as const } : {})}
+          className="mt-4 data-[state=inactive]:hidden"
+        >
           <KeywordsTab projectId={projectId} targetDomain={project.target_domain} />
         </TabsContent>
 
-        <TabsContent value="competitors" forceMount={mountedTabs.includes('competitors')} className="mt-4 data-[state=inactive]:hidden">
+        <TabsContent
+          value="competitors"
+          {...(mountedTabs.includes('competitors') ? { forceMount: true as const } : {})}
+          className="mt-4 data-[state=inactive]:hidden"
+        >
           <CompetitorsTab projectId={projectId} targetDomain={project.target_domain} />
         </TabsContent>
 
-        <TabsContent value="all-rankings" forceMount={mountedTabs.includes('all-rankings')} className="mt-4 data-[state=inactive]:hidden">
+        <TabsContent
+          value="all-rankings"
+          {...(mountedTabs.includes('all-rankings') ? { forceMount: true as const } : {})}
+          className="mt-4 data-[state=inactive]:hidden"
+        >
           <AllRankingsTab
             projectId={projectId}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
         </TabsContent>
 
-        <TabsContent value="settings" forceMount={mountedTabs.includes('settings')} className="mt-4 data-[state=inactive]:hidden">
+        <TabsContent
+          value="settings"
+          {...(mountedTabs.includes('settings') ? { forceMount: true as const } : {})}
+          className="mt-4 data-[state=inactive]:hidden"
+        >
           <SettingsTab
             project={project}
             role={role}
@@ -1039,7 +1059,11 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           />
         </TabsContent>
 
-        <TabsContent value="integrations" forceMount={mountedTabs.includes('integrations')} className="mt-4 data-[state=inactive]:hidden">
+        <TabsContent
+          value="integrations"
+          {...(mountedTabs.includes('integrations') ? { forceMount: true as const } : {})}
+          className="mt-4 data-[state=inactive]:hidden"
+        >
           <IntegrationsTab projectId={projectId} role={role} />
         </TabsContent>
       </Tabs>

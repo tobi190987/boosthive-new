@@ -1191,15 +1191,27 @@ export function AiPerformanceWorkspace() {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="analyse" forceMount={mountedTabs.includes('analyse')} className="data-[state=inactive]:hidden">
+      <TabsContent
+        value="analyse"
+        {...(mountedTabs.includes('analyse') ? { forceMount: true as const } : {})}
+        className="data-[state=inactive]:hidden"
+      >
         <AnalyseTab />
       </TabsContent>
 
-      <TabsContent value="vergleich" forceMount={mountedTabs.includes('vergleich')} className="data-[state=inactive]:hidden">
+      <TabsContent
+        value="vergleich"
+        {...(mountedTabs.includes('vergleich') ? { forceMount: true as const } : {})}
+        className="data-[state=inactive]:hidden"
+      >
         <VergleichTab />
       </TabsContent>
 
-      <TabsContent value="verlauf" forceMount={mountedTabs.includes('verlauf')} className="data-[state=inactive]:hidden">
+      <TabsContent
+        value="verlauf"
+        {...(mountedTabs.includes('verlauf') ? { forceMount: true as const } : {})}
+        className="data-[state=inactive]:hidden"
+      >
         <VerlaufTab />
       </TabsContent>
     </Tabs>
