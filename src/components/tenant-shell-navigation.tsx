@@ -1,9 +1,9 @@
 'use client'
 
 import Image from 'next/image'
-import { useState, type ComponentType } from 'react'
+import { useCallback, useRef, useState, type ComponentType } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   BarChart3,
   Bot,
@@ -30,6 +30,8 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
+import { useActiveCustomer } from '@/lib/active-customer-context'
+import { writeSessionCache } from '@/lib/client-cache'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
 interface TenantShellNavigationProps {
@@ -100,7 +102,90 @@ function NavigationContent({
   onNavigate,
 }: TenantShellNavigationProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { activeCustomer } = useActiveCustomer()
+  const activeCustomerId = activeCustomer?.id ?? null
   const sections = tenantNav(context)
+  const prefetchedTargets = useRef(new Set<string>())
+
+  const prefetchJson = useCallback(async (url: string, cacheKey?: string, select?: (data: unknown) => unknown) => {
+    const res = await fetch(url, { credentials: 'include' })
+    if (!res.ok) return
+    const data = await res.json()
+    if (cacheKey) {
+      writeSessionCache(cacheKey, select ? select(data) : data)
+    }
+  }, [])
+
+  const prefetchModule = useCallback(
+    (href: string) => {
+      router.prefetch(href)
+
+      const customerId = activeCustomerId ?? 'all'
+      const prefetchId = `${href}:${customerId}`
+      if (prefetchedTargets.current.has(prefetchId)) return
+      prefetchedTargets.current.add(prefetchId)
+
+      const customerQuery = activeCustomerId
+        ? `?customer_id=${encodeURIComponent(activeCustomerId)}`
+        : ''
+
+      const tasks: Promise<void>[] = []
+
+      if (href === '/tools/keywords') {
+        tasks.push(
+          prefetchJson(
+            `/api/tenant/keywords/projects${customerQuery}`,
+            `keyword-projects:list:${customerId}`,
+            (data) => (data as { projects?: unknown[] }).projects ?? []
+          )
+        )
+      }
+
+      if (href === '/tools/ai-visibility') {
+        tasks.push(
+          prefetchJson(
+            `/api/tenant/visibility/projects${customerQuery}`,
+            `ai-visibility:projects:${customerId}`,
+            (data) => (data as { projects?: unknown[] }).projects ?? []
+          )
+        )
+      }
+
+      if (href === '/tools/content-briefs') {
+        tasks.push(
+          prefetchJson(
+            `/api/tenant/content/briefs${customerQuery}`,
+            `content-briefs:list:${customerId}`,
+            (data) => (data as { briefs?: unknown[] }).briefs ?? []
+          )
+        )
+      }
+
+      if (href === '/tools/ai-performance') {
+        tasks.push(
+          prefetchJson(
+            `/api/tenant/performance/history${customerQuery}`,
+            `ai-performance:history:${customerId}`,
+            (data) => (data as { analyses?: unknown[] }).analyses ?? []
+          )
+        )
+      }
+
+      if (href === '/tools/customers') {
+        tasks.push(
+          prefetchJson(
+            '/api/tenant/customers',
+            'customers:list',
+            (data) => (data as { customers?: unknown[] }).customers ?? []
+          )
+        )
+      }
+
+      void Promise.allSettled(tasks)
+    },
+    [activeCustomerId, prefetchJson, router]
+  )
 
   return (
     <>
@@ -141,6 +226,8 @@ function NavigationContent({
                 <Link
                   href="/dashboard"
                   onClick={onNavigate}
+                  onMouseEnter={() => router.prefetch('/dashboard')}
+                  onFocus={() => router.prefetch('/dashboard')}
                   className={cn(
                     'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
                     isNavActive(pathname, '/dashboard')
@@ -167,6 +254,8 @@ function NavigationContent({
                     <Link
                       href={tool.href}
                       onClick={onNavigate}
+                      onMouseEnter={() => prefetchModule(tool.href)}
+                      onFocus={() => prefetchModule(tool.href)}
                       className={cn(
                         'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
                         active
@@ -203,6 +292,8 @@ function NavigationContent({
                               <Link
                                 href={child.href}
                                 onClick={onNavigate}
+                                onMouseEnter={() => prefetchModule(child.href)}
+                                onFocus={() => prefetchModule(child.href)}
                                 className={cn(
                                   'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
                                   childActive
@@ -247,6 +338,8 @@ function NavigationContent({
                       <Link
                         href={item.href}
                         onClick={onNavigate}
+                        onMouseEnter={() => prefetchModule(item.href)}
+                        onFocus={() => prefetchModule(item.href)}
                         className={cn(
                           'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
                           active

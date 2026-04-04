@@ -2,14 +2,13 @@ import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getActiveModuleCodes } from '@/lib/module-access'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { AdGeneratorWorkspace } from '@/components/ad-generator-workspace'
 
 export default async function AdGeneratorPage() {
   const context = await requireTenantShellContext()
-  const activeModuleCodes = await getActiveModuleCodes(context.tenant.id)
-  const hasAccess = activeModuleCodes.includes('ad_generator') || activeModuleCodes.includes('all')
+  const hasAccess =
+    context.activeModuleCodes.includes('ad_generator') || context.activeModuleCodes.includes('all')
   const isAdmin = context.membership.role === 'admin'
 
   if (!hasAccess) {

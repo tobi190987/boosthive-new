@@ -69,6 +69,7 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCustomer } from '@/lib/active-customer-context'
+import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
 type WorkspaceRole = 'admin' | 'member'
 
@@ -80,6 +81,8 @@ type View =
 interface AiVisibilityWorkspaceProps {
   role: WorkspaceRole
 }
+
+const AI_VISIBILITY_PROJECTS_CACHE_PREFIX = 'ai-visibility:projects:'
 
 // ─── Formatierungshilfen ──────────────────────────────────────
 
@@ -128,6 +131,7 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
   const [projects, setProjects] = useState<VisibilityProject[]>([])
   const [loadingProjects, setLoadingProjects] = useState(true)
   const [projectError, setProjectError] = useState<string | null>(null)
+  const projectsCacheKey = `${AI_VISIBILITY_PROJECTS_CACHE_PREFIX}${activeCustomer?.id ?? 'all'}`
 
   const fetchProjects = useCallback(async () => {
     setLoadingProjects(true)
@@ -143,16 +147,22 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
       }
       const data = await res.json()
       setProjects(data.projects ?? [])
+      writeSessionCache(projectsCacheKey, data.projects ?? [])
     } catch (err) {
       setProjectError(err instanceof Error ? err.message : 'Projekte konnten nicht geladen werden.')
     } finally {
       setLoadingProjects(false)
     }
-  }, [activeCustomer])
+  }, [activeCustomer, projectsCacheKey])
 
   useEffect(() => {
+    const cachedProjects = readSessionCache<VisibilityProject[]>(projectsCacheKey)
+    if (cachedProjects) {
+      setProjects(cachedProjects)
+      setLoadingProjects(false)
+    }
     fetchProjects()
-  }, [fetchProjects])
+  }, [fetchProjects, projectsCacheKey])
 
   // ── Navigation ──────────────────────────────────────────────
 

@@ -2,14 +2,13 @@ import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getActiveModuleCodes } from '@/lib/module-access'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { ContentBriefsWorkspace } from '@/components/content-briefs-workspace'
 
 export default async function ContentBriefsPage() {
   const context = await requireTenantShellContext()
-  const activeModuleCodes = await getActiveModuleCodes(context.tenant.id)
-  const hasAccess = activeModuleCodes.includes('content_briefs') || activeModuleCodes.includes('all')
+  const hasAccess =
+    context.activeModuleCodes.includes('content_briefs') || context.activeModuleCodes.includes('all')
   const isAdmin = context.membership.role === 'admin'
 
   if (!hasAccess) {

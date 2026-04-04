@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { createClient } from '@/lib/supabase'
 import { isOnboardingComplete } from '@/lib/profile'
 import { requireTenantContext } from '@/lib/tenant'
@@ -49,7 +50,7 @@ export interface TenantShellContext {
  * Resolves the current authenticated tenant user together with tenant metadata.
  * Intended for tenant server layouts and pages that should render without FOUC.
  */
-export async function requireTenantShellContext(): Promise<TenantShellContext> {
+export const requireTenantShellContext = cache(async (): Promise<TenantShellContext> => {
   const supabase = await createClient()
   const tenant = await requireTenantContext()
 
@@ -238,4 +239,4 @@ export async function requireTenantShellContext(): Promise<TenantShellContext> {
     }
     throw error
   }
-}
+})

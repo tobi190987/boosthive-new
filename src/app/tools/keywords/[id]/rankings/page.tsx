@@ -2,7 +2,6 @@ import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { getActiveModuleCodes } from '@/lib/module-access'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { KeywordProjectsWorkspace } from '@/components/keyword-projects-workspace'
 
@@ -12,8 +11,7 @@ export default async function KeywordRankingsDetailPage({
   params: Promise<{ id: string }>
 }) {
   const context = await requireTenantShellContext()
-  const activeModuleCodes = await getActiveModuleCodes(context.tenant.id)
-  const hasAccess = activeModuleCodes.includes('seo_analyse')
+  const hasAccess = context.activeModuleCodes.includes('seo_analyse')
   const isAdmin = context.membership.role === 'admin'
   const { id } = await params
 

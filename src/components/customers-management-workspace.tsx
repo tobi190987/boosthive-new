@@ -14,6 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Search, Plus, Trash2, Users, Pencil, Globe } from 'lucide-react'
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { useActiveCustomer } from '@/lib/active-customer-context'
+import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
 // Extended customer type for enhanced features
 interface CustomerExtended {
@@ -42,6 +43,8 @@ const emptyForm: CustomerForm = {
   status: 'active'
 }
 
+const CUSTOMERS_CACHE_KEY = 'customers:list'
+
 export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const { refetchCustomers: refetchSidebar } = useActiveCustomer()
   const [customers, setCustomers] = useState<CustomerExtended[]>([])
@@ -68,6 +71,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
       }
       const data = await response.json()
       setCustomers(data.customers || [])
+      writeSessionCache(CUSTOMERS_CACHE_KEY, data.customers || [])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten.')
       setCustomers([])
@@ -77,6 +81,11 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
   }, [])
 
   useEffect(() => {
+    const cachedCustomers = readSessionCache<CustomerExtended[]>(CUSTOMERS_CACHE_KEY)
+    if (cachedCustomers) {
+      setCustomers(cachedCustomers)
+      setLoading(false)
+    }
     refetchCustomers()
   }, [refetchCustomers])
 
@@ -151,7 +160,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     } finally {
       setSaving(false)
     }
-  }, [form, editingCustomer, refetchCustomers])
+  }, [form, editingCustomer, refetchCustomers, refetchSidebar])
 
   const handleDelete = useCallback(async () => {
     if (!deletingCustomer) return
@@ -177,7 +186,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     } finally {
       setDeleting(false)
     }
-  }, [deletingCustomer, refetchCustomers])
+  }, [deletingCustomer, refetchCustomers, refetchSidebar])
 
   return (
     <div className="space-y-6">

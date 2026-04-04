@@ -31,9 +31,60 @@ interface ActiveCustomerContextValue {
 }
 
 const ActiveCustomerContext = createContext<ActiveCustomerContextValue | null>(null)
+const customerCache = new Map<string, Customer[]>()
 
 function getStorageKey(tenantSlug: string) {
   return `boosthive_active_customer_${tenantSlug}`
+}
+
+function getCustomerCacheKey(tenantSlug: string) {
+  return `boosthive_customers_${tenantSlug}`
+}
+
+function readCachedCustomers(tenantSlug: string): Customer[] {
+  const inMemory = customerCache.get(tenantSlug)
+  if (inMemory) return inMemory
+
+  if (typeof window === 'undefined') return []
+
+  try {
+    const raw = sessionStorage.getItem(getCustomerCacheKey(tenantSlug))
+    if (!raw) return []
+
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+
+    const customers = parsed.filter((entry): entry is Customer => {
+      if (!entry || typeof entry !== 'object') return false
+      const candidate = entry as Partial<Customer>
+      return (
+        typeof candidate.id === 'string' &&
+        typeof candidate.name === 'string' &&
+        (candidate.domain === null || typeof candidate.domain === 'string') &&
+        (candidate.status === 'active' || candidate.status === 'paused')
+      )
+    })
+
+    if (customers.length > 0) {
+      customerCache.set(tenantSlug, customers)
+    }
+
+    return customers
+  } catch {
+    return []
+  }
+}
+
+function writeCachedCustomers(tenantSlug: string, customers: Customer[]) {
+  customerCache.set(tenantSlug, customers)
+
+  if (typeof window === 'undefined') return
+
+  try {
+    sessionStorage.setItem(getCustomerCacheKey(tenantSlug), JSON.stringify(customers))
+  } catch {
+    // Ignore storage write issues and keep the in-memory cache.
+  }
 }
 
 interface ActiveCustomerProviderProps {
@@ -51,11 +102,13 @@ export function ActiveCustomerProvider({ tenantSlug, children }: ActiveCustomerP
       const res = await fetch('/api/tenant/customers')
       if (!res.ok) return []
       const data = await res.json()
-      return (data.customers ?? []) as Customer[]
+      const list = (data.customers ?? []) as Customer[]
+      writeCachedCustomers(tenantSlug, list)
+      return list
     } catch {
       return []
     }
-  }, [])
+  }, [tenantSlug])
 
   const refetchCustomers = useCallback(async () => {
     const list = await fetchCustomers()
@@ -85,12 +138,27 @@ export function ActiveCustomerProvider({ tenantSlug, children }: ActiveCustomerP
     let cancelled = false
 
     async function init() {
+      const cachedCustomers = readCachedCustomers(tenantSlug)
+      const savedId = localStorage.getItem(getStorageKey(tenantSlug))
+
+      if (cachedCustomers.length > 0) {
+        setCustomers(cachedCustomers)
+
+        if (savedId) {
+          const cachedMatch = cachedCustomers.find((c) => c.id === savedId)
+          if (cachedMatch) {
+            setActiveCustomerState(cachedMatch)
+          }
+        }
+
+        setLoading(false)
+      }
+
       const list = await fetchCustomers()
       if (cancelled) return
 
       setCustomers(list)
 
-      const savedId = localStorage.getItem(getStorageKey(tenantSlug))
       if (savedId) {
         const match = list.find((c) => c.id === savedId)
         if (match) {

@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase-admin'
 
@@ -96,9 +97,9 @@ const PREVIEW_MODULES = ['content_briefs']
  * Returns a list of active module codes for a tenant.
  * Useful for dashboard feature-gating without individual checks.
  */
-export async function getActiveModuleCodes(tenantId: string): Promise<string[]> {
+export const getActiveModuleCodes = cache(async (tenantId: string): Promise<string[]> => {
   // DEV: all modules unlocked for all tenants (matches requireTenantModuleAccess behaviour)
   const supabaseAdmin = createAdminClient()
   const { data: allMods } = await supabaseAdmin.from('modules').select('code')
   return [...new Set([...(allMods?.map((m) => m.code) ?? []), ...PREVIEW_MODULES])]
-}
+})

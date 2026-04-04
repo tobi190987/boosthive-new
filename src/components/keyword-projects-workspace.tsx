@@ -65,6 +65,7 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveCustomer } from '@/lib/active-customer-context'
+import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -319,6 +320,8 @@ function isValidDomain(d: string): boolean {
 // ---------------------------------------------------------------------------
 
 const API_BASE = '/api/tenant/keywords/projects'
+const PROJECT_LIST_CACHE_PREFIX = 'keyword-projects:list:'
+const PROJECT_DETAIL_CACHE_PREFIX = 'keyword-projects:detail:'
 
 class ApiError extends Error {
   status: number
@@ -424,6 +427,7 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
+  const customerCacheKey = `${PROJECT_LIST_CACHE_PREFIX}${activeCustomer?.id ?? 'all'}`
 
   const loadProjects = useCallback(async () => {
     try {
@@ -434,16 +438,22 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
         : API_BASE
       const data = await apiFetch<{ projects: KeywordProject[] }>(url)
       setProjects(data.projects)
+      writeSessionCache(customerCacheKey, data.projects)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Projekte konnten nicht geladen werden.')
     } finally {
       setLoading(false)
     }
-  }, [activeCustomer])
+  }, [activeCustomer, customerCacheKey])
 
   useEffect(() => {
+    const cachedProjects = readSessionCache<KeywordProject[]>(customerCacheKey)
+    if (cachedProjects) {
+      setProjects(cachedProjects)
+      setLoading(false)
+    }
     loadProjects()
-  }, [loadProjects])
+  }, [customerCacheKey, loadProjects])
 
   const isAdmin = role === 'admin'
   const atLimit = projects.length >= PROJECT_LIMIT
@@ -827,6 +837,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [gscReady, setGscReady] = useState<boolean | null>(null)
+  const detailCacheKey = `${PROJECT_DETAIL_CACHE_PREFIX}${projectId}`
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab
     if (typeof window === 'undefined') return 'rankings'
@@ -836,6 +847,15 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
     const projectFromUrl = params.get('project')
     return projectFromUrl === projectId && tab ? tab : 'rankings'
   })
+  const [mountedTabs, setMountedTabs] = useState<string[]>(() => {
+    const initial = initialTab ?? 'rankings'
+    return [initial]
+  })
+
+  const handleTabChange = useCallback((nextTab: string) => {
+    setActiveTab(nextTab)
+    setMountedTabs((prev) => (prev.includes(nextTab) ? prev : [...prev, nextTab]))
+  }, [])
 
   const loadProject = useCallback(async () => {
     try {
@@ -843,12 +863,13 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
       setError(null)
       const data = await apiFetch<{ project: KeywordProject }>(`${API_BASE}/${projectId}`)
       setProject(data.project)
+      writeSessionCache(detailCacheKey, data.project)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Projekt konnte nicht geladen werden.')
     } finally {
       setLoading(false)
     }
-  }, [projectId])
+  }, [detailCacheKey, projectId])
 
   const loadGscStatus = useCallback(async () => {
     try {
@@ -863,8 +884,13 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
   }, [projectId])
 
   useEffect(() => {
+    const cachedProject = readSessionCache<KeywordProject>(detailCacheKey)
+    if (cachedProject) {
+      setProject(cachedProject)
+      setLoading(false)
+    }
     loadProject()
-  }, [loadProject])
+  }, [detailCacheKey, loadProject])
 
   useEffect(() => {
     loadGscStatus()
@@ -952,7 +978,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
       </div>
 
       {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
           <TabsTrigger value="rankings" className="rounded-full data-[state=active]:bg-white">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
@@ -980,7 +1006,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="rankings" className="mt-4">
+        <TabsContent value="rankings" forceMount={mountedTabs.includes('rankings')} className="mt-4 data-[state=inactive]:hidden">
           <RankingsTab
             project={project}
             projectId={projectId}
@@ -989,22 +1015,22 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           />
         </TabsContent>
 
-        <TabsContent value="keywords" className="mt-4">
+        <TabsContent value="keywords" forceMount={mountedTabs.includes('keywords')} className="mt-4 data-[state=inactive]:hidden">
           <KeywordsTab projectId={projectId} targetDomain={project.target_domain} />
         </TabsContent>
 
-        <TabsContent value="competitors" className="mt-4">
+        <TabsContent value="competitors" forceMount={mountedTabs.includes('competitors')} className="mt-4 data-[state=inactive]:hidden">
           <CompetitorsTab projectId={projectId} targetDomain={project.target_domain} />
         </TabsContent>
 
-        <TabsContent value="all-rankings" className="mt-4">
+        <TabsContent value="all-rankings" forceMount={mountedTabs.includes('all-rankings')} className="mt-4 data-[state=inactive]:hidden">
           <AllRankingsTab
             projectId={projectId}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
         </TabsContent>
 
-        <TabsContent value="settings" className="mt-4">
+        <TabsContent value="settings" forceMount={mountedTabs.includes('settings')} className="mt-4 data-[state=inactive]:hidden">
           <SettingsTab
             project={project}
             role={role}
@@ -1013,7 +1039,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           />
         </TabsContent>
 
-        <TabsContent value="integrations" className="mt-4">
+        <TabsContent value="integrations" forceMount={mountedTabs.includes('integrations')} className="mt-4 data-[state=inactive]:hidden">
           <IntegrationsTab projectId={projectId} role={role} />
         </TabsContent>
       </Tabs>

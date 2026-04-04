@@ -47,6 +47,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { ApprovalSubmitPanel } from '@/components/approval-submit-panel'
 import type { ApprovalStatus } from '@/components/approval-status-badge'
+import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -110,6 +111,9 @@ interface ProjectKeyword {
 type View =
   | { type: 'list' }
   | { type: 'detail'; briefId: string }
+
+const BRIEF_LIST_CACHE_PREFIX = 'content-briefs:list:'
+const BRIEF_DETAIL_CACHE_PREFIX = 'content-briefs:detail:'
 
 // ─── Status helpers ──────────────────────────────────────────────────────────
 
@@ -288,6 +292,7 @@ export function ContentBriefsWorkspace() {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const customerId = activeCustomer?.id ?? null
+  const briefsCacheKey = `${BRIEF_LIST_CACHE_PREFIX}${customerId ?? 'all'}`
 
   // ── Fetch briefs ──────────────────────────────────────────────────────────
 
@@ -302,16 +307,22 @@ export function ContentBriefsWorkspace() {
       if (!res.ok) throw new Error('Briefs konnten nicht geladen werden.')
       const data = await res.json()
       setBriefs(data.briefs ?? [])
+      writeSessionCache(briefsCacheKey, data.briefs ?? [])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
     } finally {
       setLoading(false)
     }
-  }, [customerId])
+  }, [briefsCacheKey, customerId])
 
   useEffect(() => {
+    const cachedBriefs = readSessionCache<BriefSummary[]>(briefsCacheKey)
+    if (cachedBriefs) {
+      setBriefs(cachedBriefs)
+      setLoading(false)
+    }
     fetchBriefs()
-  }, [fetchBriefs])
+  }, [briefsCacheKey, fetchBriefs])
 
   // ── Fetch detail ──────────────────────────────────────────────────────────
 
@@ -322,6 +333,9 @@ export function ContentBriefsWorkspace() {
       if (!res.ok) throw new Error('Brief konnte nicht geladen werden.')
       const data = await res.json()
       setDetail(data.brief ?? null)
+      if (data.brief) {
+        writeSessionCache(`${BRIEF_DETAIL_CACHE_PREFIX}${briefId}`, data.brief)
+      }
     } catch (err) {
       toast({ title: 'Fehler', description: err instanceof Error ? err.message : 'Fehler beim Laden', variant: 'destructive' })
     } finally {
@@ -363,6 +377,10 @@ export function ContentBriefsWorkspace() {
 
     if (view.type !== 'detail' || view.briefId !== briefIdFromUrl) {
       setView({ type: 'detail', briefId: briefIdFromUrl })
+      const cachedDetail = readSessionCache<BriefDetail>(`${BRIEF_DETAIL_CACHE_PREFIX}${briefIdFromUrl}`)
+      if (cachedDetail) {
+        setDetail(cachedDetail)
+      }
       fetchDetail(briefIdFromUrl)
     }
   }, [fetchDetail, searchParams, view])

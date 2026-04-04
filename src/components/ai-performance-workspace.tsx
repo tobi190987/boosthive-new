@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { PreviewResult, AnalyzeResult, CompareResult, KPIs, PerformanceAnalysis } from '@/lib/performance/types'
 import { useActiveCustomer } from '@/lib/active-customer-context'
+import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -997,8 +998,15 @@ function VerlaufTab() {
   const [error, setError] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<(AnalyzeResult | CompareResult) | null>(null)
   const [openLoading, setOpenLoading] = useState(false)
+  const analysesCacheKey = `ai-performance:history:${activeCustomer?.id ?? 'all'}`
 
   useEffect(() => {
+    const cachedAnalyses = readSessionCache<PerformanceAnalysis[]>(analysesCacheKey)
+    if (cachedAnalyses) {
+      setAnalyses(cachedAnalyses)
+      setLoading(false)
+    }
+
     const url = activeCustomer
       ? `/api/tenant/performance/history?customer_id=${activeCustomer.id}`
       : '/api/tenant/performance/history'
@@ -1007,10 +1015,11 @@ function VerlaufTab() {
       .then(d => {
         if (d.error) throw new Error(d.error)
         setAnalyses(d.analyses ?? [])
+        writeSessionCache(analysesCacheKey, d.analyses ?? [])
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Fehler beim Laden'))
       .finally(() => setLoading(false))
-  }, [activeCustomer])
+  }, [activeCustomer, analysesCacheKey])
 
   const handleOpen = async (id: string) => {
     setOpenLoading(true)
@@ -1157,8 +1166,16 @@ function VerlaufTab() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AiPerformanceWorkspace() {
+  const [activeTab, setActiveTab] = useState<'analyse' | 'vergleich' | 'verlauf'>('analyse')
+  const [mountedTabs, setMountedTabs] = useState<Array<'analyse' | 'vergleich' | 'verlauf'>>(['analyse'])
+  const handleTabChange = useCallback((value: string) => {
+    const nextTab = value as 'analyse' | 'vergleich' | 'verlauf'
+    setActiveTab(nextTab)
+    setMountedTabs((prev) => (prev.includes(nextTab) ? prev : [...prev, nextTab]))
+  }, [])
+
   return (
-    <Tabs defaultValue="analyse">
+    <Tabs value={activeTab} onValueChange={handleTabChange}>
       <TabsList className="mb-4 rounded-full bg-slate-100 dark:bg-[#1e2635]">
         <TabsTrigger value="analyse" className="gap-1.5 rounded-full">
           <BarChart3 className="h-3.5 w-3.5" />
@@ -1174,15 +1191,15 @@ export function AiPerformanceWorkspace() {
         </TabsTrigger>
       </TabsList>
 
-      <TabsContent value="analyse">
+      <TabsContent value="analyse" forceMount={mountedTabs.includes('analyse')} className="data-[state=inactive]:hidden">
         <AnalyseTab />
       </TabsContent>
 
-      <TabsContent value="vergleich">
+      <TabsContent value="vergleich" forceMount={mountedTabs.includes('vergleich')} className="data-[state=inactive]:hidden">
         <VergleichTab />
       </TabsContent>
 
-      <TabsContent value="verlauf">
+      <TabsContent value="verlauf" forceMount={mountedTabs.includes('verlauf')} className="data-[state=inactive]:hidden">
         <VerlaufTab />
       </TabsContent>
     </Tabs>

@@ -193,11 +193,16 @@ export function CustomerDetailWorkspace({
   }, [customer.id])
 
   useEffect(() => {
-    if (open) {
+    if (open && activeTab === 'integrations' && integrations.length === 0) {
       loadIntegrations()
+    }
+  }, [activeTab, integrations.length, loadIntegrations, open])
+
+  useEffect(() => {
+    if (open && activeTab === 'documents' && documents.length === 0) {
       loadDocuments()
     }
-  }, [open, loadIntegrations, loadDocuments])
+  }, [activeTab, documents.length, loadDocuments, open])
 
   const handleSaveMasterData = async () => {
     if (!form.name.trim()) {
