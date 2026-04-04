@@ -32,6 +32,19 @@ const querySchema = z.object({
   days: z.enum(['7', '28', '90']).default('28'),
 })
 
+const COUNTRY_ALPHA3: Record<string, string> = {
+  DE: 'DEU',
+  AT: 'AUT',
+  CH: 'CHE',
+  US: 'USA',
+  GB: 'GBR',
+  FR: 'FRA',
+  ES: 'ESP',
+  IT: 'ITA',
+  NL: 'NLD',
+  PL: 'POL',
+}
+
 function getDateRange(days: number): { startDate: string; endDate: string } {
   const end = new Date()
   end.setDate(end.getDate() - 3) // GSC data has ~3 day lag
@@ -42,6 +55,11 @@ function getDateRange(days: number): { startDate: string; endDate: string } {
     startDate: start.toISOString().split('T')[0],
     endDate: end.toISOString().split('T')[0],
   }
+}
+
+function getCountryFilter(countryCode: string | null | undefined) {
+  if (!countryCode || countryCode.toLowerCase() === 'all') return undefined
+  return COUNTRY_ALPHA3[countryCode.toUpperCase()] ?? undefined
 }
 
 export async function GET(
@@ -148,9 +166,7 @@ export async function GET(
 
   // Query GSC Search Analytics for all keywords
   const dateRange = getDateRange(days)
-  const countryFilter = project.country_code && project.country_code !== 'all'
-    ? project.country_code.toLowerCase()
-    : undefined
+  const countryFilter = getCountryFilter(project.country_code)
 
   let gscRows
   try {
