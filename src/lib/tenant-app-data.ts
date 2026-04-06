@@ -9,6 +9,19 @@ import {
 } from '@/lib/seo-analysis'
 import { getProjectReportSummaryMap } from '@/lib/visibility-report'
 
+type CacheEntry<T> = {
+  expiresAt: number
+  value: T
+}
+
+const APP_DATA_CACHE_MAX_ENTRIES = 200
+const SHELL_SUMMARY_TTL_MS = 15_000
+const DASHBOARD_DATA_TTL_MS = 15_000
+const shellSummaryCache = new Map<string, CacheEntry<TenantShellSummary>>()
+const shellSummaryInflight = new Map<string, Promise<TenantShellSummary>>()
+const dashboardDataCache = new Map<string, CacheEntry<TenantDashboardData>>()
+const dashboardDataInflight = new Map<string, Promise<TenantDashboardData>>()
+
 export interface ShellCustomer {
   id: string
   name: string
@@ -125,6 +138,73 @@ interface SeoAnalysisRowLite {
   result?: unknown
 }
 
+function readFreshCache<T>(store: Map<string, CacheEntry<T>>, key: string): T | undefined {
+  const entry = store.get(key)
+  if (!entry) return undefined
+
+  if (entry.expiresAt <= Date.now()) {
+    store.delete(key)
+    return undefined
+  }
+
+  return entry.value
+}
+
+function writeCacheEntry<T>(store: Map<string, CacheEntry<T>>, key: string, value: T, ttlMs: number) {
+  if (store.size >= APP_DATA_CACHE_MAX_ENTRIES) {
+    const now = Date.now()
+    for (const [entryKey, entry] of store.entries()) {
+      if (entry.expiresAt <= now) {
+        store.delete(entryKey)
+      }
+    }
+
+    if (store.size >= APP_DATA_CACHE_MAX_ENTRIES) {
+      const oldestKey = store.keys().next().value
+      if (oldestKey) {
+        store.delete(oldestKey)
+      }
+    }
+  }
+
+  store.set(key, {
+    expiresAt: Date.now() + ttlMs,
+    value,
+  })
+}
+
+async function getOrLoadCached<T>(
+  key: string,
+  ttlMs: number,
+  store: Map<string, CacheEntry<T>>,
+  inflightStore: Map<string, Promise<T>>,
+  loader: () => Promise<T>
+): Promise<T> {
+  const cached = readFreshCache(store, key)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const inflight = inflightStore.get(key)
+  if (inflight) {
+    return inflight
+  }
+
+  const next = loader()
+    .then((value) => {
+      writeCacheEntry(store, key, value, ttlMs)
+      inflightStore.delete(key)
+      return value
+    })
+    .catch((error) => {
+      inflightStore.delete(key)
+      throw error
+    })
+
+  inflightStore.set(key, next)
+  return next
+}
+
 async function persistSeoAnalysisSummaryIfNeeded(
   tenantId: string,
   analysisId: string,
@@ -182,35 +262,45 @@ export async function getTenantShellSummary(
   tenantId: string,
   userId: string
 ): Promise<TenantShellSummary> {
-  const admin = createAdminClient()
+  const cacheKey = `${tenantId}:${userId}`
 
-  const [customersResult, notificationsResult, approvalsResult] = await Promise.all([
-    admin
-      .from('customers')
-      .select('id, name, domain, status')
-      .eq('tenant_id', tenantId)
-      .is('deleted_at', null)
-      .order('name', { ascending: true })
-      .limit(500),
-    admin
-      .from('notifications')
-      .select('id, type, title, body, link, read_at, created_at')
-      .eq('tenant_id', tenantId)
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(10),
-    admin
-      .from('approval_requests')
-      .select('id', { count: 'exact', head: true })
-      .eq('tenant_id', tenantId)
-      .in('status', ['pending_approval', 'changes_requested']),
-  ])
+  return getOrLoadCached(
+    cacheKey,
+    SHELL_SUMMARY_TTL_MS,
+    shellSummaryCache,
+    shellSummaryInflight,
+    async () => {
+      const admin = createAdminClient()
 
-  return {
-    customers: (customersResult.data ?? []) as ShellCustomer[],
-    notifications: (notificationsResult.data ?? []) as ShellNotification[],
-    openApprovalsCount: approvalsResult.count ?? 0,
-  }
+      const [customersResult, notificationsResult, approvalsResult] = await Promise.all([
+        admin
+          .from('customers')
+          .select('id, name, domain, status')
+          .eq('tenant_id', tenantId)
+          .is('deleted_at', null)
+          .order('name', { ascending: true })
+          .limit(500),
+        admin
+          .from('notifications')
+          .select('id, type, title, body, link, read_at, created_at')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(10),
+        admin
+          .from('approval_requests')
+          .select('id', { count: 'exact', head: true })
+          .eq('tenant_id', tenantId)
+          .in('status', ['pending_approval', 'changes_requested']),
+      ])
+
+      return {
+        customers: (customersResult.data ?? []) as ShellCustomer[],
+        notifications: (notificationsResult.data ?? []) as ShellNotification[],
+        openApprovalsCount: approvalsResult.count ?? 0,
+      }
+    }
+  )
 }
 
 export async function getKeywordProjectsList(
@@ -495,165 +585,175 @@ export async function getTenantDashboardData(
   userId: string,
   role: 'admin' | 'member'
 ): Promise<TenantDashboardData> {
-  const admin = createAdminClient()
-  const isAdmin = role === 'admin'
+  const cacheKey = `${tenantId}:${userId}:${role}`
 
-  const [modulesResult, bookingsResult, approvalsCountResult, briefsCountResult, customersCountResult, adsCountResult] =
-    await Promise.all([
-      admin
-        .from('modules')
-        .select('id, code, name, description, sort_order, is_active')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true }),
-      admin
-        .from('tenant_modules')
-        .select('module_id, status, current_period_end')
-        .eq('tenant_id', tenantId),
-      admin
-        .from('approval_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId)
-        .in('status', ['pending_approval', 'changes_requested']),
-      admin
+  return getOrLoadCached(
+    cacheKey,
+    DASHBOARD_DATA_TTL_MS,
+    dashboardDataCache,
+    dashboardDataInflight,
+    async () => {
+      const admin = createAdminClient()
+      const isAdmin = role === 'admin'
+
+      const [modulesResult, bookingsResult, approvalsCountResult, briefsCountResult, customersCountResult, adsCountResult] =
+        await Promise.all([
+          admin
+            .from('modules')
+            .select('id, code, name, description, sort_order, is_active')
+            .eq('is_active', true)
+            .order('sort_order', { ascending: true }),
+          admin
+            .from('tenant_modules')
+            .select('module_id, status, current_period_end')
+            .eq('tenant_id', tenantId),
+          admin
+            .from('approval_requests')
+            .select('id', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId)
+            .in('status', ['pending_approval', 'changes_requested']),
+          admin
+            .from('content_briefs')
+            .select('id', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId),
+          admin
+            .from('customers')
+            .select('id', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId)
+            .is('deleted_at', null),
+          admin
+            .from('ad_generations')
+            .select('id', { count: 'exact', head: true })
+            .eq('tenant_id', tenantId),
+        ])
+
+      const bookingMap = new Map(
+        (bookingsResult.data ?? []).map((booking) => [booking.module_id, booking])
+      )
+
+      const modules = (modulesResult.data ?? []).map((module) => {
+        const booking = bookingMap.get(module.id)
+        return {
+          id: module.id,
+          code: module.code,
+          name: module.name,
+          description: module.description,
+          status: asActiveModuleStatus(booking?.status),
+          current_period_end: booking?.current_period_end ?? null,
+        }
+      }) as DashboardModule[]
+
+      let eventsQuery = admin
+        .from('approval_request_events')
+        .select(
+          'id, event_type, actor_label, created_at, approval_request_id, approval_requests!inner(customer_name, content_title, created_by)'
+        )
+        .eq('approval_requests.tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+
+      let briefsQuery = admin
         .from('content_briefs')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId),
-      admin
-        .from('customers')
-        .select('id', { count: 'exact', head: true })
+        .select('id, keyword, created_at')
         .eq('tenant_id', tenantId)
-        .is('deleted_at', null),
-      admin
+        .order('created_at', { ascending: false })
+        .limit(5)
+
+      let adsQuery = admin
         .from('ad_generations')
-        .select('id', { count: 'exact', head: true })
-        .eq('tenant_id', tenantId),
-    ])
+        .select('id, briefing, created_at')
+        .eq('tenant_id', tenantId)
+        .order('created_at', { ascending: false })
+        .limit(5)
 
-  const bookingMap = new Map(
-    (bookingsResult.data ?? []).map((booking) => [booking.module_id, booking])
-  )
-
-  const modules = (modulesResult.data ?? []).map((module) => {
-    const booking = bookingMap.get(module.id)
-    return {
-      id: module.id,
-      code: module.code,
-      name: module.name,
-      description: module.description,
-      status: asActiveModuleStatus(booking?.status),
-      current_period_end: booking?.current_period_end ?? null,
-    }
-  }) as DashboardModule[]
-
-  let eventsQuery = admin
-    .from('approval_request_events')
-    .select(
-      'id, event_type, actor_label, created_at, approval_request_id, approval_requests!inner(customer_name, content_title, created_by)'
-    )
-    .eq('approval_requests.tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(10)
-
-  let briefsQuery = admin
-    .from('content_briefs')
-    .select('id, keyword, created_at')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  let adsQuery = admin
-    .from('ad_generations')
-    .select('id, briefing, created_at')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(5)
-
-  if (!isAdmin) {
-    eventsQuery = eventsQuery.eq('approval_requests.created_by', userId)
-    briefsQuery = briefsQuery.eq('created_by', userId)
-    adsQuery = adsQuery.eq('created_by', userId)
-  }
-
-  const [eventsResult, briefsResult, adsResult] = await Promise.allSettled([
-    eventsQuery,
-    briefsQuery,
-    adsQuery,
-  ])
-
-  const activities: DashboardActivityItem[] = []
-
-  if (eventsResult.status === 'fulfilled' && !eventsResult.value.error) {
-    for (const event of eventsResult.value.data ?? []) {
-      const approvalRequestValue = event.approval_requests as unknown
-      const approvalRequest = (
-        Array.isArray(approvalRequestValue)
-          ? approvalRequestValue[0]
-          : approvalRequestValue
-      ) as {
-        customer_name: string | null
-        content_title: string | null
-      } | null
-
-      if (!approvalRequest) continue
-
-      const eventLabels: Record<string, string> = {
-        submitted: 'Freigabe eingereicht',
-        resubmitted: 'Erneut eingereicht',
-        approved: 'Freigabe erteilt',
-        changes_requested: 'Korrektur angefragt',
-        content_updated: 'Inhalt aktualisiert',
+      if (!isAdmin) {
+        eventsQuery = eventsQuery.eq('approval_requests.created_by', userId)
+        briefsQuery = briefsQuery.eq('created_by', userId)
+        adsQuery = adsQuery.eq('created_by', userId)
       }
 
-      activities.push({
-        id: `event-${event.id}`,
-        type: 'approval_event',
-        label: eventLabels[event.event_type as string] ?? event.event_type,
-        subtitle:
-          [approvalRequest.content_title, approvalRequest.customer_name].filter(Boolean).join(' - ') || null,
-        link: '/tools/approvals',
-        created_at: event.created_at,
-      })
+      const [eventsResult, briefsResult, adsResult] = await Promise.allSettled([
+        eventsQuery,
+        briefsQuery,
+        adsQuery,
+      ])
+
+      const activities: DashboardActivityItem[] = []
+
+      if (eventsResult.status === 'fulfilled' && !eventsResult.value.error) {
+        for (const event of eventsResult.value.data ?? []) {
+          const approvalRequestValue = event.approval_requests as unknown
+          const approvalRequest = (
+            Array.isArray(approvalRequestValue)
+              ? approvalRequestValue[0]
+              : approvalRequestValue
+          ) as {
+            customer_name: string | null
+            content_title: string | null
+          } | null
+
+          if (!approvalRequest) continue
+
+          const eventLabels: Record<string, string> = {
+            submitted: 'Freigabe eingereicht',
+            resubmitted: 'Erneut eingereicht',
+            approved: 'Freigabe erteilt',
+            changes_requested: 'Korrektur angefragt',
+            content_updated: 'Inhalt aktualisiert',
+          }
+
+          activities.push({
+            id: `event-${event.id}`,
+            type: 'approval_event',
+            label: eventLabels[event.event_type as string] ?? event.event_type,
+            subtitle:
+              [approvalRequest.content_title, approvalRequest.customer_name].filter(Boolean).join(' - ') || null,
+            link: '/tools/approvals',
+            created_at: event.created_at,
+          })
+        }
+      }
+
+      if (briefsResult.status === 'fulfilled' && !briefsResult.value.error) {
+        for (const brief of briefsResult.value.data ?? []) {
+          activities.push({
+            id: `brief-${brief.id}`,
+            type: 'content_brief',
+            label: 'Content Brief erstellt',
+            subtitle: brief.keyword ?? null,
+            link: `/tools/content-briefs?briefId=${brief.id}`,
+            created_at: brief.created_at,
+          })
+        }
+      }
+
+      if (adsResult.status === 'fulfilled' && !adsResult.value.error) {
+        for (const ad of adsResult.value.data ?? []) {
+          const briefing = ad.briefing as Record<string, unknown> | null
+          const product = typeof briefing?.product === 'string' ? briefing.product : 'Unbenannt'
+          activities.push({
+            id: `ad-${ad.id}`,
+            type: 'ad_generation',
+            label: 'Ad-Text generiert',
+            subtitle: product,
+            link: '/tools/ad-generator',
+            created_at: ad.created_at,
+          })
+        }
+      }
+
+      activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+      return {
+        modules,
+        stats: {
+          pendingApprovals: approvalsCountResult.count ?? 0,
+          briefs: briefsCountResult.count ?? 0,
+          customers: customersCountResult.count ?? 0,
+          ads: adsCountResult.count ?? 0,
+        },
+        activities: activities.slice(0, 10),
+      }
     }
-  }
-
-  if (briefsResult.status === 'fulfilled' && !briefsResult.value.error) {
-    for (const brief of briefsResult.value.data ?? []) {
-      activities.push({
-        id: `brief-${brief.id}`,
-        type: 'content_brief',
-        label: 'Content Brief erstellt',
-        subtitle: brief.keyword ?? null,
-        link: `/tools/content-briefs?briefId=${brief.id}`,
-        created_at: brief.created_at,
-      })
-    }
-  }
-
-  if (adsResult.status === 'fulfilled' && !adsResult.value.error) {
-    for (const ad of adsResult.value.data ?? []) {
-      const briefing = ad.briefing as Record<string, unknown> | null
-      const product = typeof briefing?.product === 'string' ? briefing.product : 'Unbenannt'
-      activities.push({
-        id: `ad-${ad.id}`,
-        type: 'ad_generation',
-        label: 'Ad-Text generiert',
-        subtitle: product,
-        link: '/tools/ad-generator',
-        created_at: ad.created_at,
-      })
-    }
-  }
-
-  activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-
-  return {
-    modules,
-    stats: {
-      pendingApprovals: approvalsCountResult.count ?? 0,
-      briefs: briefsCountResult.count ?? 0,
-      customers: customersCountResult.count ?? 0,
-      ads: adsCountResult.count ?? 0,
-    },
-    activities: activities.slice(0, 10),
-  }
+  )
 }

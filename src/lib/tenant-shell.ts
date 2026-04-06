@@ -1,5 +1,6 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { isOnboardingComplete } from '@/lib/profile'
 import { requireTenantContext } from '@/lib/tenant'
 import { getActiveModuleCodes } from '@/lib/module-access'
@@ -44,6 +45,51 @@ export interface TenantShellContext {
     isComplete: boolean
   }
   activeModuleCodes: string[]
+}
+
+type TenantShellContextCacheEntry = {
+  expiresAt: number
+  value: TenantShellContext
+}
+
+const TENANT_SHELL_CONTEXT_TTL_MS = 15_000
+const TENANT_SHELL_CONTEXT_MAX_ENTRIES = 200
+const tenantShellContextCache = new Map<string, TenantShellContextCacheEntry>()
+const tenantShellContextInflight = new Map<string, Promise<TenantShellContext>>()
+
+function readTenantShellContextCache(key: string): TenantShellContext | undefined {
+  const entry = tenantShellContextCache.get(key)
+  if (!entry) return undefined
+
+  if (entry.expiresAt <= Date.now()) {
+    tenantShellContextCache.delete(key)
+    return undefined
+  }
+
+  return entry.value
+}
+
+function writeTenantShellContextCache(key: string, value: TenantShellContext) {
+  if (tenantShellContextCache.size >= TENANT_SHELL_CONTEXT_MAX_ENTRIES) {
+    const now = Date.now()
+    for (const [entryKey, entry] of tenantShellContextCache.entries()) {
+      if (entry.expiresAt <= now) {
+        tenantShellContextCache.delete(entryKey)
+      }
+    }
+
+    if (tenantShellContextCache.size >= TENANT_SHELL_CONTEXT_MAX_ENTRIES) {
+      const oldestKey = tenantShellContextCache.keys().next().value
+      if (oldestKey) {
+        tenantShellContextCache.delete(oldestKey)
+      }
+    }
+  }
+
+  tenantShellContextCache.set(key, {
+    expiresAt: Date.now() + TENANT_SHELL_CONTEXT_TTL_MS,
+    value,
+  })
 }
 
 /**
@@ -107,28 +153,41 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
     throw new Error('User not authenticated.')
   }
 
-  try {
+  const cacheKey = `${tenant.id}:${user.id}`
+  const cachedContext = readTenantShellContextCache(cacheKey)
+  if (cachedContext) {
+    return cachedContext
+  }
+
+  const inflightContext = tenantShellContextInflight.get(cacheKey)
+  if (inflightContext) {
+    return inflightContext
+  }
+
+  const loadContext = (async (): Promise<TenantShellContext> => {
+    const admin = createAdminClient()
+
     const [
       { data: tenantRecord, error: tenantError },
       { data: membership, error: membershipError },
       profileResult,
       activeModuleCodes,
     ] = await Promise.all([
-      supabase
+      admin
         .from('tenants')
         .select(
           'id, name, slug, logo_url, billing_company, billing_street, billing_zip, billing_city, billing_country, billing_vat_id, billing_onboarding_completed_at'
         )
         .eq('id', tenant.id)
         .single(),
-      supabase
+      admin
         .from('tenant_members')
         .select('role, status, onboarding_completed_at')
         .eq('tenant_id', tenant.id)
         .eq('user_id', user.id)
         .eq('status', 'active')
         .single(),
-      supabase
+      admin
         .from('user_profiles')
         .select('first_name, last_name, avatar_url, notify_on_approval_decision')
         .eq('user_id', user.id)
@@ -148,7 +207,7 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
       | null = profileResult.data
 
     if (isMissingNotifyPreferenceColumn(profileResult.error)) {
-      const fallbackProfile = await supabase
+      const fallbackProfile = await admin
         .from('user_profiles')
         .select('first_name, last_name, avatar_url')
         .eq('user_id', user.id)
@@ -171,7 +230,7 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
       onboardingCompletedAt: membershipData.onboarding_completed_at,
     })
 
-    return {
+    const resolvedContext = {
       tenant: {
         id: tenantData.id,
         slug: tenantData.slug,
@@ -201,8 +260,18 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
         isComplete: onboardingComplete,
       },
       activeModuleCodes,
-    }
+    } satisfies TenantShellContext
+
+    writeTenantShellContextCache(cacheKey, resolvedContext)
+    return resolvedContext
+  })()
+
+  tenantShellContextInflight.set(cacheKey, loadContext)
+
+  try {
+    return await loadContext
   } catch (error) {
+    tenantShellContextInflight.delete(cacheKey)
     // Fallback to mock data for development
     if (process.env.NODE_ENV === 'development') {
       return {
@@ -238,5 +307,9 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
       }
     }
     throw error
+  }
+
+  finally {
+    tenantShellContextInflight.delete(cacheKey)
   }
 })
