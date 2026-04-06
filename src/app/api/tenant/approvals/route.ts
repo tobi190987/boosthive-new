@@ -8,6 +8,7 @@ import {
   loadContentForApproval,
   updateContentApprovalStatus,
 } from '@/lib/approvals'
+import { sendApprovalRequest } from '@/lib/email'
 
 const statusFilterSchema = z.enum(['pending_approval', 'approved', 'changes_requested'])
 const contentTypeFilterSchema = z.enum(APPROVAL_CONTENT_TYPES)
@@ -21,6 +22,38 @@ const createApprovalSchema = z.object({
 function buildApprovalLink(request: NextRequest, token: string): string {
   const origin = request.nextUrl.origin
   return `${origin}/approval/${token}`
+}
+
+async function tryNotifyCustomerByEmail(
+  admin: ReturnType<typeof import('@/lib/supabase-admin').createAdminClient>,
+  tenantId: string,
+  customerId: string | null,
+  contentTitle: string,
+  contentType: string,
+  approvalLink: string
+): Promise<void> {
+  if (!customerId) return
+  try {
+    const [customerResult, tenantResult] = await Promise.all([
+      admin.from('customers').select('contact_email, name').eq('id', customerId).maybeSingle(),
+      admin.from('tenants').select('name, slug').eq('id', tenantId).maybeSingle(),
+    ])
+    const customer = customerResult.data
+    const tenant = tenantResult.data
+    if (!customer?.contact_email || !tenant) return
+    const contentTypeLabel = contentType === 'content_brief' ? 'Content Brief' : 'Ad-Text'
+    void sendApprovalRequest({
+      to: customer.contact_email,
+      tenantName: tenant.name,
+      tenantSlug: tenant.slug,
+      customerName: customer.name,
+      contentTitle,
+      contentTypeLabel,
+      approvalLink,
+    }).catch((err) => console.error('[approval] Kunden-E-Mail konnte nicht gesendet werden:', err))
+  } catch (err) {
+    console.error('[approval] Fehler beim Laden der Kunden-E-Mail:', err)
+  }
 }
 
 function buildDisplayName(profile: { first_name: string | null; last_name: string | null } | null): string {
@@ -234,10 +267,13 @@ export async function POST(request: NextRequest) {
       status: 'pending_approval',
     })
 
+    const resubmitLink = buildApprovalLink(request, updated.public_token)
+    void tryNotifyCustomerByEmail(admin, tenantId, content.customerId, content.title, content_type, resubmitLink)
+
     return NextResponse.json({
       approval_id: updated.id,
       approval_status: 'pending_approval',
-      approval_link: buildApprovalLink(request, updated.public_token),
+      approval_link: resubmitLink,
     })
   }
 
@@ -276,11 +312,14 @@ export async function POST(request: NextRequest) {
     status: 'pending_approval',
   })
 
+  const insertedLink = buildApprovalLink(request, inserted.public_token)
+  void tryNotifyCustomerByEmail(admin, tenantId, content.customerId, content.title, content_type, insertedLink)
+
   return NextResponse.json(
     {
       approval_id: inserted.id,
       approval_status: 'pending_approval',
-      approval_link: buildApprovalLink(request, inserted.public_token),
+      approval_link: insertedLink,
     },
     { status: 201 }
   )

@@ -62,6 +62,7 @@ interface CustomerExtended {
   created_at: string
   updated_at: string
   industry?: string
+  contact_email?: string | null
   logo_url?: string
   internal_notes?: string
 }
@@ -70,6 +71,7 @@ interface CustomerFormData {
   name: string
   domain: string
   industry: string
+  contact_email: string
   internal_notes: string
   status: 'active' | 'paused'
 }
@@ -131,6 +133,7 @@ export function CustomerDetailWorkspace({
     name: customer.name,
     domain: customer.domain ?? '',
     industry: customer.industry ?? '',
+    contact_email: customer.contact_email ?? '',
     internal_notes: customer.internal_notes ?? '',
     status: customer.status,
   })
@@ -156,6 +159,7 @@ export function CustomerDetailWorkspace({
       name: customer.name,
       domain: customer.domain ?? '',
       industry: customer.industry ?? '',
+      contact_email: customer.contact_email ?? '',
       internal_notes: customer.internal_notes ?? '',
       status: customer.status,
     })
@@ -218,6 +222,7 @@ export function CustomerDetailWorkspace({
           name: form.name,
           domain: form.domain || null,
           industry: form.industry || null,
+          contact_email: form.contact_email || null,
           status: form.status,
         }),
       })
@@ -492,6 +497,20 @@ export function CustomerDetailWorkspace({
                         placeholder="https://www.beispiel.de"
                       />
                     </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="contact_email">Kontakt-E-Mail (für Freigabe-Links)</Label>
+                    <Input
+                      id="contact_email"
+                      type="email"
+                      value={form.contact_email}
+                      onChange={(e) => setForm({ ...form, contact_email: e.target.value })}
+                      placeholder="kunde@beispiel.de"
+                    />
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      Wenn hinterlegt, erhält der Kunde automatisch eine E-Mail wenn ein Freigabe-Link erstellt wird.
+                    </p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">

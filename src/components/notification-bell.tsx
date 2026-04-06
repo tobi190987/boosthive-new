@@ -78,6 +78,17 @@ export function NotificationBell() {
     }
   }
 
+  const handleMarkAllRead = async () => {
+    try {
+      await fetch('/api/tenant/notifications/read-all', { method: 'PATCH' })
+      setNotifications((prev) =>
+        prev.map((n) => (n.read_at ? n : { ...n, read_at: new Date().toISOString() }))
+      )
+    } catch {
+      // silent
+    }
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -96,8 +107,17 @@ export function NotificationBell() {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0 rounded-2xl">
-        <div className="border-b border-slate-100 px-4 py-3 dark:border-[#252d3a]">
+        <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-[#252d3a]">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Benachrichtigungen</p>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={handleMarkAllRead}
+              className="text-xs text-blue-600 hover:underline dark:text-blue-400"
+            >
+              Alle gelesen
+            </button>
+          )}
         </div>
         <div className="max-h-80 overflow-y-auto">
           {notifications.length === 0 ? (

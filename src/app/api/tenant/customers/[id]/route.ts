@@ -14,6 +14,7 @@ const updateCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Name ist erforderlich.').max(200).optional(),
   domain: z.string().trim().max(500).nullable().optional(),
   industry: z.string().trim().max(200).nullable().optional(),
+  contact_email: z.string().trim().email('Ungültige E-Mail-Adresse.').nullable().optional(),
   internal_notes: z.string().trim().max(5000).nullable().optional(),
   status: z.enum(['active', 'paused']).optional(),
 })
@@ -95,6 +96,7 @@ export async function PUT(
   if (parsed.data.name !== undefined) updates.name = parsed.data.name
   if (parsed.data.domain !== undefined) updates.domain = parsed.data.domain
   if (parsed.data.industry !== undefined) updates.industry = parsed.data.industry
+  if (parsed.data.contact_email !== undefined) updates.contact_email = parsed.data.contact_email
   if (parsed.data.internal_notes !== undefined) updates.internal_notes = parsed.data.internal_notes
   if (parsed.data.status !== undefined) updates.status = parsed.data.status
 
@@ -106,14 +108,15 @@ export async function PUT(
     .eq('id', id)
     .is('deleted_at', null)
     .select(`
-      id, 
-      name, 
-      domain, 
+      id,
+      name,
+      domain,
       industry,
+      contact_email,
       logo_url,
       internal_notes,
-      status, 
-      created_at, 
+      status,
+      created_at,
       updated_at
     `)
     .single()

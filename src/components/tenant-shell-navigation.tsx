@@ -30,6 +30,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
+import { GlobalCommandPalette } from '@/components/global-command-palette'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { writeSessionCache } from '@/lib/client-cache'
 import type { TenantShellContext } from '@/lib/tenant-shell'
@@ -53,26 +54,36 @@ interface ToolNavItem {
   children?: ToolNavItem[]
 }
 
-const TOOLS: ToolNavItem[] = [
+const TOOL_GROUPS: { label: string; items: ToolNavItem[] }[] = [
   {
-    label: 'SEO Analyse',
-    href: '/tools/seo-analyse',
-    icon: BarChart3,
-    moduleCode: 'seo_analyse',
-    children: [
+    label: 'Analyse & SEO',
+    items: [
       {
-        label: 'Keywordranking',
-        href: '/tools/keywords',
-        icon: Search,
+        label: 'SEO Analyse',
+        href: '/tools/seo-analyse',
+        icon: BarChart3,
         moduleCode: 'seo_analyse',
+        children: [
+          {
+            label: 'Keywordranking',
+            href: '/tools/keywords',
+            icon: Search,
+            moduleCode: 'seo_analyse',
+          },
+        ],
       },
+      { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
+      { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
     ],
   },
-  { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
-  { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
-  { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
-  { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
-  { label: 'Freigaben', href: '/tools/approvals', icon: CheckSquare, moduleCode: 'content_briefs' },
+  {
+    label: 'Content & Kampagnen',
+    items: [
+      { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
+      { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
+      { label: 'Freigaben', href: '/tools/approvals', icon: CheckSquare, moduleCode: 'content_briefs' },
+    ],
+  },
 ]
 
 function roleLabel(role: TenantShellContext['membership']['role']) {
@@ -421,6 +432,7 @@ function NavigationContent({
           </div>
         </Link>
       </div>
+      <GlobalCommandPalette />
     </>
   )
 }

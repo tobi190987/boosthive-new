@@ -19,7 +19,7 @@ import {
 
 export const maxDuration = 120
 
-const DEFAULT_MODEL = 'openai/gpt-4o-mini'
+const DEFAULT_MODEL = 'openai/gpt-4o'
 const MAX_API_RETRIES = 2
 
 type FieldValue = string | string[]

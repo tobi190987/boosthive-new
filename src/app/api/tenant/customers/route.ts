@@ -14,6 +14,7 @@ const createCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Name ist erforderlich.').max(200),
   domain: z.string().trim().max(500).nullable().optional(),
   industry: z.string().trim().max(200).nullable().optional(),
+  contact_email: z.string().trim().email('Ungültige E-Mail-Adresse.').nullable().optional(),
   status: z.enum(['active', 'paused']).default('active'),
 })
 
@@ -31,14 +32,15 @@ export async function GET(request: NextRequest) {
   const { data, error } = await admin
     .from('customers')
     .select(`
-      id, 
-      name, 
-      domain, 
+      id,
+      name,
+      domain,
       industry,
+      contact_email,
       logo_url,
       internal_notes,
-      status, 
-      created_at, 
+      status,
+      created_at,
       updated_at
     `)
     .eq('tenant_id', tenantId)
@@ -75,7 +77,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: firstDetail ?? 'Validierungsfehler.', details }, { status: 400 })
   }
 
-  const { name, domain, industry, status } = parsed.data
+  const { name, domain, industry, contact_email, status } = parsed.data
   const admin = createAdminClient()
 
   // Check for duplicate domain within same tenant (only if domain is provided)
@@ -103,17 +105,19 @@ export async function POST(request: NextRequest) {
       name,
       domain: domain ?? null,
       industry: industry ?? null,
+      contact_email: contact_email ?? null,
       status,
     })
     .select(`
-      id, 
-      name, 
-      domain, 
+      id,
+      name,
+      domain,
       industry,
+      contact_email,
       logo_url,
       internal_notes,
-      status, 
-      created_at, 
+      status,
+      created_at,
       updated_at
     `)
     .single()

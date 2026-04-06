@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { renderApprovalDecisionEmail } from '@/emails/approval-decision'
+import { renderApprovalRequestEmail } from '@/emails/approval-request'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { renderInvitationEmail } from '@/emails/invitation'
 import { renderModuleBookedEmail } from '@/emails/module-booked'
@@ -47,6 +48,16 @@ interface SendInvitationOptions {
   invitationUrl: string
   invitedByName: string
   token?: string
+}
+
+interface SendApprovalRequestOptions {
+  to: string
+  tenantName: string
+  tenantSlug: string
+  customerName: string
+  contentTitle: string
+  contentTypeLabel: string
+  approvalLink: string
 }
 
 interface SendApprovalDecisionOptions {
@@ -326,6 +337,34 @@ export async function sendModuleBooked({
     html,
     text,
     category: 'module-booked',
+  })
+}
+
+export async function sendApprovalRequest({
+  to,
+  tenantName,
+  tenantSlug,
+  customerName,
+  contentTitle,
+  contentTypeLabel,
+  approvalLink,
+}: SendApprovalRequestOptions): Promise<void> {
+  const { subject, html, text } = renderApprovalRequestEmail({
+    tenantName,
+    customerName,
+    contentTitle,
+    contentTypeLabel,
+    approvalLink,
+  })
+
+  await sendEmail({
+    to,
+    tenantName,
+    tenantSlug,
+    subject,
+    html,
+    text,
+    category: 'approval-request',
   })
 }
 
