@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { Clock, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -239,19 +239,6 @@ export function AdGeneratorWorkspace() {
           </p>
         </div>
         <div className="flex gap-2">
-          {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={() => {
-                setView('history')
-                router.replace(pathname, { scroll: false })
-              }}
-            >
-              <Clock className="mr-2 h-4 w-4" />
-              History
-            </Button>
-          )}
           {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
             <Button
               className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
