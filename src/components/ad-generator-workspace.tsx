@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertCircle,
@@ -10,11 +10,12 @@ import {
   Clock,
   Copy,
   Download,
-  Filter,
   Loader2,
   Megaphone,
   Plus,
   RefreshCw,
+  RotateCcw,
+  Search,
   Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -231,6 +232,9 @@ export function AdGeneratorWorkspace() {
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyFilterCustomer, setHistoryFilterCustomer] = useState<string>('all')
   const [historyFilterPlatform, setHistoryFilterPlatform] = useState<PlatformId | 'all'>('all')
+  const [historySearch, setHistorySearch] = useState('')
+  const [historyFilterDate, setHistoryFilterDate] = useState<'all' | '7d' | '30d' | '90d'>('all')
+  const hasAutoNavigated = useRef(false)
   const hideNavigationActions = view === 'results' && currentApprovalStatus === 'changes_requested'
 
   // Sync wizard customer with global selector
@@ -251,6 +255,15 @@ export function AdGeneratorWorkspace() {
       const plat = historyFilterPlatform !== 'all' ? historyFilterPlatform : undefined
       const data = await apiGetHistory(cid, plat)
       setHistory(data)
+      if (
+        !hasAutoNavigated.current &&
+        data.length === 0 &&
+        historyFilterCustomer === 'all' &&
+        historyFilterPlatform === 'all'
+      ) {
+        hasAutoNavigated.current = true
+        setView('wizard')
+      }
     } catch {
       toast({ title: 'Fehler', description: 'History konnte nicht geladen werden.', variant: 'destructive' })
     } finally {
@@ -388,7 +401,10 @@ export function AdGeneratorWorkspace() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Ad Generator</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Ad Generator</h1>
+            <Badge variant="secondary" className="rounded-full text-[10px] px-2 py-0.5 self-center font-mono">DE</Badge>
+          </div>
           <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             KI-gestützte Anzeigentexte für Facebook, LinkedIn, TikTok und Google Ads
           </p>
@@ -470,6 +486,10 @@ export function AdGeneratorWorkspace() {
           setFilterCustomer={setHistoryFilterCustomer}
           filterPlatform={historyFilterPlatform}
           setFilterPlatform={setHistoryFilterPlatform}
+          search={historySearch}
+          setSearch={setHistorySearch}
+          filterDate={historyFilterDate}
+          setFilterDate={setHistoryFilterDate}
           onOpen={openGeneration}
           onNew={resetWizard}
         />
@@ -986,7 +1006,33 @@ function Step4Customer({
 // GENERATING VIEW
 // ═══════════════════════════════════════════════════════════════════════════════
 
+const GENERATING_PHASES = [
+  'Briefing wird analysiert...',
+  'KI erstellt Ad-Texte...',
+  'Zeichenlimits werden geprüft...',
+  'Fast fertig...',
+]
+const GENERATING_PHASE_DELAYS = [2500, 14000, 8000]
+
 function GeneratingView({ platforms }: { platforms: PlatformId[] }) {
+  const [phaseIndex, setPhaseIndex] = useState(0)
+
+  useEffect(() => {
+    let current = 0
+    const timers: ReturnType<typeof setTimeout>[] = []
+    function advance() {
+      current++
+      if (current < GENERATING_PHASES.length) {
+        setPhaseIndex(current)
+        if (current < GENERATING_PHASE_DELAYS.length) {
+          timers.push(setTimeout(advance, GENERATING_PHASE_DELAYS[current]))
+        }
+      }
+    }
+    timers.push(setTimeout(advance, GENERATING_PHASE_DELAYS[0]))
+    return () => timers.forEach(clearTimeout)
+  }, [])
+
   return (
     <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
       <CardContent className="flex flex-col items-center gap-6 p-8 py-16 text-center">
@@ -997,9 +1043,22 @@ function GeneratingView({ platforms }: { platforms: PlatformId[] }) {
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
             Ad-Texte werden generiert...
           </h2>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Die KI erstellt für jede Plattform optimierte Anzeigentexte.
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 transition-all">
+            {GENERATING_PHASES[phaseIndex]}
           </p>
+          <div className="mt-4 flex justify-center gap-1.5">
+            {GENERATING_PHASES.map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'h-1.5 w-6 rounded-full transition-colors duration-500',
+                  i <= phaseIndex
+                    ? 'bg-blue-500 dark:bg-blue-400'
+                    : 'bg-slate-100 dark:bg-slate-800'
+                )}
+              />
+            ))}
+          </div>
         </div>
         <div className="flex flex-wrap justify-center gap-2">
           {platforms.map((pid) => (
@@ -1049,6 +1108,12 @@ function ResultsView({
   const [approvalInfo, setApprovalInfo] = useState<ApprovalInfo | null>(null)
   const [editableResult, setEditableResult] = useState<GenerationResult>(result)
   const [savingEdits, setSavingEdits] = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+  const [regeneratingVariant, setRegeneratingVariant] = useState<{
+    platformId: string
+    adTypeId: string
+    variantIndex: number
+  } | null>(null)
 
   // Use detail briefing if available (from history), otherwise wizard state
   const product = detail?.briefing?.product ?? wizardBriefing.product
@@ -1208,7 +1273,7 @@ function ResultsView({
     }
   }
 
-  const canEdit = approvalInfo?.status === 'changes_requested'
+  const canEdit = approvalInfo !== null && approvalInfo.status !== 'approved'
 
   return (
     <div className="space-y-6">
@@ -1258,24 +1323,26 @@ function ResultsView({
                     {savingEdits ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Änderungen speichern
                   </Button>
-                  <Button
-                    className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
-                    onClick={() => void persistEdits(true)}
-                    disabled={savingEdits}
-                  >
-                    {savingEdits ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                    Speichern & zur Freigabe senden
-                  </Button>
+                  {approvalInfo?.status === 'changes_requested' && (
+                    <Button
+                      className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                      onClick={() => void persistEdits(true)}
+                      disabled={savingEdits}
+                    >
+                      {savingEdits ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                      Speichern & zur Freigabe senden
+                    </Button>
+                  )}
                 </div>
               )}
               {approvalInfo?.history && approvalInfo.history.length > 0 && (
-                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-[#252d3a] dark:bg-[#151c28]">
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                     Freigabeverlauf
                   </p>
                   <div className="space-y-3">
                     {approvalInfo.history.map((entry) => (
-                      <div key={entry.id} className="border-l-2 border-slate-200 pl-3">
+                      <div key={entry.id} className="border-l-2 border-slate-200 pl-3 dark:border-[#2d3847]">
                         <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
                           {entry.event_type === 'submitted'
                             ? 'Freigabe angefordert'
@@ -1311,9 +1378,28 @@ function ResultsView({
                 <Button
                   variant="outline"
                   className="rounded-full"
-                  onClick={() => window.open(exportUrl(generationId), '_blank')}
+                  disabled={exportLoading}
+                  onClick={async () => {
+                    setExportLoading(true)
+                    try {
+                      const res = await fetch(exportUrl(generationId))
+                      if (!res.ok) throw new Error('Export fehlgeschlagen')
+                      const blob = await res.blob()
+                      const url = URL.createObjectURL(blob)
+                      const a = document.createElement('a')
+                      a.href = url
+                      const safeName = (detail?.briefing?.product ?? '').replace(/[^a-z0-9äöü]/gi, '_').slice(0, 40) || 'ads'
+                      a.download = `ads_${safeName}_${new Date().toISOString().slice(0, 10)}.xlsx`
+                      a.click()
+                      URL.revokeObjectURL(url)
+                    } catch {
+                      toast({ title: 'Fehler', description: 'Excel-Export fehlgeschlagen.', variant: 'destructive' })
+                    } finally {
+                      setExportLoading(false)
+                    }
+                  }}
                 >
-                  <Download className="mr-2 h-4 w-4" />
+                  {exportLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
                   Excel herunterladen
                 </Button>
               )}
@@ -1353,7 +1439,7 @@ function ResultsView({
               </div>
               {platform.label}
             </h3>
-            <Accordion type="multiple" className="space-y-3" defaultValue={relevantAdTypes.map((at) => at.id)}>
+            <Accordion type="multiple" className="space-y-3" defaultValue={relevantAdTypes[0] ? [relevantAdTypes[0].id] : []}>
               {relevantAdTypes.map((adType) => {
                 const adTypeResult = platformResult[adType.id]
                 if (!adTypeResult) return null
@@ -1374,8 +1460,68 @@ function ResultsView({
                           <TabsTrigger value="1">Variante 2</TabsTrigger>
                           <TabsTrigger value="2">Variante 3</TabsTrigger>
                         </TabsList>
-                        {adTypeResult.variants.map((variant, vIdx) => (
+                        {adTypeResult.variants.map((variant, vIdx) => {
+                          const variantLabels = ['Nutzenorientiert', 'Hook-lastig', 'Vertrauensbasiert']
+                          const isRegenerating =
+                            regeneratingVariant?.platformId === pid &&
+                            regeneratingVariant.adTypeId === adType.id &&
+                            regeneratingVariant.variantIndex === vIdx
+                          return (
                           <TabsContent key={vIdx} value={String(vIdx)}>
+                            <div className="flex items-center justify-between mb-3">
+                              <span className="text-xs italic text-slate-400 dark:text-slate-500">
+                                {variantLabels[vIdx]}
+                              </span>
+                              {generationId && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 rounded-full px-2 text-xs text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+                                  disabled={!!regeneratingVariant}
+                                  onClick={async () => {
+                                    setRegeneratingVariant({ platformId: pid, adTypeId: adType.id, variantIndex: vIdx })
+                                    try {
+                                      const res = await fetch(`/api/tenant/ad-generator/${generationId}/regenerate`, {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ platformId: pid, adTypeId: adType.id, variantIndex: vIdx }),
+                                      })
+                                      if (!res.ok) {
+                                        const err = await res.json().catch(() => ({}))
+                                        throw new Error(err.error || 'Neu-Generierung fehlgeschlagen')
+                                      }
+                                      const data = await res.json()
+                                      setEditableResult((current) => ({
+                                        ...current,
+                                        [pid]: {
+                                          ...current[pid],
+                                          [adType.id]: {
+                                            ...current[pid]?.[adType.id],
+                                            variants: current[pid]?.[adType.id]?.variants.map((v, i) =>
+                                              i === vIdx ? (data.variant as VariantFields) : v
+                                            ) as [VariantFields, VariantFields, VariantFields],
+                                          },
+                                        },
+                                      }))
+                                      toast({ title: 'Neu generiert', description: `Variante ${vIdx + 1} wurde ersetzt.` })
+                                    } catch (err) {
+                                      toast({
+                                        title: 'Fehler',
+                                        description: err instanceof Error ? err.message : 'Neu-Generierung fehlgeschlagen.',
+                                        variant: 'destructive',
+                                      })
+                                    } finally {
+                                      setRegeneratingVariant(null)
+                                    }
+                                  }}
+                                >
+                                  {isRegenerating
+                                    ? <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                                    : <RotateCcw className="mr-1.5 h-3 w-3" />}
+                                  Neu generieren
+                                </Button>
+                              )}
+                            </div>
                             <div className="space-y-3">
                               {adType.fields.map((field) => {
                                 const value = variant[field.name]
@@ -1425,7 +1571,8 @@ function ResultsView({
                               </div>
                             </div>
                           </TabsContent>
-                        ))}
+                          )
+                        })}
                       </Tabs>
                     </AccordionContent>
                   </AccordionItem>
@@ -1526,6 +1673,10 @@ interface HistoryViewProps {
   setFilterCustomer: (id: string) => void
   filterPlatform: PlatformId | 'all'
   setFilterPlatform: (p: PlatformId | 'all') => void
+  search: string
+  setSearch: (s: string) => void
+  filterDate: 'all' | '7d' | '30d' | '90d'
+  setFilterDate: (d: 'all' | '7d' | '30d' | '90d') => void
   onOpen: (id: string) => void
   onNew: () => void
 }
@@ -1538,15 +1689,41 @@ function HistoryView({
   setFilterCustomer,
   filterPlatform,
   setFilterPlatform,
+  search,
+  setSearch,
+  filterDate,
+  setFilterDate,
   onOpen,
   onNew,
 }: HistoryViewProps) {
+  const filtered = history
+    .filter((item) => !search || item.product.toLowerCase().includes(search.toLowerCase()))
+    .filter((item) => {
+      if (filterDate === 'all') return true
+      const days = filterDate === '7d' ? 7 : filterDate === '30d' ? 30 : 90
+      return new Date(item.created_at) >= new Date(Date.now() - days * 86_400_000)
+    })
+
   return (
     <div className="space-y-4">
       {/* Filters */}
       <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
         <CardContent className="p-4 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <Label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">
+                Suche
+              </Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                <Input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Produkt suchen..."
+                  className="rounded-xl pl-8"
+                />
+              </div>
+            </div>
             <div className="flex-1">
               <Label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">
                 Kunde
@@ -1583,8 +1760,24 @@ function HistoryView({
                 </SelectContent>
               </Select>
             </div>
+            <div className="flex-1">
+              <Label className="text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5 block">
+                Zeitraum
+              </Label>
+              <Select value={filterDate} onValueChange={(v) => setFilterDate(v as 'all' | '7d' | '30d' | '90d')}>
+                <SelectTrigger className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle</SelectItem>
+                  <SelectItem value="7d">Letzte 7 Tage</SelectItem>
+                  <SelectItem value="30d">Letzte 30 Tage</SelectItem>
+                  <SelectItem value="90d">Letzte 90 Tage</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <Button
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700 shrink-0"
               onClick={onNew}
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -1600,6 +1793,13 @@ function HistoryView({
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-24 w-full rounded-2xl" />
           ))}
+        </div>
+      )}
+
+      {/* No results (filters active) */}
+      {!loading && history.length > 0 && filtered.length === 0 && (
+        <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
+          Keine Generierungen für diese Filtereinstellungen gefunden.
         </div>
       )}
 
@@ -1630,9 +1830,9 @@ function HistoryView({
       )}
 
       {/* History list */}
-      {!loading && history.length > 0 && (
+      {!loading && filtered.length > 0 && (
         <div className="space-y-3">
-          {history.map((item) => (
+          {filtered.map((item) => (
             <button
               key={item.id}
               type="button"
