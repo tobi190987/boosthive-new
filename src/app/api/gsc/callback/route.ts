@@ -6,7 +6,7 @@
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { getOAuthNonceCookieName, verifyOAuthState } from '@/lib/gsc-oauth'
+import { verifyOAuthState } from '@/lib/gsc-oauth'
 import { exchangeCodeForTokens, getGoogleEmail } from '@/lib/gsc-oauth'
 import { encryptToken } from '@/lib/gsc-crypto'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -83,27 +83,15 @@ export async function GET(request: NextRequest) {
   }
 
   const tenantSlug = tenant.slug
-  const nonceCookieName = getOAuthNonceCookieName(payload.nonce)
-  const nonceCookie = request.cookies.get(nonceCookieName)
-
-  if (!nonceCookie || nonceCookie.value !== userId) {
-    return NextResponse.redirect(
-      buildRedirectUrl(tenantSlug, projectId, 'error', 'invalid_oauth_session')
-    )
-  }
 
   if (error === 'access_denied') {
-    const response = NextResponse.redirect(
+    return NextResponse.redirect(
       buildRedirectUrl(tenantSlug, projectId, 'error', 'access_denied')
     )
-    response.cookies.delete(nonceCookieName)
-    return response
   }
 
   if (!code) {
-    const response = NextResponse.json({ error: 'Ungültige Callback-Parameter.' }, { status: 400 })
-    response.cookies.delete(nonceCookieName)
-    return response
+    return NextResponse.json({ error: 'Ungültige Callback-Parameter.' }, { status: 400 })
   }
 
   try {
@@ -111,11 +99,9 @@ export async function GET(request: NextRequest) {
     const tokens = await exchangeCodeForTokens(code)
 
     if (!tokens.refresh_token) {
-      const response = NextResponse.redirect(
+      return NextResponse.redirect(
         buildRedirectUrl(tenantSlug, projectId, 'error', 'no_refresh_token')
       )
-      response.cookies.delete(nonceCookieName)
-      return response
     }
 
     // Get Google account email
@@ -147,24 +133,18 @@ export async function GET(request: NextRequest) {
 
     if (dbError) {
       console.error('[gsc/callback] DB error:', dbError)
-      const response = NextResponse.redirect(
+      return NextResponse.redirect(
         buildRedirectUrl(tenantSlug, projectId, 'error', toSafeErrorCode(dbError.message))
       )
-      response.cookies.delete(nonceCookieName)
-      return response
     }
 
-    const response = NextResponse.redirect(
+    return NextResponse.redirect(
       buildRedirectUrl(tenantSlug, projectId, 'connected')
     )
-    response.cookies.delete(nonceCookieName)
-    return response
   } catch (err) {
     console.error('[gsc/callback] Error:', err)
-    const response = NextResponse.redirect(
+    return NextResponse.redirect(
       buildRedirectUrl(tenantSlug, projectId, 'error', toSafeErrorCode(err))
     )
-    response.cookies.delete(nonceCookieName)
-    return response
   }
 }

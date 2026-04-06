@@ -14,7 +14,6 @@ import {
   buildAuthorizationUrl,
   createOAuthState,
   generateNonce,
-  getOAuthNonceCookieName,
 } from '@/lib/gsc-oauth'
 
 const paramsSchema = z.object({
@@ -72,21 +71,7 @@ export async function POST(
     })
 
     const url = buildAuthorizationUrl(state)
-    const response = NextResponse.json({ url })
-    const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? ''
-    const isLocalhost = rootDomain.startsWith('localhost')
-    response.cookies.set(getOAuthNonceCookieName(nonce), authResult.auth.userId, {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      domain:
-        process.env.NODE_ENV === 'production' && rootDomain && !isLocalhost
-          ? `.${rootDomain}`
-          : undefined,
-      path: '/api/gsc/callback',
-      maxAge: 10 * 60,
-    })
-    return response
+    return NextResponse.json({ url })
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'OAuth-Flow konnte nicht gestartet werden.'

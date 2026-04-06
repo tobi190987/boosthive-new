@@ -980,27 +980,27 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
-          <TabsTrigger value="rankings" className="rounded-full data-[state=active]:bg-white">
+          <TabsTrigger value="rankings" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
             Rankings
           </TabsTrigger>
-          <TabsTrigger value="keywords" className="rounded-full data-[state=active]:bg-white">
+          <TabsTrigger value="keywords" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             Keywords
           </TabsTrigger>
-          <TabsTrigger value="competitors" className="rounded-full data-[state=active]:bg-white">
+          <TabsTrigger value="competitors" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             Wettbewerber
           </TabsTrigger>
           {gscReady === true && (
-            <TabsTrigger value="all-rankings" className="rounded-full data-[state=active]:bg-white">
+            <TabsTrigger value="all-rankings" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
               <Globe className="mr-1.5 h-3.5 w-3.5" />
               Alle Rankings
             </TabsTrigger>
           )}
-          <TabsTrigger value="settings" className="rounded-full data-[state=active]:bg-white">
+          <TabsTrigger value="settings" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             <Settings className="mr-1.5 h-3.5 w-3.5" />
             Einstellungen
           </TabsTrigger>
-          <TabsTrigger value="integrations" className="rounded-full data-[state=active]:bg-white">
+          <TabsTrigger value="integrations" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             <Link2 className="mr-1.5 h-3.5 w-3.5" />
             Integrationen
           </TabsTrigger>

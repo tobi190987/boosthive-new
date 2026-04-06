@@ -293,6 +293,7 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname === '/api/auth/password-reset/confirm' ||
     pathname.startsWith('/api/access') ||
     pathname.startsWith('/api/public/approval/') ||
+    pathname.startsWith('/api/gsc/') ||
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
