@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 import { redirect } from 'next/navigation'
-import { TenantAppShell } from '@/components/tenant-app-shell'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 
 export default async function ToolsLayout({ children }: { children: ReactNode }) {
@@ -10,15 +9,5 @@ export default async function ToolsLayout({ children }: { children: ReactNode })
     redirect('/onboarding')
   }
 
-  return (
-    <TenantAppShell
-      context={context}
-      eyebrow="Tools"
-      title="Tools"
-      description="Nutze KI-gestützte Marketing-Tools für deinen Workspace."
-      showHeader={false}
-    >
-      {children}
-    </TenantAppShell>
-  )
+  return <>{children}</>
 }

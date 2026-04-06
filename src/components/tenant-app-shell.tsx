@@ -6,9 +6,9 @@ import type { TenantShellContext } from '@/lib/tenant-shell'
 
 interface TenantAppShellProps {
   context: TenantShellContext
-  eyebrow: string
-  title: string
-  description: string
+  eyebrow?: string
+  title?: string
+  description?: string
   showHeader?: boolean
   children: ReactNode
 }
@@ -30,7 +30,7 @@ export function TenantAppShell({
             <TenantMobileHeader context={context} />
             <main className="flex-1 px-4 py-5 sm:px-6 lg:px-8">
               <div className="mx-auto max-w-7xl space-y-6">
-                {showHeader ? (
+                {showHeader && eyebrow && title && description ? (
                   <TenantShellHeader
                     context={context}
                     eyebrow={eyebrow}

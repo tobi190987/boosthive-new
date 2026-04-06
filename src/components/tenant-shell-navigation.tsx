@@ -1,7 +1,7 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useRef, useState, type ComponentType } from 'react'
+import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
@@ -107,6 +107,23 @@ function NavigationContent({
   const activeCustomerId = activeCustomer?.id ?? null
   const sections = tenantNav(context)
   const prefetchedTargets = useRef(new Set<string>())
+  const [changesRequestedCount, setChangesRequestedCount] = useState(0)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchChangesRequested() {
+      try {
+        const res = await fetch('/api/tenant/approvals?status=changes_requested', { credentials: 'include' })
+        if (!res.ok || cancelled) return
+        const data = await res.json()
+        if (!cancelled) setChangesRequestedCount((data.approvals ?? []).length)
+      } catch {
+        // silent
+      }
+    }
+    void fetchChangesRequested()
+    return () => { cancelled = true }
+  }, [])
 
   const prefetchJson = useCallback(async (url: string, cacheKey?: string, select?: (data: unknown) => unknown) => {
     const res = await fetch(url, { credentials: 'include' })
@@ -275,7 +292,14 @@ function NavigationContent({
                         {tool.label}
                       </span>
                       {hasAccess ? (
-                        <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                        <span className="flex items-center gap-2">
+                          {tool.href === '/tools/approvals' && changesRequestedCount > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                              {changesRequestedCount}
+                            </span>
+                          )}
+                          <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                        </span>
                       ) : (
                         <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
                       )}

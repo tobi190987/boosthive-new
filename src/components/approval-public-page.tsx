@@ -10,6 +10,7 @@ import {
   Loader2,
   MessageSquare,
   Pencil,
+  Printer,
   Type,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
@@ -412,12 +413,24 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
             </div>
           )}
           </div>
-          <Badge
-            variant="outline"
-            className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
-          >
-            {contentTypeLabel}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+            >
+              {contentTypeLabel}
+            </Badge>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-xl text-slate-400 hover:text-slate-700 print:hidden"
+              onClick={() => window.print()}
+              title="Drucken / Als PDF speichern"
+            >
+              <Printer className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
 
         {/* Success confirmation */}
@@ -571,9 +584,16 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                     placeholder="Bitte beschreiben Sie Ihre Änderungswünsche (min. 10 Zeichen)..."
                     className="min-h-[120px] rounded-xl"
                   />
-                  {feedback.length > 0 && feedback.length < 10 && (
-                    <p className="text-xs text-red-500">Mindestens 10 Zeichen erforderlich ({feedback.length}/10)</p>
-                  )}
+                  <div className="flex items-center justify-between">
+                    {feedback.length > 0 && feedback.length < 10 ? (
+                      <p className="text-xs text-red-500">Mindestens 10 Zeichen erforderlich ({feedback.length}/10)</p>
+                    ) : (
+                      <span />
+                    )}
+                    <p className={`text-xs ${feedback.length >= 10 ? 'text-slate-400' : 'text-slate-300'}`}>
+                      {feedback.length} Zeichen
+                    </p>
+                  </div>
                   <div className="flex gap-3">
                     <Button
                       onClick={handleRequestChanges}
