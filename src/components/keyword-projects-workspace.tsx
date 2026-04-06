@@ -351,6 +351,7 @@ interface KeywordProjectsWorkspaceProps {
   role: WorkspaceRole
   initialProjectId?: string | null
   initialTab?: string | null
+  initialProjects?: KeywordProject[]
 }
 
 function buildKeywordProjectUrl(projectId: string, tab: string) {
@@ -369,6 +370,7 @@ export function KeywordProjectsWorkspace({
   role,
   initialProjectId = null,
   initialTab = null,
+  initialProjects = [],
 }: KeywordProjectsWorkspaceProps) {
   const [view, setView] = useState<View>(() => {
     if (initialProjectId) {
@@ -387,6 +389,7 @@ export function KeywordProjectsWorkspace({
       {view.type === 'list' && (
         <ProjectList
           role={role}
+          initialProjects={initialProjects}
           onOpenProject={(id) => {
             setView({ type: 'detail', projectId: id })
             if (typeof window !== 'undefined') {
@@ -418,14 +421,19 @@ export function KeywordProjectsWorkspace({
 
 interface ProjectListProps {
   role: WorkspaceRole
+  initialProjects?: KeywordProject[]
   onOpenProject: (id: string) => void
 }
 
-function ProjectList({ role, onOpenProject }: ProjectListProps) {
+function ProjectList({
+  role,
+  initialProjects = [],
+  onOpenProject,
+}: ProjectListProps) {
   const { toast } = useToast()
   const { activeCustomer } = useActiveCustomer()
-  const [projects, setProjects] = useState<KeywordProject[]>([])
-  const [loading, setLoading] = useState(true)
+  const [projects, setProjects] = useState<KeywordProject[]>(initialProjects)
+  const [loading, setLoading] = useState(initialProjects.length === 0)
   const [error, setError] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const customerCacheKey = `${PROJECT_LIST_CACHE_PREFIX}${activeCustomer?.id ?? 'all'}`
@@ -448,13 +456,27 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
   }, [activeCustomer, customerCacheKey])
 
   useEffect(() => {
+    if (!activeCustomer && initialProjects.length > 0) {
+      writeSessionCache(customerCacheKey, initialProjects)
+    }
+  }, [activeCustomer, customerCacheKey, initialProjects])
+
+  useEffect(() => {
     const cachedProjects = readSessionCache<KeywordProject[]>(customerCacheKey)
     if (cachedProjects) {
       setProjects(cachedProjects)
       setLoading(false)
+      return
     }
-    loadProjects()
-  }, [customerCacheKey, loadProjects])
+
+    if (!activeCustomer && initialProjects.length > 0) {
+      setProjects(initialProjects)
+      setLoading(false)
+      return
+    }
+
+    void loadProjects()
+  }, [activeCustomer, customerCacheKey, initialProjects, loadProjects])
 
   const isAdmin = role === 'admin'
   const atLimit = projects.length >= PROJECT_LIMIT
@@ -2857,8 +2879,8 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
   const [days, setDays] = useState<'7' | '28' | '90'>('28')
   const [limitReached, setLimitReached] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [sortKey, setSortKey] = useState<DiscoverySortKey>('clicks')
-  const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [sortKey, setSortKey] = useState<DiscoverySortKey>('position')
+  const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [visibleCount, setVisibleCount] = useState(ROWS_PER_PAGE)
   const [addingKeywords, setAddingKeywords] = useState<Set<string>>(new Set())
 
@@ -2907,7 +2929,7 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
       setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))
     } else {
       setSortKey(key)
-      setSortDir(key === 'keyword' ? 'asc' : 'desc')
+      setSortDir(key === 'keyword' || key === 'position' ? 'asc' : 'desc')
     }
   }
 

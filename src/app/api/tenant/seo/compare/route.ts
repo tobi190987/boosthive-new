@@ -159,12 +159,16 @@ async function analyzeUrlOrDomain(
 
   if (safeUrls.length === 0) return analyzeSingleUrl(url)
 
-  // Analyse in batches of 5 (same pattern as existing SEO tool)
+  // Analyse in small batches to reduce bot-protection triggers on stricter hosts.
   const results: SeoPageResult[] = []
-  for (let i = 0; i < safeUrls.length; i += 5) {
-    const batch = safeUrls.slice(i, i + 5)
+  for (let i = 0; i < safeUrls.length; i += 2) {
+    const batch = safeUrls.slice(i, i + 2)
     const batchResults = await Promise.all(batch.map(analyzeSingleUrl))
     results.push(...batchResults)
+
+    if (i + 2 < safeUrls.length) {
+      await new Promise((resolve) => setTimeout(resolve, 900))
+    }
   }
 
   return aggregatePageResults(url, results)

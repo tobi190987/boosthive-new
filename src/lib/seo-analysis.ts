@@ -71,6 +71,18 @@ export function formatCountLabel(count: number, singular: string, plural: string
 const USER_AGENT =
   'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36'
 
+const ANTI_BOT_MARKERS = [
+  'verifying your connection',
+  'verify you are human',
+  'checking your browser before accessing',
+  'just a moment...',
+  'attention required!',
+  'cf-browser-verification',
+  'cf-challenge',
+  'cloudflare',
+  'security check to access',
+]
+
 function stripHtml(text: string) {
   return decodeHtmlEntities(text.replace(/<[^>]*>/g, '')).replace(/\s+/g, ' ').trim()
 }
@@ -108,6 +120,11 @@ function decodeHtmlEntities(text: string) {
 
     return namedEntities[normalized] ?? entity
   })
+}
+
+function looksLikeAntiBotPage(html: string) {
+  const normalized = decodeHtmlEntities(html).toLowerCase()
+  return ANTI_BOT_MARKERS.some((marker) => normalized.includes(marker))
 }
 
 function extractTitle(html: string) {
@@ -299,6 +316,12 @@ export async function fetchPage(url: string): Promise<{ html: string; status?: n
 
       if (response.ok) {
         const html = await response.text()
+        if (looksLikeAntiBotPage(html)) {
+          return {
+            error: 'Seite blockiert automatisierte Anfragen (Bot-Schutz erkannt)',
+            status: 403,
+          }
+        }
         // BUG-5: warn if page HTML is very large (> 2 MB)
         if (html.length > 2 * 1024 * 1024) {
           return { html, status: response.status, warning: 'Seite sehr groß — Ergebnisse möglicherweise unvollständig.' }
@@ -310,6 +333,12 @@ export async function fetchPage(url: string): Promise<{ html: string; status?: n
       const contentType = response.headers.get('content-type') ?? ''
       if (contentType.includes('text/html')) {
         const html = await response.text()
+        if (looksLikeAntiBotPage(html)) {
+          return {
+            error: 'Seite blockiert automatisierte Anfragen (Bot-Schutz erkannt)',
+            status: response.status,
+          }
+        }
         // Only use if it looks like real page content (not just an error page with minimal HTML)
         if (html.length > 1000 && /<body/i.test(html)) {
           return { html, status: response.status }

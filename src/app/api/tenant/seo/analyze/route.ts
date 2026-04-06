@@ -18,7 +18,7 @@ async function analyzeInBatches(
   urls: string[],
   analysisId: string,
   admin: ReturnType<typeof createAdminClient>,
-  batchSize = 5
+  batchSize = 2
 ) {
   const results: SeoPageResult[] = []
 
@@ -77,7 +77,7 @@ async function analyzeInBatches(
     await admin.from('seo_analyses').update({ pages_crawled: results.length }).eq('id', analysisId)
 
     if (index + batchSize < urls.length) {
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      await new Promise((resolve) => setTimeout(resolve, 900))
     }
   }
 
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
 
     const firstUrl = urlsToAnalyze[0]
     const [pages, firstHtml] = await Promise.all([
-      analyzeInBatches(urlsToAnalyze, analysisId, admin, 5),
+      analyzeInBatches(urlsToAnalyze, analysisId, admin, 2),
       firstUrl ? fetchPage(firstUrl).then((result) => (result && 'html' in result ? result.html : '')) : Promise.resolve(''),
     ])
 
