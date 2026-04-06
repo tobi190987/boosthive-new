@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CreditCard,
   Eye,
+  FileImage,
   FileText,
   LayoutDashboard,
   Loader2,
@@ -85,6 +86,7 @@ const TOOL_GROUPS: { label: string; items: ToolNavItem[] }[] = [
     items: [
       { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
       { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
+      { label: 'Ads Bibliothek', href: '/tools/ads-library', icon: FileImage, moduleCode: 'ad_generator' },
       { label: 'Freigaben', href: '/tools/approvals', icon: CheckSquare, moduleCode: 'content_briefs' },
     ],
   },
@@ -126,10 +128,6 @@ function NavigationContent({
   const prefetchedTargets = useRef(new Set<string>())
   const [openApprovalsCount] = useState(initialOpenApprovalsCount)
   const [pendingHref, setPendingHref] = useState<string | null>(null)
-
-  useEffect(() => {
-    setPendingHref(null)
-  }, [pathname])
 
   const prefetchJson = useCallback(async (url: string, cacheKey?: string, select?: (data: unknown) => unknown) => {
     const res = await fetch(url, { credentials: 'include' })
@@ -185,6 +183,16 @@ function NavigationContent({
         )
       }
 
+      if (href === '/tools/ads-library') {
+        tasks.push(
+          prefetchJson(
+            `/api/tenant/ad-library${customerQuery}`,
+            `ad-library:list:${customerId}:all`,
+            (data) => (data as { assets?: unknown[] }).assets ?? []
+          )
+        )
+      }
+
       if (href === '/tools/ai-performance') {
         tasks.push(
           prefetchJson(
@@ -212,11 +220,15 @@ function NavigationContent({
 
   const handleNavigate = useCallback(
     (href: string) => {
-      setPendingHref(href)
+      if (href !== pathname) {
+        setPendingHref(href)
+      }
       onNavigate?.()
     },
-    [onNavigate]
+    [onNavigate, pathname]
   )
+
+  const visiblePendingHref = pendingHref && isNavActive(pathname, pendingHref) ? null : pendingHref
 
   return (
     <>
@@ -266,7 +278,7 @@ function NavigationContent({
                   <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                   Dashboard
                 </span>
-                {pendingHref === '/dashboard' ? (
+                {visiblePendingHref === '/dashboard' ? (
                   <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
                 ) : (
                   <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
@@ -318,7 +330,7 @@ function NavigationContent({
                                 {openApprovalsCount}
                               </span>
                             )}
-                            {pendingHref === tool.href ? (
+                            {visiblePendingHref === tool.href ? (
                               <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
                             ) : (
                               <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
