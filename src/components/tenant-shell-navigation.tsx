@@ -244,121 +244,125 @@ function NavigationContent({
 
       <nav className="flex-1 px-3 py-3" aria-label="Tenant Navigation">
         <div className="space-y-6">
-          <div>
-            <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
-              Workspace
-            </p>
-            <ul className="space-y-1">
-              {/* Dashboard */}
-              <li>
-                <Link
-                  href="/dashboard"
-                  onClick={onNavigate}
-                  onMouseEnter={() => router.prefetch('/dashboard')}
-                  onFocus={() => router.prefetch('/dashboard')}
-                  className={cn(
-                    'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
-                    isNavActive(pathname, '/dashboard')
-                      ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
-                  )}
-                  aria-current={isNavActive(pathname, '/dashboard') ? 'page' : undefined}
-                >
-                  <span className="flex items-center gap-3">
-                    <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
-                    Dashboard
-                  </span>
-                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                </Link>
-              </li>
+          {/* Dashboard — alleinstehend ohne Label */}
+          <ul className="space-y-1">
+            <li>
+              <Link
+                href="/dashboard"
+                onClick={onNavigate}
+                onMouseEnter={() => router.prefetch('/dashboard')}
+                onFocus={() => router.prefetch('/dashboard')}
+                className={cn(
+                  'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
+                  isNavActive(pathname, '/dashboard')
+                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
+                )}
+                aria-current={isNavActive(pathname, '/dashboard') ? 'page' : undefined}
+              >
+                <span className="flex items-center gap-3">
+                  <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                  Dashboard
+                </span>
+                <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+              </Link>
+            </li>
+          </ul>
 
-              {/* Tools — direkte Menüpunkte */}
-              {TOOLS.map((tool) => {
-                const hasAccess = context.activeModuleCodes.includes(tool.moduleCode)
-                const active = isNavActive(pathname, tool.href)
+          {/* Tool-Gruppen */}
+          {TOOL_GROUPS.map((group) => (
+            <div key={group.label}>
+              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+                {group.label}
+              </p>
+              <ul className="space-y-1">
+                {group.items.map((tool) => {
+                  const hasAccess = context.activeModuleCodes.includes(tool.moduleCode)
+                  const active = isNavActive(pathname, tool.href)
 
-                return (
-                  <li key={tool.href}>
-                    <Link
-                      href={tool.href}
-                      onClick={onNavigate}
-                      onMouseEnter={() => prefetchModule(tool.href)}
-                      onFocus={() => prefetchModule(tool.href)}
-                      className={cn(
-                        'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
-                        active
-                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-                          : hasAccess
-                            ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
-                            : 'text-slate-400 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-[#1e2635]/40'
-                      )}
-                      aria-current={active ? 'page' : undefined}
-                    >
-                      <span className="flex items-center gap-3">
-                        {hasAccess ? (
-                          <tool.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
-                        ) : (
-                          <Lock className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                  return (
+                    <li key={tool.href}>
+                      <Link
+                        href={tool.href}
+                        onClick={onNavigate}
+                        onMouseEnter={() => prefetchModule(tool.href)}
+                        onFocus={() => prefetchModule(tool.href)}
+                        className={cn(
+                          'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
+                          active
+                            ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+                            : hasAccess
+                              ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
+                              : 'text-slate-400 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-[#1e2635]/40'
                         )}
-                        {tool.label}
-                      </span>
-                      {hasAccess ? (
-                        <span className="flex items-center gap-2">
-                          {tool.href === '/tools/approvals' && changesRequestedCount > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
-                              {changesRequestedCount}
-                            </span>
+                        aria-current={active ? 'page' : undefined}
+                      >
+                        <span className="flex items-center gap-3">
+                          {hasAccess ? (
+                            <tool.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                          ) : (
+                            <Lock className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                           )}
-                          <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                          {tool.label}
                         </span>
-                      ) : (
-                        <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
-                      )}
-                    </Link>
+                        {hasAccess ? (
+                          <span className="flex items-center gap-2">
+                            {tool.href === '/tools/approvals' && changesRequestedCount > 0 && (
+                              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                                {changesRequestedCount}
+                              </span>
+                            )}
+                            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                          </span>
+                        ) : (
+                          <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                        )}
+                      </Link>
 
-                    {tool.children && tool.children.length > 0 && (
-                      <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-3 dark:border-[#252d3a]">
-                        {tool.children.map((child) => {
-                          const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
-                          const childActive = isNavActive(pathname, child.href)
+                      {tool.children && tool.children.length > 0 && (
+                        <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-3 dark:border-[#252d3a]">
+                          {tool.children.map((child) => {
+                            const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
+                            const childActive = isNavActive(pathname, child.href)
 
-                          return (
-                            <li key={child.href}>
-                              <Link
-                                href={child.href}
-                                onClick={onNavigate}
-                                onMouseEnter={() => prefetchModule(child.href)}
-                                onFocus={() => prefetchModule(child.href)}
-                                className={cn(
-                                  'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
-                                  childActive
-                                    ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-                                    : childHasAccess
-                                      ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
-                                      : 'text-slate-400 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-[#1e2635]/40'
-                                )}
-                                aria-current={childActive ? 'page' : undefined}
-                              >
-                                <span className="flex items-center gap-2.5">
-                                  {childHasAccess ? (
-                                    <child.icon className={cn('h-3.5 w-3.5', childActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
-                                  ) : (
-                                    <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                            return (
+                              <li key={child.href}>
+                                <Link
+                                  href={child.href}
+                                  onClick={onNavigate}
+                                  onMouseEnter={() => prefetchModule(child.href)}
+                                  onFocus={() => prefetchModule(child.href)}
+                                  className={cn(
+                                    'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
+                                    childActive
+                                      ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+                                      : childHasAccess
+                                        ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
+                                        : 'text-slate-400 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-[#1e2635]/40'
                                   )}
-                                  {child.label}
-                                </span>
-                                {!childHasAccess && <Lock className="h-3 w-3 text-slate-300 dark:text-slate-600" />}
-                              </Link>
-                            </li>
-                          )
-                        })}
-                      </ul>
-                    )}
-                  </li>
-                )
-              })}
-            </ul>
-          </div>
+                                  aria-current={childActive ? 'page' : undefined}
+                                >
+                                  <span className="flex items-center gap-2.5">
+                                    {childHasAccess ? (
+                                      <child.icon className={cn('h-3.5 w-3.5', childActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                                    ) : (
+                                      <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                                    )}
+                                    {child.label}
+                                  </span>
+                                  {!childHasAccess && <Lock className="h-3 w-3 text-slate-300 dark:text-slate-600" />}
+                                </Link>
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      )}
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          ))}
 
           {sections.administration.length > 0 && (
             <div>
