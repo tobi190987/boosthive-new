@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation'
 import { TenantAppShell } from '@/components/tenant-app-shell'
 import { TenantProfileWorkspace } from '@/components/tenant-profile-workspace'
+import { getTenantShellSummary } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 
 export default async function OnboardingPage() {
   const context = await requireTenantShellContext()
+  const shellSummary = await getTenantShellSummary(context.tenant.id, context.user.id)
 
   if (context.onboarding.isComplete) {
     redirect('/dashboard')
@@ -13,6 +15,7 @@ export default async function OnboardingPage() {
   return (
     <TenantAppShell
       context={context}
+      shellSummary={shellSummary}
       eyebrow="Onboarding"
       title="Richte dein Profil und euren Workspace ein"
       description="Beim ersten Login sammeln wir die Pflichtdaten für dein Profil. Admins hinterlegen zusätzlich die verpflichtenden Rechnungsdaten und Stripe."

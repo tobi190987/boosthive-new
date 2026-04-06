@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { createAdminClient } from '@/lib/supabase-admin'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 import { logSecurity } from '@/lib/observability'
 
@@ -9,6 +10,107 @@ export interface AuthContext {
   userId: string
   role: AppRole
   tenantId: string | null
+}
+
+type CachedValue<T> = {
+  expiresAt: number
+  value: T
+}
+
+type CachedMembership = {
+  tenant_id: string
+  role: AppRole
+  status: string
+} | null
+
+type CachedTenantStatus = ReturnType<typeof resolveTenantStatus> | null
+
+const AUTH_CACHE_TTL_MS = 10_000
+const AUTH_CACHE_MAX_ENTRIES = 500
+const membershipCache = new Map<string, CachedValue<CachedMembership>>()
+const tenantStatusCache = new Map<string, CachedValue<CachedTenantStatus>>()
+
+function readCache<T>(store: Map<string, CachedValue<T>>, key: string): T | undefined {
+  const entry = store.get(key)
+  if (!entry) return undefined
+
+  if (entry.expiresAt <= Date.now()) {
+    store.delete(key)
+    return undefined
+  }
+
+  return entry.value
+}
+
+function writeCache<T>(store: Map<string, CachedValue<T>>, key: string, value: T) {
+  if (store.size >= AUTH_CACHE_MAX_ENTRIES) {
+    const now = Date.now()
+    for (const [entryKey, entry] of store.entries()) {
+      if (entry.expiresAt <= now) {
+        store.delete(entryKey)
+      }
+    }
+
+    if (store.size >= AUTH_CACHE_MAX_ENTRIES) {
+      const oldestKey = store.keys().next().value
+      if (oldestKey) {
+        store.delete(oldestKey)
+      }
+    }
+  }
+
+  store.set(key, {
+    expiresAt: Date.now() + AUTH_CACHE_TTL_MS,
+    value,
+  })
+}
+
+async function loadActiveMembership(
+  tenantId: string,
+  userId: string
+): Promise<CachedMembership> {
+  const cacheKey = `${tenantId}:${userId}`
+  const cached = readCache(membershipCache, cacheKey)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const admin = createAdminClient()
+  const { data: membership } = await admin
+    .from('tenant_members')
+    .select('tenant_id, role, status')
+    .eq('user_id', userId)
+    .eq('tenant_id', tenantId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  const normalizedMembership = membership
+    ? {
+        tenant_id: membership.tenant_id,
+        role: membership.role as AppRole,
+        status: membership.status,
+      }
+    : null
+
+  writeCache(membershipCache, cacheKey, normalizedMembership)
+  return normalizedMembership
+}
+
+async function loadResolvedTenantStatus(tenantId: string): Promise<CachedTenantStatus> {
+  const cached = readCache(tenantStatusCache, tenantId)
+  if (cached !== undefined) {
+    return cached
+  }
+
+  const admin = createAdminClient()
+  const tenantStatusResult = await loadTenantStatusRecord(admin, { id: tenantId })
+  const tenantStatus = tenantStatusResult.data ? resolveTenantStatus(tenantStatusResult.data) : null
+
+  if (!tenantStatusResult.error) {
+    writeCache(tenantStatusCache, tenantId, tenantStatus)
+  }
+
+  return tenantStatus
 }
 
 export async function requireTenantUser(
@@ -34,13 +136,10 @@ export async function requireTenantUser(
     }
   }
 
-  const { data: membership } = await supabase
-    .from('tenant_members')
-    .select('tenant_id, role, status')
-    .eq('user_id', user.id)
-    .eq('tenant_id', tenantIdFromHeader)
-    .eq('status', 'active')
-    .maybeSingle()
+  const [membership, tenantStatus] = await Promise.all([
+    loadActiveMembership(tenantIdFromHeader, user.id),
+    loadResolvedTenantStatus(tenantIdFromHeader),
+  ])
 
   if (!membership) {
     logSecurity('tenant_user_access_forbidden', {
@@ -55,11 +154,7 @@ export async function requireTenantUser(
     }
   }
 
-  const tenantStatusResult = await loadTenantStatusRecord(supabase, { id: tenantIdFromHeader })
-  const tenantStatus =
-    tenantStatusResult.data ? resolveTenantStatus(tenantStatusResult.data) : null
-
-  if (tenantStatusResult.error || !tenantStatus || tenantStatus.blocksProtectedAppAccess) {
+  if (!tenantStatus || tenantStatus.blocksProtectedAppAccess) {
     logSecurity('tenant_user_access_blocked_tenant_status', {
       userId: user.id,
       tenantId: tenantIdFromHeader,

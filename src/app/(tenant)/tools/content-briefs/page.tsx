@@ -2,6 +2,7 @@ import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getContentBriefsList } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { ContentBriefsWorkspace } from '@/components/content-briefs-workspace'
 
@@ -38,5 +39,7 @@ export default async function ContentBriefsPage() {
     )
   }
 
-  return <ContentBriefsWorkspace />
+  const initialBriefs = await getContentBriefsList(context.tenant.id)
+
+  return <ContentBriefsWorkspace initialBriefs={initialBriefs} />
 }

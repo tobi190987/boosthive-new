@@ -27,6 +27,7 @@ export async function GET(
   if ('error' in moduleAccess) return moduleAccess.error
 
   const { id } = await params
+  const includeRawResults = request.nextUrl.searchParams.get('include_raw') === '1'
   const admin = createAdminClient()
   const { data, error } = await admin
     .from('visibility_analyses')
@@ -39,8 +40,7 @@ export async function GET(
     return NextResponse.json({ error: 'Analyse nicht gefunden.' }, { status: 404 })
   }
 
-  // Include raw results if the analysis is completed
-  if (data.status === 'done') {
+  if (includeRawResults && data.status === 'done') {
     const { data: rawResults } = await admin
       .from('visibility_raw_results')
       .select('*')
@@ -49,10 +49,21 @@ export async function GET(
       .order('created_at', { ascending: true })
       .limit(5000)
 
-    return NextResponse.json({ ...data, raw_results: rawResults ?? [] })
+    return NextResponse.json(
+      { ...data, raw_results: rawResults ?? [] },
+      {
+        headers: {
+          'Cache-Control': 'private, max-age=30, stale-while-revalidate=120',
+        },
+      }
+    )
   }
 
-  return NextResponse.json(data)
+  return NextResponse.json(data, {
+    headers: {
+      'Cache-Control': 'private, max-age=30, stale-while-revalidate=120',
+    },
+  })
 }
 
 export async function DELETE(

@@ -245,7 +245,11 @@ function downloadMarkdown(brief: BriefDetail) {
 
 // ─── Main component ─────────────────────────────────────────────────────────
 
-export function ContentBriefsWorkspace() {
+export function ContentBriefsWorkspace({
+  initialBriefs = [],
+}: {
+  initialBriefs?: BriefSummary[]
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -253,8 +257,8 @@ export function ContentBriefsWorkspace() {
   const { toast } = useToast()
 
   const [view, setView] = useState<View>({ type: 'list' })
-  const [briefs, setBriefs] = useState<BriefSummary[]>([])
-  const [loading, setLoading] = useState(true)
+  const [briefs, setBriefs] = useState<BriefSummary[]>(initialBriefs)
+  const [loading, setLoading] = useState(initialBriefs.length === 0)
   const [error, setError] = useState<string | null>(null)
 
   // Detail view
@@ -317,13 +321,27 @@ export function ContentBriefsWorkspace() {
   }, [briefsCacheKey, customerId])
 
   useEffect(() => {
+    if (!customerId && initialBriefs.length > 0) {
+      writeSessionCache(briefsCacheKey, initialBriefs)
+    }
+  }, [briefsCacheKey, customerId, initialBriefs])
+
+  useEffect(() => {
     const cachedBriefs = readSessionCache<BriefSummary[]>(briefsCacheKey)
     if (cachedBriefs) {
       setBriefs(cachedBriefs)
       setLoading(false)
+      return
     }
-    fetchBriefs()
-  }, [briefsCacheKey, fetchBriefs])
+
+    if (!customerId && initialBriefs.length > 0) {
+      setBriefs(initialBriefs)
+      setLoading(false)
+      return
+    }
+
+    void fetchBriefs()
+  }, [briefsCacheKey, customerId, fetchBriefs, initialBriefs])
 
   // ── Fetch detail ──────────────────────────────────────────────────────────
 

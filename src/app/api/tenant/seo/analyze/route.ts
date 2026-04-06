@@ -14,6 +14,24 @@ import { createAdminClient } from '@/lib/supabase-admin'
 
 export const maxDuration = 300
 
+function buildAnalysisConfig(
+  urls: string[],
+  crawlMode: 'single' | 'multiple' | 'full-domain',
+  maxPages: number,
+  summary?: {
+    overallScore: number
+    totalPages: number
+    completedAt: string
+  }
+) {
+  return {
+    urls,
+    crawlMode,
+    maxPages,
+    summary: summary ?? null,
+  }
+}
+
 async function analyzeInBatches(
   urls: string[],
   analysisId: string,
@@ -21,6 +39,7 @@ async function analyzeInBatches(
   batchSize = 2
 ) {
   const results: SeoPageResult[] = []
+  let lastPersistedCount = 0
 
   for (let index = 0; index < urls.length; index += batchSize) {
     const batch = urls.slice(index, index + batchSize)
@@ -74,7 +93,16 @@ async function analyzeInBatches(
 
     results.push(...batchResults)
 
-    await admin.from('seo_analyses').update({ pages_crawled: results.length }).eq('id', analysisId)
+    const shouldPersistProgress =
+      results.length === urls.length || results.length - lastPersistedCount >= batchSize * 2
+
+    if (shouldPersistProgress) {
+      await admin
+        .from('seo_analyses')
+        .update({ pages_crawled: results.length })
+        .eq('id', analysisId)
+      lastPersistedCount = results.length
+    }
 
     if (index + batchSize < urls.length) {
       await new Promise((resolve) => setTimeout(resolve, 900))
@@ -128,11 +156,7 @@ export async function POST(request: NextRequest) {
     created_by: authResult.auth.userId,
     customer_id: customerId,
     status: 'running',
-    config: {
-      urls: rawUrls,
-      crawlMode,
-      maxPages,
-    },
+    config: buildAnalysisConfig(rawUrls, crawlMode, maxPages),
     pages_crawled: 0,
     pages_total: 0,
   })
@@ -167,15 +191,21 @@ export async function POST(request: NextRequest) {
       aiInsights: buildInsights(pages),
       technicalSeo,
     }
+    const completedAt = new Date().toISOString()
 
     await admin
       .from('seo_analyses')
       .update({
         status: 'done',
         result,
+        config: buildAnalysisConfig(rawUrls, crawlMode, maxPages, {
+          overallScore,
+          totalPages: pages.length,
+          completedAt,
+        }),
         pages_crawled: pages.length,
-        completed_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        completed_at: completedAt,
+        updated_at: completedAt,
       })
       .eq('id', analysisId)
 

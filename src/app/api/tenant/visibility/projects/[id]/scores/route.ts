@@ -62,5 +62,12 @@ export async function GET(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ analysis_id: resolvedAnalysisId, scores: scores ?? [] })
+  return NextResponse.json(
+    { analysis_id: resolvedAnalysisId, scores: scores ?? [] },
+    {
+      headers: {
+        'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
+      },
+    }
+  )
 }

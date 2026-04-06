@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import type { TenantDashboardData } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
 interface DashboardModule {
@@ -40,6 +41,7 @@ interface ActivityItem {
 
 interface TenantDashboardOverviewProps {
   context: TenantShellContext
+  initialData?: TenantDashboardData
 }
 
 function getGreeting(firstName: string | null): string {
@@ -121,19 +123,24 @@ function StatCard({ label, value, icon, href, loading }: StatCardProps) {
   )
 }
 
-export function TenantDashboardOverview({ context }: TenantDashboardOverviewProps) {
+export function TenantDashboardOverview({
+  context,
+  initialData,
+}: TenantDashboardOverviewProps) {
   const router = useRouter()
   const isAdmin = context.membership.role === 'admin'
   const firstName = context.user.firstName ?? null
 
-  const [modules, setModules] = useState<DashboardModule[]>([])
-  const [modulesLoading, setModulesLoading] = useState(true)
+  const [modules, setModules] = useState<DashboardModule[]>(initialData?.modules ?? [])
+  const [modulesLoading, setModulesLoading] = useState(!initialData)
 
-  const [stats, setStats] = useState<{ pendingApprovals: number; briefs: number; customers: number; ads: number } | null>(null)
-  const [statsLoading, setStatsLoading] = useState(true)
+  const [stats, setStats] = useState<{ pendingApprovals: number; briefs: number; customers: number; ads: number } | null>(
+    initialData?.stats ?? null
+  )
+  const [statsLoading, setStatsLoading] = useState(!initialData)
 
-  const [activities, setActivities] = useState<ActivityItem[]>([])
-  const [activitiesLoading, setActivitiesLoading] = useState(true)
+  const [activities, setActivities] = useState<ActivityItem[]>(initialData?.activities ?? [])
+  const [activitiesLoading, setActivitiesLoading] = useState(!initialData)
 
   const loadModules = useCallback(async () => {
     try {
@@ -199,10 +206,12 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
   }, [])
 
   useEffect(() => {
-    void loadModules()
-    void loadStats()
-    void loadActivities()
-  }, [loadModules, loadStats, loadActivities])
+    if (!initialData) {
+      void loadModules()
+      void loadStats()
+      void loadActivities()
+    }
+  }, [initialData, loadModules, loadStats, loadActivities])
 
   const activeModules = modules.filter((m) => m.status === 'active' || m.status === 'canceling')
   const gatedModules = modules.filter((m) => m.status === 'not_subscribed' || m.status === 'canceled')

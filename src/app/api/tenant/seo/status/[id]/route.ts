@@ -1,45 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
-import { createAdminClient } from '@/lib/supabase-admin'
+import { applyServerTimingHeaders, createServerTimer } from '@/lib/observability'
+import { getSeoAnalysisStatus } from '@/lib/tenant-app-data'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const timer = createServerTimer('tenant.seo.status', {
+    path: request.nextUrl.pathname,
+  })
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) {
-    return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+    return applyServerTimingHeaders(
+      NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 }),
+      timer.finish({ failed: true, reason: 'missing_tenant_context' })
+    )
   }
 
+  const finishAuth = timer.mark('auth')
   const authResult = await requireTenantUser(tenantId)
-  if ('error' in authResult) return authResult.error
+  finishAuth()
+  if ('error' in authResult) {
+    return applyServerTimingHeaders(
+      authResult.error,
+      timer.finish({ tenantId, failed: true, reason: 'auth' })
+    )
+  }
 
+  const finishAccess = timer.mark('module_access')
   const moduleAccess = await requireTenantModuleAccess(tenantId, 'seo_analyse')
-  if ('error' in moduleAccess) return moduleAccess.error
+  finishAccess()
+  if ('error' in moduleAccess) {
+    return applyServerTimingHeaders(
+      moduleAccess.error,
+      timer.finish({ tenantId, failed: true, reason: 'module_access' })
+    )
+  }
 
   const { id } = await params
-  const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('seo_analyses')
-    .select('id, status, pages_crawled, pages_total, result, error_msg, created_at, completed_at, config')
-    .eq('tenant_id', tenantId)
-    .eq('id', id)
-    .maybeSingle()
+  try {
+    const finishLoad = timer.mark('load')
+    const data = await getSeoAnalysisStatus(tenantId, id)
+    finishLoad()
+    if (!data) {
+      return applyServerTimingHeaders(
+        NextResponse.json({ error: 'Analyse nicht gefunden.' }, { status: 404 }),
+        timer.finish({ tenantId, analysisId: id, failed: true, reason: 'not_found' })
+      )
+    }
 
-  if (error || !data) {
-    return NextResponse.json({ error: 'Analyse nicht gefunden.' }, { status: 404 })
+    return applyServerTimingHeaders(
+      NextResponse.json(data),
+      timer.finish({ tenantId, analysisId: id, status: data.status })
+    )
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Analyse konnte nicht geladen werden.'
+    return applyServerTimingHeaders(
+      NextResponse.json({ error: message }, { status: 500 }),
+      timer.finish({ tenantId, analysisId: id, failed: true })
+    )
   }
-
-  return NextResponse.json({
-    id: data.id,
-    status: data.status,
-    pagesCrawled: data.pages_crawled,
-    pagesTotal: data.pages_total,
-    result: data.result,
-    errorMsg: data.error_msg,
-    createdAt: data.created_at,
-    completedAt: data.completed_at,
-    config: data.config,
-  })
 }

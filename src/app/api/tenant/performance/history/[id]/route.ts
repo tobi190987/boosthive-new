@@ -28,5 +28,9 @@ export async function GET(
 
   if (error || !data) return NextResponse.json({ error: 'Analyse nicht gefunden.' }, { status: 404 })
 
-  return NextResponse.json(data)
+  return NextResponse.json(data, {
+    headers: {
+      'Cache-Control': 'private, max-age=60, stale-while-revalidate=300',
+    },
+  })
 }

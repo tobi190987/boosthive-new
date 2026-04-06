@@ -992,20 +992,33 @@ function VergleichTab() {
 
 // ─── Verlauf tab ──────────────────────────────────────────────────────────────
 
-function VerlaufTab() {
+function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAnalysis[] }) {
   const { activeCustomer } = useActiveCustomer()
-  const [analyses, setAnalyses] = useState<PerformanceAnalysis[]>([])
-  const [loading, setLoading] = useState(true)
+  const [analyses, setAnalyses] = useState<PerformanceAnalysis[]>(initialAnalyses)
+  const [loading, setLoading] = useState(initialAnalyses.length === 0)
   const [error, setError] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<(AnalyzeResult | CompareResult) | null>(null)
   const [openLoading, setOpenLoading] = useState(false)
   const analysesCacheKey = `ai-performance:history:${activeCustomer?.id ?? 'all'}`
 
   useEffect(() => {
+    if (!activeCustomer && initialAnalyses.length > 0) {
+      writeSessionCache(analysesCacheKey, initialAnalyses)
+    }
+  }, [activeCustomer, analysesCacheKey, initialAnalyses])
+
+  useEffect(() => {
     const cachedAnalyses = readSessionCache<PerformanceAnalysis[]>(analysesCacheKey)
     if (cachedAnalyses) {
       setAnalyses(cachedAnalyses)
       setLoading(false)
+      return
+    }
+
+    if (!activeCustomer && initialAnalyses.length > 0) {
+      setAnalyses(initialAnalyses)
+      setLoading(false)
+      return
     }
 
     const url = activeCustomer
@@ -1020,7 +1033,7 @@ function VerlaufTab() {
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Fehler beim Laden'))
       .finally(() => setLoading(false))
-  }, [activeCustomer, analysesCacheKey])
+  }, [activeCustomer, analysesCacheKey, initialAnalyses])
 
   const handleOpen = async (id: string) => {
     setOpenLoading(true)
@@ -1166,7 +1179,11 @@ function VerlaufTab() {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function AiPerformanceWorkspace() {
+export function AiPerformanceWorkspace({
+  initialAnalyses = [],
+}: {
+  initialAnalyses?: PerformanceAnalysis[]
+}) {
   const { activeCustomer } = useActiveCustomer()
   const [activeTab, setActiveTab] = useState<'analyse' | 'vergleich' | 'verlauf'>('analyse')
   const [mountedTabs, setMountedTabs] = useState<Array<'analyse' | 'vergleich' | 'verlauf'>>(['analyse'])
@@ -1218,7 +1235,7 @@ export function AiPerformanceWorkspace() {
         {...(mountedTabs.includes('verlauf') ? { forceMount: true as const } : {})}
         className="data-[state=inactive]:hidden"
       >
-        <VerlaufTab />
+        <VerlaufTab initialAnalyses={initialAnalyses} />
       </TabsContent>
     </Tabs>
   )

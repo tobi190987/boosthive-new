@@ -2,6 +2,7 @@ import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getKeywordProjectDetail, getKeywordProjectGscStatus } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { KeywordProjectsWorkspace } from '@/components/keyword-projects-workspace'
 
@@ -42,11 +43,18 @@ export default async function KeywordRankingsDetailPage({
     )
   }
 
+  const [initialProject, initialGscStatus] = await Promise.all([
+    getKeywordProjectDetail(context.tenant.id, id),
+    getKeywordProjectGscStatus(context.tenant.id, id),
+  ])
+
   return (
     <KeywordProjectsWorkspace
       role={context.membership.role}
       initialProjectId={id}
       initialTab="rankings"
+      initialProject={initialProject}
+      initialGscStatus={initialGscStatus}
     />
   )
 }

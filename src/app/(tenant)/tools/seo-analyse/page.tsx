@@ -1,8 +1,10 @@
 import { TenantToolsWorkspace } from '@/components/tenant-tools-workspace'
+import { getSeoAnalysisSummaries } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 
 export default async function SeoAnalysePage() {
   const context = await requireTenantShellContext()
+  const initialAnalyses = await getSeoAnalysisSummaries(context.tenant.id)
 
   return (
     <TenantToolsWorkspace
@@ -11,6 +13,7 @@ export default async function SeoAnalysePage() {
       tenantName={context.tenant.name}
       tenantSlug={context.tenant.slug}
       tenantLogoUrl={context.tenant.logoUrl}
+      initialAnalyses={initialAnalyses}
     />
   )
 }

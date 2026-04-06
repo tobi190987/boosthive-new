@@ -113,6 +113,20 @@ export async function GET(request: NextRequest) {
     const tokenExpiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString()
 
     // Upsert gsc_connection (1:1 per project — UNIQUE on project_id)
+    const { data: existingConnection, error: existingConnectionError } = await admin
+      .from('gsc_connections')
+      .select('selected_property')
+      .eq('project_id', projectId)
+      .eq('tenant_id', tenantId)
+      .maybeSingle()
+
+    if (existingConnectionError) {
+      console.error('[gsc/callback] Existing connection lookup error:', existingConnectionError)
+      return NextResponse.redirect(
+        buildRedirectUrl(tenantSlug, projectId, 'error', toSafeErrorCode(existingConnectionError.message))
+      )
+    }
+
     const { error: dbError } = await admin
       .from('gsc_connections')
       .upsert(
@@ -123,6 +137,7 @@ export async function GET(request: NextRequest) {
           encrypted_access_token: encryptedAccessToken,
           encrypted_refresh_token: encryptedRefreshToken,
           token_expires_at: tokenExpiresAt,
+          selected_property: existingConnection?.selected_property ?? null,
           status: 'connected',
           connected_at: new Date().toISOString(),
           connected_by: userId,

@@ -61,6 +61,81 @@ export interface SeoAnalysisSummary {
     urls: string[]
     crawlMode: SeoCrawlMode
     maxPages: number
+    summary?: {
+      overallScore: number
+      totalPages: number
+      completedAt: string
+    } | null
+  }
+}
+
+export interface SeoAnalysisConfigSummary {
+  overallScore: number
+  totalPages: number
+  completedAt: string
+}
+
+export interface SeoAnalysisConfigShape {
+  urls: string[]
+  crawlMode: SeoCrawlMode
+  maxPages: number
+  summary?: SeoAnalysisConfigSummary | null
+}
+
+export function readSeoConfigSummary(config: unknown): SeoAnalysisConfigSummary | null {
+  if (!config || typeof config !== 'object') return null
+
+  const candidate = (config as { summary?: unknown }).summary
+  if (!candidate || typeof candidate !== 'object') return null
+
+  const summary = candidate as Partial<SeoAnalysisConfigSummary>
+  if (
+    typeof summary.overallScore !== 'number' ||
+    typeof summary.totalPages !== 'number' ||
+    typeof summary.completedAt !== 'string'
+  ) {
+    return null
+  }
+
+  return {
+    overallScore: summary.overallScore,
+    totalPages: summary.totalPages,
+    completedAt: summary.completedAt,
+  }
+}
+
+export function buildSeoConfigSummary(
+  result: Pick<SeoAnalysisResult, 'overallScore' | 'totalPages'> | null | undefined,
+  completedAt: string | null | undefined
+): SeoAnalysisConfigSummary | null {
+  if (!result || typeof result.overallScore !== 'number' || typeof result.totalPages !== 'number') {
+    return null
+  }
+
+  return {
+    overallScore: result.overallScore,
+    totalPages: result.totalPages,
+    completedAt: completedAt ?? new Date().toISOString(),
+  }
+}
+
+export function withSeoConfigSummary(
+  config: unknown,
+  summary: SeoAnalysisConfigSummary | null
+): SeoAnalysisConfigShape {
+  const base =
+    config && typeof config === 'object'
+      ? (config as Partial<SeoAnalysisConfigShape>)
+      : {}
+
+  return {
+    urls: Array.isArray(base.urls) ? base.urls : [],
+    crawlMode:
+      base.crawlMode === 'single' || base.crawlMode === 'multiple' || base.crawlMode === 'full-domain'
+        ? base.crawlMode
+        : 'single',
+    maxPages: typeof base.maxPages === 'number' ? base.maxPages : 50,
+    summary,
   }
 }
 

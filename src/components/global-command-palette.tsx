@@ -43,20 +43,6 @@ const NAV_ITEMS = [
   { label: 'Kunden', href: '/tools/customers', icon: UserRound },
 ]
 
-function normalizeQuery(value: string) {
-  return value.trim().toLowerCase()
-}
-
-function matchesQuery(query: string, ...parts: Array<string | null | undefined>) {
-  const normalized = normalizeQuery(query)
-  if (!normalized) return false
-  return parts.some((part) => part?.toLowerCase().includes(normalized))
-}
-
-function limitMatches<T>(items: T[], count = 4) {
-  return items.slice(0, count)
-}
-
 export function GlobalCommandPalette() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -89,194 +75,15 @@ export function GlobalCommandPalette() {
 
     setLoading(true)
     try {
-      const [
-        approvalsRes,
-        briefsRes,
-        customersRes,
-        generationsRes,
-        keywordProjectsRes,
-        seoAnalysesRes,
-        performanceRes,
-        visibilityRes,
-      ] = await Promise.allSettled([
-        fetch('/api/tenant/approvals', { signal: controller.signal }),
-        fetch('/api/tenant/content/briefs', { signal: controller.signal }),
-        fetch('/api/tenant/customers', { signal: controller.signal }),
-        fetch('/api/tenant/ad-generator/history', { signal: controller.signal }),
-        fetch('/api/tenant/keywords/projects', { signal: controller.signal }),
-        fetch('/api/tenant/seo/analyses', { signal: controller.signal }),
-        fetch('/api/tenant/performance/history', { signal: controller.signal }),
-        fetch('/api/tenant/visibility/projects', { signal: controller.signal }),
-      ])
-
+      const res = await fetch(`/api/tenant/search?q=${encodeURIComponent(rawQuery)}`, {
+        signal: controller.signal,
+      })
       if (controller.signal.aborted) return
-
-      const items: SearchResult[] = []
-
-      if (approvalsRes.status === 'fulfilled' && approvalsRes.value.ok) {
-        const data = await approvalsRes.value.json()
-        const approvals = (data.approvals ?? []) as Array<{
-          id: string
-          content_title: string
-          customer_name?: string | null
-        }>
-        limitMatches(
-          approvals.filter((approval) =>
-            matchesQuery(rawQuery, approval.content_title, approval.customer_name ?? null)
-          )
-        ).forEach((approval) => {
-          items.push({
-            id: `approval-${approval.id}`,
-            label: approval.content_title,
-            href: '/tools/approvals',
-            group: 'Freigaben',
-            keywords: [approval.customer_name ?? ''],
-          })
-        })
-      }
-
-      if (briefsRes.status === 'fulfilled' && briefsRes.value.ok) {
-        const data = await briefsRes.value.json()
-        const briefs = (data.briefs ?? []) as Array<{ id: string; keyword: string; target_url?: string | null }>
-        limitMatches(
-          briefs.filter((brief) => matchesQuery(rawQuery, brief.keyword, brief.target_url ?? null))
-        ).forEach((brief) => {
-          items.push({
-            id: `brief-${brief.id}`,
-            label: brief.keyword,
-            href: `/tools/content-briefs?briefId=${brief.id}`,
-            group: 'Content Briefs',
-            keywords: [brief.target_url ?? ''],
-          })
-        })
-      }
-
-      if (customersRes.status === 'fulfilled' && customersRes.value.ok) {
-        const data = await customersRes.value.json()
-        const customers = (data.customers ?? []) as Array<{ id: string; name: string; domain?: string | null }>
-        limitMatches(
-          customers.filter((customer) => matchesQuery(rawQuery, customer.name, customer.domain ?? null))
-        ).forEach((customer) => {
-          items.push({
-            id: `customer-${customer.id}`,
-            label: customer.name,
-            href: '/tools/customers',
-            group: 'Kunden',
-            keywords: [customer.domain ?? ''],
-          })
-        })
-      }
-
-      if (generationsRes.status === 'fulfilled' && generationsRes.value.ok) {
-        const data = await generationsRes.value.json()
-        const generations = (data.generations ?? []) as Array<{
-          id: string
-          product: string
-          customer_name?: string | null
-        }>
-        limitMatches(
-          generations.filter((generation) =>
-            matchesQuery(rawQuery, generation.product, generation.customer_name ?? null)
-          )
-        ).forEach((generation) => {
-          items.push({
-            id: `generation-${generation.id}`,
-            label: generation.product,
-            href: `/tools/ad-generator?id=${generation.id}`,
-            group: 'Ad Generator',
-            keywords: [generation.customer_name ?? ''],
-          })
-        })
-      }
-
-      if (keywordProjectsRes.status === 'fulfilled' && keywordProjectsRes.value.ok) {
-        const data = await keywordProjectsRes.value.json()
-        const projects = (data.projects ?? []) as Array<{
-          id: string
-          name: string
-          target_domain?: string | null
-        }>
-        limitMatches(
-          projects.filter((project) => matchesQuery(rawQuery, project.name, project.target_domain ?? null))
-        ).forEach((project) => {
-          items.push({
-            id: `keyword-project-${project.id}`,
-            label: project.name,
-            href: `/tools/keywords?project=${project.id}`,
-            group: 'Keyword Rankings',
-            keywords: [project.target_domain ?? ''],
-          })
-        })
-      }
-
-      if (seoAnalysesRes.status === 'fulfilled' && seoAnalysesRes.value.ok) {
-        const analyses = (await seoAnalysesRes.value.json()) as Array<{
-          id: string
-          config?: { urls?: string[] }
-        }>
-        limitMatches(
-          analyses.filter((analysis) =>
-            matchesQuery(rawQuery, analysis.config?.urls?.[0] ?? null, ...(analysis.config?.urls ?? []))
-          )
-        ).forEach((analysis) => {
-          const primaryUrl = analysis.config?.urls?.[0] ?? 'SEO Analyse'
-          items.push({
-            id: `seo-analysis-${analysis.id}`,
-            label: primaryUrl,
-            href: `/tools/seo-analyse/${analysis.id}`,
-            group: 'SEO Analysen',
-            keywords: analysis.config?.urls ?? [],
-          })
-        })
-      }
-
-      if (performanceRes.status === 'fulfilled' && performanceRes.value.ok) {
-        const data = await performanceRes.value.json()
-        const analyses = (data.analyses ?? []) as Array<{
-          id: string
-          client_label?: string | null
-          platform?: string | null
-        }>
-        limitMatches(
-          analyses.filter((analysis) =>
-            matchesQuery(rawQuery, analysis.client_label ?? null, analysis.platform ?? null)
-          )
-        ).forEach((analysis) => {
-          items.push({
-            id: `performance-${analysis.id}`,
-            label: analysis.client_label || analysis.platform || 'AI Performance Analyse',
-            href: '/tools/ai-performance',
-            group: 'AI Performance',
-            keywords: [analysis.platform ?? ''],
-          })
-        })
-      }
-
-      if (visibilityRes.status === 'fulfilled' && visibilityRes.value.ok) {
-        const data = await visibilityRes.value.json()
-        const projects = (data.projects ?? []) as Array<{
-          id: string
-          brand_name: string
-          website_url?: string | null
-          keywords?: string[]
-        }>
-        limitMatches(
-          projects.filter((project) =>
-            matchesQuery(rawQuery, project.brand_name, project.website_url ?? null, ...(project.keywords ?? []))
-          )
-        ).forEach((project) => {
-          items.push({
-            id: `visibility-${project.id}`,
-            label: project.brand_name,
-            href: '/tools/ai-visibility',
-            group: 'AI Visibility',
-            keywords: [project.website_url ?? '', ...(project.keywords ?? [])],
-          })
-        })
-      }
+      if (!res.ok) throw new Error('Suche fehlgeschlagen')
+      const data = (await res.json()) as { results?: SearchResult[] }
 
       if (!controller.signal.aborted) {
-        setResults(items)
+        setResults(data.results ?? [])
       }
     } catch {
       // aborted or network error

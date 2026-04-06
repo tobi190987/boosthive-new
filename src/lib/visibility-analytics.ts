@@ -114,7 +114,8 @@ interface RecommendationCandidate {
 const MAX_RETRIES = 2
 const BASE_BACKOFF_MS = 1500
 
-export function getVisibilityBaseUrl(): string {
+export function getVisibilityBaseUrl(baseUrl?: string): string {
+  if (baseUrl) return baseUrl
   if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
   return 'http://localhost:3000'
@@ -122,7 +123,7 @@ export function getVisibilityBaseUrl(): string {
 
 export async function dispatchAnalyticsWorker(
   analysisId: string,
-  options?: { force?: boolean }
+  options?: { force?: boolean; baseUrl?: string }
 ): Promise<void> {
   const admin = createAdminClient()
   const workerSecret = process.env.VISIBILITY_WORKER_SECRET
@@ -134,7 +135,7 @@ export async function dispatchAnalyticsWorker(
 
   const body = { analysis_id: analysisId, force: options?.force ?? false }
 
-  fetch(`${getVisibilityBaseUrl()}/api/tenant/visibility/analytics/worker`, {
+  fetch(`${getVisibilityBaseUrl(options?.baseUrl)}/api/tenant/visibility/analytics/worker`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

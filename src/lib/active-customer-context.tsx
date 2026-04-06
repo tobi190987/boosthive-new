@@ -89,13 +89,18 @@ function writeCachedCustomers(tenantSlug: string, customers: Customer[]) {
 
 interface ActiveCustomerProviderProps {
   tenantSlug: string
+  initialCustomers?: Customer[]
   children: ReactNode
 }
 
-export function ActiveCustomerProvider({ tenantSlug, children }: ActiveCustomerProviderProps) {
-  const [customers, setCustomers] = useState<Customer[]>([])
+export function ActiveCustomerProvider({
+  tenantSlug,
+  initialCustomers = [],
+  children,
+}: ActiveCustomerProviderProps) {
+  const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [activeCustomer, setActiveCustomerState] = useState<Customer | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(initialCustomers.length === 0)
 
   const fetchCustomers = useCallback(async () => {
     try {
@@ -135,23 +140,39 @@ export function ActiveCustomerProvider({ tenantSlug, children }: ActiveCustomerP
 
   // Initial load: fetch customers + restore from localStorage
   useEffect(() => {
+    if (initialCustomers.length > 0) {
+      writeCachedCustomers(tenantSlug, initialCustomers)
+    }
+  }, [initialCustomers, tenantSlug])
+
+  useEffect(() => {
     let cancelled = false
 
     async function init() {
       const cachedCustomers = readCachedCustomers(tenantSlug)
       const savedId = localStorage.getItem(getStorageKey(tenantSlug))
 
+      const restoreActiveCustomer = (list: Customer[]) => {
+        if (!savedId) return false
+        const match = list.find((customer) => customer.id === savedId)
+        if (match) {
+          setActiveCustomerState(match)
+          return true
+        }
+        return false
+      }
+
+      if (initialCustomers.length > 0) {
+        restoreActiveCustomer(initialCustomers)
+        setLoading(false)
+        return
+      }
+
       if (cachedCustomers.length > 0) {
         setCustomers(cachedCustomers)
-
-        if (savedId) {
-          const cachedMatch = cachedCustomers.find((c) => c.id === savedId)
-          if (cachedMatch) {
-            setActiveCustomerState(cachedMatch)
-          }
-        }
-
+        restoreActiveCustomer(cachedCustomers)
         setLoading(false)
+        return
       }
 
       const list = await fetchCustomers()
@@ -159,14 +180,9 @@ export function ActiveCustomerProvider({ tenantSlug, children }: ActiveCustomerP
 
       setCustomers(list)
 
-      if (savedId) {
-        const match = list.find((c) => c.id === savedId)
-        if (match) {
-          setActiveCustomerState(match)
-        } else {
-          // Saved customer no longer exists
-          localStorage.removeItem(getStorageKey(tenantSlug))
-        }
+      if (savedId && !restoreActiveCustomer(list)) {
+        // Saved customer no longer exists
+        localStorage.removeItem(getStorageKey(tenantSlug))
       }
 
       setLoading(false)
@@ -177,7 +193,7 @@ export function ActiveCustomerProvider({ tenantSlug, children }: ActiveCustomerP
     return () => {
       cancelled = true
     }
-  }, [fetchCustomers, tenantSlug])
+  }, [fetchCustomers, initialCustomers, tenantSlug])
 
   const value = useMemo<ActiveCustomerContextValue>(
     () => ({

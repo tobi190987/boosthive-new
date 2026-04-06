@@ -21,6 +21,10 @@ interface Notification {
   created_at: string
 }
 
+interface TenantShellSummaryResponse {
+  notifications?: Notification[]
+}
+
 function formatRelativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const minutes = Math.floor(diff / 60000)
@@ -32,9 +36,9 @@ function formatRelativeTime(iso: string): string {
   return `Vor ${days} Tag${days > 1 ? 'en' : ''}`
 }
 
-export function NotificationBell() {
+export function NotificationBell({ initialNotifications = [] }: { initialNotifications?: Notification[] }) {
   const router = useRouter()
-  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
   const [open, setOpen] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -42,9 +46,9 @@ export function NotificationBell() {
 
   const fetchNotifications = useCallback(async () => {
     try {
-      const res = await fetch('/api/tenant/notifications')
+      const res = await fetch('/api/tenant/shell')
       if (!res.ok) return
-      const data = await res.json()
+      const data = (await res.json()) as TenantShellSummaryResponse
       setNotifications(data.notifications ?? [])
     } catch {
       // silent fail for polling
@@ -52,12 +56,14 @@ export function NotificationBell() {
   }, [])
 
   useEffect(() => {
-    fetchNotifications()
+    if (initialNotifications.length === 0) {
+      fetchNotifications()
+    }
     pollingRef.current = setInterval(fetchNotifications, 60_000)
     return () => {
       if (pollingRef.current) clearInterval(pollingRef.current)
     }
-  }, [fetchNotifications])
+  }, [fetchNotifications, initialNotifications.length])
 
   const handleMarkRead = async (id: string) => {
     try {

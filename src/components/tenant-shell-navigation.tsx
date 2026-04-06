@@ -13,6 +13,7 @@ import {
   Eye,
   FileText,
   LayoutDashboard,
+  Loader2,
   Lock,
   Megaphone,
   Menu,
@@ -33,10 +34,13 @@ import { cn } from '@/lib/utils'
 import { GlobalCommandPalette } from '@/components/global-command-palette'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { writeSessionCache } from '@/lib/client-cache'
+import type { ShellNotification } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
 interface TenantShellNavigationProps {
   context: TenantShellContext
+  initialOpenApprovalsCount?: number
+  initialNotifications?: ShellNotification[]
 }
 
 interface NavItem {
@@ -110,6 +114,8 @@ function isNavActive(pathname: string, href: string) {
 
 function NavigationContent({
   context,
+  initialOpenApprovalsCount = 0,
+  initialNotifications = [],
   onNavigate,
 }: TenantShellNavigationProps & { onNavigate?: () => void }) {
   const pathname = usePathname()
@@ -118,29 +124,12 @@ function NavigationContent({
   const activeCustomerId = activeCustomer?.id ?? null
   const sections = tenantNav(context)
   const prefetchedTargets = useRef(new Set<string>())
-  const [openApprovalsCount, setOpenApprovalsCount] = useState(0)
+  const [openApprovalsCount] = useState(initialOpenApprovalsCount)
+  const [pendingHref, setPendingHref] = useState<string | null>(null)
 
   useEffect(() => {
-    let cancelled = false
-    async function fetchOpenApprovals() {
-      try {
-        const res = await fetch('/api/tenant/approvals', { credentials: 'include' })
-        if (!res.ok || cancelled) return
-        const data = await res.json()
-        if (!cancelled) {
-          const openCount = ((data.approvals ?? []) as Array<{ status?: string }>).filter(
-            (approval) =>
-              approval.status === 'pending_approval' || approval.status === 'changes_requested'
-          ).length
-          setOpenApprovalsCount(openCount)
-        }
-      } catch {
-        // silent
-      }
-    }
-    void fetchOpenApprovals()
-    return () => { cancelled = true }
-  }, [])
+    setPendingHref(null)
+  }, [pathname])
 
   const prefetchJson = useCallback(async (url: string, cacheKey?: string, select?: (data: unknown) => unknown) => {
     const res = await fetch(url, { credentials: 'include' })
@@ -221,6 +210,14 @@ function NavigationContent({
     [activeCustomerId, prefetchJson, router]
   )
 
+  const handleNavigate = useCallback(
+    (href: string) => {
+      setPendingHref(href)
+      onNavigate?.()
+    },
+    [onNavigate]
+  )
+
   return (
     <>
       <div className="flex items-center gap-3 px-4 py-4">
@@ -254,7 +251,7 @@ function NavigationContent({
             <li>
               <Link
                 href="/dashboard"
-                onClick={onNavigate}
+                onClick={() => handleNavigate('/dashboard')}
                 onMouseEnter={() => router.prefetch('/dashboard')}
                 onFocus={() => router.prefetch('/dashboard')}
                 className={cn(
@@ -269,7 +266,11 @@ function NavigationContent({
                   <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                   Dashboard
                 </span>
-                <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                {pendingHref === '/dashboard' ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                )}
               </Link>
             </li>
           </ul>
@@ -289,7 +290,7 @@ function NavigationContent({
                     <li key={tool.href}>
                       <Link
                         href={tool.href}
-                        onClick={onNavigate}
+                        onClick={() => handleNavigate(tool.href)}
                         onMouseEnter={() => prefetchModule(tool.href)}
                         onFocus={() => prefetchModule(tool.href)}
                         className={cn(
@@ -317,7 +318,11 @@ function NavigationContent({
                                 {openApprovalsCount}
                               </span>
                             )}
-                            <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                            {pendingHref === tool.href ? (
+                              <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                            )}
                           </span>
                         ) : (
                           <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
@@ -334,7 +339,7 @@ function NavigationContent({
                               <li key={child.href}>
                                 <Link
                                   href={child.href}
-                                  onClick={onNavigate}
+                                  onClick={() => handleNavigate(child.href)}
                                   onMouseEnter={() => prefetchModule(child.href)}
                                   onFocus={() => prefetchModule(child.href)}
                                   className={cn(
@@ -381,7 +386,7 @@ function NavigationContent({
                     <li key={item.href}>
                       <Link
                         href={item.href}
-                        onClick={onNavigate}
+                        onClick={() => handleNavigate(item.href)}
                         onMouseEnter={() => prefetchModule(item.href)}
                         onFocus={() => prefetchModule(item.href)}
                         className={cn(
@@ -396,7 +401,11 @@ function NavigationContent({
                           <item.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                           {item.label}
                         </span>
-                        <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                        {pendingHref === item.href ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                        )}
                       </Link>
                     </li>
                   )
@@ -412,7 +421,7 @@ function NavigationContent({
       <div className="p-4 space-y-2">
         <Link
           href="/settings/profile"
-          onClick={onNavigate}
+          onClick={() => handleNavigate('/settings/profile')}
           className="block rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 dark:border-[#252d3a] dark:bg-[#151c28] dark:hover:border-[#2d3847] dark:hover:bg-[#1e2635]"
         >
           <div className="flex items-center gap-3">
@@ -435,7 +444,7 @@ function NavigationContent({
               <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel(context.membership.role)}</p>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
-              <NotificationBell />
+              <NotificationBell initialNotifications={initialNotifications} />
               <ThemeToggle className="shrink-0" />
             </div>
           </div>
@@ -479,7 +488,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <NotificationBell />
+        <NotificationBell initialNotifications={props.initialNotifications} />
         <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950/50">
           Workspace
         </Badge>

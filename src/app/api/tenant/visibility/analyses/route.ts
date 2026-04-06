@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
@@ -16,6 +16,7 @@ import {
   MIN_AI_VISIBILITY_ITERATIONS,
   normalizeAiModelId,
 } from '@/lib/ai-visibility'
+import { runVisibilityWorker } from '@/lib/visibility-worker'
 
 const MAX_CONCURRENT_ANALYSES = 2
 
@@ -152,46 +153,17 @@ export async function POST(request: NextRequest) {
   // Fire-and-forget: trigger background worker
   // Only trigger if status is 'pending' (not queued)
   if (status === 'pending') {
-    void dispatchWorker(analysis.id)
+    after(() =>
+      runVisibilityWorker(analysis.id, { baseUrl: request.nextUrl.origin }).catch((err) => {
+        console.error('[visibility-analyses] Failed to start direct worker:', err)
+        const message =
+          err instanceof Error ? `Direkter Worker-Start fehlgeschlagen: ${err.message}` : 'Direkter Worker-Start fehlgeschlagen.'
+        return markAnalysisFailed(admin, analysis.id, message)
+      })
+    )
   }
 
   return NextResponse.json({ analysis }, { status: 201 })
-}
-
-async function dispatchWorker(analysisId: string): Promise<void> {
-  const admin = createAdminClient()
-  const workerSecret = process.env.VISIBILITY_WORKER_SECRET
-  if (!workerSecret) {
-    await markAnalysisFailed(admin, analysisId, 'VISIBILITY_WORKER_SECRET ist nicht konfiguriert.')
-    return
-  }
-
-  const workerUrl = `${getWorkerBaseUrl()}/api/tenant/visibility/worker`
-  fetch(workerUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-worker-secret': workerSecret,
-    },
-    body: JSON.stringify({ analysis_id: analysisId }),
-  })
-    .then(async (response) => {
-      if (response.ok) return
-
-      const body = await response.json().catch(() => ({}))
-      const message =
-        typeof body.error === 'string'
-          ? body.error
-          : `Worker-Start fehlgeschlagen (${response.status}).`
-
-      await markAnalysisFailed(admin, analysisId, message)
-    })
-    .catch(async (err) => {
-      const message =
-        err instanceof Error ? err.message : 'Worker konnte nicht gestartet werden.'
-
-      await markAnalysisFailed(admin, analysisId, message)
-    })
 }
 
 async function markAnalysisFailed(
@@ -208,11 +180,4 @@ async function markAnalysisFailed(
     })
     .eq('id', analysisId)
     .in('status', ['pending', 'running'])
-}
-
-function getWorkerBaseUrl(): string {
-  // In production, use the app URL; locally, use localhost
-  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL
-  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`
-  return 'http://localhost:3000'
 }

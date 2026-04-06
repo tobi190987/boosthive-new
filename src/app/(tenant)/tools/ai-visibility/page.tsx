@@ -2,6 +2,7 @@ import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { getVisibilityProjectsList } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { AiVisibilityWorkspace } from '@/components/ai-visibility-workspace'
 
@@ -37,5 +38,12 @@ export default async function AiVisibilityPage() {
     )
   }
 
-  return <AiVisibilityWorkspace role={context.membership.role} />
+  const initialProjects = await getVisibilityProjectsList(context.tenant.id)
+
+  return (
+    <AiVisibilityWorkspace
+      role={context.membership.role}
+      initialProjects={initialProjects}
+    />
+  )
 }

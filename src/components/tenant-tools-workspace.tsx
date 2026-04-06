@@ -49,6 +49,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { SeoCompareWorkspace } from '@/components/seo-compare-workspace'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
+import type { SeoAnalysisStatusPayload } from '@/lib/tenant-app-data'
 
 type WorkspaceRole = 'admin' | 'member'
 type View =
@@ -1546,17 +1547,21 @@ function SeoAnalysisWorkspace({
   tenantSlug,
   tenantLogoUrl,
   initialAnalysisId,
+  initialAnalyses = [],
+  initialAnalysisStatus = null,
 }: {
   tenantName: string
   tenantSlug: string
   tenantLogoUrl: string | null
   initialAnalysisId?: string
+  initialAnalyses?: SeoAnalysisSummary[]
+  initialAnalysisStatus?: SeoAnalysisStatusPayload | null
 }) {
   const router = useRouter()
   const { activeCustomer } = useActiveCustomer()
   const [view, setView] = useState<View>({ type: 'list' })
-  const [analyses, setAnalyses] = useState<SeoAnalysisSummary[]>([])
-  const [loading, setLoading] = useState(true)
+  const [analyses, setAnalyses] = useState<SeoAnalysisSummary[]>(initialAnalyses)
+  const [loading, setLoading] = useState(initialAnalyses.length === 0)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(Boolean(initialAnalysisId))
@@ -1683,8 +1688,14 @@ function SeoAnalysisWorkspace({
   )
 
   useEffect(() => {
+    if (!activeCustomer && initialAnalyses.length > 0) {
+      setAnalyses(initialAnalyses)
+      setLoading(false)
+      return
+    }
+
     void loadAnalyses()
-  }, [loadAnalyses])
+  }, [activeCustomer, initialAnalyses, loadAnalyses])
 
   useEffect(() => {
     try {
@@ -1726,6 +1737,20 @@ function SeoAnalysisWorkspace({
     }
 
     let cancelled = false
+
+    if (initialAnalysisStatus?.id === initialAnalysisId) {
+      if (initialAnalysisStatus.status === 'running') {
+        setView({ type: 'running', analysisId: initialAnalysisId })
+      } else if (initialAnalysisStatus.result) {
+        setView({
+          type: 'results',
+          analysisId: initialAnalysisId,
+          result: initialAnalysisStatus.result,
+        })
+      }
+      setDetailLoading(false)
+      return
+    }
 
     void openAnalysis(initialAnalysisId)
       .catch((openError) => {
@@ -2233,6 +2258,8 @@ export function TenantToolsWorkspace({
   tenantSlug,
   tenantLogoUrl,
   initialAnalysisId,
+  initialAnalyses,
+  initialAnalysisStatus,
 }: {
   role: WorkspaceRole
   activeModuleCodes: string[]
@@ -2240,6 +2267,8 @@ export function TenantToolsWorkspace({
   tenantSlug: string
   tenantLogoUrl: string | null
   initialAnalysisId?: string
+  initialAnalyses?: SeoAnalysisSummary[]
+  initialAnalysisStatus?: SeoAnalysisStatusPayload | null
 }) {
   const seoEnabled = activeModuleCodes.includes('seo_analyse')
 
@@ -2251,6 +2280,8 @@ export function TenantToolsWorkspace({
           tenantSlug={tenantSlug}
           tenantLogoUrl={tenantLogoUrl}
           initialAnalysisId={initialAnalysisId}
+          initialAnalyses={initialAnalyses}
+          initialAnalysisStatus={initialAnalysisStatus}
         />
       ) : (
         <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">

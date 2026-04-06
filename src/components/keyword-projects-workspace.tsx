@@ -67,6 +67,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
+import type { KeywordProjectDetailItem, KeywordProjectGscStatus } from '@/lib/tenant-app-data'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -352,6 +353,8 @@ interface KeywordProjectsWorkspaceProps {
   initialProjectId?: string | null
   initialTab?: string | null
   initialProjects?: KeywordProject[]
+  initialProject?: KeywordProjectDetailItem | null
+  initialGscStatus?: KeywordProjectGscStatus | null
 }
 
 function buildKeywordProjectUrl(projectId: string, tab: string) {
@@ -371,6 +374,8 @@ export function KeywordProjectsWorkspace({
   initialProjectId = null,
   initialTab = null,
   initialProjects = [],
+  initialProject = null,
+  initialGscStatus = null,
 }: KeywordProjectsWorkspaceProps) {
   const [view, setView] = useState<View>(() => {
     if (initialProjectId) {
@@ -403,6 +408,8 @@ export function KeywordProjectsWorkspace({
           role={role}
           projectId={view.projectId}
           initialTab={initialProjectId === view.projectId ? initialTab : null}
+          initialProject={initialProjectId === view.projectId ? initialProject : null}
+          initialGscStatus={initialProjectId === view.projectId ? initialGscStatus : null}
           onBack={() => {
             setView({ type: 'list' })
             if (typeof window !== 'undefined') {
@@ -855,15 +862,30 @@ interface ProjectDetailProps {
   role: WorkspaceRole
   projectId: string
   initialTab?: string | null
+  initialProject?: KeywordProjectDetailItem | null
+  initialGscStatus?: KeywordProjectGscStatus | null
   onBack: () => void
 }
 
-function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDetailProps) {
+function ProjectDetail({
+  role,
+  projectId,
+  initialTab = null,
+  initialProject = null,
+  initialGscStatus = null,
+  onBack,
+}: ProjectDetailProps) {
   const { toast } = useToast()
-  const [project, setProject] = useState<KeywordProject | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [project, setProject] = useState<KeywordProject | null>(initialProject)
+  const [loading, setLoading] = useState(initialProject === null)
   const [error, setError] = useState<string | null>(null)
-  const [gscReady, setGscReady] = useState<boolean | null>(null)
+  const [gscReady, setGscReady] = useState<boolean | null>(() => {
+    if (!initialGscStatus) return null
+    return !!(
+      initialGscStatus.connection?.status === 'connected' &&
+      initialGscStatus.connection?.selected_property
+    )
+  })
   const detailCacheKey = `${PROJECT_DETAIL_CACHE_PREFIX}${projectId}`
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab
@@ -911,17 +933,32 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
   }, [projectId])
 
   useEffect(() => {
+    if (initialProject) {
+      writeSessionCache(detailCacheKey, initialProject)
+    }
+  }, [detailCacheKey, initialProject])
+
+  useEffect(() => {
     const cachedProject = readSessionCache<KeywordProject>(detailCacheKey)
     if (cachedProject) {
       setProject(cachedProject)
       setLoading(false)
+      return
     }
-    loadProject()
-  }, [detailCacheKey, loadProject])
+
+    if (initialProject) {
+      setProject(initialProject)
+      setLoading(false)
+      return
+    }
+
+    void loadProject()
+  }, [detailCacheKey, initialProject, loadProject])
 
   useEffect(() => {
-    loadGscStatus()
-  }, [loadGscStatus])
+    if (initialGscStatus) return
+    void loadGscStatus()
+  }, [initialGscStatus, loadGscStatus])
 
   useEffect(() => {
     if (gscReady === false && activeTab === 'all-rankings') {
@@ -1042,6 +1079,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
             project={project}
             projectId={projectId}
             role={role}
+            isActive={activeTab === 'rankings'}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
         </TabsContent>
@@ -1069,6 +1107,7 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
         >
           <AllRankingsTab
             projectId={projectId}
+            isActive={activeTab === 'all-rankings'}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
         </TabsContent>
@@ -1091,7 +1130,11 @@ function ProjectDetail({ role, projectId, initialTab = null, onBack }: ProjectDe
           {...(mountedTabs.includes('integrations') ? { forceMount: true as const } : {})}
           className="mt-4 data-[state=inactive]:hidden"
         >
-          <IntegrationsTab projectId={projectId} role={role} />
+          <IntegrationsTab
+            projectId={projectId}
+            role={role}
+            isActive={activeTab === 'integrations'}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -1106,10 +1149,11 @@ interface RankingsTabProps {
   project: KeywordProject
   projectId: string
   role: WorkspaceRole
+  isActive: boolean
   onOpenIntegrations: () => void
 }
 
-function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsTabProps) {
+function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }: RankingsTabProps) {
   const { toast } = useToast()
   const isAdmin = role === 'admin'
   const [rows, setRows] = useState<RankingRow[]>([])
@@ -1167,8 +1211,9 @@ function RankingsTab({ project, projectId, role, onOpenIntegrations }: RankingsT
   }, [gscStatusUrl, rankingsBase])
 
   useEffect(() => {
-    loadRankings()
-  }, [loadRankings])
+    if (!isActive) return
+    void loadRankings()
+  }, [isActive, loadRankings])
 
   const loadHistory = useCallback(
     async (row: RankingRow, range: '30' | '90') => {
@@ -1625,11 +1670,7 @@ function RankingsStatusBadge({ status }: { status: RankingRunStatus }) {
         </Badge>
       )
     case 'success':
-      return (
-        <Badge className="rounded-full bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
-          Bereit
-        </Badge>
-      )
+      return null
     case 'idle':
     default:
       return (
@@ -2864,12 +2905,13 @@ type SortDir = 'asc' | 'desc'
 
 interface AllRankingsTabProps {
   projectId: string
+  isActive: boolean
   onOpenIntegrations: () => void
 }
 
 const ROWS_PER_PAGE = 50
 
-function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) {
+function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankingsTabProps) {
   const { toast } = useToast()
   const [rows, setRows] = useState<AllRankingsRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -2920,8 +2962,9 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
   }, [discoveryUrl])
 
   useEffect(() => {
-    loadData(days)
-  }, [days, loadData])
+    if (!isActive) return
+    void loadData(days)
+  }, [days, isActive, loadData])
 
   function handleSort(key: DiscoverySortKey) {
     setVisibleCount(ROWS_PER_PAGE)
@@ -3313,6 +3356,7 @@ function AllRankingsTab({ projectId, onOpenIntegrations }: AllRankingsTabProps) 
 interface IntegrationsTabProps {
   projectId: string
   role: WorkspaceRole
+  isActive: boolean
 }
 
 function GscStatusBadge({ status }: { status: GscStatus }) {
@@ -3345,7 +3389,7 @@ function GscStatusBadge({ status }: { status: GscStatus }) {
   }
 }
 
-function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
+function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
   const { toast } = useToast()
   const isAdmin = role === 'admin'
   const [connection, setConnection] = useState<GscConnection | null>(null)
@@ -3400,8 +3444,9 @@ function IntegrationsTab({ projectId, role }: IntegrationsTabProps) {
   }, [gscBase, toast])
 
   useEffect(() => {
-    loadStatus()
-  }, [loadStatus])
+    if (!isActive) return
+    void loadStatus()
+  }, [isActive, loadStatus])
 
   // Load properties when connected
   useEffect(() => {

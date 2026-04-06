@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import {
   AlertCircle,
@@ -41,6 +41,7 @@ import {
 import { StripeCardForm } from '@/components/stripe-card-form'
 import { Switch } from '@/components/ui/switch'
 import { TenantLogoutButton } from '@/components/tenant-logout-button'
+import { toast } from '@/hooks/use-toast'
 import {
   applyServerFieldErrors,
   fetchJson,
@@ -128,6 +129,20 @@ interface AvatarCropDraft {
   previewUrl: string
   imageWidth: number
   imageHeight: number
+}
+
+function normalizeProfileValues(values: Partial<ProfileFormValues> | undefined): ProfileFormValues {
+  return {
+    first_name: values?.first_name ?? '',
+    last_name: values?.last_name ?? '',
+    notify_on_approval_decision: values?.notify_on_approval_decision ?? false,
+    billing_company: values?.billing_company ?? '',
+    billing_street: values?.billing_street ?? '',
+    billing_zip: values?.billing_zip ?? '',
+    billing_city: values?.billing_city ?? '',
+    billing_country: values?.billing_country ?? '',
+    billing_vat_id: values?.billing_vat_id ?? '',
+  }
 }
 
 function RequiredLabel({
@@ -267,6 +282,7 @@ export function TenantProfileWorkspace({
   mode,
   initialData,
 }: TenantProfileWorkspaceProps) {
+  const isSettingsMode = mode === 'settings'
   const [avatarUrl, setAvatarUrl] = useState(initialData.avatarUrl)
   const [tenantLogoUrl, setTenantLogoUrl] = useState(initialData.tenantLogoUrl)
   const [avatarPending, setAvatarPending] = useState(false)
@@ -292,7 +308,10 @@ export function TenantProfileWorkspace({
   const {
     register,
     handleSubmit,
+    control,
+    reset,
     setValue,
+    trigger,
     setError: setFieldError,
     watch,
     formState: { errors },
@@ -310,6 +329,11 @@ export function TenantProfileWorkspace({
       billing_vat_id: initialData.billingVatId,
     },
   })
+  const watchedProfileValues = useWatch({ control })
+  const profileValues = normalizeProfileValues(watchedProfileValues)
+  const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoSaveHydratedRef = useRef(false)
+  const lastSavedProfileSnapshotRef = useRef(JSON.stringify(profileValues))
 
   const emailForm = useForm<EmailChangeInput>({
     resolver: zodResolver(EmailChangeSchema),
@@ -364,6 +388,9 @@ export function TenantProfileWorkspace({
 
   useEffect(() => {
     return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+      }
       if (avatarCropDraft) {
         URL.revokeObjectURL(avatarCropDraft.previewUrl)
       }
@@ -570,7 +597,7 @@ export function TenantProfileWorkspace({
     }
   }
 
-  async function onSubmit(values: ProfileFormValues) {
+  async function saveProfile(values: ProfileFormValues, options?: { showToast?: boolean }) {
     try {
       setIsSaving(true)
       clearFeedback()
@@ -621,7 +648,17 @@ export function TenantProfileWorkspace({
         return
       }
 
-      setSuccess('Deine Profildaten wurden gespeichert.')
+      lastSavedProfileSnapshotRef.current = JSON.stringify(values)
+      reset(values)
+
+      if (options?.showToast) {
+        toast({
+          description: 'Einstellung gespeichert.',
+          duration: 2200,
+        })
+      } else {
+        setSuccess('Deine Profildaten wurden gespeichert.')
+      }
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -633,6 +670,10 @@ export function TenantProfileWorkspace({
     } finally {
       setIsSaving(false)
     }
+  }
+
+  async function onSubmit(values: ProfileFormValues) {
+    await saveProfile(values)
   }
 
   async function onSubmitEmail(values: EmailChangeInput) {
@@ -721,6 +762,46 @@ export function TenantProfileWorkspace({
         AVATAR_PREVIEW_SIZE
       )
     : null
+
+  useEffect(() => {
+    if (!isSettingsMode) {
+      return
+    }
+
+    const snapshot = JSON.stringify(profileValues)
+
+    if (!autoSaveHydratedRef.current) {
+      autoSaveHydratedRef.current = true
+      lastSavedProfileSnapshotRef.current = snapshot
+      return
+    }
+
+    if (snapshot === lastSavedProfileSnapshotRef.current || isSaving) {
+      return
+    }
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current)
+    }
+
+    autoSaveTimeoutRef.current = setTimeout(() => {
+      void (async () => {
+        const isValid = await trigger()
+        if (!isValid) {
+          return
+        }
+
+        await saveProfile(profileValues, { showToast: true })
+      })()
+    }, 700)
+
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+        autoSaveTimeoutRef.current = null
+      }
+    }
+  }, [isSaving, isSettingsMode, profileValues, trigger])
 
   return (
     <>
@@ -884,7 +965,7 @@ export function TenantProfileWorkspace({
           </p>
         </CardHeader>
         <CardContent>
-          {(error || success) && (
+          {(error || (success && !isSettingsMode)) && (
             <div className="mb-6 space-y-3">
               {error && (
                 <Alert className="rounded-2xl border-red-200 bg-red-50 text-red-700">
@@ -1558,21 +1639,25 @@ export function TenantProfileWorkspace({
               <UserRound className="h-4 w-4" />
               {mode === 'onboarding'
                 ? 'Nach dem Abschluss kannst du alles später im Profil ändern.'
-                : 'Änderungen werden sofort für deinen Workspace übernommen.'}
+                : isSaving
+                  ? 'Änderungen werden gespeichert...'
+                  : 'Änderungen werden automatisch gespeichert.'}
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {mode !== 'onboarding' && (
                 <TenantLogoutButton className="h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6" />
               )}
-              <Button
-                type="submit"
-                form="tenant-profile-form"
-                className="h-[48px] rounded-xl bg-blue-600 px-6 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
-                disabled={isSaving}
-              >
-                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {submitLabel}
-              </Button>
+              {mode === 'onboarding' && (
+                <Button
+                  type="submit"
+                  form="tenant-profile-form"
+                  className="h-[48px] rounded-xl bg-blue-600 px-6 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
+                  disabled={isSaving}
+                >
+                  {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {submitLabel}
+                </Button>
+              )}
             </div>
           </div>
         </CardContent>

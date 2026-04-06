@@ -32,6 +32,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
 type ScoreRow = {
   analysis_id: string
@@ -100,6 +101,15 @@ type TimelineSeriesColor = {
   line: string
   badge: string
   text: string
+}
+
+type TimelineApiPoint = {
+  analysis_id: string
+  completed_at: string
+  subject_name: string
+  subject_type: 'brand' | 'competitor'
+  share_of_model: number
+  delta_previous: number | null
 }
 
 const BRAND_TIMELINE_COLOR: TimelineSeriesColor = {
@@ -184,6 +194,8 @@ export function AiVisibilityReport({
       null,
     [analyses, reportableAnalyses, selectedAnalysisId]
   )
+  const detailCacheKey = selectedAnalysis?.id ? `ai-visibility:report:${selectedAnalysis.id}` : null
+  const timelineCacheKey = `ai-visibility:timeline:${project.id}`
 
   const availableModels = useMemo(() => {
     if (!detail) return ['all']
@@ -223,6 +235,9 @@ export function AiVisibilityReport({
 
       const data: AnalyticsDetailResponse = await res.json()
       setDetail(data)
+      if (detailCacheKey) {
+        writeSessionCache(detailCacheKey, data)
+      }
       setLocalRecommendationStatus(
         Object.fromEntries(
           (data.recommendations ?? []).map((recommendation) => [recommendation.id, recommendation.status])
@@ -237,75 +252,46 @@ export function AiVisibilityReport({
   }, [selectedAnalysis?.id])
 
   const fetchTimeline = useCallback(async () => {
-    const recentAnalyses = analyses
-      .filter(
-        (analysis) =>
-          analysis.status === 'done' &&
-          (analysis.analytics_status === 'done' || analysis.analytics_status === 'partial') &&
-          analysis.completed_at &&
-          Date.now() - new Date(analysis.completed_at).getTime() <= 30 * 24 * 60 * 60 * 1000
-      )
-      .sort((a, b) => new Date(a.completed_at ?? 0).getTime() - new Date(b.completed_at ?? 0).getTime())
-      .slice(-8)
-
-    if (recentAnalyses.length === 0) {
+    if (reportableAnalyses.length === 0) {
       setTimelineSeries([])
       return
     }
 
     setLoadingTimeline(true)
     try {
-      const responses = await Promise.all(
-        recentAnalyses.map(async (analysis) => {
-          const res = await fetch(
-            `/api/tenant/visibility/projects/${project.id}/scores?analysis_id=${analysis.id}`
-          )
-
-          if (!res.ok) {
-            const body = await res.json().catch(() => ({}))
-            throw new Error(body.error ?? `Fehler ${res.status}`)
-          }
-
-          const payload = (await res.json()) as { scores: ScoreRow[] }
-          return {
-            analysis,
-            scores: payload.scores ?? [],
-          }
-        })
-      )
-
-      const seriesMap = new Map<string, TimelineSeries>()
-
-      for (const { analysis, scores } of responses) {
-        const aggregateRows = scores.filter((score) => score.model_name === 'all')
-        const grouped = groupRowsBySubject(aggregateRows)
-
-        grouped.forEach((rows, key) => {
-          const [subjectType, subjectName] = key.split('::')
-          const existing = seriesMap.get(key) ?? {
-            subjectName,
-            subjectType: subjectType as 'brand' | 'competitor',
-            points: [],
-          }
-
-          existing.points.push({
-            analysisId: analysis.id,
-            completedAt: analysis.completed_at ?? analysis.created_at,
-            value: average(rows.map((row) => row.share_of_model)),
-          })
-
-          seriesMap.set(key, existing)
-        })
+      const res = await fetch(`/api/tenant/visibility/projects/${project.id}/timeline`)
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.error ?? `Fehler ${res.status}`)
       }
 
-      setTimelineSeries(
-        Array.from(seriesMap.values()).map((series) => ({
+      const payload = (await res.json()) as { timeline?: TimelineApiPoint[] }
+      const seriesMap = new Map<string, TimelineSeries>()
+      for (const point of payload.timeline ?? []) {
+        const key = `${point.subject_type}::${point.subject_name}`
+        const existing = seriesMap.get(key) ?? {
+          subjectName: point.subject_name,
+          subjectType: point.subject_type,
+          points: [],
+        }
+
+        existing.points.push({
+          analysisId: point.analysis_id,
+          completedAt: point.completed_at,
+          value: point.share_of_model,
+        })
+
+        seriesMap.set(key, existing)
+      }
+
+      const nextTimeline = Array.from(seriesMap.values()).map((series) => ({
           ...series,
           points: series.points.sort(
             (a, b) => new Date(a.completedAt).getTime() - new Date(b.completedAt).getTime()
           ),
         }))
-      )
+      setTimelineSeries(nextTimeline)
+      writeSessionCache(timelineCacheKey, nextTimeline)
     } catch (err) {
       toast({
         title: 'Timeline konnte nicht geladen werden',
@@ -316,15 +302,36 @@ export function AiVisibilityReport({
     } finally {
       setLoadingTimeline(false)
     }
-  }, [analyses, project.id, toast])
+  }, [project.id, reportableAnalyses.length, timelineCacheKey, toast])
 
   useEffect(() => {
+    if (detailCacheKey) {
+      const cachedDetail = readSessionCache<AnalyticsDetailResponse>(detailCacheKey)
+      if (cachedDetail) {
+        setDetail(cachedDetail)
+        setLocalRecommendationStatus(
+          Object.fromEntries(
+            (cachedDetail.recommendations ?? []).map((recommendation) => [recommendation.id, recommendation.status])
+          )
+        )
+        setLoadingDetail(false)
+        return
+      }
+    }
+
     void fetchDetail()
-  }, [fetchDetail])
+  }, [detailCacheKey, fetchDetail])
 
   useEffect(() => {
+    const cachedTimeline = readSessionCache<TimelineSeries[]>(timelineCacheKey)
+    if (cachedTimeline) {
+      setTimelineSeries(cachedTimeline)
+      setLoadingTimeline(false)
+      return
+    }
+
     void fetchTimeline()
-  }, [fetchTimeline])
+  }, [fetchTimeline, timelineCacheKey])
 
   useEffect(() => {
     setHiddenTimelineSeries((prev) =>
