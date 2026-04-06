@@ -11,7 +11,6 @@ import {
   Copy,
   ExternalLink,
   FileText,
-  Filter,
   MessageSquare,
   Type,
   X,
@@ -321,24 +320,6 @@ export function ApprovalsWorkspace() {
 
         {/* Filters */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-400" />
-            <Select
-              value={statusFilter}
-              onValueChange={(value) => setStatusFilter(value as 'all' | 'open' | ApprovalStatus)}
-            >
-              <SelectTrigger className="w-[180px] rounded-xl">
-                <SelectValue placeholder="Status filtern" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="open">Offen</SelectItem>
-                <SelectItem value="all">Alle Status</SelectItem>
-                <SelectItem value="pending_approval">Warte auf Freigabe</SelectItem>
-                <SelectItem value="approved">Freigegeben</SelectItem>
-                <SelectItem value="changes_requested">Korrektur angefragt</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
             <SelectTrigger className="w-[180px] rounded-xl">
               <SelectValue placeholder="Typ filtern" />

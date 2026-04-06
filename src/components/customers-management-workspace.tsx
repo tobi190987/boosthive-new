@@ -95,6 +95,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
     return matchesSearch && matchesStatus
   })
+  const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== 'all'
 
   const openCreate = useCallback(() => {
     setEditingCustomer(null)
@@ -234,6 +235,39 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                 <div key={i} className="h-14 w-full bg-slate-200 dark:bg-slate-800 rounded animate-pulse" />
               ))}
             </div>
+          ) : filteredCustomers.length === 0 ? (
+            <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-[#252d3a] dark:bg-[#151c28]">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-[#1e2635]">
+                <Users className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+              </div>
+              <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-slate-100">
+                {hasActiveFilters ? 'Keine passenden Kunden' : 'Noch keine Kunden angelegt'}
+              </h3>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+                {hasActiveFilters
+                  ? 'Passe Suche oder Statusfilter an, um andere Kunden zu sehen.'
+                  : 'Lege deinen ersten Kunden an, um Domains, Dokumente und Arbeitskontexte strukturiert zu verwalten.'}
+              </p>
+              <div className="mt-4 flex items-center justify-center gap-2">
+                {hasActiveFilters && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchQuery('')
+                      setStatusFilter('all')
+                    }}
+                  >
+                    Filter zurücksetzen
+                  </Button>
+                )}
+                {!hasActiveFilters && isAdmin && (
+                  <Button onClick={openCreate}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ersten Kunden anlegen
+                  </Button>
+                )}
+              </div>
+            </div>
           ) : (
             <div className="rounded-lg border mt-4">
               <Table>
@@ -257,12 +291,19 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
                           {customer.industry || 'Nicht angegeben'}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={customer.status === 'active' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant="outline"
+                          className={
+                            customer.status === 'active'
+                              ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400'
+                              : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400'
+                          }
+                        >
                           {customer.status === 'active' ? 'Aktiv' : 'Pausiert'}
                         </Badge>
                       </TableCell>

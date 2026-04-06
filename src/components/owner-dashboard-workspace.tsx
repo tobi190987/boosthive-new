@@ -73,6 +73,7 @@ export function OwnerDashboardWorkspace() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [query, setQuery] = useState(searchParams.get('q') ?? '')
+  const [debouncedQuery, setDebouncedQuery] = useState(searchParams.get('q') ?? '')
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(
     parseStatusFilter(searchParams.get('status'))
   )
@@ -82,9 +83,20 @@ export function OwnerDashboardWorkspace() {
 
   useEffect(() => {
     setQuery(searchParams.get('q') ?? '')
+    setDebouncedQuery(searchParams.get('q') ?? '')
     setStatusFilter(parseStatusFilter(searchParams.get('status')))
     setPage(parsePage(searchParams.get('page')))
   }, [searchParams])
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedQuery(query)
+    }, 300)
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [query])
 
   const rangeLabel = useMemo(() => {
     if (pagination.total === 0) {
@@ -110,7 +122,7 @@ export function OwnerDashboardWorkspace() {
       status: statusFilter,
       page: String(page),
       pageSize: String(PAGE_SIZE),
-      ...(query.trim() ? { q: query.trim() } : {}),
+      ...(debouncedQuery.trim() ? { q: debouncedQuery.trim() } : {}),
     })
 
     const [metricsResponse, tenantsResponse] = await Promise.all([
@@ -150,11 +162,11 @@ export function OwnerDashboardWorkspace() {
         totalPages: 1,
       }
     )
-  }, [page, query, statusFilter])
+  }, [debouncedQuery, page, statusFilter])
 
   useEffect(() => {
     let isActive = true
-    const trimmedQuery = query.trim()
+    const trimmedQuery = debouncedQuery.trim()
     const params = new URLSearchParams()
 
     if (trimmedQuery) params.set('q', trimmedQuery)
@@ -193,7 +205,7 @@ export function OwnerDashboardWorkspace() {
       isActive = false
       window.clearTimeout(timeoutId)
     }
-  }, [page, pathname, query, refreshTenantData, router, statusFilter])
+  }, [debouncedQuery, page, pathname, refreshTenantData, router, statusFilter])
 
   async function handleToggleStatus(tenant: OwnerTenantRecord) {
     const nextStatus = nextOwnerToggleTenantStatus(tenant.status)

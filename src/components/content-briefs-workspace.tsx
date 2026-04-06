@@ -48,6 +48,7 @@ import { useActiveCustomer } from '@/lib/active-customer-context'
 import { ApprovalSubmitPanel } from '@/components/approval-submit-panel'
 import type { ApprovalStatus } from '@/components/approval-status-badge'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -423,6 +424,10 @@ export function ContentBriefsWorkspace() {
     pollingRef.current = poll
     return () => clearInterval(poll)
   }, [view, detail, fetchDetail, fetchBriefs])
+
+  if (!activeCustomer) {
+    return <NoCustomerSelected toolName="Content Briefs" />
+  }
 
   // ── Create brief ──────────────────────────────────────────────────────────
 

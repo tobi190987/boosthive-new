@@ -152,7 +152,7 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
     try {
       setStatsLoading(true)
       const [approvalsRes, briefsRes, customersRes, adsRes] = await Promise.allSettled([
-        fetch('/api/tenant/approvals?status=pending_approval'),
+        fetch('/api/tenant/approvals'),
         fetch('/api/tenant/content/briefs'),
         fetch('/api/tenant/customers'),
         fetch('/api/tenant/ad-generator/history'),
@@ -168,7 +168,10 @@ export function TenantDashboardOverview({ context }: TenantDashboardOverviewProp
         ? await adsRes.value.json().catch(() => ({})) : {}
 
       setStats({
-        pendingApprovals: (approvals.approvals ?? []).length,
+        pendingApprovals: ((approvals.approvals ?? []) as Array<{ status?: string }>).filter(
+          (approval) =>
+            approval.status === 'pending_approval' || approval.status === 'changes_requested'
+        ).length,
         briefs: (briefs.briefs ?? []).length,
         customers: (customers.customers ?? []).length,
         ads: (ads.generations ?? ads.ads ?? []).length,
