@@ -81,6 +81,7 @@ type View =
 
 interface AiVisibilityWorkspaceProps {
   role: WorkspaceRole
+  initialProjects?: VisibilityProject[]
 }
 
 const AI_VISIBILITY_PROJECTS_CACHE_PREFIX = 'ai-visibility:projects:'
@@ -123,14 +124,17 @@ function analyticsStatusColor(status: AnalyticsStatus) {
 
 // ─── Hauptkomponente ──────────────────────────────────────────
 
-export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
+export function AiVisibilityWorkspace({
+  role,
+  initialProjects = [],
+}: AiVisibilityWorkspaceProps) {
   const [view, setView] = useState<View>({ type: 'list' })
   const { toast } = useToast()
   const { activeCustomer } = useActiveCustomer()
 
   // ── Projekte ────────────────────────────────────────────────
-  const [projects, setProjects] = useState<VisibilityProject[]>([])
-  const [loadingProjects, setLoadingProjects] = useState(true)
+  const [projects, setProjects] = useState<VisibilityProject[]>(initialProjects)
+  const [loadingProjects, setLoadingProjects] = useState(initialProjects.length === 0)
   const [projectError, setProjectError] = useState<string | null>(null)
   const projectsCacheKey = `${AI_VISIBILITY_PROJECTS_CACHE_PREFIX}${activeCustomer?.id ?? 'all'}`
 
@@ -157,13 +161,27 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
   }, [activeCustomer, projectsCacheKey])
 
   useEffect(() => {
+    if (!activeCustomer && initialProjects.length > 0) {
+      writeSessionCache(projectsCacheKey, initialProjects)
+    }
+  }, [activeCustomer, initialProjects, projectsCacheKey])
+
+  useEffect(() => {
     const cachedProjects = readSessionCache<VisibilityProject[]>(projectsCacheKey)
     if (cachedProjects) {
       setProjects(cachedProjects)
       setLoadingProjects(false)
+      return
     }
-    fetchProjects()
-  }, [fetchProjects, projectsCacheKey])
+
+    if (!activeCustomer && initialProjects.length > 0) {
+      setProjects(initialProjects)
+      setLoadingProjects(false)
+      return
+    }
+
+    void fetchProjects()
+  }, [activeCustomer, fetchProjects, initialProjects, projectsCacheKey])
 
   // ── Navigation ──────────────────────────────────────────────
 
@@ -1479,6 +1497,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
   const [cancelling, setCancelling] = useState(false)
   const [retrying, setRetrying] = useState(false)
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const didAutoOpenReportRef = useRef(false)
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -1491,8 +1510,21 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
       setStatus(data)
       setError(null)
 
-      // Polling stoppen wenn fertig
-      if (data.status === 'done' || data.status === 'failed' || data.status === 'cancelled') {
+      const analyticsReady = data.analytics_status === 'done' || data.analytics_status === 'partial'
+      const analyticsFinished =
+        analyticsReady || data.analytics_status === 'failed'
+
+      if (data.status === 'done' && analyticsReady && !didAutoOpenReportRef.current) {
+        didAutoOpenReportRef.current = true
+        onOpenReport?.(analysisId)
+      }
+
+      // Polling stoppen wenn die Analyse inkl. Analytics abgeschlossen ist
+      if (
+        data.status === 'failed' ||
+        data.status === 'cancelled' ||
+        (data.status === 'done' && analyticsFinished)
+      ) {
         if (pollingRef.current) {
           clearInterval(pollingRef.current)
           pollingRef.current = null
@@ -1503,10 +1535,11 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
     } finally {
       setLoading(false)
     }
-  }, [analysisId])
+  }, [analysisId, onOpenReport])
 
   // ── Polling ─────────────────────────────────────────────────
   useEffect(() => {
+    didAutoOpenReportRef.current = false
     fetchStatus()
     pollingRef.current = setInterval(fetchStatus, 3000)
 
