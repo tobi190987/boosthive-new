@@ -15,7 +15,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Separator } from '@/components/ui/separator'
 import { getUserDisplayName, getUserInitials } from '@/lib/profile'
 import { ThemeToggle } from '@/components/theme-toggle'
@@ -201,6 +201,9 @@ export function OwnerMobileHeader({ context }: { context: OwnerShellContext }) {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Owner Navigation</SheetTitle>
+          </SheetHeader>
           <div className="flex h-full flex-col bg-white dark:bg-[#080c12]">
             <NavContent context={context} onNavigate={() => setOpen(false)} />
           </div>

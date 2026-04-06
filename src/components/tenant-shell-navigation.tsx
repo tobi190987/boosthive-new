@@ -20,7 +20,7 @@ import {
   UserRound,
   Users2,
 } from 'lucide-react'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
@@ -240,7 +240,6 @@ function NavigationContent({
         )}
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{context.tenant.name}</p>
-          <p className="truncate text-xs text-slate-500 dark:text-slate-400">{context.tenant.slug}.boost-hive.de</p>
         </div>
       </div>
 
@@ -494,6 +493,9 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Tenant Navigation</SheetTitle>
+          </SheetHeader>
           <div className="flex h-full flex-col bg-white dark:bg-[#080c12]">
             <NavigationContent {...props} onNavigate={() => setOpen(false)} />
           </div>
