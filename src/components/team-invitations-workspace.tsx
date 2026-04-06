@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { BellRing, CheckCircle2, Loader2, ShieldCheck, Sparkles } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { CheckCircle2, Loader2, MailPlus, RefreshCw, ShieldCheck } from 'lucide-react'
 import { InviteDialog, type InvitationDraft } from '@/components/invite-dialog'
 import { TeamMemberTable, type TeamMemberRecord } from '@/components/team-member-table'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 interface TeamInvitationsWorkspaceProps {
   tenantSlug: string
@@ -45,52 +46,49 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
     type: 'delete' | 'resend'
   } | null>(null)
 
-  useEffect(() => {
-    let isActive = true
+  const loadEntries = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      setError(null)
 
-    async function loadEntries() {
-      try {
-        setIsLoading(true)
-        setError(null)
+      const response = await fetch('/api/tenant/members', {
+        method: 'GET',
+        credentials: 'include',
+      })
+      const payload = await response.json().catch(() => ({}))
 
-        const response = await fetch('/api/tenant/members', {
-          method: 'GET',
-          credentials: 'include',
-        })
-        const payload = await response.json().catch(() => ({}))
-
-        if (!response.ok) {
-          throw new Error(payload.error ?? 'Teamübersicht konnte nicht geladen werden.')
-        }
-
-        if (!isActive) return
-
-        setEntries(
-          Array.isArray(payload.entries)
-            ? payload.entries.map(normalizeEntry)
-            : []
-        )
-        setActivity('Echte API-Anbindung aktiv: Mitglieder und offene Einladungen stammen direkt aus dem Backend.')
-      } catch (loadError) {
-        if (!isActive) return
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : 'Teamübersicht konnte nicht geladen werden.'
-        )
-      } finally {
-        if (isActive) {
-          setIsLoading(false)
-        }
+      if (!response.ok) {
+        throw new Error(payload.error ?? 'Teamübersicht konnte nicht geladen werden.')
       }
-    }
 
-    void loadEntries()
-
-    return () => {
-      isActive = false
+      setEntries(
+        Array.isArray(payload.entries)
+          ? payload.entries.map(normalizeEntry)
+          : []
+      )
+      setActivity('Teamstatus aktualisiert.')
+    } catch (loadError) {
+      setError(
+        loadError instanceof Error
+          ? loadError.message
+          : 'Teamübersicht konnte nicht geladen werden.'
+      )
+    } finally {
+      setIsLoading(false)
     }
   }, [])
+
+  useEffect(() => {
+    void loadEntries()
+  }, [loadEntries])
+
+  const summary = useMemo(() => {
+    const members = entries.filter((entry) => entry.kind === 'member').length
+    const pendingInvites = entries.filter((entry) => entry.kind === 'invitation' && entry.status === 'pending').length
+    const admins = entries.filter((entry) => entry.role === 'admin' && entry.status === 'active').length
+
+    return { members, pendingInvites, admins }
+  }, [entries])
 
   async function handleInvite(draft: InvitationDraft) {
     setError(null)
@@ -219,53 +217,64 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
 
   return (
     <div className="space-y-6">
-      <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
-        <div className="absolute right-[-3rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
-        <div className="absolute bottom-[-4rem] left-[-2rem] h-44 w-44 rounded-full bg-blue-500/10 blur-3xl" />
-
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-3xl space-y-4">
-            <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
-              Team Access
-            </Badge>
+      <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-soft dark:border-[#252d3a] dark:bg-[#151c28]">
+        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge className="rounded-full bg-[#1f2937] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white hover:bg-[#1f2937]">
+                Team
+              </Badge>
+              <Badge variant="outline" className="rounded-full text-xs">
+                {tenantSlug}
+              </Badge>
+            </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
-                Settings / Team
-              </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
-                Teammitglieder für {tenantSlug} verwalten
+              <h1 className="text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                Team verwalten
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
-                Admins sehen vorhandene User und offene Einladungen in einer gemeinsamen Liste,
-                können User entfernen und Einladungen direkt erneut versenden oder löschen.
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                Mitglieder einladen, offene Einladungen nachfassen und Zugänge direkt verwalten.
               </p>
             </div>
           </div>
 
-          <InviteDialog onInvite={handleInvite} />
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-full"
+              onClick={() => void loadEntries()}
+              disabled={isLoading}
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Aktualisieren
+            </Button>
+            <InviteDialog
+              onInvite={handleInvite}
+              triggerLabel="Einladung senden"
+              triggerClassName="rounded-full bg-[#1f2937] px-5 text-white hover:bg-[#111827]"
+            />
+          </div>
         </div>
 
-        <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
-            <Sparkles className="h-5 w-5 text-blue-600" />
-            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">User und Einladungen zusammen</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Die Teamseite zeigt jetzt vorhandene Mitglieder und offene Einladungen in einer Sicht.
+        <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-[#252d3a] dark:bg-[#1e2635]">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+              Mitglieder
             </p>
+            <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary.members}</p>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
-            <ShieldCheck className="h-5 w-5 text-blue-600" />
-            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Status direkt erkennbar</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Aktiv und Einladung offen sind klar getrennt und sofort scanbar.
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-[#252d3a] dark:bg-[#1e2635]">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+              Offene Einladungen
             </p>
+            <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary.pendingInvites}</p>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
-            <BellRing className="h-5 w-5 text-[#1f2937]" />
-            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Aktionen direkt aus der Übersicht</p>
-            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-              Neue Einladungen, Resend und Löschen laufen direkt über Tenant-APIs.
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-[#252d3a] dark:bg-[#1e2635]">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+              Admins
             </p>
+            <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary.admins}</p>
           </div>
         </div>
       </section>

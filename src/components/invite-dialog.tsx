@@ -29,9 +29,15 @@ export interface InvitationDraft {
 
 interface InviteDialogProps {
   onInvite: (draft: InvitationDraft) => Promise<void> | void
+  triggerLabel?: string
+  triggerClassName?: string
 }
 
-export function InviteDialog({ onInvite }: InviteDialogProps) {
+export function InviteDialog({
+  onInvite,
+  triggerLabel = 'Member einladen',
+  triggerClassName,
+}: InviteDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'admin' | 'member'>('member')
@@ -72,9 +78,9 @@ export function InviteDialog({ onInvite }: InviteDialogProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="rounded-full bg-[#1f2937] px-5 text-white hover:bg-[#111827]">
+        <Button className={triggerClassName ?? 'rounded-full bg-[#1f2937] px-5 text-white hover:bg-[#111827]'}>
           <MailPlus className="h-4 w-4" />
-          Member einladen
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent className="rounded-[2rem] border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-0 sm:max-w-[560px]">

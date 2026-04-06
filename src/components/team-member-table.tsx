@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { CalendarDays, Loader2, Mail, RotateCcw, ShieldAlert, Trash2, UserRound } from 'lucide-react'
+import { CalendarDays, Loader2, Mail, RotateCcw, Search, ShieldAlert, Trash2, UserRound } from 'lucide-react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,6 +16,14 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import {
   Table,
   TableBody,
@@ -99,6 +107,9 @@ export function TeamMemberTable({
   onDelete,
 }: TeamMemberTableProps) {
   const [entryToDelete, setEntryToDelete] = useState<TeamMemberRecord | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | TeamMemberRecord['status']>('all')
+  const [kindFilter, setKindFilter] = useState<'all' | TeamMemberRecord['kind']>('all')
 
   const activeCount = useMemo(
     () => entries.filter((entry) => entry.status === 'active').length,
@@ -108,6 +119,26 @@ export function TeamMemberTable({
     () => entries.filter((entry) => entry.status === 'pending').length,
     [entries]
   )
+  const adminCount = useMemo(
+    () => entries.filter((entry) => entry.role === 'admin' && entry.status === 'active').length,
+    [entries]
+  )
+  const filteredEntries = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase()
+
+    return entries.filter((entry) => {
+      const matchesQuery =
+        !query ||
+        entry.name?.toLowerCase().includes(query) ||
+        entry.email?.toLowerCase().includes(query)
+      const matchesStatus = statusFilter === 'all' || entry.status === statusFilter
+      const matchesKind = kindFilter === 'all' || entry.kind === kindFilter
+
+      return matchesQuery && matchesStatus && matchesKind
+    })
+  }, [entries, kindFilter, searchQuery, statusFilter])
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 || statusFilter !== 'all' || kindFilter !== 'all'
 
   return (
     <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
@@ -117,7 +148,7 @@ export function TeamMemberTable({
             Teamübersicht
           </p>
           <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
-            Vorhandene User und offene Einladungen
+            Mitglieder und Einladungen
           </h2>
         </div>
         <div className="flex flex-wrap gap-3">
@@ -127,6 +158,58 @@ export function TeamMemberTable({
           <div className="rounded-full border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
             {pendingCount} Einladung offen
           </div>
+          <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
+            {adminCount} Admin
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 dark:border-[#252d3a] lg:flex-row lg:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+          <Input
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="Nach Name oder E-Mail suchen"
+            className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 dark:border-[#252d3a] dark:bg-[#151c28]"
+          />
+        </div>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Select value={kindFilter} onValueChange={(value) => setKindFilter(value as 'all' | TeamMemberRecord['kind'])}>
+            <SelectTrigger className="w-full rounded-xl sm:w-[180px]">
+              <SelectValue placeholder="Typ" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Einträge</SelectItem>
+              <SelectItem value="member">Mitglieder</SelectItem>
+              <SelectItem value="invitation">Einladungen</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | TeamMemberRecord['status'])}>
+            <SelectTrigger className="w-full rounded-xl sm:w-[180px]">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Status</SelectItem>
+              <SelectItem value="active">Aktiv</SelectItem>
+              <SelectItem value="pending">Einladung offen</SelectItem>
+              <SelectItem value="inactive">Inaktiv</SelectItem>
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => {
+                setSearchQuery('')
+                setStatusFilter('all')
+                setKindFilter('all')
+              }}
+            >
+              Filter zurücksetzen
+            </Button>
+          )}
         </div>
       </div>
 
@@ -141,18 +224,22 @@ export function TeamMemberTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {entries.length === 0 ? (
+          {filteredEntries.length === 0 ? (
             <TableRow className="hover:bg-transparent">
               <TableCell colSpan={5} className="px-6 py-14 text-center">
-                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">Noch keine User vorhanden</p>
+                <p className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                  {hasActiveFilters ? 'Keine passenden Einträge' : 'Noch kein Team vorhanden'}
+                </p>
                 <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                  Lade Teammitglieder oder erstelle die erste Einladung.
+                  {hasActiveFilters
+                    ? 'Passe Suche oder Filter an, um andere Mitglieder oder Einladungen zu sehen.'
+                    : 'Lade dein erstes Teammitglied ein, um gemeinsam im Workspace zu arbeiten.'}
                 </p>
               </TableCell>
             </TableRow>
           ) : null}
 
-          {entries.map((entry) => {
+          {filteredEntries.map((entry) => {
             const isDeleting = pendingAction?.id === entry.id && pendingAction.type === 'delete'
             const isResending = pendingAction?.id === entry.id && pendingAction.type === 'resend'
             const hasPendingInvite = entry.kind === 'invitation' && entry.status === 'pending'
