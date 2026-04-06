@@ -1,7 +1,6 @@
 import { AuthShell } from '@/components/auth-shell'
 import { ResetPasswordForm } from '@/components/reset-password-form'
-import { getTenantLogoUrl } from '@/lib/tenant-branding'
-import { getTenantContext } from '@/lib/tenant'
+import { getTenantAuthBranding } from '@/lib/tenant-branding'
 
 interface ResetPasswordPageProps {
   searchParams: Promise<{ token?: string }>
@@ -9,17 +8,16 @@ interface ResetPasswordPageProps {
 
 export default async function ResetPasswordPage({ searchParams }: ResetPasswordPageProps) {
   const params = await searchParams
-  const tenant = await getTenantContext()
-  const tenantLogoUrl = await getTenantLogoUrl()
+  const tenant = await getTenantAuthBranding()
 
   return (
     <AuthShell
       eyebrow="Neues Passwort"
       title="Passwort neu setzen"
-      tenantLogoUrl={tenantLogoUrl}
+      brandLogoUrl={tenant?.logoUrl}
+      brandAlt={tenant ? `${tenant.slug} Logo` : 'BoostHive Logo'}
+      contextLabel={tenant ? `Neues Passwort fuer ${tenant.slug}` : 'BoostHive Workspace'}
       description="Lege ein neues Passwort fest und bestätige es. Danach geht es direkt weiter in deinen geschützten Tenant-Bereich."
-      asideTitle="Klare Fehlerzustände, schneller Wiedereinstieg."
-      asideDescription={`Auch wenn ein Link abgelaufen ist oder auf dem falschen Tenant landet, bleibt der Flow eindeutig und führt Nutzer in ${tenant?.slug ?? 'BoostHive'} sicher zurück.`}
       backHref="/forgot-password"
       backLabel="Neuen Link anfordern"
     >

@@ -1,11 +1,17 @@
 import { createAdminClient } from '@/lib/supabase-admin'
 import { getTenantContext } from '@/lib/tenant'
 
-export async function getTenantLogoUrl() {
+export interface TenantAuthBranding {
+  id: string
+  slug: string
+  logoUrl?: string
+}
+
+export async function getTenantAuthBranding(): Promise<TenantAuthBranding | null> {
   const tenant = await getTenantContext()
 
   if (!tenant?.id) {
-    return undefined
+    return null
   }
 
   const supabaseAdmin = createAdminClient()
@@ -15,5 +21,14 @@ export async function getTenantLogoUrl() {
     .eq('id', tenant.id)
     .maybeSingle()
 
-  return data?.logo_url ?? undefined
+  return {
+    id: tenant.id,
+    slug: tenant.slug,
+    logoUrl: data?.logo_url ?? undefined,
+  }
+}
+
+export async function getTenantLogoUrl() {
+  const branding = await getTenantAuthBranding()
+  return branding?.logoUrl
 }

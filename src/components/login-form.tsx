@@ -17,6 +17,7 @@ interface LoginFormProps {
   title?: string
   showForgotPasswordLink?: boolean
   notice?: string
+  submitLabel?: string
 }
 
 function sanitizeReturnTo(url: string, fallback: string): string {
@@ -35,6 +36,7 @@ export function LoginForm({
   title,
   showForgotPasswordLink = false,
   notice,
+  submitLabel = 'Anmelden',
 }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [showPassword, setShowPassword] = useState(false)
@@ -77,8 +79,7 @@ export function LoginForm({
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {title && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-blue-600">Arbeitsbereich</p>
-          <p className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
+          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
         </div>
       )}
 
@@ -140,8 +141,8 @@ export function LoginForm({
             type="button"
             className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 dark:text-slate-500 transition hover:text-slate-700 dark:hover:text-slate-300"
             onClick={() => setShowPassword((value) => !value)}
-            tabIndex={-1}
             aria-label={showPassword ? 'Passwort verbergen' : 'Passwort anzeigen'}
+            aria-pressed={showPassword}
           >
             {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </button>
@@ -155,7 +156,7 @@ export function LoginForm({
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Anmelden
+        {submitLabel}
       </Button>
     </form>
   )

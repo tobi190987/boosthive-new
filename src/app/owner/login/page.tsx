@@ -12,16 +12,18 @@ export default async function OwnerLoginPage({ searchParams }: OwnerLoginPagePro
 
   return (
     <AuthShell
+      variant="owner"
       eyebrow="Owner Access"
-      title="Plattform-Zugang für BoostHive Owner"
-      description="Melde dich für systemweite Steuerung, Tenant-Verwaltung und Billing-Übersichten an."
-      asideTitle="Die Plattform-Ebene im selben Produktgefühl."
-      asideDescription="Der Owner-Login nutzt dieselbe ruhige, markenkonsistente Oberfläche wie die Tenant-Subdomains, nur mit globalem Blick auf das gesamte System."
+      title="Owner Login"
+      description="Melde dich an, um Tenants, Billing und Plattformfunktionen zu verwalten."
+      contextLabel="Nur fuer interne Plattformverwaltung"
+      brandAlt="BoostHive Owner"
     >
       <LoginForm
         action="/api/auth/owner/login"
         returnTo={returnTo}
         title="BoostHive Plattformsteuerung"
+        submitLabel="Als Owner anmelden"
       />
     </AuthShell>
   )
