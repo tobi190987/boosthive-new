@@ -419,12 +419,12 @@ function NavigationContent({
       <Separator className="bg-slate-100 dark:bg-slate-800" />
 
       <div className="p-4 space-y-2">
-        <Link
-          href="/settings/profile"
-          onClick={() => handleNavigate('/settings/profile')}
-          className="block rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 dark:border-[#252d3a] dark:bg-[#151c28] dark:hover:border-[#2d3847] dark:hover:bg-[#1e2635]"
-        >
-          <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm dark:border-[#252d3a] dark:bg-[#151c28]">
+          <Link
+            href="/settings/profile"
+            onClick={() => handleNavigate('/settings/profile')}
+            className="min-w-0 flex flex-1 items-center gap-3 rounded-xl transition hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+          >
             <Avatar className="h-10 w-10 border border-slate-100 dark:border-[#2d3847]">
               <AvatarImage src={context.user.avatarUrl ?? undefined} alt={context.user.email} />
               <AvatarFallback className="bg-blue-50 text-sm font-semibold text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
@@ -443,12 +443,12 @@ function NavigationContent({
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">{roleLabel(context.membership.role)}</p>
             </div>
-            <div className="ml-auto flex items-center gap-1.5">
-              <NotificationBell initialNotifications={initialNotifications} />
-              <ThemeToggle className="shrink-0" />
-            </div>
+          </Link>
+          <div className="ml-auto flex items-center gap-1.5">
+            <NotificationBell initialNotifications={initialNotifications} />
+            <ThemeToggle className="shrink-0" />
           </div>
-        </Link>
+        </div>
       </div>
       <GlobalCommandPalette />
     </>
