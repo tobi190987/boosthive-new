@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 interface AuthShellProps {
   variant?: 'tenant' | 'owner'
+  minimal?: boolean
   eyebrow?: string
   hideEyebrow?: boolean
   title: string
@@ -21,6 +22,7 @@ interface AuthShellProps {
 
 export function AuthShell({
   variant = 'tenant',
+  minimal = false,
   eyebrow,
   hideEyebrow = false,
   title,
@@ -50,75 +52,77 @@ export function AuthShell({
     <div className={`min-h-screen px-4 py-6 text-slate-950 sm:px-6 sm:py-10 ${accentClasses.page}`}>
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md items-center">
         <Card className="w-full overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.10)] backdrop-blur">
-          <CardHeader className="space-y-5 px-5 pb-4 pt-5 sm:px-8 sm:pb-5 sm:pt-8">
-            <div className="flex items-start justify-between gap-4">
-              {backHref ? (
-                <Link
-                  href={backHref}
-                  className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  {backLabel}
-                </Link>
-              ) : (
-                <span />
-              )}
-
-              {hideEyebrow ? (
-                <span />
-              ) : (
-                <div
-                  className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${accentClasses.badge}`}
-                >
-                  <ShieldCheck className="h-3.5 w-3.5" />
-                  {eyebrow ?? (isOwner ? 'Owner Access' : 'Login')}
-                </div>
-              )}
-            </div>
-
-            <div className="space-y-4 text-center">
-              <div className="flex justify-center">
-                {brandLogoUrl ? (
-                  <Image
-                    src={brandLogoUrl}
-                    alt={brandAlt}
-                    width={240}
-                    height={80}
-                    priority
-                    className="h-12 w-auto max-w-[220px] object-contain sm:h-14"
-                  />
+          {!minimal && (
+            <CardHeader className="space-y-5 px-5 pb-4 pt-5 sm:px-8 sm:pb-5 sm:pt-8">
+              <div className="flex items-start justify-between gap-4">
+                {backHref ? (
+                  <Link
+                    href={backHref}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                  >
+                    <ArrowLeft className="h-3.5 w-3.5" />
+                    {backLabel}
+                  </Link>
                 ) : (
-                  <Image
-                    src={isOwner ? '/boosthive_dark.png' : '/boosthive_light.png'}
-                    alt={brandAlt}
-                    width={759}
-                    height={213}
-                    priority
-                    className="h-10 w-auto object-contain sm:h-12"
-                  />
+                  <span />
+                )}
+
+                {hideEyebrow ? (
+                  <span />
+                ) : (
+                  <div
+                    className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${accentClasses.badge}`}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    {eyebrow ?? (isOwner ? 'Owner Access' : 'Login')}
+                  </div>
                 )}
               </div>
 
-              {contextLabel && (
-                <div
-                  className={`inline-flex max-w-full items-center justify-center rounded-full border px-3 py-1.5 text-xs font-medium ${accentClasses.context}`}
-                >
-                  {contextLabel}
+              <div className="space-y-4 text-center">
+                <div className="flex justify-center">
+                  {brandLogoUrl ? (
+                    <Image
+                      src={brandLogoUrl}
+                      alt={brandAlt}
+                      width={240}
+                      height={80}
+                      priority
+                      className="h-12 w-auto max-w-[220px] object-contain sm:h-14"
+                    />
+                  ) : (
+                    <Image
+                      src={isOwner ? '/boosthive_dark.png' : '/boosthive_light.png'}
+                      alt={brandAlt}
+                      width={759}
+                      height={213}
+                      priority
+                      className="h-10 w-auto object-contain sm:h-12"
+                    />
+                  )}
                 </div>
-              )}
 
-              <div className="space-y-2">
-                <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.9rem]">
-                  {title}
-                </CardTitle>
-                <CardDescription className="mx-auto max-w-sm text-sm leading-6 text-slate-500">
-                  {description}
-                </CardDescription>
+                {contextLabel && (
+                  <div
+                    className={`inline-flex max-w-full items-center justify-center rounded-full border px-3 py-1.5 text-xs font-medium ${accentClasses.context}`}
+                  >
+                    {contextLabel}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.9rem]">
+                    {title}
+                  </CardTitle>
+                  <CardDescription className="mx-auto max-w-sm text-sm leading-6 text-slate-500">
+                    {description}
+                  </CardDescription>
+                </div>
               </div>
-            </div>
-          </CardHeader>
+            </CardHeader>
+          )}
 
-          <CardContent className="px-5 pb-5 pt-3 sm:px-8 sm:pb-8 sm:pt-4">
+          <CardContent className={minimal ? 'px-5 py-5 sm:px-8 sm:py-8' : 'px-5 pb-5 pt-3 sm:px-8 sm:pb-8 sm:pt-4'}>
             {children}
             {footer && <div className="mt-6 border-t border-slate-100 pt-5">{footer}</div>}
           </CardContent>

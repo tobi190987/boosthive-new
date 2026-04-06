@@ -14,6 +14,7 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
 
   return (
     <AuthShell
+      minimal
       eyebrow="Einladung"
       title={hasToken ? 'Willkommen im Team' : 'Einladung prüfen'}
       brandLogoUrl={tenant?.logoUrl}
@@ -27,7 +28,7 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
       backHref="/login"
       backLabel="Zur Login-Seite"
     >
-      <AcceptInviteForm token={token} fallbackTenantName={tenant?.slug ?? 'deinem Team'} />
+      <AcceptInviteForm token={token} fallbackTenantName={tenant?.slug ?? 'deinem Team'} minimal />
     </AuthShell>
   )
 }

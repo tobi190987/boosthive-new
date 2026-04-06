@@ -17,6 +17,7 @@ import {
 interface AcceptInviteFormProps {
   token?: string
   fallbackTenantName: string
+  minimal?: boolean
 }
 
 interface InvitationValidationState {
@@ -30,7 +31,7 @@ interface InvitationValidationState {
 const fieldClassName =
   'h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 text-[15px] shadow-soft transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/25 focus-visible:ring-offset-0'
 
-export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteFormProps) {
+export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }: AcceptInviteFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
   const [isSuccess, setIsSuccess] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -142,22 +143,24 @@ export function AcceptInviteForm({ token, fallbackTenantName }: AcceptInviteForm
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-[22px] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-4">
-          <UserRoundPlus className="h-5 w-5 text-blue-600" />
-          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Onboarding direkt im Link</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Das Passwort wird direkt beim ersten Einstieg gesetzt.
-          </p>
+      {!minimal && (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-[22px] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-4">
+            <UserRoundPlus className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Onboarding direkt im Link</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              Das Passwort wird direkt beim ersten Einstieg gesetzt.
+            </p>
+          </div>
+          <div className="rounded-[22px] border border-[#d7eadf] bg-[#eff8f2] p-4">
+            <ShieldCheck className="h-5 w-5 text-blue-600" />
+            <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Token-basierter Einstieg</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
+              Die Annahme-Seite bleibt öffentlich, ohne vorherigen Login.
+            </p>
+          </div>
         </div>
-        <div className="rounded-[22px] border border-[#d7eadf] bg-[#eff8f2] p-4">
-          <ShieldCheck className="h-5 w-5 text-blue-600" />
-          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Token-basierter Einstieg</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Die Annahme-Seite bleibt öffentlich, ohne vorherigen Login.
-          </p>
-        </div>
-      </div>
+      )}
 
       {isValidating && (
         <Alert className="rounded-2xl border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-700 dark:text-slate-300">
