@@ -38,27 +38,27 @@ export function AuthShell({
   const isOwner = variant === 'owner'
   const accentClasses = isOwner
     ? {
-        page: 'bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.12),_transparent_45%),linear-gradient(180deg,#fffaf0_0%,#f8fafc_100%)]',
-        badge: 'border-amber-200 bg-amber-50 text-amber-700',
-        context: 'border-amber-200 bg-amber-50 text-amber-800',
+        page: 'bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.12),_transparent_45%),linear-gradient(180deg,#fffaf0_0%,#f8fafc_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.18),_transparent_45%),linear-gradient(180deg,#0f172a_0%,#020617_100%)]',
+        badge: 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300',
+        context: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-200',
       }
     : {
-        page: 'bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.10),_transparent_45%),linear-gradient(180deg,#f8fbff_0%,#f8fafc_100%)]',
-        badge: 'border-blue-200 bg-blue-50 text-blue-700',
-        context: 'border-blue-200 bg-blue-50 text-blue-800',
+        page: 'bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.10),_transparent_45%),linear-gradient(180deg,#f8fbff_0%,#f8fafc_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.18),_transparent_45%),linear-gradient(180deg,#0f172a_0%,#020617_100%)]',
+        badge: 'border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-300',
+        context: 'border-blue-200 bg-blue-50 text-blue-800 dark:border-blue-900/70 dark:bg-blue-950/40 dark:text-blue-200',
       }
 
   return (
-    <div className={`min-h-screen px-4 py-6 text-slate-950 sm:px-6 sm:py-10 ${accentClasses.page}`}>
+    <div className={`min-h-screen px-4 py-6 text-slate-950 dark:text-slate-50 sm:px-6 sm:py-10 ${accentClasses.page}`}>
       <div className="mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-md items-center">
-        <Card className="w-full overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.10)] backdrop-blur">
+        <Card className="w-full overflow-hidden rounded-3xl border border-slate-200/80 bg-white/95 shadow-[0_18px_60px_rgba(15,23,42,0.10)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/95">
           {!minimal && (
             <CardHeader className="space-y-5 px-5 pb-4 pt-5 sm:px-8 sm:pb-5 sm:pt-8">
               <div className="flex items-start justify-between gap-4">
                 {backHref ? (
                   <Link
                     href={backHref}
-                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-[#252d3a] dark:bg-[#151c28] dark:text-slate-300 dark:hover:border-slate-600 dark:hover:text-slate-100"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                     {backLabel}
@@ -111,10 +111,10 @@ export function AuthShell({
                 )}
 
                 <div className="space-y-2">
-                  <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900 sm:text-[1.9rem]">
+                  <CardTitle className="text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-[1.9rem]">
                     {title}
                   </CardTitle>
-                  <CardDescription className="mx-auto max-w-sm text-sm leading-6 text-slate-500">
+                  <CardDescription className="mx-auto max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
                     {description}
                   </CardDescription>
                 </div>
@@ -124,7 +124,7 @@ export function AuthShell({
 
           <CardContent className={minimal ? 'px-5 py-5 sm:px-8 sm:py-8' : 'px-5 pb-5 pt-3 sm:px-8 sm:pb-8 sm:pt-4'}>
             {children}
-            {footer && <div className="mt-6 border-t border-slate-100 pt-5">{footer}</div>}
+            {footer && <div className="mt-6 border-t border-slate-100 pt-5 dark:border-[#252d3a]">{footer}</div>}
           </CardContent>
         </Card>
       </div>

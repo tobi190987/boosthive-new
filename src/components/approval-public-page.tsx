@@ -327,15 +327,15 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   // 404 page
   if (notFound) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4">
-        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 dark:bg-[#0b1120]">
+        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
-              <AlertCircle className="h-7 w-7 text-red-500" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/40">
+              <AlertCircle className="h-7 w-7 text-red-500 dark:text-red-300" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-xl font-bold text-slate-900">Freigabe nicht gefunden</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Freigabe nicht gefunden</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">
                 Dieser Freigabe-Link ist ungültig oder das zugehörige Element wurde entfernt.
               </p>
             </div>
@@ -348,8 +348,8 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   // Loading
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4">
-        <Card className="w-full max-w-2xl rounded-2xl border-slate-200 shadow-lg">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 dark:bg-[#0b1120]">
+        <Card className="w-full max-w-2xl rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
           <CardContent className="p-8 space-y-6">
             <Skeleton className="h-10 w-48" />
             <Skeleton className="h-6 w-64" />
@@ -368,15 +368,15 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   // Error
   if (error && !data) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4">
-        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg">
+      <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 dark:bg-[#0b1120]">
+        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
-              <AlertCircle className="h-7 w-7 text-red-500" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/40">
+              <AlertCircle className="h-7 w-7 text-red-500 dark:text-red-300" />
             </div>
             <div className="space-y-2">
-              <h1 className="text-xl font-bold text-slate-900">Fehler</h1>
-              <p className="text-sm text-slate-500">{error}</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">Fehler</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{error}</p>
             </div>
           </CardContent>
         </Card>
@@ -390,10 +390,10 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   const contentTypeLabel = data.content_type === 'content_brief' ? 'Content Brief' : 'Ad-Text'
 
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 sm:py-12">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] sm:py-12">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header with branding */}
-        <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur">
+        <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/85">
           <div className="flex items-center gap-3">
           {data.tenant_logo_url ? (
             <Image
@@ -406,17 +406,17 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
             />
           ) : (
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-xs font-semibold text-blue-600">
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-50 text-xs font-semibold text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
                 {data.tenant_name.slice(0, 1).toUpperCase()}
               </div>
-              <span className="text-lg font-bold text-slate-900">{data.tenant_name}</span>
+              <span className="text-lg font-bold text-slate-900 dark:text-slate-100">{data.tenant_name}</span>
             </div>
           )}
           </div>
           <div className="flex items-center gap-2">
             <Badge
               variant="outline"
-              className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600"
+              className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-[#252d3a] dark:bg-[#182131] dark:text-slate-300"
             >
               {contentTypeLabel}
             </Badge>
@@ -424,7 +424,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
               type="button"
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-xl text-slate-400 hover:text-slate-700 print:hidden"
+              className="h-8 w-8 rounded-xl text-slate-400 hover:text-slate-700 dark:text-slate-500 dark:hover:text-slate-200 print:hidden"
               onClick={() => window.print()}
               title="Drucken / Als PDF speichern"
             >
@@ -435,12 +435,12 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
 
         {/* Success confirmation */}
         {actionDone && (
-          <Alert className="rounded-2xl border-emerald-200 bg-emerald-50">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-            <AlertTitle className="text-emerald-800">
+          <Alert className="rounded-2xl border-emerald-200 bg-emerald-50 dark:border-emerald-900/70 dark:bg-emerald-950/30">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
+            <AlertTitle className="text-emerald-800 dark:text-emerald-200">
               {actionDone === 'approved' ? 'Vielen Dank!' : 'Feedback gesendet!'}
             </AlertTitle>
-            <AlertDescription className="text-emerald-700">
+            <AlertDescription className="text-emerald-700 dark:text-emerald-300">
               {actionDone === 'approved'
                 ? 'Sie haben den Inhalt freigegeben. Die Agentur wurde benachrichtigt.'
                 : 'Ihre Korrekturwünsche wurden an die Agentur weitergeleitet.'}
@@ -450,10 +450,10 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
 
         {/* Already decided banner */}
         {alreadyDecided && !actionDone && (
-          <Alert className="rounded-2xl border-blue-200 bg-blue-50">
-            <CheckCircle2 className="h-4 w-4 text-blue-600" />
-            <AlertTitle className="text-blue-800">Bereits entschieden</AlertTitle>
-            <AlertDescription className="text-blue-700">
+          <Alert className="rounded-2xl border-blue-200 bg-blue-50 dark:border-blue-900/70 dark:bg-blue-950/30">
+            <CheckCircle2 className="h-4 w-4 text-blue-600 dark:text-blue-300" />
+            <AlertTitle className="text-blue-800 dark:text-blue-200">Bereits entschieden</AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-300">
               {data.status === 'approved'
                 ? 'Dieser Inhalt wurde bereits freigegeben.'
                 : 'Für diesen Inhalt wurden bereits Korrekturen angefragt.'}
@@ -462,10 +462,10 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
         )}
 
         {/* Content card */}
-        <Card className="overflow-hidden rounded-[2rem] border-white/80 bg-white/90 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur">
-          <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.95))] px-6 py-5 sm:px-8">
+        <Card className="overflow-hidden rounded-[2rem] border-white/80 bg-white/90 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/90">
+          <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.95))] px-6 py-5 dark:border-[#252d3a] dark:bg-[linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,41,59,0.95))] sm:px-8">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 dark:bg-[#182131] dark:ring-[#2a3444]">
                 {data.content_type === 'content_brief' ? (
                   <FileText className="h-4 w-4 text-blue-600" />
                 ) : (
@@ -473,10 +473,10 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                   {contentTypeLabel}
                 </p>
-                <CardTitle className="mt-1 text-xl font-bold tracking-tight text-slate-900 sm:text-2xl">
+                <CardTitle className="mt-1 text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
                   {data.content_title}
                 </CardTitle>
                 <div className="mt-3 flex flex-wrap gap-2">
@@ -485,14 +485,14 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                   </Badge>
                   <Badge
                     variant="outline"
-                    className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600"
+                    className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-[#252d3a] dark:bg-[#182131] dark:text-slate-300"
                   >
                     Bitte sorgfältig prüfen
                   </Badge>
                 </div>
               </div>
             </div>
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500">
+            <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
               Bitte prüfen Sie den folgenden Inhalt und geben Sie Ihre Rückmeldung.
             </p>
           </CardHeader>
@@ -507,32 +507,32 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
         </Card>
 
         {data.history.length > 0 && (
-          <Card className="rounded-[2rem] border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)]">
-            <CardHeader className="border-b border-slate-100 px-6 py-5 sm:px-8">
-              <CardTitle className="text-lg font-semibold text-slate-900">Abnahmeverlauf</CardTitle>
+          <Card className="rounded-[2rem] border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)] dark:border-[#252d3a] dark:bg-[#111827]/90">
+            <CardHeader className="border-b border-slate-100 px-6 py-5 dark:border-[#252d3a] sm:px-8">
+              <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Abnahmeverlauf</CardTitle>
             </CardHeader>
             <CardContent className="px-6 py-6 sm:px-8">
               <div className="space-y-4">
                 {data.history.map((entry, index) => (
                   <div key={entry.id} className="relative pl-8">
                     {index < data.history.length - 1 && (
-                      <div className="absolute left-[0.45rem] top-6 h-[calc(100%+0.5rem)] w-px bg-slate-200" />
+                      <div className="absolute left-[0.45rem] top-6 h-[calc(100%+0.5rem)] w-px bg-slate-200 dark:bg-[#2a3444]" />
                     )}
-                    <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-white bg-blue-500 shadow-sm" />
-                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4">
+                    <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-white bg-blue-500 shadow-sm dark:border-[#111827]" />
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4 dark:border-[#252d3a] dark:bg-[#182131]">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                        <p className="text-sm font-semibold text-slate-900">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {formatHistoryLabel(entry.event_type)}
                         </p>
-                        <p className="text-xs text-slate-500">{formatHistoryDate(entry.created_at)}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{formatHistoryDate(entry.created_at)}</p>
                       </div>
                       {entry.actor_label && (
-                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400">
+                        <p className="mt-1 text-xs uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                           {entry.actor_label}
                         </p>
                       )}
                       {entry.feedback && (
-                        <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm leading-6 text-orange-900">
+                        <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 px-3 py-2 text-sm leading-6 text-orange-900 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
                           {entry.feedback}
                         </div>
                       )}
@@ -546,11 +546,11 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
 
         {/* Action panel */}
         {!alreadyDecided && !actionDone && (
-          <Card className="rounded-2xl border-slate-200 shadow-lg">
+          <Card className="rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
             <CardContent className="px-6 py-6 space-y-4">
               {!showFeedback ? (
                 <>
-                  <p className="text-sm font-medium text-slate-700">Ihre Entscheidung:</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Ihre Entscheidung:</p>
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <Button
                       onClick={handleApprove}
@@ -568,7 +568,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                       variant="outline"
                       onClick={() => setShowFeedback(true)}
                       disabled={submitting}
-                      className="flex-1 gap-2 rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50"
+                      className="flex-1 gap-2 rounded-xl border-orange-300 text-orange-700 hover:bg-orange-50 dark:border-orange-900/70 dark:text-orange-300 dark:hover:bg-orange-950/30"
                     >
                       <Pencil className="h-4 w-4" />
                       Korrektur nötig
@@ -577,7 +577,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                 </>
               ) : (
                 <>
-                  <p className="text-sm font-medium text-slate-700">Was soll geändert werden?</p>
+                  <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Was soll geändert werden?</p>
                   <Textarea
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
@@ -590,7 +590,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                     ) : (
                       <span />
                     )}
-                    <p className={`text-xs ${feedback.length >= 10 ? 'text-slate-400' : 'text-slate-300'}`}>
+                    <p className={`text-xs ${feedback.length >= 10 ? 'text-slate-400 dark:text-slate-500' : 'text-slate-300 dark:text-slate-600'}`}>
                       {feedback.length} Zeichen
                     </p>
                   </div>

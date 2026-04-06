@@ -110,8 +110,8 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-semibold',
                       invitation.role === 'admin'
-                        ? 'border-amber-200 bg-amber-50 text-blue-600'
-                        : 'border-[#d7eadf] bg-[#eff8f2] text-[#166534]'
+                        ? 'border-amber-200 bg-amber-50 text-blue-600 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300'
+                        : 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                     )}
                   >
                     {roleCopy(invitation.role)}
@@ -123,9 +123,9 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-semibold',
                       invitation.status === 'accepted'
-                        ? 'border-[#d7eadf] bg-[#eff8f2] text-[#166534]'
+                        ? 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                         : invitation.status === 'revoked'
-                          ? 'border-[#e8d7d7] bg-[#fbefef] text-[#991b1b]'
+                          ? 'border-[#e8d7d7] bg-[#fbefef] text-[#991b1b] dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300'
                           : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300'
                     )}
                   >

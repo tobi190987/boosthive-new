@@ -900,7 +900,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
           </div>
 
           <div className="grid w-full min-w-0 gap-3 sm:grid-cols-3 xl:max-w-[560px]">
-            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur dark:border-[#252d3a] dark:bg-[#151c28]/85">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                 Status
               </p>
@@ -919,7 +919,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 {tenantStatusDescription(tenant?.status)}
               </p>
             </div>
-            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur dark:border-[#252d3a] dark:bg-[#151c28]/85">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
                 Erstellt
               </p>
@@ -927,7 +927,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                 {tenant?.created_at ? formatDate(tenant.created_at) : "-"}
               </p>
             </div>
-            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur">
+            <div className="min-w-0 rounded-2xl border border-white/70 bg-white/80 px-4 py-3 backdrop-blur dark:border-[#252d3a] dark:bg-[#151c28]/85">
               <div className="flex items-start justify-between gap-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">
                   Tenant-ID
@@ -951,7 +951,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <Globe className="h-5 w-5 text-blue-600" />
             <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Subdomain und Einstieg</p>
             <a
@@ -963,13 +963,13 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               {tenant?.slug ? tenantUrl(tenant.slug) : tenantHost}
             </a>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <Users2 className="h-5 w-5 text-blue-600" />
             <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Aktive Nutzerbasis</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{activeUsers}</p>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">aktive Accounts in dieser Agentur</p>
           </div>
-          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm">
+          <div className="rounded-2xl border border-white/70 bg-white/80 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <ShieldCheck className="h-5 w-5 text-[#1f2937]" />
             <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Administrative Abdeckung</p>
             <p className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{adminUsers}</p>
@@ -1752,8 +1752,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                                 <Badge
                                   className={
                                     user.status === "active"
-                                      ? "rounded-full bg-[#eff8f2] text-[#166534] hover:bg-[#eff8f2]"
-                                      : "rounded-full bg-amber-50 text-blue-600 hover:bg-amber-50"
+                                      ? "rounded-full bg-[#eff8f2] text-[#166534] hover:bg-[#eff8f2] dark:bg-emerald-950/40 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+                                      : "rounded-full bg-amber-50 text-blue-600 hover:bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 dark:hover:bg-amber-950/40"
                                   }
                                 >
                                   {memberStatusCopy(user.status)}
@@ -2018,7 +2018,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
 
   if (error && !data) {
     return (
-      <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
+      <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Fehler</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
@@ -2099,7 +2099,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
   return (
     <div className="space-y-6">
       {error && (
-        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

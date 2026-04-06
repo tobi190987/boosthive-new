@@ -325,7 +325,7 @@ export function OwnerBillingWorkspace() {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <CardContent className="p-5">
               <CreditCard className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">DB-basierte Übersicht</p>
@@ -334,7 +334,7 @@ export function OwnerBillingWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <CardContent className="p-5">
               <Shield className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Manuelle Sperrung</p>
@@ -343,7 +343,7 @@ export function OwnerBillingWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <CardContent className="p-5">
               <AlertTriangle className="h-5 w-5 text-[#1f2937]" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Kritische Faelle</p>
@@ -356,7 +356,7 @@ export function OwnerBillingWorkspace() {
       </section>
 
       {error && (
-        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

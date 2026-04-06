@@ -228,12 +228,12 @@ const tenantFeatureGroups: FeatureGroup[] = [
 
 function FeatureCard({ icon: Icon, title, copy }: FeatureItem) {
   return (
-    <div className="rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.35)] backdrop-blur">
+    <div className="rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.35)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/80">
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0f766e]/10 text-[#0f766e]">
         <Icon className="h-5 w-5" />
       </div>
-      <h3 className="mt-4 text-lg font-semibold tracking-tight text-slate-950">{title}</h3>
-      <p className="mt-2 text-sm leading-7 text-slate-600">{copy}</p>
+      <h3 className="mt-4 text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50">{title}</h3>
+      <p className="mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300">{copy}</p>
     </div>
   )
 }
@@ -264,7 +264,7 @@ function Header({ tenant, mode }: { tenant: MarketingTenantBranding | null; mode
             className="h-10 w-auto object-contain"
           />
         )}
-        <div className="hidden text-sm text-slate-500 sm:block">
+        <div className="hidden text-sm text-slate-500 dark:text-slate-400 sm:block">
           {isTenant ? `${tenant?.slug}.boost-hive.de` : 'boost-hive.de'}
         </div>
       </Link>
@@ -273,14 +273,14 @@ function Header({ tenant, mode }: { tenant: MarketingTenantBranding | null; mode
         {mode === 'home' && (
           <Link
             href="/access"
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300"
+            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-600"
           >
             Vorschau-Zugang
           </Link>
         )}
         <Link
           href="/login"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300"
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-600"
         >
           {isTenant ? 'Tenant Login' : 'Agentur Login'}
         </Link>
@@ -337,14 +337,14 @@ function Hero({
   return (
     <section className="grid gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:items-end">
       <div className="space-y-6">
-        <span className="inline-flex items-center rounded-full border border-[#99f6e4] bg-[#ccfbf1] px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#115e59]">
+        <span className="inline-flex items-center rounded-full border border-[#99f6e4] bg-[#ccfbf1] px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-[#115e59] dark:border-teal-900/70 dark:bg-teal-950/40 dark:text-teal-200">
           {eyebrow}
         </span>
         <div className="space-y-4">
-          <h1 className="max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
+          <h1 className="max-w-4xl text-4xl font-semibold leading-tight tracking-tight text-slate-950 dark:text-slate-50 sm:text-5xl lg:text-6xl">
             {title}
           </h1>
-          <p className="max-w-2xl text-base leading-8 text-slate-600 sm:text-lg">{description}</p>
+          <p className="max-w-2xl text-base leading-8 text-slate-600 dark:text-slate-300 sm:text-lg">{description}</p>
         </div>
         <div className="flex flex-wrap gap-3">
           <Link
@@ -356,7 +356,7 @@ function Hero({
           </Link>
           <Link
             href={mode === 'access' ? '/' : '/access'}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-600"
           >
             {mode === 'access' ? 'Zur Startseite' : 'Vorschau-Zugang'}
           </Link>
@@ -365,7 +365,7 @@ function Hero({
           {bullets.map((bullet) => (
             <span
               key={bullet}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm text-slate-600"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-[#252d3a] dark:bg-[#111827]/80 dark:text-slate-300"
             >
               <CheckCircle2 className="h-4 w-4 text-[#0f766e]" />
               {bullet}
@@ -374,9 +374,9 @@ function Hero({
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-[#0f172a]/10 bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_rgba(255,255,255,0.96)_45%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,253,250,0.96))] p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] sm:p-8">
-        <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-6 backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+      <div className="rounded-[2rem] border border-[#0f172a]/10 bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_rgba(255,255,255,0.96)_45%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,253,250,0.96))] p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] dark:border-[#1f2937] dark:bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_rgba(15,23,42,0.96)_45%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] sm:p-8">
+        <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-6 backdrop-blur dark:border-[#252d3a] dark:bg-[#0f172a]/80">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
             {isTenant ? 'Tenant Snapshot' : 'Platform Snapshot'}
           </p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -391,12 +391,12 @@ function Hero({
                   : 'Plattform für mehrere Agenturen mit klar getrennter Tenant-Struktur.'}
               </p>
             </div>
-            <div className="rounded-[1.5rem] bg-[#ecfeff] px-5 py-4 text-slate-900">
-              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Scope</p>
+            <div className="rounded-[1.5rem] bg-[#ecfeff] px-5 py-4 text-slate-900 dark:bg-cyan-950/40 dark:text-slate-100">
+              <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Scope</p>
               <p className="mt-3 text-xl font-semibold">
                 {mode === 'access' ? 'Preview + Access' : 'Features + Pricing'}
               </p>
-              <p className="mt-2 text-sm leading-6 text-slate-600">
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 {mode === 'access'
                   ? 'Passwortschutz mit direkter Weiterleitung auf den gewünschten Bereich.'
                   : 'Produktseite mit Feature-Landschaft, Preismodell und Einstiegspunkten.'}
@@ -416,14 +416,14 @@ function TopFeatures({ tenant }: { tenant: MarketingTenantBranding | null }) {
     <section className="mt-16">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
             Top Features
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950">
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
             {tenant ? 'Was im Agentur-Tenant auf dich wartet' : 'Was hinter dem Zugang sichtbar wird'}
           </h2>
         </div>
-        <p className="max-w-xl text-sm leading-7 text-slate-500">
+        <p className="max-w-xl text-sm leading-7 text-slate-500 dark:text-slate-400">
           {tenant
             ? 'Die Vorschau führt in einen tenant-spezifischen Workspace mit Analyse-, Produktions- und Kundenprozessen.'
             : 'Die Root-Domain erklärt die Plattform, während einzelne Tenants dieselbe Infrastruktur mit eigenem Branding nutzen.'}
@@ -442,24 +442,24 @@ function AccessPanel({ returnTo }: { returnTo?: string }) {
   return (
     <section
       id="access-form"
-      className="mt-16 rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] backdrop-blur sm:p-8"
+      className="mt-16 rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/90 sm:p-8"
     >
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div className="space-y-4">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#0f766e]">
             Passwortschutz
           </p>
-          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
+          <h2 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
             Zugang kurz freischalten
           </h2>
-          <p className="text-sm leading-7 text-slate-600">
+          <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
             Gib das temporäre Projektpasswort ein. Danach wirst du automatisch auf die angeforderte Seite weitergeleitet.
           </p>
-          <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600">
+          <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600 dark:bg-[#182131] dark:text-slate-300">
             Die Schutzschicht liegt vor Root-Domain, Owner-Bereich und Tenant-Subdomains. So lassen sich Plattform und Agentur-Tenants gezielt abstimmen, bevor sie offen erreichbar sind.
           </div>
         </div>
-        <div className="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.95))] p-5 sm:p-6">
+        <div className="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.95))] p-5 dark:border-[#252d3a] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(17,24,39,0.95))] sm:p-6">
           <PreviewAccessForm returnTo={returnTo} />
         </div>
       </div>
@@ -473,19 +473,19 @@ function FeatureGroups({ tenant }: { tenant: MarketingTenantBranding | null }) {
   return (
     <section className="mt-20 space-y-10">
       <div className="max-w-3xl">
-        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
           Feature Set
         </p>
-        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+        <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
           {tenant ? 'Die wichtigsten Funktionen für diesen Tenant' : 'Alle zentralen Plattform-Funktionen im Überblick'}
         </h2>
       </div>
 
       {groups.map((group) => (
-        <div key={group.title} className="rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_20px_70px_-46px_rgba(15,23,42,0.45)] backdrop-blur sm:p-8">
+        <div key={group.title} className="rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_20px_70px_-46px_rgba(15,23,42,0.45)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/80 sm:p-8">
           <div className="max-w-3xl">
-            <h3 className="text-2xl font-semibold tracking-tight text-slate-950">{group.title}</h3>
-            <p className="mt-3 text-sm leading-7 text-slate-600">{group.intro}</p>
+            <h3 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{group.title}</h3>
+            <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{group.intro}</p>
           </div>
           <div className="mt-8 grid gap-4 md:grid-cols-2">
             {group.items.map((item) => (
@@ -509,14 +509,14 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
     <section className="mt-20">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
             Preise
           </p>
-          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
             Transparentes Modell aus Basis-Plan und Modulen
           </h2>
         </div>
-        <p className="max-w-xl text-sm leading-7 text-slate-500">
+        <p className="max-w-xl text-sm leading-7 text-slate-500 dark:text-slate-400">
           Die Plattform rechnet in 4-Wochen-Zyklen ab. Der Basis-Plan schafft den Workspace, einzelne Module erweitern die Agenturumgebung nach Bedarf.
         </p>
       </div>
@@ -546,13 +546,13 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.45)] backdrop-blur sm:p-8">
+        <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.45)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/90 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#0f766e]">
                 Zubuchbare Module
               </p>
-              <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950">
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
                 Funktionsumfang nach Bedarf erweitern
               </h3>
             </div>
@@ -561,22 +561,22 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
             {modules.map((item) => (
               <div
                 key={item.code}
-                className="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 px-4 py-4 sm:flex-row sm:items-start sm:justify-between"
+                className="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-[#252d3a] dark:bg-[#182131] sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="pr-4">
-                  <p className="text-sm font-semibold text-slate-900">{item.name}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-500">{item.description}</p>
+                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
+                  <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{item.description}</p>
                 </div>
                 <div className="shrink-0 text-left sm:text-right">
-                  <p className="text-base font-semibold text-slate-950">
+                  <p className="text-base font-semibold text-slate-950 dark:text-slate-50">
                     {formatPrice(item.amount, item.currency)}
                   </p>
-                  <p className="text-xs text-slate-400">/ {item.interval}</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">/ {item.interval}</p>
                 </div>
               </div>
             ))}
           </div>
-          <p className="mt-5 text-xs leading-6 text-slate-500">
+          <p className="mt-5 text-xs leading-6 text-slate-500 dark:text-slate-400">
             Modulpreise werden aus der aktuellen Billing-Konfiguration geladen. Falls ein Preis nicht öffentlich angezeigt werden kann, bleibt er im Tenant-Billing sichtbar.
           </p>
         </div>
@@ -633,13 +633,13 @@ function Cta({ tenant, mode }: { tenant: MarketingTenantBranding | null; mode: P
 function Footer() {
   return (
     <footer className="mt-12 pb-10">
-      <div className="flex flex-col gap-3 rounded-[1.75rem] border border-white/70 bg-white/70 px-6 py-5 text-sm text-slate-500 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-[1.75rem] border border-white/70 bg-white/70 px-6 py-5 text-sm text-slate-500 backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/80 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <p>BoostHive verbindet White-Label Plattform, Agenturmodule und sichere Tenant-Zugänge.</p>
         <div className="flex flex-wrap items-center gap-4">
-          <Link href="/datenschutz" className="font-medium text-slate-700 hover:text-slate-950">
+          <Link href="/datenschutz" className="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-50">
             Datenschutz
           </Link>
-          <Link href="/impressum" className="font-medium text-slate-700 hover:text-slate-950">
+          <Link href="/impressum" className="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-50">
             Impressum
           </Link>
         </div>
@@ -650,7 +650,7 @@ function Footer() {
 
 export function MarketingPages({ mode, pricing = [], tenant, returnTo }: MarketingPagesProps) {
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(153,246,228,0.38),_rgba(248,250,252,0.92)_38%),radial-gradient(circle_at_bottom_right,_rgba(191,219,254,0.35),_rgba(248,250,252,0.92)_34%),linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,1))] px-4 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(153,246,228,0.38),_rgba(248,250,252,0.92)_38%),radial-gradient(circle_at_bottom_right,_rgba(191,219,254,0.35),_rgba(248,250,252,0.92)_34%),linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,1))] px-4 dark:bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.16),_rgba(2,6,23,0.96)_38%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.18),_rgba(2,6,23,0.96)_34%),linear-gradient(180deg,rgba(15,23,42,1),rgba(2,6,23,1))] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">
         <Header tenant={tenant} mode={mode} />
         <Hero tenant={tenant} mode={mode} />

@@ -315,7 +315,7 @@ export function OwnerDashboardWorkspace() {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <CardContent className="p-5">
               <Sparkles className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Metriken auf einen Blick</p>
@@ -324,7 +324,7 @@ export function OwnerDashboardWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <CardContent className="p-5">
               <Search className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Suche und Filter</p>
@@ -333,7 +333,7 @@ export function OwnerDashboardWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
             <CardContent className="p-5">
               <Building2 className="h-5 w-5 text-[#1f2937]" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Statuswechsel mit Klarheit</p>
@@ -346,7 +346,7 @@ export function OwnerDashboardWorkspace() {
       </section>
 
       {error && (
-        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}

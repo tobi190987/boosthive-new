@@ -289,8 +289,8 @@ function CriticalProblemList({
                 className={cn(
                   'mt-0.5 flex h-8.5 w-8.5 shrink-0 items-center justify-center rounded-xl border',
                   isActive
-                    ? 'border-blue-200 bg-white dark:bg-[#151c28] text-blue-600'
-                    : 'border-slate-200 dark:border-[#252d3a] bg-white/80 text-blue-600'
+                    ? 'border-blue-200 bg-white dark:bg-[#151c28] text-blue-600 dark:border-blue-900/60 dark:text-blue-300'
+                    : 'border-slate-200 dark:border-[#252d3a] bg-white/80 text-blue-600 dark:bg-[#182131] dark:text-blue-300'
                 )}
               >
                 <AlertCircle className="h-4 w-4" />
@@ -1180,7 +1180,7 @@ function SeoReportContent({
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-white/90 p-4">
+          <div className="rounded-2xl bg-white/90 p-4 dark:bg-[#151c28]/90">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Domain
             </p>
@@ -1188,7 +1188,7 @@ function SeoReportContent({
               {extractHostname(sourceUrl) ?? 'Nicht verfügbar'}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4">
+          <div className="rounded-2xl bg-white/90 p-4 dark:bg-[#151c28]/90">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Crawl-Modus
             </p>
@@ -1196,7 +1196,7 @@ function SeoReportContent({
               {crawlMode ? formatCrawlModeLabel(crawlMode) : 'Nicht verfügbar'}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4">
+          <div className="rounded-2xl bg-white/90 p-4 dark:bg-[#151c28]/90">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Erstellt am
             </p>

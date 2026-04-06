@@ -376,7 +376,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
       <div className="space-y-6">
         <BillingHero tenantSlug={tenantSlug} />
         {error && (
-          <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm">
+          <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
             {error}
           </div>
         )}
@@ -410,7 +410,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
       <BillingHero tenantSlug={tenantSlug} />
 
       {error && (
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm">
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           {error}
         </div>
       )}
@@ -1240,21 +1240,21 @@ function BillingHero({ tenantSlug }: { tenantSlug: string }) {
       </div>
 
       <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
           <CreditCard className="h-5 w-5 text-blue-600" />
           <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Sichere Karteneingabe</p>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Zahlungsdaten werden direkt bei Stripe gespeichert und nie auf unseren Servern.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
           <Zap className="h-5 w-5 text-blue-600" />
           <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">4-Wochen-Zyklen</p>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Der Basis-Plan wird alle 4 Wochen automatisch verlaengert und abgerechnet.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm">
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
           <Shield className="h-5 w-5 text-[#1f2937]" />
           <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Jederzeit kuendbar</p>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">

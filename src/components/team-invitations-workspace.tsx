@@ -280,7 +280,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       </section>
 
       {error && (
-        <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm">
+        <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           {error}
         </div>
       )}

@@ -506,7 +506,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white/85 p-4">
+              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-[#252d3a] dark:bg-[#151c28]/85">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <Move className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Bild verschieben
@@ -547,7 +547,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white/85 p-4">
+              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-[#252d3a] dark:bg-[#151c28]/85">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <ZoomIn className="h-4 w-4 text-blue-600" />
                   Zoom
@@ -576,7 +576,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-100 dark:border-[#252d3a] bg-white/70 px-6 py-4">
+          <DialogFooter className="border-t border-slate-100 bg-white/70 px-6 py-4 dark:border-[#252d3a] dark:bg-[#151c28]/80">
             <Button
               type="button"
               variant="outline"

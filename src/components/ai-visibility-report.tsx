@@ -758,7 +758,7 @@ export function AiVisibilityReport({
                   <TabsTrigger
                     key={model}
                     value={model}
-                    className="rounded-full px-4 py-2 text-xs data-[state=active]:bg-white"
+                    className="rounded-full px-4 py-2 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-[#1e2635]"
                   >
                     {model === 'all' ? 'Alle Modelle' : modelLabel(model)}
                   </TabsTrigger>
@@ -791,7 +791,7 @@ export function AiVisibilityReport({
                         </TableHeader>
                         <TableBody>
                           {benchmarkRows.map((row) => (
-                            <TableRow key={row.keyword} className={row.isGap ? 'bg-orange-50' : undefined}>
+                            <TableRow key={row.keyword} className={row.isGap ? 'bg-orange-50 dark:bg-orange-950/20' : undefined}>
                               <TableCell className="font-medium text-slate-900 dark:text-slate-100">{row.keyword}</TableCell>
                               <TableCell>
                                 {row.brand ? (

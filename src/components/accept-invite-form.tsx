@@ -126,7 +126,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
   if (isSuccess) {
     return (
       <div className="space-y-6">
-        <Alert className="rounded-2xl border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
+        <Alert className="rounded-2xl border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
           <CheckCircle2 className="h-4 w-4" />
           <AlertDescription>
             Deine Einladung für {validation?.tenantName ?? fallbackTenantName} wurde angenommen.
@@ -152,7 +152,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
               Das Passwort wird direkt beim ersten Einstieg gesetzt.
             </p>
           </div>
-          <div className="rounded-[22px] border border-[#d7eadf] bg-[#eff8f2] p-4">
+          <div className="rounded-[22px] border border-[#d7eadf] bg-[#eff8f2] p-4 dark:border-emerald-900/70 dark:bg-emerald-950/30">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
             <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Token-basierter Einstieg</p>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -170,7 +170,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
       )}
 
       {!isValidating && !validation?.valid && (
-        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           <AlertDescription>
             {validation?.reason === 'expired'
               ? 'Diese Einladung ist abgelaufen. Bitte fordere bei einem Admin einen neuen Link an.'
@@ -184,7 +184,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
       )}
 
       {validation?.valid && (
-        <Alert className="rounded-2xl border-[#d7eadf] bg-[#eff8f2] text-[#166534]">
+        <Alert className="rounded-2xl border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
           <AlertDescription>
             Einladung für {validation.email} zu {validation.tenantName ?? fallbackTenantName} als{' '}
             {validation.role === 'admin' ? 'Admin' : 'Member'}.
@@ -193,7 +193,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
       )}
 
       {serverError && (
-        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800">
+        <Alert className="rounded-2xl border-orange-200 bg-orange-50 text-orange-800 dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           <AlertDescription>{serverError}</AlertDescription>
         </Alert>
       )}

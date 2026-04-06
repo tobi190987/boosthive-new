@@ -90,7 +90,7 @@
 
 @layer components {
   .approval-render-shell {
-    @apply text-slate-700;
+    @apply text-slate-700 dark:text-slate-300;
   }
 
   .approval-rich-content {
@@ -102,7 +102,7 @@
   .approval-ad-type,
   .approval-ad-variant,
   .approval-outline-card {
-    @apply rounded-3xl border border-slate-200/80 bg-white;
+    @apply rounded-3xl border border-slate-200/80 bg-white dark:border-[#2a3444] dark:bg-[#111827];
   }
 
   .approval-section {
@@ -110,24 +110,24 @@
   }
 
   .approval-section--accent {
-    @apply border-blue-200/80 bg-[linear-gradient(180deg,rgba(239,246,255,0.92),rgba(255,255,255,0.98))];
+    @apply border-blue-200/80 bg-[linear-gradient(180deg,rgba(239,246,255,0.92),rgba(255,255,255,0.98))] dark:border-blue-900/60 dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.95),rgba(17,24,39,0.98))];
   }
 
   .approval-section--warm {
-    @apply border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.92),rgba(255,255,255,0.98))];
+    @apply border-amber-200/80 bg-[linear-gradient(180deg,rgba(255,251,235,0.92),rgba(255,255,255,0.98))] dark:border-amber-900/60 dark:bg-[linear-gradient(180deg,rgba(69,26,3,0.32),rgba(17,24,39,0.98))];
   }
 
   .approval-section__header,
   .approval-platform__header,
   .approval-ad-type__header {
-    @apply border-b border-slate-100 px-5 py-4 sm:px-6;
+    @apply border-b border-slate-100 px-5 py-4 dark:border-[#252d3a] sm:px-6;
   }
 
   .approval-section__header h3,
   .approval-platform__header h3,
   .approval-ad-type__header h4,
   .approval-outline-card h4 {
-    @apply m-0 text-lg font-semibold tracking-tight text-slate-900;
+    @apply m-0 text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100;
   }
 
   .approval-section__body,
@@ -140,7 +140,7 @@
   }
 
   .approval-copy p {
-    @apply m-0 text-sm leading-7 text-slate-600;
+    @apply m-0 text-sm leading-7 text-slate-600 dark:text-slate-300;
   }
 
   .approval-pill-row {
@@ -160,7 +160,7 @@
 
   .approval-list li,
   .approval-sublist li {
-    @apply grid grid-cols-[0.5rem_minmax(0,1fr)] items-start gap-x-4 rounded-2xl border border-slate-200/70 bg-slate-50/85 px-4 py-3 text-sm leading-6 text-slate-700;
+    @apply grid grid-cols-[0.5rem_minmax(0,1fr)] items-start gap-x-4 rounded-2xl border border-slate-200/70 bg-slate-50/85 px-4 py-3 text-sm leading-6 text-slate-700 dark:border-[#2a3444] dark:bg-[#182131] dark:text-slate-300;
   }
 
   .approval-list li::before,
@@ -177,7 +177,7 @@
   }
 
   .approval-sublist li {
-    @apply bg-white;
+    @apply bg-white dark:bg-[#111827];
   }
 
   .approval-outline-grid,
@@ -196,7 +196,7 @@
   .approval-outline-card__eyebrow,
   .approval-ad-variant__header,
   .approval-ad-field__label {
-    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400;
+    @apply text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500;
   }
 
   .approval-outline-card h4 {
@@ -204,23 +204,23 @@
   }
 
   .approval-keyword-table {
-    @apply overflow-hidden rounded-2xl border border-slate-200/80;
+    @apply overflow-hidden rounded-2xl border border-slate-200/80 dark:border-[#2a3444];
   }
 
   .approval-keyword-row {
-    @apply grid gap-2 border-b border-slate-100 px-4 py-3 text-sm last:border-b-0 sm:grid-cols-[minmax(0,1.4fr)_minmax(180px,0.8fr)];
+    @apply grid gap-2 border-b border-slate-100 px-4 py-3 text-sm last:border-b-0 dark:border-[#252d3a] sm:grid-cols-[minmax(0,1.4fr)_minmax(180px,0.8fr)];
   }
 
   .approval-keyword-row:nth-child(odd) {
-    @apply bg-slate-50/80;
+    @apply bg-slate-50/80 dark:bg-[#182131];
   }
 
   .approval-keyword-row__term {
-    @apply font-medium text-slate-800;
+    @apply font-medium text-slate-800 dark:text-slate-200;
   }
 
   .approval-keyword-row__frequency {
-    @apply text-slate-500;
+    @apply text-slate-500 dark:text-slate-400;
   }
 
   .approval-platform {
@@ -232,7 +232,7 @@
   }
 
   .approval-platform__header {
-    @apply bg-[linear-gradient(135deg,rgba(248,250,252,1),rgba(239,246,255,0.9))];
+    @apply bg-[linear-gradient(135deg,rgba(248,250,252,1),rgba(239,246,255,0.9))] dark:bg-[linear-gradient(135deg,rgba(17,24,39,1),rgba(30,41,59,0.95))];
   }
 
   .approval-platform__body {
@@ -240,7 +240,7 @@
   }
 
   .approval-ad-type {
-    @apply overflow-hidden border-slate-200/80 bg-slate-50/55;
+    @apply overflow-hidden border-slate-200/80 bg-slate-50/55 dark:border-[#2a3444] dark:bg-[#182131];
   }
 
   .approval-ad-type__variants {
@@ -248,11 +248,11 @@
   }
 
   .approval-ad-variant {
-    @apply overflow-hidden border-slate-200/70 bg-white;
+    @apply overflow-hidden border-slate-200/70 bg-white dark:border-[#2a3444] dark:bg-[#111827];
   }
 
   .approval-ad-variant__header {
-    @apply border-b border-slate-100 px-4 py-3;
+    @apply border-b border-slate-100 px-4 py-3 dark:border-[#252d3a];
   }
 
   .approval-ad-variant__body {
@@ -260,23 +260,23 @@
   }
 
   .approval-ad-field {
-    @apply rounded-2xl border border-slate-200/70 bg-slate-50/85 p-4;
+    @apply rounded-2xl border border-slate-200/70 bg-slate-50/85 p-4 dark:border-[#2a3444] dark:bg-[#182131];
   }
 
   .approval-ad-field__label {
-    @apply mb-2 text-slate-500;
+    @apply mb-2 text-slate-500 dark:text-slate-400;
   }
 
   .approval-ad-field__values li {
-    @apply relative min-h-6 pl-7 text-sm leading-6 text-slate-700;
+    @apply relative min-h-6 pl-7 text-sm leading-6 text-slate-700 dark:text-slate-300;
   }
 
   .approval-empty {
-    @apply m-0 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400;
+    @apply m-0 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-400 dark:border-[#2a3444] dark:bg-[#182131] dark:text-slate-500;
   }
 
   .approval-render-shell--brief .approval-section--accent .approval-pill {
-    @apply bg-slate-900;
+    @apply bg-slate-900 dark:bg-slate-100 dark:text-slate-900;
   }
 
   .approval-render-shell--ads .approval-platform__header h3 {
