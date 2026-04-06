@@ -105,7 +105,7 @@ export function CustomerSelectorDropdown({
                 </span>
                 {!compact && customers.length > 0 && (
                   <span className="block truncate text-xs text-slate-400 dark:text-slate-500">
-                    Aktiven Kunden fuer alle Tools festlegen
+                    Aktiven Kunden für alle Tools festlegen
                   </span>
                 )}
               </div>
