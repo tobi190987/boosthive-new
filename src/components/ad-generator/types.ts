@@ -46,17 +46,6 @@ export interface ApprovalInfo {
   }>
 }
 
-export interface GenerationSummary {
-  id: string
-  product: string
-  platforms: PlatformId[]
-  customer_id: string | null
-  customer_name: string | null
-  created_at: string
-  status: 'pending' | 'completed' | 'failed'
-  approval_status: ApprovalStatus | 'draft'
-}
-
 export interface GenerationDetail {
   id: string
   briefing: BriefingData & {
@@ -70,5 +59,3 @@ export interface GenerationDetail {
   created_at: string
   status: 'pending' | 'completed' | 'failed'
 }
-
-export type ViewState = 'wizard' | 'generating' | 'results' | 'history'

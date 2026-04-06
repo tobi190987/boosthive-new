@@ -2,7 +2,6 @@ import type { PlatformId } from '@/lib/ad-limits'
 import type {
   BriefingData,
   GenerationResult,
-  GenerationSummary,
   GenerationDetail,
   SelectedAdType,
 } from './types'
@@ -29,19 +28,6 @@ export async function apiGenerate(
     throw new Error(err.error || 'Generierung fehlgeschlagen')
   }
   return res.json()
-}
-
-export async function apiGetHistory(
-  customerId?: string,
-  platform?: PlatformId
-): Promise<GenerationSummary[]> {
-  const params = new URLSearchParams()
-  if (customerId) params.set('customerId', customerId)
-  if (platform) params.set('platform', platform)
-  const res = await fetch(`/api/tenant/ad-generator/history?${params.toString()}`)
-  if (!res.ok) throw new Error('History konnte nicht geladen werden')
-  const data = await res.json()
-  return data.generations ?? []
 }
 
 export async function apiGetGeneration(id: string): Promise<GenerationDetail> {

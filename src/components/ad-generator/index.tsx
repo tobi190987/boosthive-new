@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
@@ -8,19 +8,16 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getAdTypesForPlatforms, type PlatformId } from '@/lib/ad-limits'
 import { useActiveCustomer } from '@/lib/active-customer-context'
-import { apiGenerate, apiGetGeneration, apiGetHistory } from './api'
+import { apiGenerate, apiGetGeneration } from './api'
 import type {
   BriefingData,
   GenerationDetail,
   GenerationResult,
-  GenerationSummary,
   SelectedAdType,
-  ViewState,
 } from './types'
 import { WizardView } from './wizard'
 import { GeneratingView } from './generating'
 import { ResultsView } from './results'
-import { HistoryView } from './history'
 import type { ApprovalStatus } from '@/components/approval-status-badge'
 
 // ─── Workspace Component ─────────────────────────────────────────────────────
@@ -33,7 +30,7 @@ export function AdGeneratorWorkspace() {
   const { activeCustomer, customers, loading: customersLoading } = useActiveCustomer()
 
   // View state
-  const [view, setView] = useState<ViewState>('history')
+  const [view, setView] = useState<'wizard' | 'generating' | 'results'>('wizard')
 
   // Wizard state
   const [step, setStep] = useState(1)
@@ -55,15 +52,6 @@ export function AdGeneratorWorkspace() {
   const [generationDetail, setGenerationDetail] = useState<GenerationDetail | null>(null)
   const [generating, setGenerating] = useState(false)
   const [currentApprovalStatus, setCurrentApprovalStatus] = useState<ApprovalStatus | 'draft' | null>(null)
-
-  // History state
-  const [history, setHistory] = useState<GenerationSummary[]>([])
-  const [historyLoading, setHistoryLoading] = useState(false)
-  const [historyFilterCustomer, setHistoryFilterCustomer] = useState<string>('all')
-  const [historyFilterPlatform, setHistoryFilterPlatform] = useState<PlatformId | 'all'>('all')
-  const [historySearch, setHistorySearch] = useState('')
-  const [historyFilterDate, setHistoryFilterDate] = useState<'all' | '7d' | '30d' | '90d'>('all')
-  const hasAutoNavigated = useRef(false)
   const hideNavigationActions = view === 'results' && currentApprovalStatus === 'changes_requested'
 
   // Sync wizard customer with global selector
@@ -74,37 +62,6 @@ export function AdGeneratorWorkspace() {
       setWizardCustomerId('none')
     }
   }, [activeCustomer])
-
-  // ─── History Loading ─────────────────────────────────────────────────────
-
-  const loadHistory = useCallback(async () => {
-    setHistoryLoading(true)
-    try {
-      const cid = historyFilterCustomer !== 'all' ? historyFilterCustomer : undefined
-      const plat = historyFilterPlatform !== 'all' ? historyFilterPlatform : undefined
-      const data = await apiGetHistory(cid, plat)
-      setHistory(data)
-      if (
-        !hasAutoNavigated.current &&
-        data.length === 0 &&
-        historyFilterCustomer === 'all' &&
-        historyFilterPlatform === 'all'
-      ) {
-        hasAutoNavigated.current = true
-        setView('wizard')
-      }
-    } catch {
-      toast({ title: 'Fehler', description: 'History konnte nicht geladen werden.', variant: 'destructive' })
-    } finally {
-      setHistoryLoading(false)
-    }
-  }, [historyFilterCustomer, historyFilterPlatform, toast])
-
-  useEffect(() => {
-    if (view === 'history') {
-      loadHistory()
-    }
-  }, [view, loadHistory])
 
   useEffect(() => {
     const generationIdFromUrl = searchParams.get('id')
@@ -178,7 +135,7 @@ export function AdGeneratorWorkspace() {
     }
   }
 
-  // ─── Open from History ───────────────────────────────────────────────────
+  // ─── Open generation ─────────────────────────────────────────────────────
 
   async function openGeneration(id: string, options?: { syncUrl?: boolean }) {
     if (options?.syncUrl !== false) {
@@ -199,7 +156,7 @@ export function AdGeneratorWorkspace() {
         description: 'Generierung konnte nicht geladen werden.',
         variant: 'destructive',
       })
-      setView('history')
+      setView('wizard')
       router.replace(pathname, { scroll: false })
     } finally {
       setGenerating(false)
@@ -285,29 +242,7 @@ export function AdGeneratorWorkspace() {
           platforms={selectedPlatforms}
           selectedAdTypes={selectedAdTypes}
           onNewGeneration={resetWizard}
-          onBackToHistory={() => {
-            setView('history')
-            router.replace(pathname, { scroll: false })
-          }}
           onApprovalStatusChange={setCurrentApprovalStatus}
-        />
-      )}
-
-      {view === 'history' && (
-        <HistoryView
-          history={history}
-          loading={historyLoading}
-          customers={customers}
-          filterCustomer={historyFilterCustomer}
-          setFilterCustomer={setHistoryFilterCustomer}
-          filterPlatform={historyFilterPlatform}
-          setFilterPlatform={setHistoryFilterPlatform}
-          search={historySearch}
-          setSearch={setHistorySearch}
-          filterDate={historyFilterDate}
-          setFilterDate={setHistoryFilterDate}
-          onOpen={openGeneration}
-          onNew={resetWizard}
         />
       )}
     </div>

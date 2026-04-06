@@ -58,7 +58,6 @@ export interface ResultsViewProps {
   platforms: PlatformId[]
   selectedAdTypes: SelectedAdType[]
   onNewGeneration: () => void
-  onBackToHistory: () => void
   onApprovalStatusChange?: (status: ApprovalStatus | 'draft' | null) => void
 }
 
@@ -70,7 +69,6 @@ export function ResultsView({
   platforms: wizardPlatforms,
   selectedAdTypes: wizardAdTypes,
   onNewGeneration,
-  onBackToHistory,
   onApprovalStatusChange,
 }: ResultsViewProps) {
   const { toast } = useToast()
