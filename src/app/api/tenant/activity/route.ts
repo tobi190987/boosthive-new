@@ -18,27 +18,44 @@ export async function GET(request: NextRequest) {
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
 
+  const isAdmin = authResult.auth.role === 'admin'
+  const currentUserId = authResult.auth.userId
+
   const admin = createAdminClient()
 
-  const [eventsResult, briefsResult, adsResult] = await Promise.allSettled([
-    admin
+  let eventsQuery = admin
       .from('approval_request_events')
-      .select('id, event_type, actor_label, created_at, approval_request_id, approval_requests(customer_name, content_title)')
+      .select(
+        'id, event_type, actor_label, created_at, approval_request_id, approval_requests!inner(customer_name, content_title, created_by)'
+      )
       .eq('approval_requests.tenant_id', tenantId)
       .order('created_at', { ascending: false })
-      .limit(10),
-    admin
+      .limit(10)
+
+  let briefsQuery = admin
       .from('content_briefs')
       .select('id, keyword, created_at')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
-      .limit(5),
-    admin
+      .limit(5)
+
+  let adsQuery = admin
       .from('ad_generations')
       .select('id, briefing, created_at')
       .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
-      .limit(5),
+      .limit(5)
+
+  if (!isAdmin) {
+    eventsQuery = eventsQuery.eq('approval_requests.created_by', currentUserId)
+    briefsQuery = briefsQuery.eq('created_by', currentUserId)
+    adsQuery = adsQuery.eq('created_by', currentUserId)
+  }
+
+  const [eventsResult, briefsResult, adsResult] = await Promise.allSettled([
+    eventsQuery,
+    briefsQuery,
+    adsQuery,
   ])
 
   const activities: ActivityItem[] = []

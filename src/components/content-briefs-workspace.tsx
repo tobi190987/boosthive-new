@@ -425,10 +425,6 @@ export function ContentBriefsWorkspace() {
     return () => clearInterval(poll)
   }, [view, detail, fetchDetail, fetchBriefs])
 
-  if (!activeCustomer) {
-    return <NoCustomerSelected toolName="Content Briefs" />
-  }
-
   // ── Create brief ──────────────────────────────────────────────────────────
 
   const resetCreateForm = () => {
@@ -492,6 +488,10 @@ export function ContentBriefsWorkspace() {
 
   const canProceedStep1 = effectiveKeyword.trim().length >= 2
   const canCreate = canProceedStep1
+
+  if (!activeCustomer) {
+    return <NoCustomerSelected toolName="Content Briefs" />
+  }
 
   const handleCreate = async () => {
     if (!canCreate || !customerId) return
