@@ -44,11 +44,10 @@ import {
 } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useActiveCustomer } from '@/lib/active-customer-context'
+import { useActiveCustomer, type Customer } from '@/lib/active-customer-context'
 import { ApprovalSubmitPanel } from '@/components/approval-submit-panel'
 import type { ApprovalStatus } from '@/components/approval-status-badge'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
-import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -250,7 +249,7 @@ export function ContentBriefsWorkspace() {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const { toast } = useToast()
 
   const [view, setView] = useState<View>({ type: 'list' })
@@ -271,6 +270,7 @@ export function ContentBriefsWorkspace() {
   // Create form
   const [keyword, setKeyword] = useState('')
   const [keywordSource, setKeywordSource] = useState<'manual' | 'project'>('manual')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('none')
   const [language, setLanguage] = useState('de')
   const [tone, setTone] = useState('informativ')
   const [wordCount, setWordCount] = useState('1000')
@@ -430,6 +430,7 @@ export function ContentBriefsWorkspace() {
   const resetCreateForm = () => {
     setKeyword('')
     setKeywordSource('manual')
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
     setLanguage('de')
     setTone('informativ')
     setWordCount('1000')
@@ -450,22 +451,48 @@ export function ContentBriefsWorkspace() {
     resetCreateForm()
   }
 
+  const effectiveCustomerId = selectedCustomerId === 'none' ? null : selectedCustomerId
+  const selectedCustomer =
+    effectiveCustomerId
+      ? customers.find((customer) => customer.id === effectiveCustomerId) ?? null
+      : null
+
   // Load keyword projects when switching to project source
   useEffect(() => {
-    if (keywordSource !== 'project' || kwProjects.length > 0 || kwProjectsLoading || kwProjectsUnavailable) return
+    if (keywordSource !== 'project' || !createOpen) return
+
+    const controller = new AbortController()
     setKwProjectsLoading(true)
-    fetch(`/api/tenant/keywords/projects?customer_id=${customerId}`)
+    setKwProjectsUnavailable(false)
+    const params = new URLSearchParams()
+    if (effectiveCustomerId) {
+      params.set('customer_id', effectiveCustomerId)
+    }
+    const url = params.toString()
+      ? `/api/tenant/keywords/projects?${params.toString()}`
+      : '/api/tenant/keywords/projects'
+
+    fetch(url, { signal: controller.signal })
       .then(async (res) => {
         if (res.status === 403) { setKwProjectsUnavailable(true); return }
         if (!res.ok) throw new Error('Projekte konnten nicht geladen werden.')
         const data = await res.json()
         setKwProjects(data.projects ?? [])
       })
-      .catch(() => {
+      .catch((error) => {
+        if (error instanceof DOMException && error.name === 'AbortError') return
         toast({ title: 'Fehler', description: 'Keyword-Projekte konnten nicht geladen werden.', variant: 'destructive' })
       })
       .finally(() => setKwProjectsLoading(false))
-  }, [keywordSource, kwProjects.length, kwProjectsLoading, kwProjectsUnavailable, customerId, toast])
+    return () => controller.abort()
+  }, [keywordSource, createOpen, effectiveCustomerId, toast])
+
+  useEffect(() => {
+    setKwProjects([])
+    setSelectedProjectId('')
+    setSelectedKeywordFromProject('')
+    setKwKeywords([])
+  }, [effectiveCustomerId, keywordSource])
 
   // Load keywords when a project is selected
   useEffect(() => {
@@ -489,19 +516,15 @@ export function ContentBriefsWorkspace() {
   const canProceedStep1 = effectiveKeyword.trim().length >= 2
   const canCreate = canProceedStep1
 
-  if (!activeCustomer) {
-    return <NoCustomerSelected toolName="Content Briefs" />
-  }
-
   const handleCreate = async () => {
-    if (!canCreate || !customerId) return
+    if (!canCreate) return
     setCreating(true)
     try {
       const res = await fetch('/api/tenant/content/briefs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_id: customerId,
+          customer_id: effectiveCustomerId,
           keyword: effectiveKeyword.trim(),
           language,
           tone,
@@ -752,8 +775,6 @@ export function ContentBriefsWorkspace() {
         </div>
         <Button
           onClick={handleCreateOpen}
-          disabled={!activeCustomer}
-          title={!activeCustomer ? 'Bitte zuerst einen Kunden auswählen' : undefined}
           className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" />
@@ -800,8 +821,6 @@ export function ContentBriefsWorkspace() {
             </div>
             <Button
               onClick={handleCreateOpen}
-              disabled={!activeCustomer}
-              title={!activeCustomer ? 'Bitte zuerst einen Kunden auswählen' : undefined}
               className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
             >
               <Plus className="h-4 w-4" />
@@ -861,6 +880,37 @@ export function ContentBriefsWorkspace() {
 
           {createStep === 1 && (
             <div className="space-y-6 py-4">
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-[#2a3342] dark:bg-[#1b2330]">
+                <div className="space-y-1">
+                  <Label>Kundenzuordnung</Label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Optional. Du kannst das Briefing direkt einem Kunden zuordnen oder ohne Kundenzuordnung starten.
+                  </p>
+                </div>
+                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                  <SelectTrigger className="rounded-xl bg-white dark:bg-[#151c28]">
+                    <SelectValue placeholder="Keinen Kunden auswählen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Ohne Kundenzuordnung</SelectItem>
+                    {customers.map((customer: Customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}{customer.domain ? ` (${customer.domain})` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedCustomer ? (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Das Briefing wird {selectedCustomer.name} zugeordnet.
+                  </p>
+                ) : (
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Das Briefing bleibt tenantweit sichtbar und kann später weiterverarbeitet werden.
+                  </p>
+                )}
+              </div>
+
               {/* Keyword source toggle */}
               <div className="flex gap-2">
                 <Button
@@ -908,7 +958,9 @@ export function ContentBriefsWorkspace() {
                     </div>
                   ) : kwProjects.length === 0 ? (
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Keine Keyword-Projekte vorhanden. Erstelle zuerst ein Projekt unter &quot;Keywordranking&quot;.
+                      {selectedCustomer
+                        ? `Keine Keyword-Projekte für ${selectedCustomer.name} vorhanden.`
+                        : 'Keine Keyword-Projekte vorhanden. Erstelle zuerst ein Projekt unter "Keywordranking".'}
                     </p>
                   ) : (
                     <>
@@ -959,9 +1011,15 @@ export function ContentBriefsWorkspace() {
           {createStep === 2 && (
             <div className="space-y-5 py-4">
               <div className="rounded-xl bg-slate-50 dark:bg-[#1e2635] p-3">
-                <div className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
-                  <Search className="h-4 w-4 text-slate-400" />
-                  Keyword: <span className="text-blue-600 dark:text-blue-400">{effectiveKeyword}</span>
+                <div className="flex flex-col gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <Search className="h-4 w-4 text-slate-400" />
+                    Keyword: <span className="text-blue-600 dark:text-blue-400">{effectiveKeyword}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs font-normal text-slate-500 dark:text-slate-400">
+                    <span>Kunde:</span>
+                    <span>{selectedCustomer ? selectedCustomer.name : 'Ohne Kundenzuordnung'}</span>
+                  </div>
                 </div>
               </div>
 

@@ -14,7 +14,7 @@ import {
 // ─── Zod Validation ──────────────────────────────────────────────────────────
 
 const createBriefSchema = z.object({
-  customer_id: z.string().uuid('Ungültige Customer-ID.'),
+  customer_id: z.string().uuid('Ungültige Customer-ID.').nullable().optional(),
   keyword: z
     .string()
     .trim()
@@ -119,16 +119,17 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  // BUG-3 fix: Verify that customer_id belongs to this tenant
-  const { data: customer } = await admin
-    .from('customers')
-    .select('id')
-    .eq('id', customer_id)
-    .eq('tenant_id', tenantId)
-    .maybeSingle()
+  if (customer_id) {
+    const { data: customer } = await admin
+      .from('customers')
+      .select('id')
+      .eq('id', customer_id)
+      .eq('tenant_id', tenantId)
+      .maybeSingle()
 
-  if (!customer) {
-    return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+    if (!customer) {
+      return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+    }
   }
 
   // Insert the brief record with status "pending"
@@ -136,7 +137,7 @@ export async function POST(request: NextRequest) {
     .from('content_briefs')
     .insert({
       tenant_id: tenantId,
-      customer_id,
+      customer_id: customer_id ?? null,
       created_by: authResult.auth.userId,
       keyword,
       language,
