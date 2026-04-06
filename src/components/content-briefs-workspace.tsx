@@ -370,8 +370,10 @@ export function ContentBriefsWorkspace() {
   useEffect(() => {
     const briefIdFromUrl = searchParams.get('briefId')
     if (!briefIdFromUrl) {
-      setView({ type: 'list' })
-      setDetail(null)
+      if (view.type !== 'list') {
+        setView({ type: 'list' })
+        setDetail(null)
+      }
       return
     }
 
