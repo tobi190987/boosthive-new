@@ -48,6 +48,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { SeoCompareWorkspace } from '@/components/seo-compare-workspace'
+import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 type WorkspaceRole = 'admin' | 'member'
 type View =
@@ -1955,6 +1956,43 @@ function SeoAnalysisWorkspace({
           </Button>
         </CardContent>
       </Card>
+    )
+  }
+
+  if (!activeCustomer) {
+    return (
+      <div className="space-y-6">
+        <div className="flex gap-1 rounded-2xl border border-slate-100 bg-slate-50 p-1 w-fit dark:border-[#252d3a] dark:bg-[#1e2635]">
+          <button
+            type="button"
+            onClick={() => setActiveTab('analyse')}
+            className={cn(
+              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+              activeTab === 'analyse'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-[#151c28] dark:text-slate-100'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            )}
+          >
+            Analyse
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('compare')}
+            className={cn(
+              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+              activeTab === 'compare'
+                ? 'bg-white text-slate-900 shadow-sm dark:bg-[#151c28] dark:text-slate-100'
+                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
+            )}
+          >
+            Vergleich
+          </button>
+        </div>
+
+        <NoCustomerSelected
+          toolName={activeTab === 'compare' ? 'SEO Competitor Analyse' : 'SEO Analyse'}
+        />
+      </div>
     )
   }
 

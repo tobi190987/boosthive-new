@@ -14,6 +14,12 @@ import {
 import { cn } from '@/lib/utils'
 import { useActiveCustomer, type Customer } from '@/lib/active-customer-context'
 
+interface CustomerSelectorDropdownProps {
+  className?: string
+  triggerClassName?: string
+  compact?: boolean
+}
+
 function StatusDot({ status }: { status: Customer['status'] }) {
   return (
     <span
@@ -26,7 +32,11 @@ function StatusDot({ status }: { status: Customer['status'] }) {
   )
 }
 
-export function CustomerSelectorDropdown() {
+export function CustomerSelectorDropdown({
+  className,
+  triggerClassName,
+  compact = false,
+}: CustomerSelectorDropdownProps) {
   const { activeCustomer, customers, loading, setActiveCustomer } = useActiveCustomer()
   const [open, setOpen] = useState(false)
 
@@ -45,7 +55,13 @@ export function CustomerSelectorDropdown() {
 
   if (loading) {
     return (
-      <div className="mx-3 mt-2 mb-1 flex items-center gap-2.5 rounded-xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]/50 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/50">
+      <div
+        className={cn(
+          'mx-3 mt-2 mb-1 flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-[#252d3a] dark:bg-[#151c28]/50 dark:border-slate-800 dark:bg-slate-900/50',
+          className,
+          triggerClassName
+        )}
+      >
         <div className="h-4 w-4 animate-pulse rounded bg-slate-200 dark:bg-[#252d3a] dark:bg-slate-700" />
         <div className="h-4 flex-1 animate-pulse rounded bg-slate-200 dark:bg-[#252d3a] dark:bg-slate-700" />
       </div>
@@ -61,25 +77,41 @@ export function CustomerSelectorDropdown() {
           className={cn(
             'mx-3 mt-2 mb-1 flex w-[calc(100%-1.5rem)] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
             'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]/50 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
-            'dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700 dark:hover:bg-slate-800/60'
+            'dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700 dark:hover:bg-slate-800/60',
+            className,
+            triggerClassName
           )}
         >
           {activeCustomer ? (
             <>
               <StatusDot status={activeCustomer.status} />
-              <span className="min-w-0 flex-1 truncate font-medium text-slate-900 dark:text-slate-100 dark:text-slate-100">
-                {activeCustomer.name}
-              </span>
+              <div className="min-w-0 flex-1">
+                <span className="block truncate font-medium text-slate-900 dark:text-slate-100">
+                  {activeCustomer.name}
+                </span>
+                {!compact && activeCustomer.domain && (
+                  <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                    {activeCustomer.domain}
+                  </span>
+                )}
+              </div>
             </>
           ) : (
             <>
-              <Users2 className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500 dark:text-slate-500" />
-              <span className="min-w-0 flex-1 truncate text-slate-400 dark:text-slate-500 dark:text-slate-500">
-                {customers.length === 0 ? 'Noch keine Kunden' : 'Kunden wählen...'}
-              </span>
+              <Users2 className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+              <div className="min-w-0 flex-1">
+                <span className="block truncate text-slate-400 dark:text-slate-500">
+                  {customers.length === 0 ? 'Noch keine Kunden' : 'Kunden wählen...'}
+                </span>
+                {!compact && customers.length > 0 && (
+                  <span className="block truncate text-xs text-slate-400 dark:text-slate-500">
+                    Aktiven Kunden fuer alle Tools festlegen
+                  </span>
+                )}
+              </div>
             </>
           )}
-          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500 dark:text-slate-500" />
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500" />
         </button>
       </PopoverTrigger>
 

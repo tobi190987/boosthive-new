@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 import type { PreviewResult, AnalyzeResult, CompareResult, KPIs, PerformanceAnalysis } from '@/lib/performance/types'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -1166,6 +1167,7 @@ function VerlaufTab() {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function AiPerformanceWorkspace() {
+  const { activeCustomer } = useActiveCustomer()
   const [activeTab, setActiveTab] = useState<'analyse' | 'vergleich' | 'verlauf'>('analyse')
   const [mountedTabs, setMountedTabs] = useState<Array<'analyse' | 'vergleich' | 'verlauf'>>(['analyse'])
   const handleTabChange = useCallback((value: string) => {
@@ -1173,6 +1175,10 @@ export function AiPerformanceWorkspace() {
     setActiveTab(nextTab)
     setMountedTabs((prev) => (prev.includes(nextTab) ? prev : [...prev, nextTab]))
   }, [])
+
+  if (!activeCustomer) {
+    return <NoCustomerSelected toolName="AI Performance" />
+  }
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>

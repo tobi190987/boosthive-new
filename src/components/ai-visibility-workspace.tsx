@@ -70,6 +70,7 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 type WorkspaceRole = 'admin' | 'member'
 
@@ -180,6 +181,10 @@ export function AiVisibilityWorkspace({ role }: AiVisibilityWorkspaceProps) {
   }
 
   // ── Views ───────────────────────────────────────────────────
+
+  if (view.type === 'list' && !activeCustomer) {
+    return <NoCustomerSelected toolName="AI Visibility" />
+  }
 
   if (view.type === 'list') {
     return (

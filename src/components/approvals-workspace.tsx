@@ -155,7 +155,7 @@ export function ApprovalsWorkspace() {
   const [approvals, setApprovals] = useState<ApprovalItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | ApprovalStatus>('open')
   const [typeFilter, setTypeFilter] = useState<string>('all')
   const [customerFilter, setCustomerFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
@@ -172,7 +172,7 @@ export function ApprovalsWorkspace() {
     setError(null)
     try {
       const params = new URLSearchParams()
-      if (statusFilter !== 'all') params.set('status', statusFilter)
+      if (statusFilter !== 'all' && statusFilter !== 'open') params.set('status', statusFilter)
       if (typeFilter !== 'all') params.set('content_type', typeFilter)
       const effectiveCustomerId = activeCustomer?.id ?? (customerFilter !== 'all' ? customerFilter : null)
       if (effectiveCustomerId) params.set('customer_id', effectiveCustomerId)
@@ -193,27 +193,46 @@ export function ApprovalsWorkspace() {
   }, [fetchApprovals])
 
   // Summary stats computed from loaded data (before local search filter)
-  const summaryStats = useMemo(() => ({
-    pending: approvals.filter((a) => a.status === 'pending_approval').length,
-    approved: approvals.filter((a) => a.status === 'approved').length,
-    changes: approvals.filter((a) => a.status === 'changes_requested').length,
-  }), [approvals])
+  const summaryStats = useMemo(() => {
+    const pending = approvals.filter((a) => a.status === 'pending_approval').length
+    const approved = approvals.filter((a) => a.status === 'approved').length
+    const changes = approvals.filter((a) => a.status === 'changes_requested').length
+
+    return {
+      open: pending + changes,
+      pending,
+      approved,
+      changes,
+    }
+  }, [approvals])
 
   // Client-side search filter on top of server-side filters
   const filteredApprovals = useMemo(() => {
-    if (!searchQuery.trim()) return approvals
+    const base =
+      statusFilter === 'open'
+        ? approvals.filter(
+            (approval) =>
+              approval.status === 'pending_approval' || approval.status === 'changes_requested'
+          )
+        : approvals
+
+    if (!searchQuery.trim()) return base
     const q = searchQuery.toLowerCase()
-    return approvals.filter(
+    return base.filter(
       (a) =>
         a.content_title.toLowerCase().includes(q) ||
         (a.customer_name?.toLowerCase().includes(q) ?? false)
     )
-  }, [approvals, searchQuery])
+  }, [approvals, searchQuery, statusFilter])
 
-  const hasActiveFilters = statusFilter !== 'all' || typeFilter !== 'all' || (!activeCustomer && customerFilter !== 'all') || searchQuery.trim() !== ''
+  const hasActiveFilters =
+    statusFilter !== 'open' ||
+    typeFilter !== 'all' ||
+    (!activeCustomer && customerFilter !== 'all') ||
+    searchQuery.trim() !== ''
 
   const handleResetFilters = () => {
-    setStatusFilter('all')
+    setStatusFilter('open')
     setTypeFilter('all')
     if (!activeCustomer) setCustomerFilter('all')
     setSearchQuery('')
@@ -252,7 +271,7 @@ export function ApprovalsWorkspace() {
           <div>
             <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Freigabe-Übersicht</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">
-              Alle laufenden und abgeschlossenen Freigabe-Anfragen
+              Offene Freigaben, Kundenentscheidungen und abgeschlossene Abnahmen in einem Workflow.
             </p>
             {activeCustomer && (
               <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
@@ -265,6 +284,14 @@ export function ApprovalsWorkspace() {
         {/* Summary Cards */}
         {!loading && !error && (
           <div className="flex flex-col gap-3 sm:flex-row">
+            <SummaryCard
+              label="Offen"
+              count={summaryStats.open}
+              icon={<CheckSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+              colorClass="bg-blue-50 dark:bg-blue-950/40"
+              active={statusFilter === 'open'}
+              onClick={() => setStatusFilter(statusFilter === 'open' ? 'all' : 'open')}
+            />
             <SummaryCard
               label="Warte auf Freigabe"
               count={summaryStats.pending}
@@ -296,11 +323,15 @@ export function ApprovalsWorkspace() {
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-slate-400" />
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as 'all' | 'open' | ApprovalStatus)}
+            >
               <SelectTrigger className="w-[180px] rounded-xl">
                 <SelectValue placeholder="Status filtern" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="open">Offen</SelectItem>
                 <SelectItem value="all">Alle Status</SelectItem>
                 <SelectItem value="pending_approval">Warte auf Freigabe</SelectItem>
                 <SelectItem value="approved">Freigegeben</SelectItem>
@@ -390,7 +421,7 @@ export function ApprovalsWorkspace() {
                 <p className="max-w-md text-sm leading-7 text-slate-500 dark:text-slate-400">
                   {hasActiveFilters
                     ? 'Keine Einträge für die aktuellen Filter. Filter zurücksetzen?'
-                    : 'Es gibt aktuell keine Freigabe-Anfragen. Reiche einen Content Brief oder Ad-Text zur Freigabe ein, um hier den Status zu verfolgen.'}
+                    : 'Es gibt aktuell keine offenen Freigaben. Reiche einen Content Brief oder Ad-Text zur Freigabe ein, um hier Wartezustand, Korrekturen und Freigaben zu verfolgen.'}
                 </p>
                 {hasActiveFilters && (
                   <Button variant="outline" size="sm" onClick={handleResetFilters} className="mt-2 rounded-xl">

@@ -66,6 +66,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -457,6 +458,10 @@ function ProjectList({ role, onOpenProject }: ProjectListProps) {
 
   const isAdmin = role === 'admin'
   const atLimit = projects.length >= PROJECT_LIMIT
+
+  if (!activeCustomer) {
+    return <NoCustomerSelected toolName="Keywordranking" />
+  }
 
   // Loading skeleton
   if (loading) {

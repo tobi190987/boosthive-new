@@ -118,21 +118,27 @@ function NavigationContent({
   const activeCustomerId = activeCustomer?.id ?? null
   const sections = tenantNav(context)
   const prefetchedTargets = useRef(new Set<string>())
-  const [changesRequestedCount, setChangesRequestedCount] = useState(0)
+  const [openApprovalsCount, setOpenApprovalsCount] = useState(0)
 
   useEffect(() => {
     let cancelled = false
-    async function fetchChangesRequested() {
+    async function fetchOpenApprovals() {
       try {
-        const res = await fetch('/api/tenant/approvals?status=changes_requested', { credentials: 'include' })
+        const res = await fetch('/api/tenant/approvals', { credentials: 'include' })
         if (!res.ok || cancelled) return
         const data = await res.json()
-        if (!cancelled) setChangesRequestedCount((data.approvals ?? []).length)
+        if (!cancelled) {
+          const openCount = ((data.approvals ?? []) as Array<{ status?: string }>).filter(
+            (approval) =>
+              approval.status === 'pending_approval' || approval.status === 'changes_requested'
+          ).length
+          setOpenApprovalsCount(openCount)
+        }
       } catch {
         // silent
       }
     }
-    void fetchChangesRequested()
+    void fetchOpenApprovals()
     return () => { cancelled = true }
   }, [])
 
@@ -307,9 +313,9 @@ function NavigationContent({
                         </span>
                         {hasAccess ? (
                           <span className="flex items-center gap-2">
-                            {tool.href === '/tools/approvals' && changesRequestedCount > 0 && (
+                            {tool.href === '/tools/approvals' && openApprovalsCount > 0 && (
                               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
-                                {changesRequestedCount}
+                                {openApprovalsCount}
                               </span>
                             )}
                             <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
@@ -451,9 +457,10 @@ export function TenantSidebar(props: TenantShellNavigationProps) {
 
 export function TenantMobileHeader(props: TenantShellNavigationProps) {
   const [open, setOpen] = useState(false)
+  const { activeCustomer } = useActiveCustomer()
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-100 bg-white/95 px-4 backdrop-blur dark:border-[#252d3a] dark:bg-[#080c12]/95 md:hidden">
+    <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center gap-3 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur dark:border-[#252d3a] dark:bg-[#080c12]/95 md:hidden">
       <Button
         type="button"
         variant="ghost"
@@ -467,7 +474,9 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
 
       <div className="min-w-0">
         <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{props.context.tenant.name}</p>
-        <p className="truncate text-xs text-slate-500 dark:text-slate-400">{roleLabel(props.context.membership.role)}</p>
+        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+          {activeCustomer ? `Kunde: ${activeCustomer.name}` : roleLabel(props.context.membership.role)}
+        </p>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
@@ -476,6 +485,12 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
           Workspace
         </Badge>
       </div>
+
+      <CustomerSelectorDropdown
+        compact
+        className="mx-0 my-0 basis-full"
+        triggerClassName="w-full max-w-none rounded-xl border-slate-200 bg-slate-50 dark:border-[#252d3a] dark:bg-[#151c28]"
+      />
 
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0">
