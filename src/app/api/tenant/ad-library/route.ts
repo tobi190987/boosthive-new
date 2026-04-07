@@ -100,6 +100,7 @@ export async function GET(request: NextRequest) {
       file_size_bytes,
       public_url,
       aspect_ratio,
+      approval_status,
       notes,
       created_at,
       updated_at
@@ -270,6 +271,7 @@ export async function POST(request: NextRequest) {
       file_size_bytes,
       public_url,
       aspect_ratio,
+      approval_status,
       notes,
       created_at,
       updated_at

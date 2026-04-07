@@ -24,6 +24,19 @@ function buildApprovalLink(request: NextRequest, token: string): string {
   return `${origin}/approval/${token}`
 }
 
+function approvalContentTypeLabel(contentType: string): string {
+  switch (contentType) {
+    case 'content_brief':
+      return 'Content Brief'
+    case 'ad_generation':
+      return 'Ad-Text'
+    case 'ad_library_asset':
+      return 'Ad-Creative'
+    default:
+      return 'Inhalt'
+  }
+}
+
 async function tryNotifyCustomerByEmail(
   admin: ReturnType<typeof import('@/lib/supabase-admin').createAdminClient>,
   tenantId: string,
@@ -41,7 +54,7 @@ async function tryNotifyCustomerByEmail(
     const customer = customerResult.data
     const tenant = tenantResult.data
     if (!customer?.contact_email || !tenant) return
-    const contentTypeLabel = contentType === 'content_brief' ? 'Content Brief' : 'Ad-Text'
+    const contentTypeLabel = approvalContentTypeLabel(contentType)
     void sendApprovalRequest({
       to: customer.contact_email,
       tenantName: tenant.name,

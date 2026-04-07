@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   Clapperboard,
@@ -19,6 +20,8 @@ import {
 } from 'lucide-react'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { clearSessionCache, readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { ApprovalSubmitPanel } from '@/components/approval-submit-panel'
+import type { ApprovalStatus } from '@/components/approval-status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,10 +64,25 @@ interface AdAsset {
   file_size_bytes: number
   public_url: string
   aspect_ratio: number
+  approval_status: ApprovalStatus | 'draft'
   notes: string | null
   uploader_name?: string
   created_at: string
   updated_at: string
+}
+
+interface AssetApprovalInfo {
+  status: ApprovalStatus | 'draft'
+  link: string | null
+  feedback: string | null
+  history: Array<{
+    id: string
+    event_type: 'submitted' | 'resubmitted' | 'approved' | 'changes_requested' | 'content_updated'
+    status_after: ApprovalStatus
+    feedback: string | null
+    actor_label: string | null
+    created_at: string
+  }>
 }
 
 interface UploadMetadata {
@@ -508,6 +526,8 @@ function AssetListRow({
 // ── Main Component ─────────────────────────────────────────────────────────────
 
 export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { activeCustomer, customers, refetchCustomers } = useActiveCustomer()
 
   // List state
@@ -546,7 +566,10 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([])
   const [deleting, setDeleting] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<AdAsset | null>(null)
+  const [selectedAssetApproval, setSelectedAssetApproval] = useState<AssetApprovalInfo | null>(null)
   const [downloadingAssetId, setDownloadingAssetId] = useState<string | null>(null)
+
+  const assetIdFromUrl = searchParams.get('assetId')
 
   useEffect(() => {
     if (!file) {
@@ -576,6 +599,92 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   useEffect(() => {
     setSelectedAssetIds((current) => current.filter((assetId) => assets.some((asset) => asset.id === assetId)))
   }, [assets])
+
+  useEffect(() => {
+    if (!assetIdFromUrl) return
+    const matchingAsset = assets.find((asset) => asset.id === assetIdFromUrl)
+    if (matchingAsset) {
+      setSelectedAsset(matchingAsset)
+      return
+    }
+
+    let cancelled = false
+
+    async function loadAssetById() {
+      try {
+        const response = await fetch(`/api/tenant/ad-library/${assetIdFromUrl}`)
+        if (!response.ok) return
+        const payload = await response.json()
+        if (cancelled) return
+        setSelectedAsset((payload.asset ?? null) as AdAsset | null)
+      } catch {
+        // ignore optional deep-link fetch
+      }
+    }
+
+    void loadAssetById()
+
+    return () => {
+      cancelled = true
+    }
+  }, [assetIdFromUrl, assets])
+
+  useEffect(() => {
+    if (!selectedAsset) {
+      setSelectedAssetApproval(null)
+      return
+    }
+
+    const asset = selectedAsset
+    let cancelled = false
+
+    async function loadApproval() {
+      try {
+        const params = new URLSearchParams({
+          content_type: 'ad_library_asset',
+          content_id: asset.id,
+        })
+        const response = await fetch(`/api/tenant/approvals?${params.toString()}`)
+        if (!response.ok) throw new Error('Freigabe konnte nicht geladen werden.')
+
+        const payload = await response.json()
+        const first = Array.isArray(payload.approvals) ? payload.approvals[0] : null
+
+        if (cancelled) return
+
+        if (!first) {
+          setSelectedAssetApproval({
+            status: asset.approval_status ?? 'draft',
+            link: null,
+            feedback: null,
+            history: [],
+          })
+          return
+        }
+
+        setSelectedAssetApproval({
+          status: first.status as ApprovalStatus,
+          link: `${window.location.origin}/approval/${first.public_token}`,
+          feedback: first.feedback ?? null,
+          history: Array.isArray(first.history) ? first.history : [],
+        })
+      } catch {
+        if (cancelled) return
+        setSelectedAssetApproval({
+          status: asset.approval_status ?? 'draft',
+          link: null,
+          feedback: null,
+          history: [],
+        })
+      }
+    }
+
+    void loadApproval()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selectedAsset])
 
   const loadAssets = useCallback(
     async (signal?: AbortSignal, appendOffset = 0) => {
@@ -845,6 +954,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       }
       if (selectedAsset && targets.some((asset) => asset.id === selectedAsset.id)) {
         setSelectedAsset(null)
+        setSelectedAssetApproval(null)
       }
       setSelectedAssetIds((current) => current.filter((assetId) => !targets.some((asset) => asset.id === assetId)))
       setDeletingAsset(null)
@@ -879,6 +989,13 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       setDownloadingAssetId(null)
     }
   }, [])
+
+  const openAssetDetail = useCallback((asset: AdAsset) => {
+    setSelectedAsset(asset)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('assetId', asset.id)
+    router.replace(`?${params.toString()}`, { scroll: false })
+  }, [router, searchParams])
 
   const customerOptions = customers.filter((customer) => customer.status === 'active')
   const hasMore = assets.length < total
@@ -1127,7 +1244,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     customerName={customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'}
                     isAdmin={isAdmin}
                     isSelected={selectedAssetIds.includes(asset.id)}
-                    onOpen={setSelectedAsset}
+                    onOpen={openAssetDetail}
                     onDelete={setDeletingAsset}
                     onToggleSelect={toggleAssetSelection}
                   />
@@ -1157,7 +1274,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     maxWidthPx={maxWidthPx}
                     isAdmin={isAdmin}
                     isSelected={selectedAssetIds.includes(asset.id)}
-                    onOpen={setSelectedAsset}
+                    onOpen={openAssetDetail}
                     onDelete={setDeletingAsset}
                     onToggleSelect={toggleAssetSelection}
                   />
@@ -1461,7 +1578,17 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       </AlertDialog>
 
       {/* Asset detail */}
-      <Dialog open={!!selectedAsset} onOpenChange={(open) => !open && setSelectedAsset(null)}>
+      <Dialog
+        open={!!selectedAsset}
+        onOpenChange={(open) => {
+          if (open) return
+          setSelectedAsset(null)
+          setSelectedAssetApproval(null)
+          const params = new URLSearchParams(searchParams.toString())
+          params.delete('assetId')
+          router.replace(params.toString() ? `?${params.toString()}` : '/tools/ads-library', { scroll: false })
+        }}
+      >
         <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto rounded-[2rem]">
           {selectedAsset ? (
             <>
@@ -1480,6 +1607,31 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                         {customerMap.get(selectedAsset.customer_id)?.name ?? 'Unbekannter Kunde'}
                       </Badge>
                     </div>
+                    {selectedAssetApproval ? (
+                      <ApprovalSubmitPanel
+                        contentType="ad_library_asset"
+                        contentId={selectedAsset.id}
+                        approvalStatus={selectedAssetApproval.status}
+                        approvalLink={selectedAssetApproval.link}
+                        feedback={selectedAssetApproval.feedback}
+                        onStatusChange={(status, link) => {
+                          setSelectedAssetApproval((current) => ({
+                            status,
+                            link: link ?? current?.link ?? null,
+                            feedback: status === 'changes_requested' ? current?.feedback ?? null : null,
+                            history: current?.history ?? [],
+                          }))
+                          setAssets((current) =>
+                            current.map((asset) =>
+                              asset.id === selectedAsset.id ? { ...asset, approval_status: status } : asset
+                            )
+                          )
+                          setSelectedAsset((current) =>
+                            current ? { ...current, approval_status: status } : current
+                          )
+                        }}
+                      />
+                    ) : null}
                   </div>
                   <Button
                     type="button"
@@ -1591,6 +1743,41 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                       {selectedAsset.notes || 'Keine zusätzlichen Notizen hinterlegt.'}
                     </p>
                   </div>
+
+                  {selectedAssetApproval?.history.length ? (
+                    <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Freigabeverlauf</p>
+                      <div className="mt-3 space-y-3">
+                        {selectedAssetApproval.history.map((entry) => (
+                          <div
+                            key={entry.id}
+                            className="border-l-2 border-slate-200 pl-3 dark:border-[#2d3847]"
+                          >
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                              {entry.event_type === 'submitted'
+                                ? 'Freigabe angefordert'
+                                : entry.event_type === 'resubmitted'
+                                  ? 'Freigabe erneut angefordert'
+                                  : entry.event_type === 'approved'
+                                    ? 'Freigabe erteilt'
+                                    : entry.event_type === 'changes_requested'
+                                      ? 'Korrektur angefragt'
+                                      : 'Inhalt ueberarbeitet'}
+                            </p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {formatDate(entry.created_at)}
+                              {entry.actor_label ? ` · ${entry.actor_label}` : ''}
+                            </p>
+                            {entry.feedback ? (
+                              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-600 dark:text-slate-300">
+                                {entry.feedback}
+                              </p>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </>

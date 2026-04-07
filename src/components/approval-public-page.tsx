@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Check,
   CheckCircle2,
+  FileImage,
   FileText,
   Loader2,
   MessageSquare,
@@ -29,7 +30,7 @@ import {
 interface ApprovalData {
   tenant_name: string
   tenant_logo_url: string | null
-  content_type: 'content_brief' | 'ad_generation'
+  content_type: 'content_brief' | 'ad_generation' | 'ad_library_asset'
   content_title: string
   status: 'pending_approval' | 'approved' | 'changes_requested'
   content_html: string
@@ -387,7 +388,12 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   if (!data) return null
 
   const alreadyDecided = data.status !== 'pending_approval'
-  const contentTypeLabel = data.content_type === 'content_brief' ? 'Content Brief' : 'Ad-Text'
+  const contentTypeLabel =
+    data.content_type === 'content_brief'
+      ? 'Content Brief'
+      : data.content_type === 'ad_library_asset'
+        ? 'Ad-Creative'
+        : 'Ad-Text'
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] sm:py-12">
@@ -468,6 +474,8 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 dark:bg-[#182131] dark:ring-[#2a3444]">
                 {data.content_type === 'content_brief' ? (
                   <FileText className="h-4 w-4 text-blue-600" />
+                ) : data.content_type === 'ad_library_asset' ? (
+                  <FileImage className="h-4 w-4 text-emerald-600" />
                 ) : (
                   <Type className="h-4 w-4 text-purple-600" />
                 )}

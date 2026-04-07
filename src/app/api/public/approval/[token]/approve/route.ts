@@ -12,13 +12,29 @@ import { createAdminClient } from '@/lib/supabase-admin'
 const tokenSchema = z.string().uuid('Ungültiger Freigabe-Token.')
 
 function contentLink(contentType: string, contentId: string): string {
-  return contentType === 'content_brief'
-    ? `/tools/content-briefs?briefId=${contentId}`
-    : `/tools/ad-generator?id=${contentId}`
+  switch (contentType) {
+    case 'content_brief':
+      return `/tools/content-briefs?briefId=${contentId}`
+    case 'ad_generation':
+      return `/tools/ad-generator?id=${contentId}`
+    case 'ad_library_asset':
+      return `/tools/ads-library?assetId=${contentId}`
+    default:
+      return '/tools/approvals'
+  }
 }
 
 function contentTypeLabel(contentType: string): string {
-  return contentType === 'content_brief' ? 'Content Briefing' : 'Ad'
+  switch (contentType) {
+    case 'content_brief':
+      return 'Content Briefing'
+    case 'ad_generation':
+      return 'Ad-Text'
+    case 'ad_library_asset':
+      return 'Ad-Creative'
+    default:
+      return 'Inhalt'
+  }
 }
 
 function isMissingNotifyPreferenceColumn(error: { code?: string; message?: string } | null | undefined) {

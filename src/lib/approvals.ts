@@ -6,7 +6,7 @@ import {
 } from '@/lib/ad-limits'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
-export const APPROVAL_CONTENT_TYPES = ['content_brief', 'ad_generation'] as const
+export const APPROVAL_CONTENT_TYPES = ['content_brief', 'ad_generation', 'ad_library_asset'] as const
 export type ApprovalContentType = (typeof APPROVAL_CONTENT_TYPES)[number]
 
 export const APPROVAL_STATUSES = [
@@ -320,6 +320,56 @@ function adResultToHtml(result: unknown): string {
   return `<div class="approval-rich-content approval-rich-content--ads">${parts.join('')}</div>`
 }
 
+function adLibraryAssetToHtml(asset: {
+  title: string
+  mediaType: 'image' | 'video'
+  publicUrl: string
+  fileFormat: string
+  mimeType: string
+  widthPx: number
+  heightPx: number
+  durationSeconds: number | null
+  fileSizeBytes: number
+  notes: string | null
+}): string {
+  const preview =
+    asset.mediaType === 'image'
+      ? `<img src="${escapeHtml(asset.publicUrl)}" alt="${escapeHtml(asset.title)}" style="width:100%;height:auto;display:block;border-radius:24px;" />`
+      : `<video src="${escapeHtml(asset.publicUrl)}" controls playsinline preload="metadata" style="width:100%;height:auto;display:block;border-radius:24px;background:#0f172a;"></video>`
+
+  const details = [
+    ['Typ', asset.mediaType === 'image' ? 'Bild' : 'Video'],
+    ['Format', asset.fileFormat],
+    ['Aufloesung', `${asset.widthPx} x ${asset.heightPx} px`],
+    ['MIME', asset.mimeType],
+    ['Dateigroesse', `${Math.round(asset.fileSizeBytes / 1024)} KB`],
+    ['Laufzeit', asset.mediaType === 'video' && asset.durationSeconds ? `${Math.round(asset.durationSeconds)} Sek.` : '-'],
+  ]
+
+  return [
+    '<div class="approval-rich-content approval-rich-content--asset">',
+    section('Asset Vorschau', preview, 'accent'),
+    section(
+      'Asset Details',
+      `<div class="approval-keyword-table">${details
+        .map(
+          ([label, value]) =>
+            `<div class="approval-keyword-row"><div class="approval-keyword-row__term">${escapeHtml(label)}</div><div class="approval-keyword-row__frequency">${escapeHtml(value)}</div></div>`
+        )
+        .join('')}</div>`,
+      'default'
+    ),
+    section(
+      'Notizen',
+      asset.notes?.trim()
+        ? `<div class="approval-copy">${toParagraphs(asset.notes)}</div>`
+        : '<p class="approval-empty">Keine Notizen vorhanden.</p>',
+      'warm'
+    ),
+    '</div>',
+  ].join('')
+}
+
 export async function ensurePublicApprovalAccess(tenantId: string): Promise<{
   allowed: boolean
   tenantName: string | null
@@ -443,6 +493,56 @@ export async function loadContentForApproval(input: {
     }
   }
 
+  if (input.contentType === 'ad_library_asset') {
+    const { data, error } = await admin
+      .from('ad_library_assets')
+      .select(
+        'id, title, media_type, public_url, file_format, mime_type, width_px, height_px, duration_seconds, file_size_bytes, notes, approval_status, customer_id'
+      )
+      .eq('tenant_id', input.tenantId)
+      .eq('id', input.contentId)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    if (error || !data) {
+      return { found: false, reason: 'Ad Asset nicht gefunden.' }
+    }
+
+    let customerName: string | null = null
+    if (data.customer_id) {
+      const customerResult = await admin
+        .from('customers')
+        .select('name')
+        .eq('tenant_id', input.tenantId)
+        .eq('id', data.customer_id)
+        .maybeSingle()
+
+      customerName = customerResult.data?.name ?? null
+    }
+
+    const approvalStatus = (data.approval_status as ApprovalStatus | null | undefined) ?? 'draft'
+
+    return {
+      found: true,
+      title: data.title || 'Ad Asset',
+      html: adLibraryAssetToHtml({
+        title: data.title || 'Ad Asset',
+        mediaType: data.media_type as 'image' | 'video',
+        publicUrl: data.public_url,
+        fileFormat: data.file_format,
+        mimeType: data.mime_type,
+        widthPx: data.width_px,
+        heightPx: data.height_px,
+        durationSeconds: data.duration_seconds,
+        fileSizeBytes: data.file_size_bytes,
+        notes: data.notes,
+      }),
+      approvalStatus,
+      customerId: data.customer_id ?? null,
+      customerName,
+    }
+  }
+
   try {
     const { data, error } = await admin
       .from('ad_generations')
@@ -501,6 +601,15 @@ export async function updateContentApprovalStatus(input: {
   if (input.contentType === 'content_brief') {
     await admin
       .from('content_briefs')
+      .update({ approval_status: input.status })
+      .eq('tenant_id', input.tenantId)
+      .eq('id', input.contentId)
+    return
+  }
+
+  if (input.contentType === 'ad_library_asset') {
+    await admin
+      .from('ad_library_assets')
       .update({ approval_status: input.status })
       .eq('tenant_id', input.tenantId)
       .eq('id', input.contentId)

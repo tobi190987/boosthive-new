@@ -10,6 +10,7 @@ import {
   Clock,
   Copy,
   ExternalLink,
+  FileImage,
   FileText,
   MessageSquare,
   Type,
@@ -47,7 +48,7 @@ import { useToast } from '@/hooks/use-toast'
 
 interface ApprovalItem {
   id: string
-  content_type: 'content_brief' | 'ad_generation'
+  content_type: 'content_brief' | 'ad_generation' | 'ad_library_asset'
   content_id: string
   public_token: string
   status: ApprovalStatus
@@ -90,6 +91,8 @@ function contentTypeLabel(type: string): string {
       return 'Content Brief'
     case 'ad_generation':
       return 'Ad-Text'
+    case 'ad_library_asset':
+      return 'Ad-Creative'
     default:
       return type
   }
@@ -101,6 +104,8 @@ function contentTypeIcon(type: string) {
       return <FileText className="h-4 w-4 text-blue-500 dark:text-blue-400" />
     case 'ad_generation':
       return <Type className="h-4 w-4 text-purple-500 dark:text-purple-400" />
+    case 'ad_library_asset':
+      return <FileImage className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
     default:
       return <FileText className="h-4 w-4 text-slate-400" />
   }
@@ -242,6 +247,8 @@ export function ApprovalsWorkspace() {
       router.push(`/tools/content-briefs?briefId=${item.content_id}`)
     } else if (item.content_type === 'ad_generation') {
       router.push(`/tools/ad-generator?id=${item.content_id}`)
+    } else if (item.content_type === 'ad_library_asset') {
+      router.push(`/tools/ads-library?assetId=${item.content_id}`)
     }
   }
 
@@ -328,6 +335,7 @@ export function ApprovalsWorkspace() {
               <SelectItem value="all">Alle Typen</SelectItem>
               <SelectItem value="content_brief">Content Brief</SelectItem>
               <SelectItem value="ad_generation">Ad-Text</SelectItem>
+              <SelectItem value="ad_library_asset">Ad-Creative</SelectItem>
             </SelectContent>
           </Select>
           {!activeCustomer && (
