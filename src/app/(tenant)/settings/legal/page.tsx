@@ -16,7 +16,7 @@ export default async function LegalSettingsPage() {
 
   return (
     <>
-      <SettingsProfileTabs />
+      <SettingsProfileTabs isAdmin={true} />
       <LegalPrivacyWorkspace />
     </>
   )

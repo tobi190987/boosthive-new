@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 interface AuditItem {
   id: string
   actor_user_id: string | null
+  actor_display_name: string
   action_type: 'data_export' | 'data_delete'
   resource_type: string
   resource_id: string | null
@@ -37,7 +38,7 @@ export function LegalPrivacyWorkspace() {
   const [error, setError] = useState<string | null>(null)
   const [downloadingAv, setDownloadingAv] = useState(false)
   const [downloadingExport, setDownloadingExport] = useState(false)
-  const [deletingHistory, setDeletingHistory] = useState(false)
+  const [deletingData, setDeletingData] = useState(false)
 
   async function loadAuditLog() {
     setAuditLoading(true)
@@ -86,23 +87,23 @@ export function LegalPrivacyWorkspace() {
     }
   }
 
-  async function handleDeletePerformanceHistory() {
+  async function handleDeleteAllData() {
     const confirmed = window.confirm(
-      'Möchtest du wirklich den kompletten AI-Performance-Verlauf dieses Tenants löschen? Diese Aktion kann nicht rückgängig gemacht werden.'
+      'Möchtest du wirklich ALLE gespeicherten Aktivitäten und Projekte dieses Tenants löschen?\n\nDas betrifft: SEO-Analysen, AI-Performance, AI-Visibility, Keyword-Projekte, Kunden, Content-Briefs, Anzeigen, Freigaben und Benachrichtigungen.\n\nDiese Aktion kann nicht rückgängig gemacht werden.'
     )
     if (!confirmed) return
 
-    setDeletingHistory(true)
+    setDeletingData(true)
     setError(null)
     try {
-      const res = await fetch('/api/tenant/performance/history', { method: 'DELETE' })
+      const res = await fetch('/api/tenant/legal/delete-all-data', { method: 'DELETE' })
       const payload = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error((payload as { error?: string }).error ?? 'Löschen fehlgeschlagen.')
       await loadAuditLog()
     } catch (deleteError) {
       setError(deleteError instanceof Error ? deleteError.message : 'Löschen fehlgeschlagen.')
     } finally {
-      setDeletingHistory(false)
+      setDeletingData(false)
     }
   }
 
@@ -144,11 +145,11 @@ export function LegalPrivacyWorkspace() {
               type="button"
               variant="outline"
               className="gap-2 border-rose-200 text-rose-700 hover:bg-rose-50"
-              onClick={() => void handleDeletePerformanceHistory()}
-              disabled={deletingHistory}
+              onClick={() => void handleDeleteAllData()}
+              disabled={deletingData}
             >
-              {deletingHistory ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
-              AI-Performance-Verlauf löschen
+              {deletingData ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              Alle Aktivitäten & Projekte löschen
             </Button>
           </div>
           {error && <p className="text-sm text-rose-600">{error}</p>}
@@ -195,7 +196,7 @@ export function LegalPrivacyWorkspace() {
                         {item.resource_id ? ` (${item.resource_id})` : ''}
                       </td>
                       <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
-                        {item.actor_user_id ?? 'Unbekannt'}
+                        {item.actor_display_name}
                       </td>
                     </tr>
                   ))}

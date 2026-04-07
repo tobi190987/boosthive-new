@@ -7,7 +7,7 @@ export default async function ProfileSettingsPage() {
 
   return (
     <>
-      <SettingsProfileTabs />
+      <SettingsProfileTabs isAdmin={context.membership.role === 'admin'} />
       <SettingsProfileWorkspace
         mode="settings"
         initialData={{
