@@ -9,6 +9,7 @@ import {
   Bot,
   CheckSquare,
   ChevronRight,
+  CircleHelp,
   CreditCard,
   Eye,
   FileImage,
@@ -292,9 +293,20 @@ function NavigationContent({
             {context.tenant.name.slice(0, 1).toUpperCase()}
           </div>
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{context.tenant.name}</p>
         </div>
+        <Link
+          href="/help"
+          onClick={() => handleNavigate('/help')}
+          onMouseEnter={() => router.prefetch('/help')}
+          onFocus={() => router.prefetch('/help')}
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
+          aria-label="Hilfe öffnen"
+          title="Hilfe"
+        >
+          <CircleHelp className="h-4 w-4" />
+        </Link>
       </div>
 
       <CustomerSelectorDropdown />
