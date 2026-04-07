@@ -753,12 +753,12 @@ export function AiVisibilityReport({
                   Filtere zwischen aggregierter Sicht und einzelnen Modellen.
                 </p>
               </div>
-              <TabsList className="h-auto flex-wrap rounded-full bg-slate-50 dark:bg-card p-1">
+              <TabsList className="h-auto w-full flex-wrap justify-start rounded-3xl bg-slate-50 p-1 dark:bg-card sm:w-auto">
                 {availableModels.map((model) => (
                   <TabsTrigger
                     key={model}
                     value={model}
-                    className="rounded-full px-4 py-2 text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-[#1e2635]"
+                    className="max-w-full whitespace-normal break-words rounded-full px-4 py-2 text-left text-xs data-[state=active]:bg-white dark:data-[state=active]:bg-[#1e2635]"
                   >
                     {model === 'all' ? 'Alle Modelle' : modelLabel(model)}
                   </TabsTrigger>
@@ -778,8 +778,8 @@ export function AiVisibilityReport({
                         />
                       </CardTitle>
                     </CardHeader>
-                    <CardContent>
-                      <Table>
+                    <CardContent className="overflow-x-auto">
+                      <Table className="min-w-[640px]">
                         <TableHeader>
                           <TableRow>
                             <TableHead>Keyword</TableHead>
@@ -792,7 +792,7 @@ export function AiVisibilityReport({
                         <TableBody>
                           {benchmarkRows.map((row) => (
                             <TableRow key={row.keyword} className={row.isGap ? 'bg-orange-50 dark:bg-orange-950/20' : undefined}>
-                              <TableCell className="font-medium text-slate-900 dark:text-slate-100">{row.keyword}</TableCell>
+                              <TableCell className="max-w-[220px] whitespace-normal break-words font-medium text-slate-900 dark:text-slate-100">{row.keyword}</TableCell>
                               <TableCell>
                                 {row.brand ? (
                                   <ScorePill score={row.brand.share_of_model} sentiment={sentimentTone(row.brand)} />
@@ -958,7 +958,7 @@ export function AiVisibilityReport({
                           )}
                         </div>
                         <div>
-                          <p className="font-medium text-slate-900 dark:text-slate-100">{recommendation.title}</p>
+                          <p className="break-words font-medium text-slate-900 dark:text-slate-100">{recommendation.title}</p>
                           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                             {recommendation.description}
                           </p>
@@ -983,7 +983,7 @@ export function AiVisibilityReport({
                             : 'Als erledigt markieren'}
                       </Button>
                     </div>
-                    <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">{recommendation.rationale}</p>
+                    <p className="mt-3 break-words text-xs leading-5 text-slate-500 dark:text-slate-400">{recommendation.rationale}</p>
                   </div>
                 )
               })}
@@ -999,8 +999,8 @@ export function AiVisibilityReport({
                 />
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
+            <CardContent className="overflow-x-auto">
+              <Table className="min-w-[560px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Domain</TableHead>
@@ -1014,7 +1014,7 @@ export function AiVisibilityReport({
                     <TableRow key={`${source.source_domain}:${source.source_url ?? 'none'}`}>
                       <TableCell className="font-medium text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2">
-                          <span>{source.source_domain}</span>
+                          <span className="break-all">{source.source_domain}</span>
                           {source.source_url && (
                             <a
                               href={source.source_url}

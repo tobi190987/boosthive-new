@@ -310,7 +310,7 @@ export function KanbanWorkspace() {
         </div>
 
         <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as 'all' | ContentType)}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Inhaltstyp" />
           </SelectTrigger>
           <SelectContent>
@@ -322,7 +322,7 @@ export function KanbanWorkspace() {
         </Select>
 
         <Select value={customerFilter} onValueChange={setCustomerFilter}>
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder="Kunde" />
           </SelectTrigger>
           <SelectContent>
@@ -358,8 +358,8 @@ export function KanbanWorkspace() {
           ))}
         </div>
       ) : (
-        <div className="overflow-x-auto pb-2">
-          <div className="grid min-w-[1100px] gap-4 xl:grid-cols-4">
+        <div className="pb-2">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {COLUMN_ORDER.map((status) => {
               const columnItems = itemsByStatus[status]
 

@@ -347,9 +347,9 @@ function ProjectListView({
               : `${projects.length} Projekt${projects.length !== 1 ? 'e' : ''}`}
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <Select value={customerFilter} onValueChange={onCustomerFilterChange}>
-            <SelectTrigger className="w-[220px] rounded-full">
+            <SelectTrigger className="w-full rounded-full sm:w-[220px]">
               <SelectValue placeholder="Kunde filtern" />
             </SelectTrigger>
             <SelectContent>
@@ -364,6 +364,7 @@ function ProjectListView({
           <Button
             onClick={() => setDialogOpen(true)}
             variant="dark"
+            className="w-full sm:w-auto"
           >
             <Plus className="mr-1.5 h-4 w-4" />
             Neues Projekt

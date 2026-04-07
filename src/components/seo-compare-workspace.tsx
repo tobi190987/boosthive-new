@@ -369,9 +369,9 @@ function ComparisonTable({ data }: { data: ComparisonResult }) {
   return (
     <div className="space-y-4">
       {/* Winner badge */}
-      <div className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3">
+      <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3">
         <Trophy className="h-5 w-5 shrink-0 text-emerald-600" />
-        <p className="text-sm font-medium text-emerald-800">
+        <p className="break-words text-sm font-medium text-emerald-800">
           Beste URL: <span className="font-semibold">{extractHostname(allResults[winnerIdx].url)}</span>
           {' '}— Score {allResults[winnerIdx].score}/100
         </p>
@@ -380,7 +380,7 @@ function ComparisonTable({ data }: { data: ComparisonResult }) {
       {/* Table */}
       <p className="text-xs text-slate-400 dark:text-slate-500 md:hidden">← Tabelle scrollbar →</p>
       <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-border">
-        <table className="w-full text-sm">
+        <table className="min-w-[640px] text-sm">
           <thead>
             <tr className="border-b border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary">
               <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 w-36">Metrik</th>
@@ -939,9 +939,9 @@ export function SeoCompareWorkspace() {
             <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Vergleiche</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">Gespeicherte Wettbewerbervergleiche für diesen Tenant.</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-[220px] rounded-full">
+              <SelectTrigger className="w-full rounded-full sm:w-[220px]">
                 <SelectValue placeholder="Kunde filtern" />
               </SelectTrigger>
               <SelectContent>

@@ -297,7 +297,7 @@ export function ApprovalsWorkspace() {
 
         {/* Summary Cards */}
         {!loading && !error && (
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <SummaryCard
               label="Offen"
               count={summaryStats.open}
@@ -334,9 +334,9 @@ export function ApprovalsWorkspace() {
         )}
 
         {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-[180px] rounded-xl">
+            <SelectTrigger className="w-full rounded-xl sm:w-[180px]">
               <SelectValue placeholder="Typ filtern" />
             </SelectTrigger>
             <SelectContent>
@@ -348,7 +348,7 @@ export function ApprovalsWorkspace() {
           </Select>
           {!activeCustomer && (
             <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-[220px] rounded-xl">
+              <SelectTrigger className="w-full rounded-xl sm:w-[220px]">
                 <SelectValue placeholder="Kunde filtern" />
               </SelectTrigger>
               <SelectContent>
@@ -365,7 +365,7 @@ export function ApprovalsWorkspace() {
             placeholder="Titel oder Kunde suchen..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-[220px] rounded-xl"
+            className="w-full rounded-xl sm:w-[220px]"
           />
           {hasActiveFilters && (
             <Button
@@ -432,8 +432,9 @@ export function ApprovalsWorkspace() {
 
         {/* Table */}
         {!loading && !error && filteredApprovals.length > 0 && (
-          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft overflow-hidden">
-            <Table>
+          <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
+            <div className="overflow-x-auto">
+              <Table className="min-w-[760px]">
               <TableHeader>
                 <TableRow className="border-slate-100 dark:border-border">
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Typ</TableHead>
@@ -525,13 +526,14 @@ export function ApprovalsWorkspace() {
                   )
                 })}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           </Card>
         )}
 
         {/* Pagination */}
         {!loading && !error && totalPages > 1 && (
-          <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+          <div className="flex flex-col gap-3 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
             <span>
               {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredApprovals.length)} von {filteredApprovals.length}
             </span>

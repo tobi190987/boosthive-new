@@ -111,7 +111,8 @@ function NavigationContent({
   initialOpenApprovalsCount = 0,
   initialNotifications = [],
   onNavigate,
-}: TenantShellNavigationProps & { onNavigate?: () => void }) {
+  inMobileSheet = false,
+}: TenantShellNavigationProps & { onNavigate?: () => void; inMobileSheet?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
   const { activeCustomer } = useActiveCustomer()
@@ -278,7 +279,7 @@ function NavigationContent({
 
   return (
     <>
-      <div className="flex items-center gap-3 px-4 py-4">
+      <div className={cn('flex items-center gap-3 px-4 py-4', inMobileSheet && 'pr-14')}>
         {context.tenant.logoUrl ? (
           <Image
             src={context.tenant.logoUrl}
@@ -296,17 +297,19 @@ function NavigationContent({
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{context.tenant.name}</p>
         </div>
-        <Link
-          href="/help"
-          onClick={() => handleNavigate('/help')}
-          onMouseEnter={() => router.prefetch('/help')}
-          onFocus={() => router.prefetch('/help')}
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
-          aria-label="Hilfe öffnen"
-          title="Hilfe"
-        >
-          <CircleHelp className="h-4 w-4" />
-        </Link>
+        {!inMobileSheet ? (
+          <Link
+            href="/help"
+            onClick={() => handleNavigate('/help')}
+            onMouseEnter={() => router.prefetch('/help')}
+            onFocus={() => router.prefetch('/help')}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
+            aria-label="Hilfe öffnen"
+            title="Hilfe"
+          >
+            <CircleHelp className="h-4 w-4" />
+          </Link>
+        ) : null}
       </div>
 
       <CustomerSelectorDropdown />
@@ -529,18 +532,46 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
         <Menu className="h-5 w-5" />
       </Button>
 
-      <div className="min-w-0">
-        <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{props.context.tenant.name}</p>
-        <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-          {activeCustomer ? `Kunde: ${activeCustomer.name}` : roleLabel(props.context.membership.role)}
-        </p>
+      <div className="flex min-w-0 items-center gap-3">
+        {props.context.tenant.logoUrl ? (
+          <Image
+            src={props.context.tenant.logoUrl}
+            alt={`${props.context.tenant.name} Logo`}
+            width={120}
+            height={36}
+            className="h-8 w-auto max-w-[110px] shrink-0 object-contain"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-xs font-semibold text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+            {props.context.tenant.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{props.context.tenant.name}</p>
+          <div className="mt-1 flex items-center gap-2">
+            {activeCustomer ? (
+              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
+                {`Kunde: ${activeCustomer.name}`}
+              </p>
+            ) : null}
+            <Badge className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950/50">
+              {roleLabel(props.context.membership.role)}
+            </Badge>
+          </div>
+        </div>
       </div>
 
       <div className="ml-auto flex items-center gap-2">
         <NotificationBell initialNotifications={props.initialNotifications} />
-        <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950/50">
-          Workspace
-        </Badge>
+        <Link
+          href="/help"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
+          aria-label="Hilfe öffnen"
+          title="Hilfe"
+        >
+          <CircleHelp className="h-4 w-4" />
+        </Link>
       </div>
 
       <CustomerSelectorDropdown
@@ -555,7 +586,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
             <SheetTitle>Tenant Navigation</SheetTitle>
           </SheetHeader>
           <div className="flex h-full flex-col bg-white dark:bg-[#080c12]">
-            <NavigationContent {...props} onNavigate={() => setOpen(false)} />
+            <NavigationContent {...props} onNavigate={() => setOpen(false)} inMobileSheet />
           </div>
         </SheetContent>
       </Sheet>

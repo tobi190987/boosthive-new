@@ -2212,9 +2212,9 @@ function SeoAnalysisWorkspace({
               Vergangene und laufende SEO-Analysen für diesen Tenant.
             </p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
             <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-[220px] rounded-full">
+              <SelectTrigger className="w-full rounded-full sm:w-[220px]">
                 <SelectValue placeholder="Kunde filtern" />
               </SelectTrigger>
               <SelectContent>
