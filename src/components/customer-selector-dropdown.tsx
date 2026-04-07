@@ -73,7 +73,7 @@ export function CustomerSelectorDropdown({
       <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Kunden auswaehlen"
+          aria-label="Kunden auswählen"
           className={cn(
             'mx-3 mt-2 mb-1 flex w-[calc(100%-1.5rem)] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
             'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]/50 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
@@ -101,13 +101,8 @@ export function CustomerSelectorDropdown({
               <Users2 className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
               <div className="min-w-0 flex-1">
                 <span className="block truncate text-slate-400 dark:text-slate-500">
-                  {customers.length === 0 ? 'Noch keine Kunden' : 'Kunden wählen...'}
+                  {customers.length === 0 ? 'Noch keine Kunden' : 'Kunde wählen'}
                 </span>
-                {!compact && customers.length > 0 && (
-                  <span className="block truncate text-xs text-slate-400 dark:text-slate-500">
-                    Aktiven Kunden für alle Tools festlegen
-                  </span>
-                )}
               </div>
             </>
           )}
