@@ -236,8 +236,8 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               ))}
             </div>
           ) : filteredCustomers.length === 0 ? (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-[#252d3a] dark:bg-[#151c28]">
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-[#1e2635]">
+            <div className="mt-4 rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-border dark:bg-card">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white dark:bg-secondary">
                 <Users className="h-5 w-5 text-slate-400 dark:text-slate-500" />
               </div>
               <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-slate-100">

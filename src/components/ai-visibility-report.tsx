@@ -119,7 +119,7 @@ const BRAND_TIMELINE_COLOR: TimelineSeriesColor = {
 }
 
 const COMPETITOR_TIMELINE_COLORS: TimelineSeriesColor[] = [
-  { line: '#94a3b8', badge: 'bg-slate-100 dark:bg-[#1e2635]', text: 'text-slate-400 dark:text-slate-500' },
+  { line: '#94a3b8', badge: 'bg-slate-100 dark:bg-secondary', text: 'text-slate-400 dark:text-slate-500' },
   { line: '#2563eb', badge: 'bg-[#eff6ff]', text: 'text-[#2563eb]' },
   { line: '#c2554d', badge: 'bg-red-50', text: 'text-red-600' },
   { line: '#7c3aed', badge: 'bg-violet-50', text: 'text-violet-600' },
@@ -564,9 +564,9 @@ export function AiVisibilityReport({
 
   if (analyses.length === 0) {
     return (
-      <Card className="rounded-2xl border border-dashed border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+      <Card className="rounded-2xl border border-dashed border-slate-200 dark:border-border bg-white dark:bg-card shadow-sm">
         <CardContent className="flex flex-col items-center gap-4 px-6 py-14 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white dark:bg-[#151c28] shadow-sm">
+          <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-white dark:bg-card shadow-sm">
             <LineChart className="h-6 w-6 text-blue-600" />
           </div>
           <div className="space-y-2">
@@ -582,7 +582,7 @@ export function AiVisibilityReport({
 
   if (!selectedAnalysis) {
     return (
-      <Alert className="rounded-2xl border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Alert className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card">
         <FileText className="h-4 w-4 text-slate-400 dark:text-slate-500" />
         <AlertTitle>Ergebnisse werden vorbereitet</AlertTitle>
         <AlertDescription className="text-slate-600 dark:text-slate-300">
@@ -594,7 +594,7 @@ export function AiVisibilityReport({
 
   if (selectedAnalysis.status !== 'done') {
     return (
-      <Alert className="rounded-2xl border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Alert className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card">
         <FileText className="h-4 w-4 text-slate-400 dark:text-slate-500" />
         <AlertTitle>Für diese Analyse liegt noch kein Report vor</AlertTitle>
         <AlertDescription className="text-slate-600 dark:text-slate-300">
@@ -630,10 +630,10 @@ export function AiVisibilityReport({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge className="rounded-full bg-white dark:bg-[#151c28] px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]">
+            <Badge className="rounded-full bg-white dark:bg-card px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]">
               Report
             </Badge>
             <Badge className="rounded-full bg-blue-50 px-3 py-1 text-xs text-blue-600 hover:bg-blue-50">
@@ -652,7 +652,7 @@ export function AiVisibilityReport({
             <select
               value={selectedAnalysis.id}
               onChange={(event) => onSelectAnalysis(event.target.value)}
-              className="h-10 rounded-full border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-sm text-slate-700 dark:text-slate-300 shadow-sm outline-none"
+              className="h-10 rounded-full border border-slate-200 dark:border-border bg-white dark:bg-card px-4 text-sm text-slate-700 dark:text-slate-300 shadow-sm outline-none"
             >
               {reportableAnalyses.map((analysis) => (
                 <option key={analysis.id} value={analysis.id}>
@@ -664,7 +664,7 @@ export function AiVisibilityReport({
           <Button
             onClick={handleExport}
             disabled={exporting}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             <Download className="mr-1.5 h-4 w-4" />
             {exporting ? 'Export läuft...' : 'PDF exportieren'}
@@ -737,7 +737,7 @@ export function AiVisibilityReport({
           </div>
 
           {executiveSummary && (
-            <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+            <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
               <CardContent className="space-y-2 p-5">
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Fazit</p>
                 <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">{executiveSummary}</p>
@@ -753,7 +753,7 @@ export function AiVisibilityReport({
                   Filtere zwischen aggregierter Sicht und einzelnen Modellen.
                 </p>
               </div>
-              <TabsList className="h-auto flex-wrap rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
+              <TabsList className="h-auto flex-wrap rounded-full bg-slate-50 dark:bg-card p-1">
                 {availableModels.map((model) => (
                   <TabsTrigger
                     key={model}
@@ -769,7 +769,7 @@ export function AiVisibilityReport({
             {availableModels.map((model) => (
               <TabsContent key={model} value={model} className="space-y-4">
                 <div className="grid gap-4 xl:grid-cols-[1.3fr_0.7fr]">
-                  <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+                  <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                         <SectionTitleWithTooltip
@@ -821,7 +821,7 @@ export function AiVisibilityReport({
                     </CardContent>
                   </Card>
 
-                  <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+                  <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
                     <CardHeader className="pb-3">
                       <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                         <SectionTitleWithTooltip
@@ -837,7 +837,7 @@ export function AiVisibilityReport({
                         </p>
                       )}
                       {keywordGaps.map((gap) => (
-                        <div key={gap.keyword} className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+                        <div key={gap.keyword} className="rounded-xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4">
                           <div className="flex items-start justify-between gap-3">
                             <div>
                               <p className="font-medium text-slate-900 dark:text-slate-100">{gap.keyword}</p>
@@ -860,7 +860,7 @@ export function AiVisibilityReport({
             ))}
           </Tabs>
 
-          <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                 <SectionTitleWithTooltip
@@ -925,7 +925,7 @@ export function AiVisibilityReport({
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">GEO-Empfehlungen</CardTitle>
             </CardHeader>
@@ -944,7 +944,7 @@ export function AiVisibilityReport({
                       'rounded-xl border p-4 transition',
                       status === 'done'
                         ? 'border-emerald-200 bg-emerald-50/60'
-                        : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]'
+                        : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card'
                     )}
                   >
                     <div className="flex items-start justify-between gap-3">
@@ -952,7 +952,7 @@ export function AiVisibilityReport({
                         <div className="flex flex-wrap items-center gap-2">
                           <PriorityBadge priority={recommendation.priority} />
                           {recommendation.related_keyword && (
-                            <Badge className="rounded-full bg-white dark:bg-[#151c28] px-2.5 py-0.5 text-[11px] text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-[#1e2635]">
+                            <Badge className="rounded-full bg-white dark:bg-card px-2.5 py-0.5 text-[11px] text-slate-500 dark:text-slate-400 hover:bg-white dark:hover:bg-[#1e2635]">
                               {recommendation.related_keyword}
                             </Badge>
                           )}
@@ -973,7 +973,7 @@ export function AiVisibilityReport({
                           'rounded-full',
                           status === 'done'
                             ? 'border-emerald-300 text-emerald-700 hover:bg-emerald-50'
-                            : 'bg-[#1f2937] text-white hover:bg-[#111827]'
+                            : 'bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200'
                         )}
                       >
                         {savingRecommendationIds[recommendation.id]
@@ -990,7 +990,7 @@ export function AiVisibilityReport({
             </CardContent>
           </Card>
 
-          <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
                 <SectionTitleWithTooltip
@@ -1035,7 +1035,7 @@ export function AiVisibilityReport({
                             'rounded-full px-2.5 py-0.5 text-[11px]',
                             sourceMentionsBrand(source)
                               ? 'bg-blue-50 text-blue-600 hover:bg-blue-50'
-                              : 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
+                              : 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                           )}
                         >
                           {sourceMentionsBrand(source) ? 'Ja' : 'Nein'}
@@ -1043,7 +1043,7 @@ export function AiVisibilityReport({
                       </TableCell>
                       <TableCell>
                         {source.is_source_gap ? (
-                          <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] px-2.5 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+                          <Badge className="rounded-full bg-slate-100 dark:bg-secondary px-2.5 py-0.5 text-[11px] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
                             Gap
                           </Badge>
                         ) : (
@@ -1081,13 +1081,13 @@ function MetricCard({
     tone === 'teal'
       ? 'bg-blue-50 text-blue-600'
       : tone === 'amber'
-        ? 'bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500'
+        ? 'bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500'
         : tone === 'rose'
           ? 'bg-red-50 text-red-600'
-          : 'bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300'
+          : 'bg-slate-100 dark:bg-secondary text-slate-600 dark:text-slate-300'
 
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
       <CardContent className="space-y-3 p-5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -1144,8 +1144,8 @@ function ScorePill({ score, sentiment }: { score: number; sentiment: 'positive' 
     sentiment === 'positive'
       ? 'bg-blue-50 text-blue-600'
       : sentiment === 'negative'
-        ? 'bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500'
-        : 'bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300'
+        ? 'bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500'
+        : 'bg-slate-100 dark:bg-secondary text-slate-600 dark:text-slate-300'
 
   return (
     <Badge className={cn('rounded-full px-2.5 py-1 text-xs font-medium hover:opacity-100', toneClass)}>
@@ -1159,8 +1159,8 @@ function PriorityBadge({ priority }: { priority: RecommendationRow['priority'] }
     priority === 'high'
       ? 'bg-red-50 text-red-700'
       : priority === 'medium'
-        ? 'bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500'
-        : 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400'
+        ? 'bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500'
+        : 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400'
 
   return (
     <Badge className={cn('rounded-full px-2.5 py-0.5 text-[11px] uppercase tracking-wide hover:opacity-100', className)}>
@@ -1172,7 +1172,7 @@ function PriorityBadge({ priority }: { priority: RecommendationRow['priority'] }
 function TrendBadge({ delta }: { delta: number }) {
   if (delta > 0) {
     return (
-      <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] px-2.5 py-1 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+      <Badge className="rounded-full bg-slate-100 dark:bg-secondary px-2.5 py-1 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
         <ArrowUpRight className="mr-1 h-3.5 w-3.5" />
         +{formatPercent(delta)}
       </Badge>
@@ -1189,7 +1189,7 @@ function TrendBadge({ delta }: { delta: number }) {
   }
 
   return (
-    <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] px-2.5 py-1 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+    <Badge className="rounded-full bg-slate-100 dark:bg-secondary px-2.5 py-1 text-xs text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
       <Minus className="mr-1 h-3.5 w-3.5" />
       Stabil
     </Badge>

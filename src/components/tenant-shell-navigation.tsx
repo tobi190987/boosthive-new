@@ -147,6 +147,10 @@ function NavigationContent({
       const customerId = activeCustomerId ?? 'all'
       const prefetchId = `${href}:${customerId}`
       if (prefetchedTargets.current.has(prefetchId)) return
+      if (prefetchedTargets.current.size >= 50) {
+        const oldest = prefetchedTargets.current.values().next().value
+        if (oldest !== undefined) prefetchedTargets.current.delete(oldest)
+      }
       prefetchedTargets.current.add(prefetchId)
 
       const customerQuery = activeCustomerId
@@ -344,7 +348,7 @@ function NavigationContent({
                       </Link>
 
                       {tool.children && tool.children.length > 0 && (
-                        <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-3 dark:border-[#252d3a]">
+                        <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-3 dark:border-border">
                           {tool.children.map((child) => {
                             const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
                             const childActive = isNavActive(pathname, child.href)
@@ -433,11 +437,12 @@ function NavigationContent({
       <Separator className="bg-slate-100 dark:bg-slate-800" />
 
       <div className="p-4 space-y-2">
-        <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm dark:border-[#252d3a] dark:bg-[#151c28]">
+        <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-white p-3 shadow-sm dark:border-border dark:bg-card">
           <Link
             href="/settings/profile"
             onClick={() => handleNavigate('/settings/profile')}
-            className="min-w-0 flex flex-1 items-center gap-3 rounded-xl transition hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+            className="min-w-0 flex flex-1 items-center gap-3 rounded-xl transition hover:bg-slate-50 dark:hover:bg-secondary"
+            aria-label="Profil bearbeiten"
           >
             <Avatar className="h-10 w-10 border border-slate-100 dark:border-[#2d3847]">
               <AvatarImage src={context.user.avatarUrl ?? undefined} alt={context.user.email} />
@@ -471,7 +476,7 @@ function NavigationContent({
 
 export function TenantSidebar(props: TenantShellNavigationProps) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white dark:border-[#252d3a] dark:bg-[#080c12] md:flex">
+    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white dark:border-border dark:bg-[#080c12] md:flex">
       <NavigationContent {...props} />
     </aside>
   )
@@ -482,7 +487,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
   const { activeCustomer } = useActiveCustomer()
 
   return (
-    <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center gap-3 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur dark:border-[#252d3a] dark:bg-[#080c12]/95 md:hidden">
+    <header className="sticky top-0 z-20 flex min-h-16 flex-wrap items-center gap-3 border-b border-slate-100 bg-white/95 px-4 py-3 backdrop-blur dark:border-border dark:bg-[#080c12]/95 md:hidden">
       <Button
         type="button"
         variant="ghost"
@@ -511,7 +516,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
       <CustomerSelectorDropdown
         compact
         className="mx-0 my-0 basis-full"
-        triggerClassName="w-full max-w-none rounded-xl border-slate-200 bg-slate-50 dark:border-[#252d3a] dark:bg-[#151c28]"
+        triggerClassName="w-full max-w-none rounded-xl border-slate-200 bg-slate-50 dark:border-border dark:bg-card"
       />
 
       <Sheet open={open} onOpenChange={setOpen}>

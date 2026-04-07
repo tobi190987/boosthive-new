@@ -263,7 +263,7 @@ function AssetGridCard({
   onToggleSelect,
 }: AssetGridCardProps) {
   return (
-    <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-[#252d3a] dark:bg-[#101723]">
+    <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-border dark:bg-[#101723]">
       <button
         type="button"
         className="block w-full text-left"
@@ -409,7 +409,7 @@ function AssetListRow({
   const previewWidth = Math.max(140, Math.min(240, Math.round(140 + (asset.width_px / maxWidthPx) * 100)))
 
   return (
-    <article className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-[#252d3a] dark:bg-[#101723] md:flex-row md:items-start">
+    <article className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-border dark:bg-[#101723] md:flex-row md:items-start">
       <button
         type="button"
         className="relative overflow-hidden rounded-[1.25rem] bg-slate-100 dark:bg-[#0b1220]"
@@ -1006,7 +1006,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     <div className="space-y-6">
       {/* Stats */}
       <div className="grid gap-4 xl:grid-cols-4 md:grid-cols-2">
-        <Card className="rounded-[1.75rem] border-slate-100 dark:border-[#252d3a] dark:bg-[#151c28]">
+        <Card className="rounded-[1.75rem] border-slate-100 dark:border-border dark:bg-card">
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Gesamt</p>
@@ -1014,12 +1014,12 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                 {metrics.total}
               </p>
             </div>
-            <div className="rounded-2xl bg-slate-100 p-3 dark:bg-[#1e2635]">
+            <div className="rounded-2xl bg-slate-100 p-3 dark:bg-secondary">
               <Grid2x2 className="h-5 w-5 text-slate-600 dark:text-slate-300" />
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-[1.75rem] border-slate-100 dark:border-[#252d3a] dark:bg-[#151c28]">
+        <Card className="rounded-[1.75rem] border-slate-100 dark:border-border dark:bg-card">
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Bilder</p>
@@ -1032,7 +1032,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-[1.75rem] border-slate-100 dark:border-[#252d3a] dark:bg-[#151c28]">
+        <Card className="rounded-[1.75rem] border-slate-100 dark:border-border dark:bg-card">
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Videos</p>
@@ -1045,7 +1045,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             </div>
           </CardContent>
         </Card>
-        <Card className="rounded-[1.75rem] border-slate-100 dark:border-[#252d3a] dark:bg-[#151c28]">
+        <Card className="rounded-[1.75rem] border-slate-100 dark:border-border dark:bg-card">
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Speicher</p>
@@ -1061,7 +1061,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       {/* Library */}
-      <Card className="rounded-[2rem] border-slate-100 shadow-soft dark:border-[#252d3a] dark:bg-[#151c28]">
+      <Card className="rounded-[2rem] border-slate-100 shadow-soft dark:border-border dark:bg-card">
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -1075,7 +1075,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             </div>
             <div className="flex flex-wrap gap-2">
               <Button
-                className="rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                variant="dark"
                 onClick={() => {
                   if (customerOptions.length === 0) {
                     toast.error('Lege zuerst einen Kunden an, bevor du Ads hochlädst.')
@@ -1132,7 +1132,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             <div className="flex flex-wrap items-center justify-end gap-2">
               {isAdmin ? (
                 <>
-                  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252d3a] dark:bg-[#101723]">
+                  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm dark:border-border dark:bg-[#101723]">
                     <Checkbox
                       checked={allVisibleSelected}
                       onCheckedChange={(checked) =>
@@ -1159,7 +1159,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                   </Button>
                 </>
               ) : null}
-              <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 dark:border-[#252d3a] dark:bg-[#101723]">
+              <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 dark:border-border dark:bg-[#101723]">
               <Button
                 type="button"
                 variant="ghost"
@@ -1201,12 +1201,12 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               {Array.from({ length: 6 }).map((_, index) => (
                 <div
                   key={index}
-                  className="h-72 animate-pulse rounded-[1.5rem] bg-slate-100 dark:bg-[#1e2635]"
+                  className="h-72 animate-pulse rounded-[1.5rem] bg-slate-100 dark:bg-secondary"
                 />
               ))}
             </div>
           ) : customers.length === 0 ? (
-            <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-[#252d3a] dark:bg-[#111827]">
+            <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-border dark:bg-card">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Noch keine Kunden angelegt
               </h3>
@@ -1225,7 +1225,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               ) : null}
             </div>
           ) : assets.length === 0 ? (
-            <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-[#252d3a] dark:bg-[#111827]">
+            <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-border dark:bg-card">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Keine Anzeigen gefunden
               </h3>
@@ -1455,7 +1455,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                   </div>
 
                   {filePreviewUrl ? (
-                    <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 dark:border-[#252d3a] dark:bg-[#0f1726]">
+                    <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 dark:border-border dark:bg-[#0f1726]">
                       <div
                         className={cn(
                           'mx-auto max-h-[360px] overflow-hidden bg-slate-100 dark:bg-[#0b1220]',
@@ -1487,7 +1487,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                   ) : null}
                 </div>
 
-                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-[#252d3a] dark:bg-[#111827]">
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-border dark:bg-card">
                   <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                     Automatische Asset-Daten
                   </h3>
@@ -1658,7 +1658,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               </DialogHeader>
 
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,360px)]">
-                <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-100 dark:border-[#252d3a] dark:bg-[#0b1220]">
+                <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-100 dark:border-border dark:bg-[#0b1220]">
                   <div
                     className="mx-auto"
                     style={{

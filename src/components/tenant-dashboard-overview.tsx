@@ -115,7 +115,7 @@ function StatCard({ label, value, icon, href, loading }: StatCardProps) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 transition-all hover:border-slate-200 hover:shadow-md dark:border-[#252d3a] dark:bg-[#151c28] dark:hover:border-[#2d3847]"
+      className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 transition-all hover:border-slate-200 hover:shadow-md dark:border-border dark:bg-card dark:hover:border-[#2d3847]"
     >
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800/50">
         {icon}
@@ -274,8 +274,8 @@ export function TenantDashboardOverview({
       {/* Main content grid */}
       <div className="grid gap-6 xl:grid-cols-3">
         {/* Activity Feed */}
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft xl:col-span-2">
-          <CardHeader className="border-b border-slate-100 dark:border-[#252d3a] px-6 py-4">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft xl:col-span-2">
+          <CardHeader className="border-b border-slate-100 dark:border-border px-6 py-4">
             <CardTitle className="text-base text-slate-900 dark:text-slate-50">Letzte Aktivitäten</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
@@ -330,7 +330,7 @@ export function TenantDashboardOverview({
 
         {/* Quick Actions + Role Info */}
         <div className="space-y-4">
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="pb-3">
               <CardTitle className="text-base text-slate-900 dark:text-slate-50">Schnellzugriff</CardTitle>
             </CardHeader>
@@ -364,7 +364,7 @@ export function TenantDashboardOverview({
             </CardContent>
           </Card>
 
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#0e1420] shadow-none">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-[#0e1420] shadow-none">
             <CardContent className="p-4 space-y-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Workspace</p>
               <p className="font-semibold text-slate-900 dark:text-slate-100">{context.tenant.name}</p>
@@ -388,7 +388,7 @@ export function TenantDashboardOverview({
                 {activeModules.map((mod) => (
                   <Card
                     key={mod.id}
-                    className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft"
+                    className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
                   >
                     <CardHeader>
                       <CardTitle className="flex items-center justify-between text-base text-slate-950 dark:text-slate-50">
@@ -424,7 +424,7 @@ export function TenantDashboardOverview({
                 {gatedModules.map((mod) => (
                   <Card
                     key={mod.id}
-                    className="rounded-[2rem] border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-none"
+                    className="rounded-[2rem] border border-dashed border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none"
                   >
                     <CardHeader>
                       <CardTitle className="flex items-center gap-3 text-base text-slate-500 dark:text-slate-400">

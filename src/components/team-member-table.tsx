@@ -141,8 +141,8 @@ export function TeamMemberTable({
     searchQuery.trim().length > 0 || statusFilter !== 'all' || kindFilter !== 'all'
 
   return (
-    <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
-      <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-[#252d3a] px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
+    <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-border px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
             Teamübersicht
@@ -155,7 +155,7 @@ export function TeamMemberTable({
           <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
             {activeCount} aktiv
           </div>
-          <div className="rounded-full border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="rounded-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
             {pendingCount} Einladung offen
           </div>
           <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
@@ -164,14 +164,14 @@ export function TeamMemberTable({
         </div>
       </div>
 
-      <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 dark:border-[#252d3a] lg:flex-row lg:items-center">
+      <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-4 dark:border-border lg:flex-row lg:items-center">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <Input
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Nach Name oder E-Mail suchen"
-            className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 dark:border-[#252d3a] dark:bg-[#151c28]"
+            className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 dark:border-border dark:bg-card"
           />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
@@ -245,10 +245,10 @@ export function TeamMemberTable({
             const hasPendingInvite = entry.kind === 'invitation' && entry.status === 'pending'
 
             return (
-              <TableRow key={`${entry.kind}-${entry.id}`} className="border-slate-100 dark:border-[#252d3a] hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+              <TableRow key={`${entry.kind}-${entry.id}`} className="border-slate-100 dark:border-border hover:bg-slate-50 dark:hover:bg-[#1e2635]">
                 <TableCell className="pl-6">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-11 w-11 border border-slate-100 dark:border-[#252d3a] bg-slate-100 dark:bg-[#1e2635]">
+                    <Avatar className="h-11 w-11 border border-slate-100 dark:border-border bg-slate-100 dark:bg-secondary">
                       <AvatarFallback className="bg-blue-50 text-sm font-semibold text-blue-600">
                         {initialsForEntry(entry)}
                       </AvatarFallback>
@@ -290,7 +290,7 @@ export function TeamMemberTable({
                         ? 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                         : entry.status === 'inactive'
                           ? 'border-[#e8d7d7] bg-[#fbefef] text-[#991b1b] dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300'
-                          : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300'
+                          : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300'
                     )}
                   >
                     {statusCopy(entry.status)}
@@ -308,7 +308,7 @@ export function TeamMemberTable({
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+                        className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card hover:bg-slate-50 dark:hover:bg-[#1e2635]"
                         disabled={Boolean(pendingAction)}
                         onClick={() => onResend(entry.id)}
                       >
@@ -333,7 +333,7 @@ export function TeamMemberTable({
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-amber-200 bg-white dark:bg-[#151c28] text-blue-600 hover:bg-amber-50"
+                          className="rounded-full border-amber-200 bg-white dark:bg-card text-blue-600 hover:bg-amber-50"
                           disabled={Boolean(pendingAction)}
                           onClick={() => setEntryToDelete(entry)}
                         >
@@ -347,7 +347,7 @@ export function TeamMemberTable({
                           {hasPendingInvite ? 'Einladung löschen' : 'User löschen'}
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
+                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                         <AlertDialogHeader>
                           <AlertDialogTitle>
                             {hasPendingInvite ? 'Einladung wirklich löschen?' : 'User wirklich löschen?'}

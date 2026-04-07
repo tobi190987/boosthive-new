@@ -111,7 +111,7 @@ function analyticsStatusLabel(status: AnalyticsStatus) {
 
 function analyticsStatusColor(status: AnalyticsStatus) {
   const map: Record<AnalyticsStatus, string> = {
-    pending: 'bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300',
+    pending: 'bg-slate-100 dark:bg-secondary text-slate-600 dark:text-slate-300',
     running: 'bg-blue-50 text-blue-700',
     done: 'bg-emerald-50 text-emerald-700',
     failed: 'bg-red-50 text-red-700',
@@ -324,7 +324,7 @@ function ProjectListView({
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
             <Sparkles className="h-5 w-5 text-blue-600" />
@@ -373,7 +373,7 @@ function ProjectListView({
 
       {/* ── Empty State ────────────────────────────────────── */}
       {projects.length === 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
               <Eye className="h-7 w-7 text-blue-600" />
@@ -437,7 +437,7 @@ function ProjectCard({
           onClick()
         }
       }}
-      className="group cursor-pointer rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm transition hover:border-slate-200 hover:shadow-md"
+      className="group cursor-pointer rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm transition hover:border-slate-200 hover:shadow-md"
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -460,19 +460,19 @@ function ProjectCard({
           {project.keywords.slice(0, 3).map((kw) => (
             <Badge
               key={kw}
-              className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+              className="rounded-full bg-slate-50 dark:bg-card px-2.5 py-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
             >
               {kw}
             </Badge>
           ))}
           {project.keywords.length > 3 && (
-            <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+            <Badge className="rounded-full bg-slate-50 dark:bg-card px-2.5 py-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
               +{project.keywords.length - 3}
             </Badge>
           )}
         </div>
 
-        <Separator className="bg-slate-100 dark:bg-[#1e2635]" />
+        <Separator className="bg-slate-100 dark:bg-secondary" />
 
         <div className="flex items-center justify-between text-xs text-slate-400 dark:text-slate-500">
           <span className="flex items-center gap-1">
@@ -854,7 +854,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                       'flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition',
                       selectedModels.includes(model.id)
                         ? 'border-blue-600 bg-blue-50'
-                        : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:border-slate-200'
+                        : 'border-slate-100 dark:border-border bg-white dark:bg-card hover:border-slate-200'
                     )}
                   >
                     <Checkbox
@@ -870,7 +870,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                 ))}
               </div>
               {selectedModels.length === 0 && (
-                <p className="text-xs text-red-500">Mindestens ein Modell muss ausgewaehlt sein.</p>
+                <p className="text-xs text-red-500">Mindestens ein Modell muss ausgewählt sein.</p>
               )}
             </fieldset>
 
@@ -907,7 +907,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
         {step === 'review' && (
           <div className="space-y-5">
             {/* ── Zusammenfassung ─────────────────────────────── */}
-            <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4 space-y-3">
+            <div className="rounded-xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4 space-y-3">
               <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Zusammenfassung</h4>
 
               <div className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
@@ -972,7 +972,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                 {cleanKeywords.map((kw, i) => (
                   <Badge
                     key={i}
-                    className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+                    className="rounded-full bg-slate-50 dark:bg-card px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
                   >
                     {kw}
                   </Badge>
@@ -1261,7 +1261,7 @@ function ProjectDetailView({
       </div>
 
       {/* ── Projekt-Info ──────────────────────────────────── */}
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
         <CardContent className="space-y-4 p-5">
           {/* Wettbewerber */}
           {project.competitors.length > 0 && (
@@ -1273,7 +1273,7 @@ function ProjectDetailView({
                 {project.competitors.map((c, i) => (
                   <Badge
                     key={i}
-                    className="rounded-full bg-slate-100 dark:bg-[#1e2635] px-2.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]"
+                    className="rounded-full bg-slate-100 dark:bg-secondary px-2.5 py-0.5 text-xs text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]"
                   >
                     {c.name}
                     {c.url ? ` (${c.url})` : ''}
@@ -1291,7 +1291,7 @@ function ProjectDetailView({
               {project.keywords.map((kw, i) => (
                 <Badge
                   key={i}
-                  className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+                  className="rounded-full bg-slate-50 dark:bg-card px-2.5 py-0.5 text-xs text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
                 >
                   {kw}
                 </Badge>
@@ -1302,7 +1302,7 @@ function ProjectDetailView({
       </Card>
 
       {/* ── Analyse-History ───────────────────────────────── */}
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">Analysen</CardTitle>
         </CardHeader>
@@ -1361,7 +1361,7 @@ function ProjectDetailView({
                       'flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition',
                       newAnalysisModels.includes(model.id)
                         ? 'border-blue-600 bg-blue-50'
-                        : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:border-slate-200'
+                        : 'border-slate-100 dark:border-border bg-white dark:bg-card hover:border-slate-200'
                     )}
                   >
                     <Checkbox
@@ -1479,12 +1479,12 @@ function AnalysisRow({
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-4 rounded-xl border border-slate-100 dark:border-[#252d3a] p-3 text-left transition',
+        'flex w-full items-center gap-4 rounded-xl border border-slate-100 dark:border-border p-3 text-left transition',
         isActive
-          ? 'cursor-pointer bg-white dark:bg-[#151c28] hover:border-slate-200 hover:shadow-sm'
+          ? 'cursor-pointer bg-white dark:bg-card hover:border-slate-200 hover:shadow-sm'
           : hasReport || analysis.analytics_status === 'pending' || analysis.analytics_status === 'running'
-            ? 'cursor-pointer bg-white dark:bg-[#151c28] hover:border-slate-200 hover:shadow-sm'
-            : 'cursor-default bg-slate-50 dark:bg-[#151c28]',
+            ? 'cursor-pointer bg-white dark:bg-card hover:border-slate-200 hover:shadow-sm'
+            : 'cursor-default bg-slate-50 dark:bg-card',
         isSelected && 'border-blue-600 bg-blue-50'
       )}
       aria-label={`Analyse vom ${formatDate(analysis.created_at)}, Status: ${statusLabel(analysis.status)}`}
@@ -1510,7 +1510,7 @@ function AnalysisRow({
           {analysis.models.map((m) => (
             <Badge
               key={m}
-              className="rounded-full bg-slate-50 dark:bg-[#151c28] px-2 py-0 text-[10px] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+              className="rounded-full bg-slate-50 dark:bg-card px-2 py-0 text-[10px] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
             >
               {modelLabel(m)}
             </Badge>
@@ -1734,7 +1734,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
       </div>
 
       {/* ── Gesamtfortschritt ─────────────────────────────── */}
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
         <CardContent className="space-y-3 p-5">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Gesamtfortschritt</span>
@@ -1756,7 +1756,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
 
       {/* ── Modell-Fortschritt ─────────────────────────────── */}
       {status.model_progress.length > 0 && (
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100">
               Fortschritt pro Modell
@@ -1831,7 +1831,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
 
       {/* ── Fehler-Log ─────────────────────────────────────── */}
       {status.error_log.length > 0 && (
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-sm">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-sm">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-100">
               <AlertCircle className="h-4 w-4 text-amber-500" />

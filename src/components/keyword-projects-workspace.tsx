@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import {
   ArrowUpDown,
   BarChart3,
@@ -65,7 +66,7 @@ import {
 } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveCustomer } from '@/lib/active-customer-context'
-import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { clearSessionCache, readSessionCache, writeSessionCache } from '@/lib/client-cache'
 import type { KeywordProjectDetailItem, KeywordProjectGscStatus } from '@/lib/tenant-app-data'
 
 // ---------------------------------------------------------------------------
@@ -277,7 +278,7 @@ function getDeltaTone(delta: number | null | undefined) {
   if (delta == null || delta === 0) {
     return {
       label: 'Kein Vergleich',
-      className: 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]',
+      className: 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]',
       icon: Minus,
     }
   }
@@ -322,6 +323,25 @@ function isValidDomain(d: string): boolean {
 const API_BASE = '/api/tenant/keywords/projects'
 const PROJECT_LIST_CACHE_PREFIX = 'keyword-projects:list:'
 const PROJECT_DETAIL_CACHE_PREFIX = 'keyword-projects:detail:'
+
+function clearKeywordProjectListCaches() {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const keysToClear: string[] = []
+
+  for (let index = 0; index < window.sessionStorage.length; index += 1) {
+    const key = window.sessionStorage.key(index)
+    if (key?.startsWith(PROJECT_LIST_CACHE_PREFIX)) {
+      keysToClear.push(key)
+    }
+  }
+
+  for (const key of keysToClear) {
+    clearSessionCache(key)
+  }
+}
 
 class ApiError extends Error {
   status: number
@@ -375,6 +395,7 @@ export function KeywordProjectsWorkspace({
   initialProject = null,
   initialGscStatus = null,
 }: KeywordProjectsWorkspaceProps) {
+  const router = useRouter()
   const [view, setView] = useState<View>(() => {
     if (initialProjectId) {
       return { type: 'detail', projectId: initialProjectId }
@@ -395,9 +416,7 @@ export function KeywordProjectsWorkspace({
           initialProjects={initialProjects}
           onOpenProject={(id) => {
             setView({ type: 'detail', projectId: id })
-            if (typeof window !== 'undefined') {
-              window.history.replaceState({}, '', buildKeywordProjectUrl(id, 'rankings'))
-            }
+            router.push(buildKeywordProjectUrl(id, 'rankings'))
           }}
         />
       )}
@@ -410,9 +429,7 @@ export function KeywordProjectsWorkspace({
           initialGscStatus={initialProjectId === view.projectId ? initialGscStatus : null}
           onBack={() => {
             setView({ type: 'list' })
-            if (typeof window !== 'undefined') {
-              window.history.replaceState({}, '', '/tools/keywords')
-            }
+            router.push('/tools/keywords')
           }}
         />
       )}
@@ -500,7 +517,7 @@ function ProjectList({
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-2xl border border-slate-100 dark:border-[#252d3a]">
+            <Card key={i} className="rounded-2xl border border-slate-100 dark:border-border">
               <CardHeader>
                 <Skeleton className="h-5 w-32" />
               </CardHeader>
@@ -574,7 +591,7 @@ function ProjectList({
 
       {/* Empty state */}
       {projects.length === 0 ? (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
               <Search className="h-7 w-7 text-blue-600" />
@@ -609,7 +626,7 @@ function ProjectList({
             >
               <Card
                 className={cn(
-                  'rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] transition-all hover:border-blue-600/30 hover:shadow-md',
+                  'rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card transition-all hover:border-blue-600/30 hover:shadow-md',
                   project.status === 'inactive' && 'opacity-60'
                 )}
               >
@@ -623,7 +640,7 @@ function ProjectList({
                         'shrink-0 rounded-full text-xs',
                         project.status === 'active'
                           ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-                          : 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
+                          : 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                       )}
                     >
                       {project.status === 'active' ? 'Aktiv' : 'Inaktiv'}
@@ -643,7 +660,7 @@ function ProjectList({
                       {COUNTRIES.find((c) => c.code === project.country_code)?.label ?? project.country_code}
                     </span>
                   </div>
-                  <Separator className="bg-slate-100 dark:bg-[#1e2635]" />
+                  <Separator className="bg-slate-100 dark:bg-secondary" />
                   <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                     <span>{project.keyword_count} Keywords</span>
                     <span>{project.competitor_count} Wettbewerber</span>
@@ -1049,7 +1066,7 @@ function ProjectDetail({
             'w-fit rounded-full text-xs',
             project.status === 'active'
               ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-              : 'bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
+              : 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
           )}
         >
           {project.status === 'active' ? 'Aktiv' : 'Inaktiv'}
@@ -1058,7 +1075,7 @@ function ProjectDetail({
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
+        <TabsList className="h-auto w-full justify-start gap-1 overflow-x-auto rounded-full bg-slate-50 dark:bg-card p-1">
           <TabsTrigger value="rankings" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             <BarChart3 className="mr-1.5 h-3.5 w-3.5" />
             Rankings
@@ -1311,7 +1328,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardContent className="space-y-4 p-6">
           <Skeleton className="h-6 w-48" />
           <Skeleton className="h-16 w-full rounded-2xl" />
@@ -1338,9 +1355,9 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
 
   if (!gscReady) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-card">
             <Link2 className="h-7 w-7 text-slate-400 dark:text-slate-500" />
           </div>
           <div className="space-y-2">
@@ -1364,7 +1381,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
 
   if (backendUnavailable) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between gap-3">
             <div>
@@ -1410,7 +1427,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
   return (
     <>
       <div className="space-y-4">
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
           <CardHeader className="pb-3">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div className="space-y-2">
@@ -1489,7 +1506,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
             )}
 
             {rows.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6 py-12 text-center">
+              <div className="rounded-2xl border border-dashed border-slate-100 dark:border-border bg-white dark:bg-card px-6 py-12 text-center">
                 <BarChart3 className="mx-auto h-10 w-10 text-blue-600" />
                 <h3 className="mt-4 text-lg font-semibold text-slate-950 dark:text-slate-50">
                   Erstes Tracking ausstehend
@@ -1499,10 +1516,10 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
                 </p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a]">
+              <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-border">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-white dark:bg-[#151c28]">
+                    <TableRow className="bg-white dark:bg-card">
                       <TableHead>Keyword</TableHead>
                       <TableHead>Position</TableHead>
                       <TableHead>Delta</TableHead>
@@ -1573,7 +1590,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
         <SheetContent side="right" className="w-full overflow-y-auto border-l-slate-100 p-0 sm:max-w-2xl">
           {selectedRow && (
             <div className="flex h-full flex-col">
-              <SheetHeader className="border-b border-slate-100 dark:border-[#252d3a] px-6 py-5">
+              <SheetHeader className="border-b border-slate-100 dark:border-border px-6 py-5">
                 <SheetTitle>{selectedRow.keyword}</SheetTitle>
                 <SheetDescription>
                   Verlauf für {historyRange} Tage mit aktueller Position {formatPosition(selectedRow.currentPosition)}.
@@ -1583,17 +1600,17 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
               <div className="space-y-5 p-6">
                 <div className="flex flex-wrap items-center gap-3">
                   <PositionDeltaBadge delta={selectedRow.delta} />
-                  <Badge variant="outline" className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300">
+                  <Badge variant="outline" className="rounded-full border-slate-100 dark:border-border bg-white dark:bg-card text-slate-600 dark:text-slate-300">
                     Letzte Messung: {selectedRow.lastTrackedAt ? formatDate(selectedRow.lastTrackedAt) : 'Ausstehend'}
                   </Badge>
-                  <div className="ml-auto flex rounded-full bg-slate-50 dark:bg-[#151c28] p-1">
+                  <div className="ml-auto flex rounded-full bg-slate-50 dark:bg-card p-1">
                     <Button
                       type="button"
                       variant="ghost"
                       size="sm"
                       className={cn(
                         'rounded-full px-4',
-                        historyRange === '30' && 'bg-white dark:bg-[#151c28] shadow-sm'
+                        historyRange === '30' && 'bg-white dark:bg-card shadow-sm'
                       )}
                       onClick={() => setHistoryRange('30')}
                     >
@@ -1605,7 +1622,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
                       size="sm"
                       className={cn(
                         'rounded-full px-4',
-                        historyRange === '90' && 'bg-white dark:bg-[#151c28] shadow-sm'
+                        historyRange === '90' && 'bg-white dark:bg-card shadow-sm'
                       )}
                       onClick={() => setHistoryRange('90')}
                     >
@@ -1634,7 +1651,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
                     </AlertDescription>
                   </Alert>
                 ) : historySeries.length === 0 ? (
-                  <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6 py-12 text-center">
+                  <div className="rounded-2xl border border-dashed border-slate-100 dark:border-border bg-white dark:bg-card px-6 py-12 text-center">
                     <Search className="mx-auto h-8 w-8 text-slate-300" />
                     <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
                       Für dieses Keyword liegen in dem Zeitraum noch keine Verlaufspunkte vor.
@@ -1674,7 +1691,7 @@ function RankingsStatusBadge({ status }: { status: RankingRunStatus }) {
       )
     case 'queued':
       return (
-        <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+        <Badge className="rounded-full bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
           Geplant
         </Badge>
       )
@@ -1689,7 +1706,7 @@ function RankingsStatusBadge({ status }: { status: RankingRunStatus }) {
     case 'idle':
     default:
       return (
-        <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+        <Badge className="rounded-full bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
           Ausstehend
         </Badge>
       )
@@ -1718,7 +1735,7 @@ function MetricCard({
   hint: string
 }) {
   return (
-    <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+    <div className="rounded-xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">{label}</p>
       <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{value}</p>
       <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{hint}</p>
@@ -1786,13 +1803,13 @@ function RankingTrendChart({
   const tooltipPadding = 6
 
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">{title}</CardTitle>
         <p className="text-sm text-slate-500 dark:text-slate-400">{description}</p>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+        <div className="overflow-hidden rounded-xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4">
           <svg
             viewBox={`0 0 ${width} ${height}`}
             className="h-[260px] w-full"
@@ -1909,7 +1926,7 @@ function RankingTrendChart({
             return (
               <div
                 key={`${item.label}-${index}-legend`}
-                className="inline-flex items-center gap-2 rounded-full border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300"
+                className="inline-flex items-center gap-2 rounded-full border border-slate-100 dark:border-border bg-white dark:bg-card px-3 py-1.5 text-xs text-slate-600 dark:text-slate-300"
               >
                 <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
                 {item.label}
@@ -2067,7 +2084,7 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border">
         <CardContent className="space-y-3 p-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-10 w-full" />
@@ -2093,13 +2110,13 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
   }
 
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Keywords</CardTitle>
           <Badge
             variant="outline"
-            className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-xs text-slate-600 dark:text-slate-300"
+            className="rounded-full border-slate-100 dark:border-border bg-white dark:bg-card text-xs text-slate-600 dark:text-slate-300"
           >
             {keywords.length}/{KEYWORD_LIMIT}
           </Badge>
@@ -2129,7 +2146,7 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
           </Button>
         </form>
 
-        <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+        <div className="rounded-xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -2166,7 +2183,7 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
               {suggestions.map((item) => (
                 <div
                   key={item.keyword}
-                  className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <p className="font-medium text-slate-900 dark:text-slate-100">{item.keyword}</p>
@@ -2396,7 +2413,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border">
         <CardContent className="space-y-3 p-6">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-10 w-full" />
@@ -2422,13 +2439,13 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
   }
 
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-semibold">Wettbewerber</CardTitle>
           <Badge
             variant="outline"
-            className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-xs text-slate-600 dark:text-slate-300"
+            className="rounded-full border-slate-100 dark:border-border bg-white dark:bg-card text-xs text-slate-600 dark:text-slate-300"
           >
             {competitors.length}/{COMPETITOR_LIMIT}
           </Badge>
@@ -2458,7 +2475,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
           </Button>
         </form>
 
-        <div className="rounded-xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+        <div className="rounded-xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div className="space-y-1">
               <div className="inline-flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100">
@@ -2495,7 +2512,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
               {suggestions.map((item) => (
                 <div
                   key={item.domain}
-                  className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-3 sm:flex-row sm:items-center sm:justify-between"
+                  className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="min-w-0">
                     <p className="font-medium text-slate-900 dark:text-slate-100">{item.domain}</p>
@@ -2698,6 +2715,8 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
         method: 'DELETE',
       })
       toast({ title: 'Projekt geloescht', description: `"${project.name}" wurde entfernt.` })
+      clearSessionCache(`${PROJECT_DETAIL_CACHE_PREFIX}${project.id}`)
+      clearKeywordProjectListCaches()
       setDeleteOpen(false)
       onDeleted()
     } catch (err) {
@@ -2714,7 +2733,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
   return (
     <div className="space-y-6">
       {/* Rename */}
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Projektname</CardTitle>
         </CardHeader>
@@ -2740,7 +2759,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
       </Card>
 
       {/* Language / Country */}
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardHeader className="pb-3">
           <CardTitle className="text-base font-semibold">Sprache, Region & Intervall</CardTitle>
         </CardHeader>
@@ -2819,7 +2838,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
 
       {/* Status toggle */}
       {isAdmin && (
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold">Projektstatus</CardTitle>
           </CardHeader>
@@ -2846,7 +2865,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
 
       {/* Delete */}
       {isAdmin && (
-        <Card className="rounded-2xl border border-red-200 bg-white dark:bg-[#151c28]">
+        <Card className="rounded-2xl border border-red-200 bg-white dark:bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold text-red-700">Gefahrenzone</CardTitle>
           </CardHeader>
@@ -3059,7 +3078,7 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
   // --- Loading State ---
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardContent className="space-y-4 p-6">
           <div className="flex items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
@@ -3077,9 +3096,9 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
   // --- GSC Not Connected State ---
   if (gscNotReady) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#1e2635]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-secondary">
             <Link2 className="h-7 w-7 text-slate-400 dark:text-slate-500" />
           </div>
           <div className="space-y-2">
@@ -3087,7 +3106,7 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
               Search Console nicht verbunden
             </h2>
             <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Um alle Rankings zu sehen, muss eine Google Search Console Property verbunden und ausgewaehlt sein.
+              Um alle Rankings zu sehen, muss eine Google Search Console Property verbunden und ausgewählt sein.
             </p>
           </div>
           <Button
@@ -3104,7 +3123,7 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
   // --- GSC Revoked State ---
   if (gscRevoked) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/30">
             <Unlink className="h-7 w-7 text-red-400 dark:text-red-500" />
@@ -3147,9 +3166,9 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
   // --- Empty State ---
   if (rows.length === 0) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-14 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#1e2635]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-secondary">
             <Search className="h-7 w-7 text-slate-400 dark:text-slate-500" />
           </div>
           <div className="space-y-2">
@@ -3178,7 +3197,7 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
 
   // --- Data Table ---
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
       <CardHeader className="pb-3">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
@@ -3397,7 +3416,7 @@ function GscStatusBadge({ status }: { status: GscStatus }) {
     case 'not_connected':
     default:
       return (
-        <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+        <Badge className="rounded-full bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
           Nicht verbunden
         </Badge>
       )
@@ -3560,7 +3579,7 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
   // Loading skeleton
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardHeader>
           <Skeleton className="h-5 w-48" />
         </CardHeader>
@@ -3595,11 +3614,11 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
   return (
     <div className="space-y-6">
       {/* GSC Integration Card */}
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-[#151c28]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-50 dark:bg-card">
                 <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4" />
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -3616,13 +3635,13 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
           </div>
         </CardHeader>
 
-        <Separator className="bg-slate-100 dark:bg-[#1e2635]" />
+        <Separator className="bg-slate-100 dark:bg-secondary" />
 
         <CardContent className="pt-5">
           {/* Not connected */}
           {!connection && (
             <div className="flex flex-col items-center gap-4 py-6 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-card">
                 <Link2 className="h-6 w-6 text-slate-400 dark:text-slate-500" />
               </div>
               <div className="space-y-1">
@@ -3675,7 +3694,7 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
                 </AlertDescription>
               </Alert>
 
-              <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-[#151c28] p-4">
+              <div className="flex items-center gap-3 rounded-xl bg-slate-50 dark:bg-card p-4">
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Verbundenes Konto</p>
                   <p className="truncate text-sm text-slate-500 dark:text-slate-400">{connection.google_email}</p>
@@ -3797,17 +3816,17 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
                     )}
                   </>
                 ) : (
-                  <div className="rounded-xl bg-slate-50 dark:bg-[#151c28] p-4">
+                  <div className="rounded-xl bg-slate-50 dark:bg-card p-4">
                     <p className="text-sm text-slate-500 dark:text-slate-400">
                       {connection.selected_property
                         ? connection.selected_property
-                        : 'Es wurde noch keine aktive Property ausgewaehlt.'}
+                        : 'Es wurde noch keine aktive Property ausgewählt.'}
                     </p>
                   </div>
                 )}
               </div>
 
-              {isAdmin && <Separator className="bg-slate-100 dark:bg-[#1e2635]" />}
+              {isAdmin && <Separator className="bg-slate-100 dark:bg-secondary" />}
 
               {/* Disconnect */}
               {isAdmin && (

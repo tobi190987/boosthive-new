@@ -43,8 +43,8 @@ export function LegalPrivacyWorkspace() {
     setAuditLoading(true)
     try {
       const res = await fetch('/api/tenant/legal/audit-logs')
-      const payload = await res.json()
-      if (!res.ok) throw new Error(payload.error ?? 'Audit-Log konnte nicht geladen werden.')
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error((payload as { error?: string }).error ?? 'Audit-Log konnte nicht geladen werden.')
       setAuditItems((payload.items ?? []) as AuditItem[])
       setError(null)
     } catch (loadError) {
@@ -108,7 +108,7 @@ export function LegalPrivacyWorkspace() {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-[#252d3a] dark:bg-[#151c28]">
+      <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
@@ -155,7 +155,7 @@ export function LegalPrivacyWorkspace() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-[#252d3a] dark:bg-[#151c28]">
+      <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
         <CardHeader>
           <CardTitle className="text-lg text-slate-900 dark:text-slate-100">Audit-Log</CardTitle>
           <p className="text-sm text-slate-600 dark:text-slate-300">
@@ -171,9 +171,9 @@ export function LegalPrivacyWorkspace() {
           ) : auditItems.length === 0 ? (
             <p className="text-sm text-slate-500 dark:text-slate-400">Noch keine Audit-Einträge vorhanden.</p>
           ) : (
-            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-[#252d3a]">
+            <div className="overflow-x-auto rounded-xl border border-slate-200 dark:border-border">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 dark:bg-[#1e2635]">
+                <thead className="bg-slate-50 dark:bg-secondary">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Zeitpunkt</th>
                     <th className="px-3 py-2 text-left font-medium text-slate-600 dark:text-slate-300">Aktion</th>
@@ -183,7 +183,7 @@ export function LegalPrivacyWorkspace() {
                 </thead>
                 <tbody>
                   {auditItems.map((item) => (
-                    <tr key={item.id} className="border-t border-slate-100 dark:border-[#252d3a]">
+                    <tr key={item.id} className="border-t border-slate-100 dark:border-border">
                       <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
                         {new Date(item.created_at).toLocaleString('de-DE')}
                       </td>

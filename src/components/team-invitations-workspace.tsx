@@ -217,11 +217,11 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-soft dark:border-[#252d3a] dark:bg-[#151c28]">
+      <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-soft dark:border-border dark:bg-card">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <Badge className="rounded-full bg-[#1f2937] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white hover:bg-[#1f2937]">
+              <Badge className="rounded-full bg-slate-900 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-white hover:bg-slate-900">
                 Team
               </Badge>
               <Badge variant="outline" className="rounded-full text-xs">
@@ -252,25 +252,25 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
             <InviteDialog
               onInvite={handleInvite}
               triggerLabel="Einladung senden"
-              triggerClassName="rounded-full bg-[#1f2937] px-5 text-white hover:bg-[#111827]"
+              triggerClassName="px-5"
             />
           </div>
         </div>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-[#252d3a] dark:bg-[#1e2635]">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-border dark:bg-secondary">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
               Mitglieder
             </p>
             <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary.members}</p>
           </div>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-[#252d3a] dark:bg-[#1e2635]">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-border dark:bg-secondary">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
               Offene Einladungen
             </p>
             <p className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">{summary.pendingInvites}</p>
           </div>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-[#252d3a] dark:bg-[#1e2635]">
+          <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-4 dark:border-border dark:bg-secondary">
             <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
               Admins
             </p>
@@ -285,7 +285,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
+      <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
         <div className="flex items-start gap-3">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
           <p>{activity}</p>
@@ -293,7 +293,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             Teamübersicht wird geladen...

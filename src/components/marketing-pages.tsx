@@ -228,7 +228,7 @@ const tenantFeatureGroups: FeatureGroup[] = [
 
 function FeatureCard({ icon: Icon, title, copy }: FeatureItem) {
   return (
-    <div className="rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.35)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/80">
+    <div className="rounded-[1.75rem] border border-white/60 bg-white/75 p-5 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.35)] backdrop-blur dark:border-border dark:bg-card/80">
       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#0f766e]/10 text-[#0f766e]">
         <Icon className="h-5 w-5" />
       </div>
@@ -273,14 +273,14 @@ function Header({ tenant, mode }: { tenant: MarketingTenantBranding | null; mode
         {mode === 'home' && (
           <Link
             href="/access"
-            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-600"
+            className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-border dark:bg-card dark:text-slate-300 dark:hover:border-slate-600"
           >
             Vorschau-Zugang
           </Link>
         )}
         <Link
           href="/login"
-          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-600"
+          className="inline-flex items-center justify-center rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 dark:border-border dark:bg-card dark:text-slate-300 dark:hover:border-slate-600"
         >
           {isTenant ? 'Tenant Login' : 'Agentur Login'}
         </Link>
@@ -356,7 +356,7 @@ function Hero({
           </Link>
           <Link
             href={mode === 'access' ? '/' : '/access'}
-            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#111827] dark:text-slate-300 dark:hover:border-slate-600"
+            className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 dark:border-border dark:bg-card dark:text-slate-300 dark:hover:border-slate-600"
           >
             {mode === 'access' ? 'Zur Startseite' : 'Vorschau-Zugang'}
           </Link>
@@ -365,7 +365,7 @@ function Hero({
           {bullets.map((bullet) => (
             <span
               key={bullet}
-              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-[#252d3a] dark:bg-[#111827]/80 dark:text-slate-300"
+              className="inline-flex items-center gap-2 rounded-full border border-slate-200/80 bg-white/80 px-4 py-2 text-sm text-slate-600 dark:border-border dark:bg-card/80 dark:text-slate-300"
             >
               <CheckCircle2 className="h-4 w-4 text-[#0f766e]" />
               {bullet}
@@ -375,7 +375,7 @@ function Hero({
       </div>
 
       <div className="rounded-[2rem] border border-[#0f172a]/10 bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_rgba(255,255,255,0.96)_45%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,253,250,0.96))] p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] dark:border-[#1f2937] dark:bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_rgba(15,23,42,0.96)_45%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] sm:p-8">
-        <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-6 backdrop-blur dark:border-[#252d3a] dark:bg-[#0f172a]/80">
+        <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-6 backdrop-blur dark:border-border dark:bg-[#0f172a]/80">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
             {isTenant ? 'Tenant Snapshot' : 'Platform Snapshot'}
           </p>
@@ -442,7 +442,7 @@ function AccessPanel({ returnTo }: { returnTo?: string }) {
   return (
     <section
       id="access-form"
-      className="mt-16 rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/90 sm:p-8"
+      className="mt-16 rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] backdrop-blur dark:border-border dark:bg-card/90 sm:p-8"
     >
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div className="space-y-4">
@@ -455,11 +455,11 @@ function AccessPanel({ returnTo }: { returnTo?: string }) {
           <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
             Gib das temporäre Projektpasswort ein. Danach wirst du automatisch auf die angeforderte Seite weitergeleitet.
           </p>
-          <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600 dark:bg-[#182131] dark:text-slate-300">
+          <div className="rounded-[1.5rem] bg-slate-50 px-5 py-4 text-sm leading-7 text-slate-600 dark:bg-muted dark:text-slate-300">
             Die Schutzschicht liegt vor Root-Domain, Owner-Bereich und Tenant-Subdomains. So lassen sich Plattform und Agentur-Tenants gezielt abstimmen, bevor sie offen erreichbar sind.
           </div>
         </div>
-        <div className="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.95))] p-5 dark:border-[#252d3a] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(17,24,39,0.95))] sm:p-6">
+        <div className="rounded-[1.75rem] border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0.95))] p-5 dark:border-border dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.95),rgba(17,24,39,0.95))] sm:p-6">
           <PreviewAccessForm returnTo={returnTo} />
         </div>
       </div>
@@ -482,7 +482,7 @@ function FeatureGroups({ tenant }: { tenant: MarketingTenantBranding | null }) {
       </div>
 
       {groups.map((group) => (
-        <div key={group.title} className="rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_20px_70px_-46px_rgba(15,23,42,0.45)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/80 sm:p-8">
+        <div key={group.title} className="rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_20px_70px_-46px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/80 sm:p-8">
           <div className="max-w-3xl">
             <h3 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{group.title}</h3>
             <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{group.intro}</p>
@@ -546,7 +546,7 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.45)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/90 sm:p-8">
+        <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/90 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#0f766e]">
@@ -561,7 +561,7 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
             {modules.map((item) => (
               <div
                 key={item.code}
-                className="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-[#252d3a] dark:bg-[#182131] sm:flex-row sm:items-start sm:justify-between"
+                className="flex flex-col gap-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-border dark:bg-muted sm:flex-row sm:items-start sm:justify-between"
               >
                 <div className="pr-4">
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{item.name}</p>
@@ -633,7 +633,7 @@ function Cta({ tenant, mode }: { tenant: MarketingTenantBranding | null; mode: P
 function Footer() {
   return (
     <footer className="mt-12 pb-10">
-      <div className="flex flex-col gap-3 rounded-[1.75rem] border border-white/70 bg-white/70 px-6 py-5 text-sm text-slate-500 backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/80 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-[1.75rem] border border-white/70 bg-white/70 px-6 py-5 text-sm text-slate-500 backdrop-blur dark:border-border dark:bg-card/80 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
         <p>BoostHive verbindet White-Label Plattform, Agenturmodule und sichere Tenant-Zugänge.</p>
         <div className="flex flex-wrap items-center gap-4">
           <Link href="/datenschutz" className="font-medium text-slate-700 hover:text-slate-950 dark:text-slate-300 dark:hover:text-slate-50">

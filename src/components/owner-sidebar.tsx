@@ -121,7 +121,7 @@ function NavContent({
         <Link
           href="/owner/profile"
           onClick={onNavigate}
-          className="block rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 dark:border-[#252d3a] dark:bg-[#151c28] dark:hover:border-[#2d3847] dark:hover:bg-[#1e2635]"
+          className="block rounded-2xl border border-slate-100 bg-white p-3 shadow-sm transition hover:border-slate-200 hover:bg-slate-50 dark:border-border dark:bg-card dark:hover:border-[#2d3847] dark:hover:bg-[#1e2635]"
         >
           <div className="flex items-center gap-3">
             <Avatar className="h-10 w-10 border border-slate-100 dark:border-[#2d3847]">
@@ -166,7 +166,7 @@ function NavContent({
 
 export function OwnerSidebar({ context }: { context: OwnerShellContext }) {
   return (
-    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white dark:border-[#252d3a] dark:bg-[#080c12] md:flex">
+    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white dark:border-border dark:bg-[#080c12] md:flex">
       <NavContent context={context} />
     </aside>
   )
@@ -176,7 +176,7 @@ export function OwnerMobileHeader({ context }: { context: OwnerShellContext }) {
   const [open, setOpen] = useState(false)
 
   return (
-    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-100 bg-white/95 px-4 backdrop-blur dark:border-[#252d3a] dark:bg-[#080c12]/95 md:hidden">
+    <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-slate-100 bg-white/95 px-4 backdrop-blur dark:border-border dark:bg-[#080c12]/95 md:hidden">
       <Button
         type="button"
         variant="ghost"

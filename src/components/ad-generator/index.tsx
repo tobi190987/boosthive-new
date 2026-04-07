@@ -198,7 +198,7 @@ export function AdGeneratorWorkspace() {
         <div className="flex gap-2">
           {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
             <Button
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+              variant="dark"
               onClick={resetWizard}
             >
               <Plus className="mr-2 h-4 w-4" />

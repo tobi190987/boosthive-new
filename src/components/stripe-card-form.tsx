@@ -110,7 +110,7 @@ function CardFormInner({ onSuccess, onCancel }: CardFormInnerProps) {
 
   return (
     <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
-      <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-4">
+      <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-4">
         <CardElement options={CARD_ELEMENT_OPTIONS} />
       </div>
 
@@ -121,7 +121,7 @@ function CardFormInner({ onSuccess, onCancel }: CardFormInnerProps) {
       <div className="flex gap-3">
         <Button
           type="submit"
-          className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+          variant="dark"
           disabled={!stripe || isSaving}
         >
           {isSaving ? (
@@ -136,7 +136,7 @@ function CardFormInner({ onSuccess, onCancel }: CardFormInnerProps) {
         <Button
           type="button"
           variant="outline"
-          className="rounded-full border-slate-200 dark:border-[#252d3a]"
+          className="rounded-full border-slate-200 dark:border-border"
           onClick={onCancel}
           disabled={isSaving}
         >

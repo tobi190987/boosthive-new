@@ -15,7 +15,7 @@ const GENERIC_SUCCESS =
   'Wenn ein passendes Konto in diesem Tenant existiert, wurde eine E-Mail mit weiteren Schritten versendet.'
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 
 interface ForgotPasswordFormProps {
   action: string

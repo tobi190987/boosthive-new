@@ -138,7 +138,7 @@ function SummaryCard({ label, count, icon, colorClass, onClick, active }: Summar
       className={`flex flex-1 items-center gap-4 rounded-2xl border p-4 text-left transition-all hover:shadow-md ${
         active
           ? 'border-blue-200 bg-blue-50/60 dark:border-blue-800 dark:bg-blue-950/30'
-          : 'border-slate-100 bg-white hover:border-slate-200 dark:border-[#252d3a] dark:bg-[#151c28] dark:hover:border-[#2d3847]'
+          : 'border-slate-100 bg-white hover:border-slate-200 dark:border-border dark:bg-card dark:hover:border-[#2d3847]'
       }`}
     >
       <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${colorClass}`}>
@@ -383,7 +383,7 @@ export function ApprovalsWorkspace() {
 
         {/* Loading */}
         {loading && (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="p-6 space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex gap-4">
@@ -400,7 +400,7 @@ export function ApprovalsWorkspace() {
 
         {/* Empty */}
         {!loading && !error && filteredApprovals.length === 0 && (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
                 <CheckSquare className="h-7 w-7 text-blue-500 dark:text-blue-400" />
@@ -424,10 +424,10 @@ export function ApprovalsWorkspace() {
 
         {/* Table */}
         {!loading && !error && filteredApprovals.length > 0 && (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft overflow-hidden">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="border-slate-100 dark:border-[#252d3a]">
+                <TableRow className="border-slate-100 dark:border-border">
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Typ</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Titel</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Kunde</TableHead>
@@ -447,7 +447,7 @@ export function ApprovalsWorkspace() {
                   return (
                     <TableRow
                       key={item.id}
-                      className="cursor-pointer border-slate-100 transition-colors hover:bg-slate-50 dark:border-[#252d3a] dark:hover:bg-[#1e2635]/40"
+                      className="cursor-pointer border-slate-100 transition-colors hover:bg-slate-50 dark:border-border dark:hover:bg-[#1e2635]/40"
                       onClick={() => handleRowClick(item)}
                     >
                       <TableCell>

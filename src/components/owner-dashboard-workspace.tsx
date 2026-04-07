@@ -271,13 +271,13 @@ export function OwnerDashboardWorkspace() {
 
   return (
     <div className="space-y-8">
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
         <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-600/12 blur-3xl" />
         <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl space-y-4">
-            <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
+            <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
               Owner Control
             </Badge>
             <div>
@@ -297,7 +297,7 @@ export function OwnerDashboardWorkspace() {
           <div className="flex flex-wrap gap-3">
             <Button
               asChild
-              className="rounded-full bg-[#1f2937] px-5 text-white hover:bg-[#111827]"
+              variant="dark" className="px-5"
             >
               <Link href="/owner/tenants/new">
                 <Plus className="h-4 w-4" />
@@ -307,7 +307,7 @@ export function OwnerDashboardWorkspace() {
             <Button
               asChild
               variant="outline"
-              className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
+              className="rounded-full border-slate-200 dark:border-border bg-white/80 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
             >
               <Link href="/owner/tenants">Tenant-Liste</Link>
             </Button>
@@ -315,7 +315,7 @@ export function OwnerDashboardWorkspace() {
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-border dark:bg-card/85">
             <CardContent className="p-5">
               <Sparkles className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Metriken auf einen Blick</p>
@@ -324,7 +324,7 @@ export function OwnerDashboardWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-border dark:bg-card/85">
             <CardContent className="p-5">
               <Search className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Suche und Filter</p>
@@ -333,7 +333,7 @@ export function OwnerDashboardWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-border dark:bg-card/85">
             <CardContent className="p-5">
               <Building2 className="h-5 w-5 text-[#1f2937]" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Statuswechsel mit Klarheit</p>
@@ -365,7 +365,7 @@ export function OwnerDashboardWorkspace() {
         <>
           <OwnerDashboardMetrics {...metrics} />
 
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="space-y-5 p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -385,7 +385,7 @@ export function OwnerDashboardWorkspace() {
                       setPage(1)
                     }}
                     placeholder="Nach Tenant-Name oder Subdomain suchen"
-                    className="h-12 rounded-full border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] pl-11"
+                    className="h-12 rounded-full border-slate-200 dark:border-border bg-slate-50 dark:bg-card pl-11"
                   />
                 </div>
               </div>
@@ -397,7 +397,7 @@ export function OwnerDashboardWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-secondary p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
                     Alle
                   </TabsTrigger>
@@ -410,7 +410,7 @@ export function OwnerDashboardWorkspace() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-border pt-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
                 <p>Suche, Filter und Member-Counts werden serverseitig konsistent für alle Agenturen geladen.</p>
                 <p>{rangeLabel}</p>
               </div>
@@ -435,7 +435,7 @@ export function OwnerDashboardWorkspace() {
                 onHardDeleteTenant={handleDeleteTenant}
               />
 
-              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Seite {pagination.page} von {pagination.totalPages}
                 </p>
@@ -443,7 +443,7 @@ export function OwnerDashboardWorkspace() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                    className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                     onClick={() => setPage((current) => Math.max(1, current - 1))}
                     disabled={page <= 1}
                   >
@@ -452,7 +452,7 @@ export function OwnerDashboardWorkspace() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                    className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                     onClick={() =>
                       setPage((current) => Math.min(pagination.totalPages, current + 1))
                     }

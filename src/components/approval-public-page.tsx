@@ -329,7 +329,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   if (notFound) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 dark:bg-[#0b1120]">
-        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
+        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg dark:border-border dark:bg-card">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/40">
               <AlertCircle className="h-7 w-7 text-red-500 dark:text-red-300" />
@@ -350,7 +350,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 dark:bg-[#0b1120]">
-        <Card className="w-full max-w-2xl rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
+        <Card className="w-full max-w-2xl rounded-2xl border-slate-200 shadow-lg dark:border-border dark:bg-card">
           <CardContent className="p-8 space-y-6">
             <Skeleton className="h-10 w-48" />
             <Skeleton className="h-6 w-64" />
@@ -370,7 +370,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
   if (error && !data) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#f8fafc] px-4 dark:bg-[#0b1120]">
-        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
+        <Card className="w-full max-w-md rounded-2xl border-slate-200 shadow-lg dark:border-border dark:bg-card">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950/40">
               <AlertCircle className="h-7 w-7 text-red-500 dark:text-red-300" />
@@ -399,7 +399,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] sm:py-12">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header with branding */}
-        <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/85">
+        <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-border dark:bg-card/85">
           <div className="flex items-center gap-3">
           {data.tenant_logo_url ? (
             <Image
@@ -422,7 +422,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
           <div className="flex items-center gap-2">
             <Badge
               variant="outline"
-              className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-[#252d3a] dark:bg-[#182131] dark:text-slate-300"
+              className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-border dark:bg-muted dark:text-slate-300"
             >
               {contentTypeLabel}
             </Badge>
@@ -468,10 +468,10 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
         )}
 
         {/* Content card */}
-        <Card className="overflow-hidden rounded-[2rem] border-white/80 bg-white/90 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-[#252d3a] dark:bg-[#111827]/90">
-          <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.95))] px-6 py-5 dark:border-[#252d3a] dark:bg-[linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,41,59,0.95))] sm:px-8">
+        <Card className="overflow-hidden rounded-[2rem] border-white/80 bg-white/90 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/90">
+          <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.95))] px-6 py-5 dark:border-border dark:bg-[linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,41,59,0.95))] sm:px-8">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 dark:bg-[#182131] dark:ring-[#2a3444]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 dark:bg-muted dark:ring-[#2a3444]">
                 {data.content_type === 'content_brief' ? (
                   <FileText className="h-4 w-4 text-blue-600" />
                 ) : data.content_type === 'ad_library_asset' ? (
@@ -493,7 +493,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                   </Badge>
                   <Badge
                     variant="outline"
-                    className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-[#252d3a] dark:bg-[#182131] dark:text-slate-300"
+                    className="rounded-full border-slate-200 bg-white/80 px-3 py-1 text-xs font-medium text-slate-600 dark:border-border dark:bg-muted dark:text-slate-300"
                   >
                     Bitte sorgfältig prüfen
                   </Badge>
@@ -515,8 +515,8 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
         </Card>
 
         {data.history.length > 0 && (
-          <Card className="rounded-[2rem] border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)] dark:border-[#252d3a] dark:bg-[#111827]/90">
-            <CardHeader className="border-b border-slate-100 px-6 py-5 dark:border-[#252d3a] sm:px-8">
+          <Card className="rounded-[2rem] border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)] dark:border-border dark:bg-card/90">
+            <CardHeader className="border-b border-slate-100 px-6 py-5 dark:border-border sm:px-8">
               <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Abnahmeverlauf</CardTitle>
             </CardHeader>
             <CardContent className="px-6 py-6 sm:px-8">
@@ -527,7 +527,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                       <div className="absolute left-[0.45rem] top-6 h-[calc(100%+0.5rem)] w-px bg-slate-200 dark:bg-[#2a3444]" />
                     )}
                     <div className="absolute left-0 top-1.5 h-4 w-4 rounded-full border-4 border-white bg-blue-500 shadow-sm dark:border-[#111827]" />
-                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4 dark:border-[#252d3a] dark:bg-[#182131]">
+                    <div className="rounded-2xl border border-slate-200/80 bg-slate-50/75 p-4 dark:border-border dark:bg-muted">
                       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                           {formatHistoryLabel(entry.event_type)}
@@ -554,7 +554,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
 
         {/* Action panel */}
         {!alreadyDecided && !actionDone && (
-          <Card className="rounded-2xl border-slate-200 shadow-lg dark:border-[#252d3a] dark:bg-[#111827]">
+          <Card className="rounded-2xl border-slate-200 shadow-lg dark:border-border dark:bg-card">
             <CardContent className="px-6 py-6 space-y-4">
               {!showFeedback ? (
                 <>

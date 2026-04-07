@@ -164,7 +164,7 @@ function RequiredLabel({
 }
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 const billingCountryOptions = [{ value: 'Deutschland', label: 'Deutschland' }] as const
 const AVATAR_PREVIEW_SIZE = 280
 const AVATAR_EXPORT_SIZE = 512
@@ -813,7 +813,7 @@ export function TenantProfileWorkspace({
           }
         }}
       >
-        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-0 shadow-soft">
+        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-0 shadow-soft">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">Profilbild anpassen</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -823,9 +823,9 @@ export function TenantProfileWorkspace({
 
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
             <div className="flex justify-center">
-              <div className="relative rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 shadow-soft">
+              <div className="relative rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
                 <div
-                  className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-[#1e2635] shadow-soft"
+                  className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-secondary shadow-soft"
                   style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
                 >
                   {avatarCropDraft && avatarPreviewTransform && (
@@ -849,7 +849,7 @@ export function TenantProfileWorkspace({
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-[#252d3a] dark:bg-[#151c28]/85">
+              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-border dark:bg-card/85">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <Move className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Bild verschieben
@@ -890,7 +890,7 @@ export function TenantProfileWorkspace({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-[#252d3a] dark:bg-[#151c28]/85">
+              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-border dark:bg-card/85">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <ZoomIn className="h-4 w-4 text-blue-600" />
                   Zoom
@@ -919,11 +919,11 @@ export function TenantProfileWorkspace({
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-100 bg-white/70 px-6 py-4 dark:border-[#252d3a] dark:bg-[#151c28]/80">
+          <DialogFooter className="border-t border-slate-100 bg-white/70 px-6 py-4 dark:border-border dark:bg-card/80">
             <Button
               type="button"
               variant="outline"
-              className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+              className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
               onClick={closeAvatarCropDialog}
               disabled={avatarPending}
             >
@@ -931,7 +931,7 @@ export function TenantProfileWorkspace({
             </Button>
             <Button
               type="button"
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
               onClick={() => void confirmAvatarCrop()}
               disabled={avatarPending || !avatarCropDraft}
             >
@@ -943,13 +943,13 @@ export function TenantProfileWorkspace({
       </Dialog>
 
       <div className="space-y-6">
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
               {mode === 'onboarding' ? 'Erster Login' : 'Profil'}
             </Badge>
-            <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+            <Badge className="rounded-full bg-slate-100 dark:bg-secondary text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
               {isAdmin ? 'Admin' : 'Member'}
             </Badge>
           </div>
@@ -996,9 +996,9 @@ export function TenantProfileWorkspace({
                   Optional, aber hilfreich für Sidebar und Team-Kontext.
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+              <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                  <Avatar className="h-24 w-24 border border-slate-100 dark:border-[#252d3a] shadow-sm">
+                  <Avatar className="h-24 w-24 border border-slate-100 dark:border-border shadow-sm">
                     <AvatarImage src={avatarUrl ?? undefined} alt="Profilbild" />
                     <AvatarFallback className="bg-blue-50 text-xl font-semibold text-blue-600">
                       {getUserInitials(
@@ -1015,7 +1015,7 @@ export function TenantProfileWorkspace({
                       <Button
                         type="button"
                         variant="outline"
-                        className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                        className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={avatarPending}
                       >
@@ -1030,7 +1030,7 @@ export function TenantProfileWorkspace({
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300"
+                          className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-slate-600 dark:text-slate-300"
                           onClick={() => void removeAvatar()}
                           disabled={avatarPending}
                         >
@@ -1062,9 +1062,9 @@ export function TenantProfileWorkspace({
                     Das Logo erscheint in der Sidebar und auf den öffentlichen Auth-Seiten eures Tenants.
                   </p>
                 </div>
-                <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+                <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <div className="flex h-24 w-32 items-center justify-center rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 shadow-sm">
+                    <div className="flex h-24 w-32 items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card px-4 shadow-sm">
                       {tenantLogoUrl ? (
                         <Image
                           src={tenantLogoUrl}
@@ -1083,7 +1083,7 @@ export function TenantProfileWorkspace({
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                          className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                           onClick={() => tenantLogoInputRef.current?.click()}
                           disabled={tenantLogoPending}
                         >
@@ -1094,7 +1094,7 @@ export function TenantProfileWorkspace({
                           <Button
                             type="button"
                             variant="outline"
-                            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300"
+                            className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-slate-600 dark:text-slate-300"
                             onClick={() => void removeTenantLogo()}
                             disabled={tenantLogoPending}
                           >
@@ -1126,7 +1126,7 @@ export function TenantProfileWorkspace({
                   Diese Angaben erscheinen in deinem Profil und in der Sidebar.
                 </p>
               </div>
-              <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 md:grid-cols-2">
+              <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">Vorname</Label>
                   <Input id="first_name" className={fieldClassName} {...register('first_name')} />
@@ -1153,8 +1153,8 @@ export function TenantProfileWorkspace({
                   Lege fest, ob du zusätzlich zur Dashboard-Benachrichtigung auch E-Mails erhalten möchtest.
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
-                <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-[#252d3a] dark:bg-[#1e2635]/50">
+              <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+                <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-border dark:bg-secondary/50">
                   <div className="space-y-1">
                     <Label htmlFor="notify_on_approval_decision" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                       E-Mail bei Freigaben und Korrekturwünschen
@@ -1188,7 +1188,7 @@ export function TenantProfileWorkspace({
                       Diese Angaben sind für Admins verpflichtend. Mit * markierte Felder müssen ausgefüllt werden.
                     </p>
                   </div>
-                  <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 md:grid-cols-2">
+                  <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
                     {mode === 'onboarding' && (
                       <div className="md:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                         Rechnungsdaten sind für Admins Pflichtfelder und werden benötigt, bevor das Onboarding abgeschlossen werden kann.
@@ -1296,7 +1296,7 @@ export function TenantProfileWorkspace({
                       Diese Adresse verwendest du für den Login in deinen Workspace.
                     </p>
                   </div>
-                  <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+                  <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                     <form
                       className="grid gap-4 md:grid-cols-2"
                       onSubmit={emailForm.handleSubmit(onSubmitEmail)}
@@ -1379,7 +1379,7 @@ export function TenantProfileWorkspace({
                       Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
                     </p>
                   </div>
-                  <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+                  <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                     <form
                       className="grid gap-4 md:grid-cols-2"
                       onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
@@ -1520,7 +1520,7 @@ export function TenantProfileWorkspace({
                     : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
                 </p>
               </div>
-              <div className="space-y-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+              <div className="space-y-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -1530,7 +1530,7 @@ export function TenantProfileWorkspace({
                         className={
                           billing?.payment_method
                             ? 'rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50'
-                            : 'rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
+                            : 'rounded-full bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                         }
                       >
                         {billing?.payment_method ? 'Verbunden' : 'Fehlt'}
@@ -1544,7 +1544,7 @@ export function TenantProfileWorkspace({
                   </div>
                   <Button
                     type="button"
-                    className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                    variant="dark"
                     onClick={() => setShowStripeForm((value) => !value)}
                   >
                     {showStripeForm
@@ -1556,7 +1556,7 @@ export function TenantProfileWorkspace({
                 </div>
 
                 {showStripeForm && (
-                  <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-4">
+                  <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-4">
                     <StripeCardForm
                       onCancel={() => setShowStripeForm(false)}
                       onSuccess={() => {
@@ -1570,10 +1570,10 @@ export function TenantProfileWorkspace({
 
                 {/* Module selection — only during onboarding */}
                 {mode === 'onboarding' && (billing?.modules ?? []).length > 0 && (
-                  <div className="space-y-3 border-t border-slate-100 dark:border-[#252d3a] pt-4">
+                  <div className="space-y-3 border-t border-slate-100 dark:border-border pt-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Module auswählen</span>
-                      <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a] text-[11px]">
+                      <Badge className="rounded-full bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a] text-[11px]">
                         Pflichtfeld
                       </Badge>
                     </div>
@@ -1596,14 +1596,14 @@ export function TenantProfileWorkspace({
                             }
                             className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
                               selected
-                                ? 'border-[#1f2937] bg-slate-50 dark:bg-[#151c28]'
-                                : 'border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] hover:border-slate-200'
+                                ? 'border-[#1f2937] bg-slate-50 dark:bg-card'
+                                : 'border-slate-100 dark:border-border bg-white dark:bg-card hover:border-slate-200'
                             }`}
                           >
                             <div className="flex items-center gap-3">
                               <div
                                 className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                                  selected ? 'border-[#1f2937] bg-[#1f2937]' : 'border-[#c9bfb5]'
+                                  selected ? 'border-[#1f2937] bg-slate-900' : 'border-[#c9bfb5]'
                                 }`}
                               >
                                 {selected && (
@@ -1634,7 +1634,7 @@ export function TenantProfileWorkspace({
             </section>
           )}
 
-          <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 dark:border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
               <UserRound className="h-4 w-4" />
               {mode === 'onboarding'
@@ -1645,7 +1645,7 @@ export function TenantProfileWorkspace({
             </div>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
               {mode !== 'onboarding' && (
-                <TenantLogoutButton className="h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6" />
+                <TenantLogoutButton className="h-[48px] rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card px-6" />
               )}
               {mode === 'onboarding' && (
                 <Button

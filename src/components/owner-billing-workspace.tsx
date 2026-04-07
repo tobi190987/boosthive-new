@@ -160,7 +160,7 @@ function BillingMetricsRow({ metrics }: { metrics: BillingMetrics }) {
       value: String(metrics.manualLocked),
       hint: 'Vom Owner gesperrte Tenants.',
       icon: Lock,
-      accent: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#1e2635]',
+      accent: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-secondary',
     },
   ]
 
@@ -169,7 +169,7 @@ function BillingMetricsRow({ metrics }: { metrics: BillingMetrics }) {
       {items.map((item) => (
         <Card
           key={item.label}
-          className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft"
+          className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>
@@ -235,7 +235,7 @@ export function OwnerBillingWorkspace() {
   }, [searchParams])
 
   const rangeLabel = useMemo(() => {
-    if (pagination.total === 0) return 'Keine Eintraege'
+    if (pagination.total === 0) return 'Keine Einträge'
     const start = (pagination.page - 1) * pagination.pageSize + 1
     const end = Math.min(pagination.page * pagination.pageSize, pagination.total)
     return `${start}-${end} von ${pagination.total}`
@@ -302,12 +302,12 @@ export function OwnerBillingWorkspace() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
         <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-600/12 blur-3xl" />
         <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
         <div className="relative max-w-3xl space-y-4">
-          <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
+          <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
             Owner Billing
           </Badge>
           <div>
@@ -318,14 +318,14 @@ export function OwnerBillingWorkspace() {
               Billing-Übersicht aller Tenants
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
-              Alle Tenant-Abos auf einen Blick. Erkenne kritische Faelle wie Zahlungsausfaelle oder
+              Alle Tenant-Abos auf einen Blick. Erkenne kritische Faelle wie Zahlungsausfälle oder
               auslaufende Abos sofort und greife bei Bedarf ein.
             </p>
           </div>
         </div>
 
         <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-border dark:bg-card/85">
             <CardContent className="p-5">
               <CreditCard className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">DB-basierte Übersicht</p>
@@ -334,7 +334,7 @@ export function OwnerBillingWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-border dark:bg-card/85">
             <CardContent className="p-5">
               <Shield className="h-5 w-5 text-blue-600" />
               <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Manuelle Sperrung</p>
@@ -343,10 +343,10 @@ export function OwnerBillingWorkspace() {
               </p>
             </CardContent>
           </Card>
-          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+          <Card className="rounded-2xl border border-white/80 bg-white/80 shadow-none backdrop-blur-sm dark:border-border dark:bg-card/85">
             <CardContent className="p-5">
               <AlertTriangle className="h-5 w-5 text-[#1f2937]" />
-              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Kritische Faelle</p>
+              <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Kritische Fälle</p>
               <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                 Tenants mit Zahlungsproblemen oder Kündigungen werden visuell hervorgehoben.
               </p>
@@ -374,7 +374,7 @@ export function OwnerBillingWorkspace() {
         <>
           <BillingMetricsRow metrics={metrics} />
 
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="space-y-5 p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -394,7 +394,7 @@ export function OwnerBillingWorkspace() {
                       setPage(1)
                     }}
                     placeholder="Nach Tenant-Name oder Subdomain suchen"
-                    className="h-12 rounded-full border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] pl-11"
+                    className="h-12 rounded-full border-slate-200 dark:border-border bg-slate-50 dark:bg-card pl-11"
                     aria-label="Tenant-Suche"
                   />
                 </div>
@@ -407,7 +407,7 @@ export function OwnerBillingWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-secondary p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
                     Alle
                   </TabsTrigger>
@@ -436,9 +436,9 @@ export function OwnerBillingWorkspace() {
                   setPage(1)
                 }}
               >
-                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-[#1e2635] p-1">
+                <TabsList className="h-auto flex-wrap rounded-full bg-slate-100 dark:bg-secondary p-1">
                   <TabsTrigger value="all" className="rounded-full px-4 py-2">
-                    Alle Zugaenge
+                    Alle Zugänge
                   </TabsTrigger>
                   <TabsTrigger value="accessible" className="rounded-full px-4 py-2">
                     Aktiv
@@ -452,14 +452,14 @@ export function OwnerBillingWorkspace() {
                 </TabsList>
               </Tabs>
 
-              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
-                <p>Billing-Daten basieren auf dem synchronisierten DB-Stand und sind fuer den Owner zentral lesbar.</p>
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-border pt-4 text-sm text-slate-500 dark:text-slate-400 sm:flex-row sm:items-center sm:justify-between">
+                <p>Billing-Daten basieren auf dem synchronisierten DB-Stand und sind für den Owner zentral lesbar.</p>
                 <p>{rangeLabel}</p>
               </div>
 
               {/* Table */}
               {tenants.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-12 text-center">
+                <div className="rounded-2xl border border-dashed border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-6 py-12 text-center">
                   <Building2 className="mx-auto h-8 w-8 text-slate-300" />
                   <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">
                     Keine Tenants gefunden
@@ -472,11 +472,11 @@ export function OwnerBillingWorkspace() {
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="border-slate-100 dark:border-[#252d3a]">
+                      <TableRow className="border-slate-100 dark:border-border">
                         <TableHead className="text-slate-500 dark:text-slate-400">Tenant</TableHead>
                         <TableHead className="text-slate-500 dark:text-slate-400">Abo-Status</TableHead>
                         <TableHead className="text-center text-slate-500 dark:text-slate-400">Module</TableHead>
-                        <TableHead className="text-slate-500 dark:text-slate-400">Naechste Abrechnung</TableHead>
+                        <TableHead className="text-slate-500 dark:text-slate-400">Nächste Abrechnung</TableHead>
                         <TableHead className="text-right text-slate-500 dark:text-slate-400">Betrag/Periode</TableHead>
                         <TableHead className="text-slate-500 dark:text-slate-400">Zugang</TableHead>
                         <TableHead className="text-right text-slate-500 dark:text-slate-400">Aktion</TableHead>
@@ -484,7 +484,7 @@ export function OwnerBillingWorkspace() {
                     </TableHeader>
                     <TableBody>
                       {tenants.map((t) => (
-                        <TableRow key={t.id} className="border-slate-100 dark:border-[#252d3a]">
+                        <TableRow key={t.id} className="border-slate-100 dark:border-border">
                           <TableCell>
                             <div>
                               <p className="font-semibold text-slate-900 dark:text-slate-100">{t.name}</p>
@@ -511,7 +511,7 @@ export function OwnerBillingWorkspace() {
                               asChild
                               size="sm"
                               variant="outline"
-                              className="rounded-full border-slate-200 dark:border-[#252d3a]"
+                              className="rounded-full border-slate-200 dark:border-border"
                             >
                               <Link href={`/owner/tenants/${t.id}?tab=subscription`}>
                                 <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
@@ -527,7 +527,7 @@ export function OwnerBillingWorkspace() {
               )}
 
               {/* Pagination */}
-              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-3 border-t border-slate-100 dark:border-border pt-5 sm:flex-row sm:items-center sm:justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">
                   Seite {pagination.page} von {pagination.totalPages}
                 </p>
@@ -535,7 +535,7 @@ export function OwnerBillingWorkspace() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                    className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                     onClick={() => setPage((c) => Math.max(1, c - 1))}
                     disabled={page <= 1}
                   >
@@ -544,7 +544,7 @@ export function OwnerBillingWorkspace() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                    className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                     onClick={() => setPage((c) => Math.min(pagination.totalPages, c + 1))}
                     disabled={page >= pagination.totalPages}
                   >

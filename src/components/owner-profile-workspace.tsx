@@ -72,7 +72,7 @@ interface AccountEmailResponse extends ApiFormPayload {
 type OwnerProfileFormValues = Pick<ProfileUpdateInput, 'first_name' | 'last_name'>
 
 const fieldClassName =
-  'h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
+  'h-[48px] rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card px-4 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/20 focus-visible:ring-offset-0'
 const AVATAR_PREVIEW_SIZE = 280
 const AVATAR_EXPORT_SIZE = 512
 const AVATAR_MIN_ZOOM = 1
@@ -470,7 +470,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           }
         }}
       >
-        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-0 shadow-soft">
+        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-0 shadow-soft">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">Profilbild anpassen</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -480,9 +480,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
 
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
             <div className="flex justify-center">
-              <div className="relative rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 shadow-soft">
+              <div className="relative rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
                 <div
-                  className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-[#1e2635] shadow-soft"
+                  className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-secondary shadow-soft"
                   style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
                 >
                   {avatarCropDraft && avatarPreviewTransform && (
@@ -506,7 +506,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </div>
 
             <div className="space-y-5">
-              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-[#252d3a] dark:bg-[#151c28]/85">
+              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-border dark:bg-card/85">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <Move className="h-4 w-4 text-slate-500 dark:text-slate-400" />
                   Bild verschieben
@@ -547,7 +547,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-[#252d3a] dark:bg-[#151c28]/85">
+              <div className="rounded-2xl border border-slate-100 bg-white/85 p-4 dark:border-border dark:bg-card/85">
                 <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
                   <ZoomIn className="h-4 w-4 text-blue-600" />
                   Zoom
@@ -576,11 +576,11 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-100 bg-white/70 px-6 py-4 dark:border-[#252d3a] dark:bg-[#151c28]/80">
+          <DialogFooter className="border-t border-slate-100 bg-white/70 px-6 py-4 dark:border-border dark:bg-card/80">
             <Button
               type="button"
               variant="outline"
-              className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+              className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
               onClick={closeAvatarCropDialog}
               disabled={avatarPending}
             >
@@ -588,7 +588,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             </Button>
             <Button
               type="button"
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
               onClick={() => void confirmAvatarCrop()}
               disabled={avatarPending || !avatarCropDraft}
             >
@@ -600,13 +600,13 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
       </Dialog>
 
       <div className="space-y-6">
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="space-y-3">
             <div className="flex items-center gap-2">
               <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
                 Owner Profil
               </Badge>
-              <Badge className="rounded-full bg-slate-100 dark:bg-[#1e2635] text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
+              <Badge className="rounded-full bg-slate-100 dark:bg-secondary text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#252d3a]">
                 Plattform
               </Badge>
             </div>
@@ -649,9 +649,9 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                     Optional, aber hilfreich für Sidebar und Account-Kontext.
                   </p>
                 </div>
-                <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5">
+                <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-                    <Avatar className="h-24 w-24 border border-slate-100 dark:border-[#252d3a] shadow-sm">
+                    <Avatar className="h-24 w-24 border border-slate-100 dark:border-border shadow-sm">
                       <AvatarImage src={avatarUrl ?? undefined} alt="Profilbild" />
                       <AvatarFallback className="bg-blue-50 text-xl font-semibold text-blue-600">
                         {getUserInitials(
@@ -668,7 +668,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28]"
+                          className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card"
                           onClick={() => fileInputRef.current?.click()}
                           disabled={avatarPending}
                         >
@@ -683,7 +683,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                           <Button
                             type="button"
                             variant="outline"
-                            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-600 dark:text-slate-300"
+                            className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-slate-600 dark:text-slate-300"
                             onClick={() => void removeAvatar()}
                             disabled={avatarPending}
                           >
@@ -714,7 +714,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                     Diese Angaben erscheinen in deinem Profil und in der Sidebar.
                   </p>
                 </div>
-                <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-5 md:grid-cols-2">
+                <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="owner-first_name">Vorname</Label>
                     <Input id="owner-first_name" className={fieldClassName} {...form.register('first_name')} />
@@ -736,7 +736,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Login-E-Mail</CardTitle>
           </CardHeader>
@@ -785,7 +785,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
               <div className="md:col-span-2 flex justify-end">
                 <Button
                   type="submit"
-                  className="rounded-full bg-[#1f2937] px-6 text-white hover:bg-[#111827]"
+                  variant="dark" className="px-6"
                   disabled={emailForm.formState.isSubmitting}
                 >
                   {emailForm.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -796,7 +796,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Passwort ändern</CardTitle>
           </CardHeader>
@@ -881,7 +881,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
               <div className="md:col-span-2 flex justify-end">
                 <Button
                   type="submit"
-                  className="rounded-full bg-[#1f2937] px-6 text-white hover:bg-[#111827]"
+                  variant="dark" className="px-6"
                   disabled={passwordForm.formState.isSubmitting}
                 >
                   {passwordForm.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
@@ -892,7 +892,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 dark:border-[#252d3a] pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t border-slate-100 dark:border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
             <AlertCircle className="h-4 w-4" />
             Änderungen werden sofort für deinen Owner-Zugang übernommen.
@@ -901,7 +901,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             <Button
               type="button"
               variant="outline"
-              className="h-[48px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-6"
+              className="h-[48px] rounded-xl border-slate-200 dark:border-border bg-white dark:bg-card px-6"
               onClick={() => void handleLogout()}
               disabled={isLoggingOut}
             >
@@ -915,7 +915,8 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
             <Button
               type="submit"
               form="owner-profile-form"
-              className="h-[48px] rounded-xl bg-[#1f2937] px-6 text-white hover:bg-[#111827]"
+              variant="dark"
+              className="h-[48px] rounded-xl px-6"
               disabled={isSaving}
             >
               {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

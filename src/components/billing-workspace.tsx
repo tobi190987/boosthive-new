@@ -360,7 +360,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
     return (
       <div className="space-y-6">
         <BillingHero tenantSlug={tenantSlug} />
-        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             Billing-Daten werden geladen...
@@ -380,13 +380,13 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
             {error}
           </div>
         )}
-        <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Billing-Daten konnten nicht geladen werden.
           </p>
           <Button
             variant="outline"
-            className="rounded-full border-slate-200 dark:border-[#252d3a]"
+            className="rounded-full border-slate-200 dark:border-border"
             onClick={() => void loadBilling()}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
@@ -415,7 +415,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         </div>
       )}
 
-      <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
+      <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
         <div className="flex items-start gap-3">
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
           <p>{activity}</p>
@@ -424,7 +424,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ----- Subscription Status Card ----- */}
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <Zap className="h-5 w-5 text-blue-600" />
@@ -458,7 +458,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
             )}
 
             {billing.plan && modulesTotal > 0 && (
-              <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3 space-y-1.5">
+              <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3 space-y-1.5">
                 <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                   <span>Basis-Plan</span>
                   <span>{formatAmount(billing.plan.amount, billing.plan.currency)}</span>
@@ -497,7 +497,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         </Card>
 
         {/* ----- Payment Method Section ----- */}
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <CreditCard className="h-5 w-5 text-blue-600" />
@@ -512,9 +512,9 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
               />
             ) : hasPaymentMethod ? (
               <>
-                <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-4">
+                <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-4">
                   <div className="flex items-center gap-4">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 dark:bg-[#151c28]">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 dark:bg-card">
                       <CreditCard className="h-5 w-5 text-slate-600 dark:text-slate-300" />
                     </div>
                     <div>
@@ -529,7 +529,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                 </div>
                 <Button
                   variant="outline"
-                  className="w-full rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
+                  className="w-full rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
                   onClick={() => setShowCardForm(true)}
                 >
                   Karte ersetzen
@@ -537,7 +537,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
               </>
             ) : (
               <div className="space-y-4">
-                <div className="rounded-2xl bg-slate-50 dark:bg-[#151c28] px-4 py-4 text-center">
+                <div className="rounded-2xl bg-slate-50 dark:bg-card px-4 py-4 text-center">
                   <CreditCard className="mx-auto h-8 w-8 text-slate-400 dark:text-slate-500" />
                   <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
                     Noch keine Zahlungsmethode hinterlegt.
@@ -556,7 +556,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
       </div>
 
       {/* ----- Subscription Actions ----- */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
             <Shield className="h-5 w-5 text-blue-600" />
@@ -692,7 +692,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
       {/* ----- Invoices Section ----- */}
       {invoices.length > 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <FileText className="h-5 w-5 text-blue-600" />
@@ -734,7 +734,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                           href={inv.invoice_pdf}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-[#252d3a] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
+                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-border px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
                         >
                           <Download className="h-3.5 w-3.5" />
                           PDF
@@ -744,7 +744,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                           href={inv.hosted_invoice_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-[#252d3a] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
+                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-border px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
                         >
                           <Download className="h-3.5 w-3.5" />
                           Ansehen
@@ -822,13 +822,13 @@ function SubscribeWithModules({
               onClick={() => toggleModule(mod.id)}
               className={`w-full rounded-2xl border px-4 py-3 text-left transition-colors ${
                 selected
-                  ? 'border-[#1f2937] bg-slate-50 dark:bg-[#151c28]'
-                  : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] hover:border-slate-200'
+                  ? 'border-[#1f2937] bg-slate-50 dark:bg-card'
+                  : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card hover:border-slate-200'
               }`}
             >
               <div className="flex items-center gap-3">
                 <div className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${
-                  selected ? 'border-[#1f2937] bg-[#1f2937]' : 'border-[#c9bfb5]'
+                  selected ? 'border-[#1f2937] bg-slate-900' : 'border-[#c9bfb5]'
                 }`}>
                   {selected && (
                     <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 10 10">
@@ -852,7 +852,7 @@ function SubscribeWithModules({
 
       {/* Price breakdown */}
       {selectedIds.length > 0 && (
-        <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3 space-y-1.5">
+        <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3 space-y-1.5">
           <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Basis-Plan</span>
             <span>{formatAmount(planAmount, planCurrency)}</span>
@@ -863,7 +863,7 @@ function SubscribeWithModules({
               <span>{formatAmount(m.price, m.currency)}</span>
             </div>
           ))}
-          <div className="flex justify-between border-t border-slate-200 dark:border-[#252d3a] pt-1.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
+          <div className="flex justify-between border-t border-slate-200 dark:border-border pt-1.5 text-sm font-semibold text-slate-900 dark:text-slate-100">
             <span>Gesamt</span>
             <span>{formatAmount(total, planCurrency)} / {planInterval}</span>
           </div>
@@ -899,7 +899,7 @@ function SubscribeWithModules({
             <AlertDialogDescription asChild>
               <div className="space-y-4">
                 <p>Du buchst den Basis-Plan inkl. {selectedModules.map(m => m.name).join(', ')} für <strong>{formatAmount(total, planCurrency)} / {planInterval}</strong>.</p>
-                <div className="flex items-start gap-3 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3">
+                <div className="flex items-start gap-3 rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3">
                   <Checkbox
                     id="agb-subscribe"
                     checked={agbAccepted}
@@ -983,7 +983,7 @@ function ModuleSection({
   const hasActivePlan = subscriptionStatus === 'active' || subscriptionStatus === 'canceling'
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
           <Package className="h-5 w-5 text-blue-600" />
@@ -999,7 +999,7 @@ function ModuleSection({
         )}
 
         {modules.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-6 py-12 text-center">
+          <div className="rounded-2xl border border-dashed border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-6 py-12 text-center">
             <Package className="mx-auto h-8 w-8 text-slate-300" />
             <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-slate-300">Keine Module verfügbar</p>
             <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
@@ -1057,7 +1057,7 @@ function ModuleCatalogCard({
   }
 
   return (
-    <div className="rounded-[22px] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-5 transition hover:border-slate-200">
+    <div className="rounded-[22px] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card p-5 transition hover:border-slate-200">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mod.name}</p>
@@ -1103,7 +1103,7 @@ function ModuleCatalogCard({
                       Der Betrag wird anteilig zu deiner nächsten Rechnung hinzugefügt.
                       Du erhältst eine Buchungsbestätigung per E-Mail.
                     </p>
-                    <div className="flex items-start gap-3 rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3">
+                    <div className="flex items-start gap-3 rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3">
                       <Checkbox
                         id={`agb-module-${mod.id}`}
                         checked={agbAccepted}
@@ -1217,12 +1217,12 @@ function ModuleCatalogCard({
 
 function BillingHero({ tenantSlug }: { tenantSlug: string }) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] p-6 shadow-soft sm:p-8">
+    <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
       <div className="absolute right-[-3rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
       <div className="absolute bottom-[-4rem] left-[-2rem] h-44 w-44 rounded-full bg-blue-500/10 blur-3xl" />
 
       <div className="relative max-w-3xl space-y-4">
-        <Badge className="w-fit rounded-full bg-[#1f2937] px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-[#1f2937]">
+        <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
           Billing
         </Badge>
         <div>
@@ -1240,21 +1240,21 @@ function BillingHero({ tenantSlug }: { tenantSlug: string }) {
       </div>
 
       <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-border dark:bg-card/85">
           <CreditCard className="h-5 w-5 text-blue-600" />
           <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Sichere Karteneingabe</p>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Zahlungsdaten werden direkt bei Stripe gespeichert und nie auf unseren Servern.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-border dark:bg-card/85">
           <Zap className="h-5 w-5 text-blue-600" />
           <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">4-Wochen-Zyklen</p>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
             Der Basis-Plan wird alle 4 Wochen automatisch verlaengert und abgerechnet.
           </p>
         </div>
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-[#252d3a] dark:bg-[#151c28]/85">
+        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-border dark:bg-card/85">
           <Shield className="h-5 w-5 text-[#1f2937]" />
           <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Jederzeit kuendbar</p>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">

@@ -95,7 +95,7 @@ export function WizardView({
   }
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardContent className="p-6 sm:p-8">
         {/* Progress */}
         <div className="mb-8">
@@ -169,7 +169,7 @@ export function WizardView({
 
           {step < 4 ? (
             <Button
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+              variant="dark"
               onClick={() => setStep(step + 1)}
               disabled={!canNext()}
             >
@@ -178,7 +178,7 @@ export function WizardView({
             </Button>
           ) : (
             <Button
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+              variant="dark"
               onClick={onGenerate}
               disabled={!canNext()}
             >
@@ -221,7 +221,7 @@ function Step1Platforms({
                 'flex items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all',
                 isSelected
                   ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-950/30'
-                  : 'border-slate-200 bg-white hover:border-slate-300 dark:border-[#252d3a] dark:bg-[#151c28] dark:hover:border-[#3d4a5c]'
+                  : 'border-slate-200 bg-white hover:border-slate-300 dark:border-border dark:bg-card dark:hover:border-[#3d4a5c]'
               )}
             >
               <div
@@ -349,7 +349,7 @@ function Step2AdTypes({
                       'flex items-center gap-3 rounded-xl border p-3 cursor-pointer transition-colors',
                       isSelected
                         ? 'border-blue-200 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20'
-                        : 'border-slate-200 hover:border-slate-300 dark:border-[#252d3a] dark:hover:border-[#3d4a5c]'
+                        : 'border-slate-200 hover:border-slate-300 dark:border-border dark:hover:border-[#3d4a5c]'
                     )}
                   >
                     <Checkbox

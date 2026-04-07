@@ -105,10 +105,10 @@ function rankBooleans(values: boolean[]): MetricRank[] {
 
 function rankBadge(rank: MetricRank) {
   if (rank === 'best') return 'bg-emerald-50 border-emerald-200 text-emerald-700'
-  if (rank === 'tied-best') return 'bg-slate-50 dark:bg-[#1e2635] border-slate-200 dark:border-[#252d3a] text-slate-600 dark:text-slate-300'
+  if (rank === 'tied-best') return 'bg-slate-50 dark:bg-secondary border-slate-200 dark:border-border text-slate-600 dark:text-slate-300'
   if (rank === 'middle') return 'bg-amber-50 border-amber-200 text-amber-700'
   if (rank === 'worst') return 'bg-red-50 border-red-200 text-red-700'
-  return 'bg-slate-50 dark:bg-[#1e2635] border-slate-200 dark:border-[#252d3a] text-slate-500'
+  return 'bg-slate-50 dark:bg-secondary border-slate-200 dark:border-border text-slate-500'
 }
 
 function RankIcon({ rank }: { rank: MetricRank }) {
@@ -379,10 +379,10 @@ function ComparisonTable({ data }: { data: ComparisonResult }) {
 
       {/* Table */}
       <p className="text-xs text-slate-400 dark:text-slate-500 md:hidden">← Tabelle scrollbar →</p>
-      <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-[#252d3a]">
+      <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635]">
+            <tr className="border-b border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary">
               <th className="px-4 py-3 text-left font-medium text-slate-500 dark:text-slate-400 w-36">Metrik</th>
               {allResults.map((r, i) => (
                 <th key={r.url} className="px-4 py-3 text-left font-medium text-slate-800 dark:text-slate-200">
@@ -532,7 +532,7 @@ function CompareResultView({
             variant="outline"
             size="sm"
             onClick={onBack}
-            className="rounded-full border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
+            className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]"
           >
             <ArrowLeft className="h-4 w-4" />
             Zurück
@@ -551,7 +551,7 @@ function CompareResultView({
             size="sm"
             onClick={() => void handleDelete()}
             disabled={deleting}
-            className="rounded-full border-slate-200 dark:border-[#252d3a] text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="rounded-full border-slate-200 dark:border-border text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
           >
             {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
             Löschen
@@ -579,7 +579,7 @@ function CompareResultView({
         </Alert>
       )}
 
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-base text-slate-950 dark:text-slate-50">Side-by-Side Vergleich</CardTitle>
         </CardHeader>
@@ -588,7 +588,7 @@ function CompareResultView({
         </CardContent>
       </Card>
 
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-base text-slate-950 dark:text-slate-50">Lückenanalyse — Top Verbesserungspotenziale</CardTitle>
         </CardHeader>
@@ -615,7 +615,7 @@ function CompareHistoryRow({
     <button
       type="button"
       onClick={onClick}
-      className="w-full rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-5 py-4 text-left shadow-soft hover:border-slate-200 dark:hover:border-[#3a4456] transition-colors"
+      className="w-full rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card px-5 py-4 text-left shadow-soft hover:border-slate-200 dark:hover:border-[#3a4456] transition-colors"
     >
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 space-y-1">
@@ -755,10 +755,10 @@ export function SeoCompareWorkspace() {
 
   if (view.type === 'running') {
     return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="flex flex-col items-center gap-6 px-6 py-14 text-center">
           <div className="relative flex h-24 w-24 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-[#252d3a]" />
+            <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-border" />
             <div className="absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-blue-600" />
             <GitCompare className="h-8 w-8 text-blue-600" />
           </div>
@@ -771,7 +771,7 @@ export function SeoCompareWorkspace() {
           {pendingUrls.length > 0 && (
             <div className="w-full max-w-md space-y-2">
               {pendingUrls.map((url, i) => (
-                <div key={url} className="flex items-center gap-2 rounded-xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635] px-4 py-2">
+                <div key={url} className="flex items-center gap-2 rounded-xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary px-4 py-2">
                   <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-600 shrink-0" />
                   <span className="text-xs text-slate-600 dark:text-slate-300 truncate">{i === 0 ? '(Eigene) ' : `(Wettbewerber ${i}) `}{extractHostname(url)}</span>
                 </div>
@@ -799,7 +799,7 @@ export function SeoCompareWorkspace() {
   return (
     <div className="space-y-6">
       {/* Form */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
             <GitCompare className="h-5 w-5 text-blue-600" />
@@ -818,7 +818,7 @@ export function SeoCompareWorkspace() {
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Kunde</label>
             <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-              <SelectTrigger className="h-12 rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635]">
+              <SelectTrigger className="h-12 rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-secondary">
                 <SelectValue placeholder="Ohne Kunde vergleichen" />
               </SelectTrigger>
               <SelectContent>
@@ -841,7 +841,7 @@ export function SeoCompareWorkspace() {
               value={ownUrl}
               onChange={(e) => setOwnUrl(e.target.value)}
               placeholder="https://deine-website.de/seite"
-              className="h-12 rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635] text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+              className="h-12 rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-secondary text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
             />
           </div>
 
@@ -856,7 +856,7 @@ export function SeoCompareWorkspace() {
                     value={url}
                     onChange={(e) => handleCompetitorChange(idx, e.target.value)}
                     placeholder={`https://wettbewerber-${idx + 1}.de/seite`}
-                    className="h-12 rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635] text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                    className="h-12 rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-secondary text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
                   />
                   {competitorUrls.length > 1 && (
                     <Button
@@ -878,7 +878,7 @@ export function SeoCompareWorkspace() {
                 variant="outline"
                 size="sm"
                 onClick={handleAddCompetitor}
-                className="rounded-full border-slate-200 dark:border-[#252d3a] text-slate-600 dark:text-slate-300"
+                className="rounded-full border-slate-200 dark:border-border text-slate-600 dark:text-slate-300"
               >
                 <Plus className="h-4 w-4" />
                 Wettbewerber hinzufügen
@@ -901,7 +901,7 @@ export function SeoCompareWorkspace() {
                     'rounded-2xl border px-4 py-4 text-left transition',
                     crawlMode === mode.value
                       ? 'border-blue-600 bg-blue-50 dark:bg-blue-950/30'
-                      : 'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635] hover:border-slate-200 dark:hover:border-[#3a4456]'
+                      : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary hover:border-slate-200 dark:hover:border-[#3a4456]'
                   )}
                 >
                   <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mode.label}</p>
@@ -953,21 +953,21 @@ export function SeoCompareWorkspace() {
                 ))}
               </SelectContent>
             </Select>
-            <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+            <Badge className="rounded-full bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
               {history.length} Einträge
             </Badge>
           </div>
         </div>
 
         {historyLoading ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card">
             <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Verlauf wird geladen
             </CardContent>
           </Card>
         ) : history.length === 0 ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
                 <GitCompare className="h-6 w-6 text-blue-600" />

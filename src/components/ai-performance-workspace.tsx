@@ -37,7 +37,7 @@ function inlineFormat(raw: string): string {
   return raw
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-[#1e2635] text-xs font-mono text-slate-700 dark:text-slate-300">$1</code>')
+    .replace(/`(.+?)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-secondary text-xs font-mono text-slate-700 dark:text-slate-300">$1</code>')
 }
 
 async function recordClientExportAudit(resourceType: string, context: Record<string, unknown> = {}) {
@@ -81,14 +81,14 @@ function renderMarkdown(text: string): string {
     const [headerRow, ...bodyRows] = rows
     const headers = parseRow(headerRow)
 
-    out.push(`<div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-[#252d3a] my-4 shadow-sm">`)
+    out.push(`<div class="overflow-x-auto rounded-xl border border-slate-200 dark:border-border my-4 shadow-sm">`)
     out.push(`<table class="w-full text-sm border-collapse">`)
     out.push(`<thead><tr class="bg-slate-900">`)
     headers.forEach(h => out.push(`<th class="px-4 py-2.5 text-left text-xs font-semibold text-slate-200 whitespace-nowrap">${h}</th>`))
     out.push(`</tr></thead><tbody>`)
     bodyRows.forEach((row, i) => {
       const cells = parseRow(row)
-      out.push(`<tr class="${i % 2 === 0 ? 'bg-white dark:bg-[#151c28]' : 'bg-slate-50 dark:bg-[#151c28]'} border-b border-slate-100 dark:border-[#252d3a] last:border-0 hover:bg-blue-50/30 transition-colors">`)
+      out.push(`<tr class="${i % 2 === 0 ? 'bg-white dark:bg-card' : 'bg-slate-50 dark:bg-card'} border-b border-slate-100 dark:border-border last:border-0 hover:bg-blue-50/30 transition-colors">`)
       cells.forEach((c, ci) => out.push(`<td class="px-4 py-2.5 text-xs ${ci === 0 ? 'font-medium text-slate-800 dark:text-slate-200' : 'text-slate-600 dark:text-slate-300'} whitespace-nowrap">${c}</td>`))
       out.push(`</tr>`)
     })
@@ -157,7 +157,7 @@ function renderMarkdown(text: string): string {
       const content = line.replace(/^\d+\. /, '')
       const num = raw.match(/^(\d+)\./)?.[1] ?? '•'
       if (olContext === 'massnahmen') {
-        out.push(`<li class="flex gap-3 rounded-xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3 hover:bg-blue-50/40 transition-colors"><span class="mt-0.5 flex-shrink-0 grid h-6 w-6 place-items-center rounded-full bg-slate-900 text-[10px] font-bold text-white">${num}</span><span class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">${content}</span></li>`)
+        out.push(`<li class="flex gap-3 rounded-xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3 hover:bg-blue-50/40 transition-colors"><span class="mt-0.5 flex-shrink-0 grid h-6 w-6 place-items-center rounded-full bg-slate-900 text-[10px] font-bold text-white">${num}</span><span class="text-sm leading-relaxed text-slate-700 dark:text-slate-300">${content}</span></li>`)
       } else {
         out.push(`<li class="flex gap-2.5 text-sm leading-relaxed text-slate-700 dark:text-slate-300"><span class="mt-0.5 flex-shrink-0 grid h-5 w-5 place-items-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600">${num}</span><span>${content}</span></li>`)
       }
@@ -173,7 +173,7 @@ function renderMarkdown(text: string): string {
 
     if (/^---+$/.test(raw.trim())) {
       closeList()
-      out.push('<hr class="my-5 border-slate-100 dark:border-[#252d3a]" />')
+      out.push('<hr class="my-5 border-slate-100 dark:border-border" />')
       continue
     }
 
@@ -258,7 +258,7 @@ function colLabel(key: string): string {
 function KpiChip({ kpiDef, value }: { kpiDef: typeof KPI_DEFS[number]; value: number | null }) {
   if (value === null) return null
   return (
-    <div className="flex flex-col items-center rounded-xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-3 py-2 min-w-[80px]">
+    <div className="flex flex-col items-center rounded-xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-3 py-2 min-w-[80px]">
       <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">{kpiDef.label}</span>
       <span className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100">{kpiDef.format(value)}</span>
     </div>
@@ -269,10 +269,10 @@ function KpiChip({ kpiDef, value }: { kpiDef: typeof KPI_DEFS[number]; value: nu
 
 function ClientLabelInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardContent className="pt-4 pb-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-[#1e2635]">
+          <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-slate-100 dark:bg-secondary">
             <User className="h-4 w-4 text-slate-500 dark:text-slate-400" />
           </div>
           <div className="flex-1">
@@ -284,7 +284,7 @@ function ClientLabelInput({ value, onChange }: { value: string; onChange: (v: st
               value={value}
               onChange={e => onChange(e.target.value)}
               placeholder="z.B. Müller GmbH"
-              className="w-full rounded-lg border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-1.5 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-lg border border-slate-200 dark:border-border bg-white dark:bg-card px-3 py-1.5 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
           </div>
         </div>
@@ -326,7 +326,7 @@ function DropZone({
 
   if (file) {
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3">
+      <div className="flex items-center gap-3 rounded-xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3">
         <FileText className="h-5 w-5 flex-shrink-0 text-blue-500" />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-slate-800 dark:text-slate-200">{file.name}</p>
@@ -353,7 +353,7 @@ function DropZone({
         'flex cursor-pointer flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-6 py-8 transition-colors',
         dragging
           ? 'border-blue-300 bg-blue-50'
-          : 'border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] hover:border-blue-200 hover:bg-blue-50/40',
+          : 'border-slate-200 dark:border-border bg-slate-50 dark:bg-card hover:border-blue-200 hover:bg-blue-50/40',
         disabled && 'cursor-not-allowed opacity-50',
       )}
     >
@@ -373,7 +373,7 @@ function PreviewCard({ preview }: { preview: PreviewResult }) {
   const visibleKpis = KPI_DEFS.filter(d => preview.kpis[d.key] !== null)
 
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center gap-2">
           <CardTitle className="text-sm text-slate-800 dark:text-slate-200">Datei erkannt</CardTitle>
@@ -398,10 +398,10 @@ function PreviewCard({ preview }: { preview: PreviewResult }) {
         )}
 
         {preview.rows.length > 0 && (
-          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-[#252d3a]">
+          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
             <table className="w-full text-xs">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
+                <tr className="border-b border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                   {preview.columns.slice(0, 7).map(col => (
                     <th key={col} className="px-3 py-2 text-left font-medium text-slate-500 dark:text-slate-400">{colLabel(col)}</th>
                   ))}
@@ -409,7 +409,7 @@ function PreviewCard({ preview }: { preview: PreviewResult }) {
               </thead>
               <tbody>
                 {preview.rows.map((row, i) => (
-                  <tr key={i} className={cn('border-b border-slate-100 dark:border-[#252d3a]/60', i % 2 === 0 && 'bg-slate-50 dark:bg-[#151c28]/40')}>
+                  <tr key={i} className={cn('border-b border-slate-100 dark:border-border/60', i % 2 === 0 && 'bg-slate-50 dark:bg-card/40')}>
                     {preview.columns.slice(0, 7).map(col => (
                       <td key={col} className="px-3 py-2 text-slate-600 dark:text-slate-300">
                         {row[col] === null || row[col] === undefined ? '—' : String(row[col])}
@@ -450,7 +450,7 @@ function FilterPanel({
   const allSelected = selected.length === 0
 
   return (
-    <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardHeader className="pb-2">
         <CardTitle className="text-sm text-slate-800 dark:text-slate-200">Filter</CardTitle>
       </CardHeader>
@@ -461,11 +461,11 @@ function FilterPanel({
               onClick={() => onActiveOnly(!activeOnly)}
               className={cn(
                 'relative h-5 w-9 rounded-full border transition-colors',
-                activeOnly ? 'border-blue-500 bg-blue-500' : 'border-slate-200 dark:border-[#252d3a] bg-slate-100 dark:bg-[#1e2635]',
+                activeOnly ? 'border-blue-500 bg-blue-500' : 'border-slate-200 dark:border-border bg-slate-100 dark:bg-secondary',
               )}
             >
               <div className={cn(
-                'absolute top-0.5 h-4 w-4 rounded-full bg-white dark:bg-[#151c28] shadow transition-transform',
+                'absolute top-0.5 h-4 w-4 rounded-full bg-white dark:bg-card shadow transition-transform',
                 activeOnly ? 'translate-x-4' : 'translate-x-0.5',
               )} />
             </div>
@@ -483,7 +483,7 @@ function FilterPanel({
                   'rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors',
                   allSelected
                     ? 'border-blue-200 bg-blue-50 text-blue-600'
-                    : 'border-slate-200 dark:border-[#252d3a] text-slate-500 dark:text-slate-400 hover:border-blue-200 hover:bg-blue-50/40',
+                    : 'border-slate-200 dark:border-border text-slate-500 dark:text-slate-400 hover:border-blue-200 hover:bg-blue-50/40',
                 )}
               >
                 Alle
@@ -496,7 +496,7 @@ function FilterPanel({
                     'max-w-[200px] truncate rounded-full px-2.5 py-0.5 text-xs font-medium border transition-colors',
                     selected.includes(name)
                       ? 'border-blue-200 bg-blue-50 text-blue-600'
-                      : 'border-slate-200 dark:border-[#252d3a] text-slate-500 dark:text-slate-400 hover:border-blue-200 hover:bg-blue-50/40',
+                      : 'border-slate-200 dark:border-border text-slate-500 dark:text-slate-400 hover:border-blue-200 hover:bg-blue-50/40',
                   )}
                   title={name}
                 >
@@ -529,7 +529,7 @@ function AnalysisResult({ result, onReset }: { result: AnalyzeResult; onReset: (
   return (
     <div className="space-y-4 print-area">
       {/* Print header — nur beim Drucken sichtbar */}
-      <div className="hidden print:block mb-6 pb-4 border-b border-slate-200 dark:border-[#252d3a]">
+      <div className="hidden print:block mb-6 pb-4 border-b border-slate-200 dark:border-border">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">KI Performance-Analyse</p>
@@ -543,9 +543,9 @@ function AnalysisResult({ result, onReset }: { result: AnalyzeResult; onReset: (
         </div>
       </div>
 
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft overflow-hidden">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft overflow-hidden">
         {/* Top bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-[#252d3a] px-6 py-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-border px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 no-print">
               <BarChart3 className="h-4.5 w-4.5 text-blue-600" />
@@ -583,7 +583,7 @@ function AnalysisResult({ result, onReset }: { result: AnalyzeResult; onReset: (
 
         {/* KPI strip */}
         {visibleKpis.length > 0 && (
-          <div className="kpi-strip grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 dark:border-[#252d3a] sm:grid-cols-4 lg:grid-cols-6">
+          <div className="kpi-strip grid grid-cols-3 divide-x divide-slate-100 border-b border-slate-100 dark:border-border sm:grid-cols-4 lg:grid-cols-6">
             {visibleKpis.slice(0, 6).map(d => (
               <div key={d.key} className="flex flex-col items-center px-4 py-3">
                 <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">{d.label}</span>
@@ -631,7 +631,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
   return (
     <div className="space-y-4 print-area">
       {/* Print header */}
-      <div className="hidden print:block mb-6 pb-4 border-b border-slate-200 dark:border-[#252d3a]">
+      <div className="hidden print:block mb-6 pb-4 border-b border-slate-200 dark:border-border">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide font-medium">KI Zeitraum-Vergleich</p>
@@ -645,7 +645,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
         </div>
       </div>
 
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <CardTitle className="text-sm text-slate-800 dark:text-slate-200">KPI-Vergleich</CardTitle>
@@ -672,7 +672,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 dark:border-[#252d3a]">
+                <tr className="border-b border-slate-100 dark:border-border">
                   <th className="py-2 pr-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400">KPI</th>
                   <th className="py-2 px-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">{result.meta.a.label}</th>
                   <th className="py-2 px-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">{result.meta.b.label}</th>
@@ -683,7 +683,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
                 {shownKpis.map(d => {
                   const delta = result.meta.deltas[d.key]
                   return (
-                    <tr key={d.key} className="border-b border-slate-100 dark:border-[#252d3a]/60">
+                    <tr key={d.key} className="border-b border-slate-100 dark:border-border/60">
                       <td className="py-2 pr-4 text-xs text-slate-500 dark:text-slate-400">{d.label}</td>
                       <td className="py-2 px-3 text-right text-xs tabular-nums text-slate-700 dark:text-slate-300">{d.format(result.meta.a.kpis[d.key])}</td>
                       <td className="py-2 px-3 text-right text-xs tabular-nums text-slate-700 dark:text-slate-300">{d.format(result.meta.b.kpis[d.key])}</td>
@@ -699,7 +699,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
         </CardContent>
       </Card>
 
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm text-slate-800 dark:text-slate-200">KI-Analyse</CardTitle>
         </CardHeader>
@@ -786,7 +786,7 @@ function AnalyseTab() {
 
   return (
     <div className="space-y-4">
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-sm text-slate-800 dark:text-slate-200">CSV-Datei hochladen</CardTitle>
         </CardHeader>
@@ -934,7 +934,7 @@ function VergleichTab() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2 text-slate-800 dark:text-slate-200">
               <span className="grid h-5 w-5 place-items-center rounded-full bg-blue-50 text-[10px] font-bold text-blue-600">A</span>
@@ -947,7 +947,7 @@ function VergleichTab() {
               placeholder="z.B. Januar 2024"
               value={labelA}
               onChange={e => setLabelA(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card px-3 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
             <DropZone file={fileA} onFile={handleFileA} onClear={() => { setFileA(null); setPreviewA(null) }} label="Zeitraum A hochladen" />
             {previewA && (
@@ -962,10 +962,10 @@ function VergleichTab() {
           </CardContent>
         </Card>
 
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm flex items-center gap-2 text-slate-800 dark:text-slate-200">
-              <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-100 dark:bg-[#1e2635] text-[10px] font-bold text-slate-600 dark:text-slate-300">B</span>
+              <span className="grid h-5 w-5 place-items-center rounded-full bg-slate-100 dark:bg-secondary text-[10px] font-bold text-slate-600 dark:text-slate-300">B</span>
               Zeitraum B
             </CardTitle>
           </CardHeader>
@@ -975,7 +975,7 @@ function VergleichTab() {
               placeholder="z.B. Februar 2024"
               value={labelB}
               onChange={e => setLabelB(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-card px-3 py-2 text-sm text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-200"
             />
             <DropZone file={fileB} onFile={handleFileB} onClear={() => { setFileB(null); setPreviewB(null) }} label="Zeitraum B hochladen" />
             {previewB && (
@@ -992,7 +992,7 @@ function VergleichTab() {
       </div>
 
       {previewA && previewB && (
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="pb-3">
             <CardTitle className="text-sm text-slate-800 dark:text-slate-200">KPI-Vorschau</CardTitle>
           </CardHeader>
@@ -1000,7 +1000,7 @@ function VergleichTab() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100 dark:border-[#252d3a]">
+                  <tr className="border-b border-slate-100 dark:border-border">
                     <th className="py-2 pr-4 text-left text-xs font-medium text-slate-500 dark:text-slate-400">KPI</th>
                     <th className="py-2 px-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">{labelA || 'Zeitraum A'}</th>
                     <th className="py-2 pl-3 text-right text-xs font-medium text-slate-500 dark:text-slate-400">{labelB || 'Zeitraum B'}</th>
@@ -1008,7 +1008,7 @@ function VergleichTab() {
                 </thead>
                 <tbody>
                   {KPI_DEFS.filter(d => previewA.kpis[d.key] !== null || previewB.kpis[d.key] !== null).map(d => (
-                    <tr key={d.key} className="border-b border-slate-100 dark:border-[#252d3a]/60">
+                    <tr key={d.key} className="border-b border-slate-100 dark:border-border/60">
                       <td className="py-1.5 pr-4 text-xs text-slate-500 dark:text-slate-400">{d.label}</td>
                       <td className="py-1.5 px-3 text-right text-xs tabular-nums text-slate-700 dark:text-slate-300">{d.format(previewA.kpis[d.key])}</td>
                       <td className="py-1.5 pl-3 text-right text-xs tabular-nums text-slate-700 dark:text-slate-300">{d.format(previewB.kpis[d.key])}</td>
@@ -1194,9 +1194,9 @@ function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAna
             ))}
           </SelectContent>
         </Select>
-        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 dark:bg-[#151c28]">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 dark:bg-card">
               <History className="h-5 w-5 text-slate-400 dark:text-slate-500" />
             </div>
             <div>
@@ -1239,7 +1239,7 @@ function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAna
         const analysisLevel = isCompare ? null : (meta.analysis_level as string | null)
 
         return (
-          <Card key={item.id} className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card key={item.id} className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="flex items-center gap-4 py-3 px-4">
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-1.5 mb-1">
@@ -1306,7 +1306,7 @@ export function AiPerformanceWorkspace({
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>
-      <TabsList className="mb-4 rounded-full bg-slate-100 dark:bg-[#1e2635]">
+      <TabsList className="mb-4 rounded-full bg-slate-100 dark:bg-secondary">
         <TabsTrigger value="analyse" className="gap-1.5 rounded-full">
           <BarChart3 className="h-3.5 w-3.5" />
           Analyse

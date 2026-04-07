@@ -29,7 +29,7 @@ interface InvitationValidationState {
 }
 
 const fieldClassName =
-  'h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 text-[15px] shadow-soft transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/25 focus-visible:ring-offset-0'
+  'h-[52px] rounded-xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card px-4 text-[15px] shadow-soft transition placeholder:text-slate-400 focus-visible:border-blue-500 focus-visible:ring-blue-500/25 focus-visible:ring-offset-0'
 
 export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }: AcceptInviteFormProps) {
   const [serverError, setServerError] = useState<string | null>(null)
@@ -145,7 +145,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
     <div className="space-y-6">
       {!minimal && (
         <div className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-[22px] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-4">
+          <div className="rounded-[22px] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card p-4">
             <UserRoundPlus className="h-5 w-5 text-blue-600" />
             <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Onboarding direkt im Link</p>
             <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -163,7 +163,7 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
       )}
 
       {isValidating && (
-        <Alert className="rounded-2xl border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-700 dark:text-slate-300">
+        <Alert className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card text-slate-700 dark:text-slate-300">
           <Loader2 className="h-4 w-4 animate-spin" />
           <AlertDescription>Einladung wird geprüft...</AlertDescription>
         </Alert>
@@ -233,7 +233,8 @@ export function AcceptInviteForm({ token, fallbackTenantName, minimal = false }:
 
         <Button
           type="submit"
-          className="h-[52px] w-full rounded-xl bg-[#1f2937] text-white hover:bg-[#111827]"
+          variant="dark"
+          className="h-[52px] w-full rounded-xl"
           onClick={() => {
             void submitInvitation()
           }}

@@ -57,7 +57,7 @@ export function CustomerSelectorDropdown({
     return (
       <div
         className={cn(
-          'mx-3 mt-2 mb-1 flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-[#252d3a] dark:bg-[#151c28]/50 dark:border-slate-800 dark:bg-slate-900/50',
+          'mx-3 mt-2 mb-1 flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-border dark:bg-card/50 dark:border-slate-800 dark:bg-slate-900/50',
           className,
           triggerClassName
         )}
@@ -76,7 +76,7 @@ export function CustomerSelectorDropdown({
           aria-label="Kunden auswählen"
           className={cn(
             'mx-3 mt-2 mb-1 flex w-[calc(100%-1.5rem)] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
-            'border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]/50 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
+            'border-slate-100 dark:border-border bg-slate-50 dark:bg-card/50 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
             'dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700 dark:hover:bg-slate-800/60',
             className,
             triggerClassName

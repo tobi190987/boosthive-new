@@ -627,7 +627,7 @@ export function ContentBriefsWorkspace({
         </Button>
 
         {detailLoading && !detail ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="p-8 space-y-6">
               <Skeleton className="h-8 w-64" />
               <Skeleton className="h-4 w-48" />
@@ -637,7 +637,7 @@ export function ContentBriefsWorkspace({
         ) : detail ? (
           <>
             {/* Header */}
-            <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+            <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
               <CardContent className="p-6 md:p-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
@@ -728,7 +728,7 @@ export function ContentBriefsWorkspace({
 
             {/* Generating state */}
             {(detail.status === 'pending' || detail.status === 'generating') && (
-              <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+              <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
                 <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
                     <Sparkles className="h-7 w-7 animate-pulse text-blue-500 dark:text-blue-400" />
@@ -793,7 +793,7 @@ export function ContentBriefsWorkspace({
         </div>
         <Button
           onClick={handleCreateOpen}
-          className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+          variant="dark" className="gap-2"
         >
           <Plus className="h-4 w-4" />
           Neues Briefing
@@ -813,7 +813,7 @@ export function ContentBriefsWorkspace({
       {loading && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+            <Card key={i} className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
               <CardContent className="p-6 space-y-4">
                 <Skeleton className="h-5 w-40" />
                 <Skeleton className="h-4 w-24" />
@@ -826,7 +826,7 @@ export function ContentBriefsWorkspace({
 
       {/* Empty state */}
       {!loading && !error && briefs.length === 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
               <FileText className="h-7 w-7 text-blue-500 dark:text-blue-400" />
@@ -839,7 +839,7 @@ export function ContentBriefsWorkspace({
             </div>
             <Button
               onClick={handleCreateOpen}
-              className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+              variant="dark" className="gap-2"
             >
               <Plus className="h-4 w-4" />
               Erstes Briefing erstellen
@@ -854,7 +854,7 @@ export function ContentBriefsWorkspace({
           {briefs.map((brief) => (
             <Card
               key={brief.id}
-              className="group cursor-pointer rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft transition-all hover:border-slate-200 hover:shadow-md dark:hover:border-[#2d3847]"
+              className="group cursor-pointer rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft transition-all hover:border-slate-200 hover:shadow-md dark:hover:border-[#2d3847]"
               onClick={() => {
                 router.replace(`${pathname}?briefId=${brief.id}`, { scroll: false })
               }}
@@ -906,7 +906,7 @@ export function ContentBriefsWorkspace({
                   </p>
                 </div>
                 <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-                  <SelectTrigger className="rounded-xl bg-white dark:bg-[#151c28]">
+                  <SelectTrigger className="rounded-xl bg-white dark:bg-card">
                     <SelectValue placeholder="Keinen Kunden auswählen" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1028,7 +1028,7 @@ export function ContentBriefsWorkspace({
 
           {createStep === 2 && (
             <div className="space-y-5 py-4">
-              <div className="rounded-xl bg-slate-50 dark:bg-[#1e2635] p-3">
+              <div className="rounded-xl bg-slate-50 dark:bg-secondary p-3">
                 <div className="flex flex-col gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
                   <div className="flex items-center gap-2">
                     <Search className="h-4 w-4 text-slate-400" />
@@ -1113,7 +1113,7 @@ export function ContentBriefsWorkspace({
               <Button
                 onClick={() => setCreateStep(2)}
                 disabled={!canProceedStep1}
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                variant="dark"
               >
                 Weiter
               </Button>
@@ -1121,7 +1121,7 @@ export function ContentBriefsWorkspace({
               <Button
                 onClick={handleCreate}
                 disabled={!canCreate || creating}
-                className="gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                variant="dark" className="gap-2"
               >
                 {creating && <Loader2 className="h-4 w-4 animate-spin" />}
                 <Sparkles className="h-4 w-4" />
@@ -1149,7 +1149,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
   return (
     <div className="space-y-6 print:space-y-4" id="brief-content">
       {/* Search Intent */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Search className="h-4 w-4 text-blue-500" />
@@ -1167,7 +1167,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* H1 Titles */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-amber-500" />
@@ -1177,7 +1177,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
         <CardContent>
           <ul className="space-y-2">
             {brief.h1_titles.map((title, i) => (
-              <li key={i} className="flex items-start gap-3 rounded-xl bg-slate-50 dark:bg-[#1e2635] p-3">
+              <li key={i} className="flex items-start gap-3 rounded-xl bg-slate-50 dark:bg-secondary p-3">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700 dark:bg-blue-900/50 dark:text-blue-400">{i + 1}</span>
                 <CopyableText text={title} className="text-sm text-slate-700 dark:text-slate-300" />
               </li>
@@ -1187,7 +1187,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* Meta Descriptions */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-emerald-500" />
@@ -1197,7 +1197,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
         <CardContent>
           <ul className="space-y-3">
             {brief.meta_descriptions.map((desc, i) => (
-              <li key={i} className="rounded-xl border border-slate-100 dark:border-[#252d3a] p-4">
+              <li key={i} className="rounded-xl border border-slate-100 dark:border-border p-4">
                 <div className="flex items-start justify-between gap-2">
                   <CopyableText text={desc} className="text-sm text-slate-700 dark:text-slate-300" />
                 </div>
@@ -1209,7 +1209,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* Outline */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-purple-500" />
@@ -1218,11 +1218,11 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
         </CardHeader>
         <CardContent className="space-y-4">
           {brief.outline.map((section, i) => (
-            <div key={i} className="rounded-xl border border-slate-100 dark:border-[#252d3a] p-4">
+            <div key={i} className="rounded-xl border border-slate-100 dark:border-border p-4">
               <h3 className="mb-1 font-semibold text-slate-900 dark:text-slate-50">H2: {section.h2}</h3>
               <p className="mb-3 text-sm text-slate-500 dark:text-slate-400">{section.description}</p>
               {section.h3s && section.h3s.length > 0 && (
-                <ul className="ml-4 space-y-2 border-l-2 border-slate-100 dark:border-[#252d3a] pl-4">
+                <ul className="ml-4 space-y-2 border-l-2 border-slate-100 dark:border-border pl-4">
                   {section.h3s.map((sub, j) => (
                     <li key={j} className="text-sm font-medium text-slate-700 dark:text-slate-300">
                       H3: {sub}
@@ -1236,7 +1236,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* Keywords */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Search className="h-4 w-4 text-indigo-500" />
@@ -1244,17 +1244,17 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-[#252d3a]">
+          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-slate-100 bg-slate-50 dark:border-[#252d3a] dark:bg-[#1e2635]">
+                <tr className="border-b border-slate-100 bg-slate-50 dark:border-border dark:bg-secondary">
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Keyword</th>
                   <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-500 dark:text-slate-400">Empfohlene Häufigkeit</th>
                 </tr>
               </thead>
               <tbody>
                 {brief.keywords.map((kw, i) => (
-                  <tr key={i} className="border-b border-slate-50 last:border-0 dark:border-[#252d3a]">
+                  <tr key={i} className="border-b border-slate-50 last:border-0 dark:border-border">
                     <td className="px-4 py-2.5 font-medium text-slate-700 dark:text-slate-300">{kw.term}</td>
                     <td className="px-4 py-2.5 text-slate-500 dark:text-slate-400">{kw.frequency}</td>
                   </tr>
@@ -1267,7 +1267,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
 
       {/* Internal Linking Hints */}
       {brief.internal_linking_hints && brief.internal_linking_hints.length > 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Link className="h-4 w-4 text-violet-500" />
@@ -1289,7 +1289,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
 
       {/* Competitor Hints */}
       {brief.competitor_hints && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Sparkles className="h-4 w-4 text-orange-500" />
@@ -1305,7 +1305,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       )}
 
       {/* CTA Recommendation */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-pink-500" />

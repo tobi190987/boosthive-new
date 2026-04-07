@@ -245,7 +245,7 @@ export function ResultsView({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -292,7 +292,7 @@ export function ResultsView({
                   </Button>
                   {approvalInfo?.status === 'changes_requested' && (
                     <Button
-                      className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                      variant="dark"
                       onClick={() => void persistEdits(true)}
                       disabled={savingEdits}
                     >
@@ -303,7 +303,7 @@ export function ResultsView({
                 </div>
               )}
               {approvalInfo?.history && approvalInfo.history.length > 0 && (
-                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-[#252d3a] dark:bg-[#151c28]">
+                <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-border dark:bg-card">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
                     Freigabeverlauf
                   </p>
@@ -383,7 +383,7 @@ export function ResultsView({
               )}
               {!canEdit && (
                 <Button
-                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] dark:bg-blue-600 dark:hover:bg-blue-700"
+                  variant="dark"
                   onClick={onNewGeneration}
                 >
                   <Plus className="mr-2 h-4 w-4" />
@@ -426,7 +426,7 @@ export function ResultsView({
                   <AccordionItem
                     key={adType.id}
                     value={adType.id}
-                    className="rounded-2xl border border-slate-100 bg-white dark:border-[#252d3a] dark:bg-[#151c28] overflow-hidden"
+                    className="rounded-2xl border border-slate-100 bg-white dark:border-border dark:bg-card overflow-hidden"
                   >
                     <AccordionTrigger className="px-5 py-4 text-sm font-semibold hover:no-underline text-slate-900 dark:text-slate-100">
                       {adType.label}
@@ -563,7 +563,7 @@ export function ResultsView({
 
       {/* Empty state if nothing in result */}
       {Object.keys(result).length === 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28]">
+        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card">
           <CardContent className="flex flex-col items-center gap-4 p-8 py-16 text-center">
             <AlertCircle className="h-10 w-10 text-slate-300 dark:text-slate-600" />
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -597,7 +597,7 @@ function AdTextFieldDisplay({
   const isOver = charCount > limit
 
   return (
-    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-[#252d3a] dark:bg-[#0c1018]">
+    <div className="rounded-xl border border-slate-100 bg-slate-50/50 p-3 dark:border-border dark:bg-[#0c1018]">
       <div className="flex items-center justify-between mb-1.5">
         <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
           {label}
@@ -628,7 +628,7 @@ function AdTextFieldDisplay({
         <Textarea
           value={text}
           onChange={(event) => onChange?.(event.target.value)}
-          className="min-h-[92px] rounded-xl border-slate-200 bg-white text-sm text-slate-900 dark:border-[#252d3a] dark:bg-[#151c28] dark:text-slate-100"
+          className="min-h-[92px] rounded-xl border-slate-200 bg-white text-sm text-slate-900 dark:border-border dark:bg-card dark:text-slate-100"
         />
       ) : (
         <p className="text-sm text-slate-900 dark:text-slate-100 whitespace-pre-wrap break-words">

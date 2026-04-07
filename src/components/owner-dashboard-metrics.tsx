@@ -51,7 +51,7 @@ export function OwnerDashboardMetrics({
       value: String(totalUsers),
       hint: 'Aktive Tenant-Members über alle Workspaces hinweg.',
       icon: Users,
-      accent: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-[#1e2635]',
+      accent: 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-secondary',
     },
   ]
 
@@ -60,7 +60,7 @@ export function OwnerDashboardMetrics({
       {metrics.map((metric) => (
         <Card
           key={metric.label}
-          className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft"
+          className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>

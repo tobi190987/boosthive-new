@@ -78,14 +78,14 @@ export function InviteDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className={triggerClassName ?? 'rounded-full bg-[#1f2937] px-5 text-white hover:bg-[#111827]'}>
+        <Button variant="dark" className={triggerClassName ?? 'px-5'}>
           <MailPlus className="h-4 w-4" />
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-[2rem] border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-0 sm:max-w-[560px]">
+      <DialogContent className="rounded-[2rem] border-slate-200 dark:border-border bg-slate-50 dark:bg-card p-0 sm:max-w-[560px]">
         <form onSubmit={handleSubmit}>
-          <DialogHeader className="space-y-3 border-b border-slate-100 dark:border-[#252d3a] px-6 py-6 text-left">
+          <DialogHeader className="space-y-3 border-b border-slate-100 dark:border-border px-6 py-6 text-left">
             <DialogTitle className="text-2xl font-semibold text-slate-950 dark:text-slate-50">
               Mitglied einladen
             </DialogTitle>
@@ -112,7 +112,7 @@ export function InviteDialog({
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="teammitglied@agentur.de"
-                className="h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]"
+                className="h-[52px] rounded-xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card"
                 required
               />
             </div>
@@ -124,11 +124,11 @@ export function InviteDialog({
               <Select value={role} onValueChange={(value: 'admin' | 'member') => setRole(value)}>
                 <SelectTrigger
                   id="invite-role"
-                  className="h-[52px] rounded-xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]"
+                  className="h-[52px] rounded-xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card"
                 >
                   <SelectValue placeholder="Rolle wählen" />
                 </SelectTrigger>
-                <SelectContent className="rounded-2xl border-slate-200 dark:border-[#252d3a]">
+                <SelectContent className="rounded-2xl border-slate-200 dark:border-border">
                   <SelectItem value="member">Member</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
@@ -136,7 +136,7 @@ export function InviteDialog({
             </div>
           </div>
 
-          <DialogFooter className="border-t border-slate-100 dark:border-[#252d3a] px-6 py-5 sm:justify-between">
+          <DialogFooter className="border-t border-slate-100 dark:border-border px-6 py-5 sm:justify-between">
             <Button
               type="button"
               variant="ghost"

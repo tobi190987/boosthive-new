@@ -68,7 +68,7 @@ export function PreviewAccessForm({ returnTo: rawReturnTo }: PreviewAccessFormPr
         </Alert>
       )}
 
-      <div className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+      <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
         Temporärer Projektschutz aktiv. Nach Freigabe gelangst du automatisch zurück auf die angeforderte Seite.
       </div>
 
@@ -85,7 +85,7 @@ export function PreviewAccessForm({ returnTo: rawReturnTo }: PreviewAccessFormPr
             onChange={(event) => setPassword(event.target.value)}
             placeholder="Passwort eingeben"
             autoComplete="current-password"
-            className="h-[50px] rounded-2xl border-slate-200 dark:border-[#252d3a] bg-white dark:bg-[#151c28] pl-11 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm"
+            className="h-[50px] rounded-2xl border-slate-200 dark:border-border bg-white dark:bg-card pl-11 text-[15px] text-slate-900 dark:text-slate-100 shadow-sm"
             disabled={isSubmitting}
           />
         </div>
@@ -93,7 +93,8 @@ export function PreviewAccessForm({ returnTo: rawReturnTo }: PreviewAccessFormPr
 
       <Button
         type="submit"
-        className="h-[50px] w-full rounded-2xl bg-[#1f2937] text-white hover:bg-[#111827]"
+        variant="dark"
+        className="h-[50px] w-full rounded-2xl"
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
