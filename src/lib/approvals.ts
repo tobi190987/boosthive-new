@@ -4,6 +4,7 @@ import {
   getAdTypeDisplayLabel,
   getPlatformDisplayLabel,
 } from '@/lib/ad-limits'
+import { sendApprovalRequest } from '@/lib/email'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 export const APPROVAL_CONTENT_TYPES = ['content_brief', 'ad_generation', 'ad_library_asset'] as const
@@ -45,6 +46,79 @@ export interface ApprovalHistoryEvent {
   feedback: string | null
   actor_label: string | null
   created_at: string
+}
+
+function buildApprovalLink(origin: string, token: string): string {
+  return `${origin}/approval/${token}`
+}
+
+export function buildContentHref(contentType: ApprovalContentType, contentId: string): string {
+  switch (contentType) {
+    case 'content_brief':
+      return `/tools/content-briefs?briefId=${contentId}`
+    case 'ad_generation':
+      return `/tools/ad-generator?id=${contentId}`
+    case 'ad_library_asset':
+      return `/tools/ads-library?assetId=${contentId}`
+    default:
+      return '/tools/approvals'
+  }
+}
+
+export function approvalContentTypeLabel(contentType: ApprovalContentType): string {
+  switch (contentType) {
+    case 'content_brief':
+      return 'Content Brief'
+    case 'ad_generation':
+      return 'Ad-Text'
+    case 'ad_library_asset':
+      return 'Ad-Creative'
+    default:
+      return 'Inhalt'
+  }
+}
+
+function buildDisplayName(profile: { first_name: string | null; last_name: string | null } | null): string {
+  const first = profile?.first_name?.trim() ?? ''
+  const last = profile?.last_name?.trim() ?? ''
+  const full = `${first} ${last}`.trim()
+  return full || 'Teammitglied'
+}
+
+async function tryNotifyCustomerByEmail(params: {
+  tenantId: string
+  customerId: string | null
+  contentTitle: string
+  contentType: ApprovalContentType
+  approvalLink: string
+}): Promise<void> {
+  if (!params.customerId) return
+
+  const admin = createAdminClient()
+
+  try {
+    const [customerResult, tenantResult] = await Promise.all([
+      admin.from('customers').select('contact_email, name').eq('id', params.customerId).maybeSingle(),
+      admin.from('tenants').select('name, slug').eq('id', params.tenantId).maybeSingle(),
+    ])
+
+    const customer = customerResult.data
+    const tenant = tenantResult.data
+
+    if (!customer?.contact_email || !tenant) return
+
+    void sendApprovalRequest({
+      to: customer.contact_email,
+      tenantName: tenant.name,
+      tenantSlug: tenant.slug,
+      customerName: customer.name,
+      contentTitle: params.contentTitle,
+      contentTypeLabel: approvalContentTypeLabel(params.contentType),
+      approvalLink: params.approvalLink,
+    }).catch((err) => console.error('[approval] Kunden-E-Mail konnte nicht gesendet werden:', err))
+  } catch (err) {
+    console.error('[approval] Fehler beim Laden der Kunden-E-Mail:', err)
+  }
 }
 
 function escapeHtml(value: string): string {
@@ -438,6 +512,179 @@ export async function createApprovalHistoryEvent(input: {
     feedback: input.feedback ?? null,
     actor_label: input.actorLabel ?? null,
   })
+}
+
+export async function submitContentForApproval(input: {
+  tenantId: string
+  userId: string
+  contentType: ApprovalContentType
+  contentId: string
+  origin: string
+}): Promise<
+  | {
+      ok: true
+      approvalId: string
+      approvalStatus: Exclude<ApprovalStatus, 'draft'>
+      approvalLink: string
+      created: boolean
+    }
+  | { ok: false; status: 400 | 404 | 500; error: string }
+> {
+  const content = await loadContentForApproval({
+    tenantId: input.tenantId,
+    contentType: input.contentType,
+    contentId: input.contentId,
+  })
+
+  if (!content.found) {
+    return { ok: false, status: 404, error: content.reason }
+  }
+
+  if (content.approvalStatus === 'approved') {
+    return {
+      ok: false,
+      status: 400,
+      error: 'Dieses Element wurde bereits freigegeben und kann nicht erneut eingereicht werden.',
+    }
+  }
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('user_profiles')
+    .select('first_name, last_name')
+    .eq('user_id', input.userId)
+    .maybeSingle()
+
+  const createdByName = buildDisplayName(profile)
+
+  const { data: existing, error: existingError } = await admin
+    .from('approval_requests')
+    .select('id, public_token, status')
+    .eq('tenant_id', input.tenantId)
+    .eq('content_type', input.contentType)
+    .eq('content_id', input.contentId)
+    .maybeSingle()
+
+  if (existingError) {
+    return { ok: false, status: 500, error: existingError.message }
+  }
+
+  if (existing?.status === 'approved') {
+    return {
+      ok: false,
+      status: 400,
+      error: 'Dieses Element wurde bereits final freigegeben.',
+    }
+  }
+
+  if (existing) {
+    const { data: updated, error } = await admin
+      .from('approval_requests')
+      .update({
+        status: 'pending_approval',
+        feedback: null,
+        decided_at: null,
+        content_title: content.title,
+        content_html: content.html,
+        customer_id: content.customerId,
+        customer_name: content.customerName,
+        created_by: input.userId,
+        created_by_name: createdByName,
+      })
+      .eq('id', existing.id)
+      .select('id, public_token, status')
+      .single()
+
+    if (error) {
+      return { ok: false, status: 500, error: error.message }
+    }
+
+    await createApprovalHistoryEvent({
+      approvalRequestId: updated.id,
+      tenantId: input.tenantId,
+      eventType: 'resubmitted',
+      statusAfter: 'pending_approval',
+      actorLabel: createdByName,
+    })
+
+    await updateContentApprovalStatus({
+      tenantId: input.tenantId,
+      contentType: input.contentType,
+      contentId: input.contentId,
+      status: 'pending_approval',
+    })
+
+    const approvalLink = buildApprovalLink(input.origin, updated.public_token)
+    void tryNotifyCustomerByEmail({
+      tenantId: input.tenantId,
+      customerId: content.customerId,
+      contentTitle: content.title,
+      contentType: input.contentType,
+      approvalLink,
+    })
+
+    return {
+      ok: true,
+      approvalId: updated.id,
+      approvalStatus: 'pending_approval',
+      approvalLink,
+      created: false,
+    }
+  }
+
+  const { data: inserted, error: insertError } = await admin
+    .from('approval_requests')
+    .insert({
+      tenant_id: input.tenantId,
+      content_type: input.contentType,
+      content_id: input.contentId,
+      status: 'pending_approval',
+      feedback: null,
+      created_by: input.userId,
+      created_by_name: createdByName,
+      content_title: content.title,
+      content_html: content.html,
+      customer_id: content.customerId,
+      customer_name: content.customerName,
+    })
+    .select('id, public_token, status')
+    .single()
+
+  if (insertError) {
+    return { ok: false, status: 500, error: insertError.message }
+  }
+
+  await createApprovalHistoryEvent({
+    approvalRequestId: inserted.id,
+    tenantId: input.tenantId,
+    eventType: 'submitted',
+    statusAfter: 'pending_approval',
+    actorLabel: createdByName,
+  })
+
+  await updateContentApprovalStatus({
+    tenantId: input.tenantId,
+    contentType: input.contentType,
+    contentId: input.contentId,
+    status: 'pending_approval',
+  })
+
+  const approvalLink = buildApprovalLink(input.origin, inserted.public_token)
+  void tryNotifyCustomerByEmail({
+    tenantId: input.tenantId,
+    customerId: content.customerId,
+    contentTitle: content.title,
+    contentType: input.contentType,
+    approvalLink,
+  })
+
+  return {
+    ok: true,
+    approvalId: inserted.id,
+    approvalStatus: 'pending_approval',
+    approvalLink,
+    created: true,
+  }
 }
 
 export async function loadContentForApproval(input: {

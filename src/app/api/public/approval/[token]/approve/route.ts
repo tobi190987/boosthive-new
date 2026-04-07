@@ -1,28 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import {
+  buildContentHref,
   createApprovalHistoryEvent,
   ensurePublicApprovalAccess,
   loadApprovalByToken,
   updateContentApprovalStatus,
 } from '@/lib/approvals'
 import { buildTenantUrl, sendApprovalDecision } from '@/lib/email'
+import { updateContentWorkflowStatus } from '@/lib/kanban'
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const tokenSchema = z.string().uuid('Ungültiger Freigabe-Token.')
-
-function contentLink(contentType: string, contentId: string): string {
-  switch (contentType) {
-    case 'content_brief':
-      return `/tools/content-briefs?briefId=${contentId}`
-    case 'ad_generation':
-      return `/tools/ad-generator?id=${contentId}`
-    case 'ad_library_asset':
-      return `/tools/ads-library?assetId=${contentId}`
-    default:
-      return '/tools/approvals'
-  }
-}
 
 function contentTypeLabel(contentType: string): string {
   switch (contentType) {
@@ -85,7 +74,10 @@ async function notifyByEmailIfEnabled(params: {
       contentTitle: params.contentTitle,
       contentTypeLabel: contentTypeLabel(params.contentType),
       decision: 'approved',
-      contentUrl: buildTenantUrl(tenantSlug, contentLink(params.contentType, params.contentId)),
+      contentUrl: buildTenantUrl(
+        tenantSlug,
+        buildContentHref(params.contentType as 'content_brief' | 'ad_generation' | 'ad_library_asset', params.contentId)
+      ),
     })
   } catch (error) {
     console.error('[approval-email] Versand für Freigabe fehlgeschlagen:', error)
@@ -144,6 +136,13 @@ export async function POST(
     status: 'approved',
   })
 
+  await updateContentWorkflowStatus({
+    tenantId: approval.tenant_id,
+    contentType: approval.content_type,
+    contentId: approval.content_id,
+    status: 'done',
+  })
+
   await createApprovalHistoryEvent({
     approvalRequestId: approval.id,
     tenantId: approval.tenant_id,
@@ -162,7 +161,7 @@ export async function POST(
     type: 'approval_approved',
     title,
     body,
-    link: contentLink(approval.content_type, approval.content_id),
+    link: buildContentHref(approval.content_type, approval.content_id),
   })
 
   await notifyByEmailIfEnabled({

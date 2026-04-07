@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
@@ -263,11 +263,24 @@ function AssetGridCard({
   onToggleSelect,
 }: AssetGridCardProps) {
   return (
-    <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-border dark:bg-[#101723]">
-      <button
-        type="button"
-        className="block w-full text-left"
+    <article className={cn(
+      "group overflow-hidden rounded-[1.5rem] border bg-white shadow-sm transition-all hover:shadow-lg dark:bg-[#101723]",
+      isSelected
+        ? "border-blue-500 ring-2 ring-blue-500/40 dark:border-blue-400 dark:ring-blue-400/30"
+        : "border-slate-200 dark:border-border"
+    )}>
+      <div
+        role="button"
+        tabIndex={0}
+        className="block w-full cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/70 focus-visible:ring-offset-2"
         onClick={() => onOpen(asset)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            onOpen(asset)
+          }
+        }}
+        aria-label={`${asset.title} öffnen`}
       >
         <div
           className="relative bg-slate-100 dark:bg-[#0b1220]"
@@ -299,25 +312,28 @@ function AssetGridCard({
               {asset.file_format}
             </Badge>
           </div>
+          {isAdmin ? (
+            <div
+              className={cn(
+                "absolute right-3 top-3 z-10 transition-opacity",
+                isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onToggleSelect(asset.id, checked === true)}
+                aria-label={`${asset.title} auswählen`}
+                className="h-5 w-5 rounded border-2 border-white bg-white/90 shadow-sm data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+              />
+            </div>
+          ) : null}
         </div>
-      </button>
+      </div>
 
       <div className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {isAdmin ? (
-              <div
-                className="mb-3 flex items-center gap-2"
-                onClick={(event) => event.stopPropagation()}
-              >
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={(checked) => onToggleSelect(asset.id, checked === true)}
-                  aria-label={`${asset.title} auswählen`}
-                />
-                <span className="text-xs text-slate-500 dark:text-slate-400">Auswählen</span>
-              </div>
-            ) : null}
             <button
               type="button"
               className="truncate text-left text-base font-semibold text-slate-950 dark:text-slate-50"
@@ -409,49 +425,65 @@ function AssetListRow({
   const previewWidth = Math.max(140, Math.min(240, Math.round(140 + (asset.width_px / maxWidthPx) * 100)))
 
   return (
-    <article className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-border dark:bg-[#101723] md:flex-row md:items-start">
-      <button
-        type="button"
+    <article className={cn(
+      "group flex flex-col gap-4 rounded-[1.5rem] border bg-white p-4 shadow-sm transition-all dark:bg-[#101723] md:flex-row md:items-start",
+      isSelected
+        ? "border-blue-500 ring-2 ring-blue-500/40 dark:border-blue-400 dark:ring-blue-400/30"
+        : "border-slate-200 dark:border-border"
+    )}>
+      <div
         className="relative overflow-hidden rounded-[1.25rem] bg-slate-100 dark:bg-[#0b1220]"
         style={{
           width: `min(100%, ${previewWidth}px)`,
           aspectRatio: `${asset.width_px} / ${asset.height_px}`,
+          flexShrink: 0,
         }}
-        onClick={() => onOpen(asset)}
       >
-        {asset.media_type === 'image' ? (
-          <img src={asset.public_url} alt={asset.title} className="h-full w-full object-cover" />
-        ) : (
-          <>
-            <video
-              src={asset.public_url}
-              className="h-full w-full object-cover"
-              muted
-              playsInline
-              preload="metadata"
-            />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow">
-                <Play className="h-4 w-4 translate-x-0.5 text-slate-900" />
+        <button
+          type="button"
+          className="h-full w-full"
+          onClick={() => onOpen(asset)}
+        >
+          {asset.media_type === 'image' ? (
+            <img src={asset.public_url} alt={asset.title} className="h-full w-full object-cover" />
+          ) : (
+            <>
+              <video
+                src={asset.public_url}
+                className="h-full w-full object-cover"
+                muted
+                playsInline
+                preload="metadata"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow">
+                  <Play className="h-4 w-4 translate-x-0.5 text-slate-900" />
+                </div>
               </div>
-            </div>
-          </>
-        )}
-      </button>
+            </>
+          )}
+        </button>
+        {isAdmin ? (
+          <div
+            className={cn(
+              "absolute left-2 top-2 z-10 transition-opacity",
+              isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            )}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onToggleSelect(asset.id, checked === true)}
+              aria-label={`${asset.title} auswählen`}
+              className="h-5 w-5 rounded border-2 border-white bg-white/90 shadow-sm data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+            />
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex-1 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            {isAdmin ? (
-              <div className="mb-3 flex items-center gap-2">
-                <Checkbox
-                  checked={isSelected}
-                  onCheckedChange={(checked) => onToggleSelect(asset.id, checked === true)}
-                  aria-label={`${asset.title} auswählen`}
-                />
-                <span className="text-xs text-slate-500 dark:text-slate-400">Auswählen</span>
-              </div>
-            ) : null}
             <div className="flex flex-wrap gap-2">
               <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
                 {asset.media_type === 'image' ? 'Bild' : 'Video'}
@@ -529,6 +561,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { activeCustomer, customers, refetchCustomers } = useActiveCustomer()
+  const actionFromUrl = searchParams.get('action')
 
   // List state
   const [assets, setAssets] = useState<AdAsset[]>([])
@@ -785,6 +818,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   }, [assets])
 
   const resetUploadDialog = useCallback(() => {
+    const shouldClearAction = searchParams.get('action') === 'upload'
     setFile(null)
     setMetadata(null)
     setUploadTitle('')
@@ -795,10 +829,16 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     setSavingUpload(false)
     setUploadDialogOpen(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
-  }, [])
+    if (shouldClearAction) {
+      startTransition(() => {
+        router.replace('/tools/ads-library', { scroll: false })
+      })
+    }
+  }, [router, searchParams])
 
   const openCreateCustomerDialog = useCallback(() => {
     setCustomerForm(emptyCustomerForm)
+    setUploadDialogOpen(true)
     setUploadDialogMode('customer')
   }, [])
 
@@ -996,6 +1036,23 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   }, [router, searchParams])
 
   const customerOptions = customers.filter((customer) => customer.status === 'active')
+
+  useEffect(() => {
+    if (actionFromUrl !== 'upload' || uploadDialogOpen) return
+
+    if (customerOptions.length === 0) {
+      if (isAdmin) {
+        openCreateCustomerDialog()
+      } else {
+        toast.error('Es gibt noch keinen aktiven Kunden für einen Upload.')
+        router.replace('/tools/ads-library', { scroll: false })
+      }
+      return
+    }
+
+    setUploadDialogMode('upload')
+    setUploadDialogOpen(true)
+  }, [actionFromUrl, customerOptions.length, isAdmin, openCreateCustomerDialog, router, uploadDialogOpen])
   const hasMore = assets.length < total
   const allVisibleSelected = assets.length > 0 && assets.every((asset) => selectedAssetIds.includes(asset.id))
   const selectedVisibleCount = assets.filter((asset) => selectedAssetIds.includes(asset.id)).length
@@ -1128,7 +1185,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
 
           <div className="flex items-center justify-end">
             <div className="flex flex-wrap items-center justify-end gap-2">
-              {isAdmin ? (
+              {isAdmin && assets.length > 0 ? (
                 <>
                   <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm dark:border-border dark:bg-[#101723]">
                     <Checkbox
@@ -1139,22 +1196,24 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                       aria-label="Alle sichtbaren Anzeigen auswählen"
                     />
                     <span className="text-slate-600 dark:text-slate-300">
-                      {selectedVisibleCount > 0 ? `${selectedVisibleCount} ausgewählt` : 'Auswahl'}
+                      {selectedVisibleCount > 0 ? `${selectedVisibleCount} ausgewählt` : 'Alle wählen'}
                     </span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
-                    disabled={selectedVisibleCount === 0 || deleting}
-                    onClick={() => {
-                      const firstSelected = assets.find((asset) => selectedAssetIds.includes(asset.id))
-                      if (firstSelected) setDeletingAsset(firstSelected)
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Ausgewählte löschen
-                  </Button>
+                  {selectedVisibleCount > 0 ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
+                      disabled={deleting}
+                      onClick={() => {
+                        const firstSelected = assets.find((asset) => selectedAssetIds.includes(asset.id))
+                        if (firstSelected) setDeletingAsset(firstSelected)
+                      }}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {selectedVisibleCount === 1 ? 'Löschen' : `${selectedVisibleCount} löschen`}
+                    </Button>
+                  ) : null}
                 </>
               ) : null}
               <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 dark:border-border dark:bg-[#101723]">
@@ -1631,27 +1690,29 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                       />
                     ) : null}
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="rounded-full sm:mr-4"
-                    onClick={() => void handleDownloadAsset(selectedAsset)}
-                    disabled={downloadingAssetId === selectedAsset.id}
-                  >
-                    <Download className="mr-2 h-4 w-4" />
-                    {downloadingAssetId === selectedAsset.id ? 'Lädt...' : 'Original downloaden'}
-                  </Button>
-                  {isAdmin ? (
+                  <div className="flex shrink-0 gap-2 sm:mr-4">
                     <Button
                       type="button"
                       variant="outline"
-                      className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
-                      onClick={() => setDeletingAsset(selectedAsset)}
+                      className="rounded-full"
+                      onClick={() => void handleDownloadAsset(selectedAsset)}
+                      disabled={downloadingAssetId === selectedAsset.id}
                     >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Löschen
+                      <Download className="mr-2 h-4 w-4" />
+                      {downloadingAssetId === selectedAsset.id ? 'Lädt...' : 'Downloaden'}
                     </Button>
-                  ) : null}
+                    {isAdmin ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="shrink-0 rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
+                        onClick={() => setDeletingAsset(selectedAsset)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    ) : null}
+                  </div>
                 </div>
               </DialogHeader>
 

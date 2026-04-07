@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { startTransition, useCallback, useEffect, useRef, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   AlertCircle,
@@ -292,6 +292,7 @@ export function ContentBriefsWorkspace({
   // Delete confirmation
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const actionFromUrl = searchParams.get('action')
 
   // Polling ref
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -445,7 +446,7 @@ export function ContentBriefsWorkspace({
 
   // ── Create brief ──────────────────────────────────────────────────────────
 
-  const resetCreateForm = () => {
+  const resetCreateForm = useCallback(() => {
     setKeyword('')
     setKeywordSource('manual')
     setSelectedCustomerId(activeCustomer?.id ?? 'none')
@@ -457,17 +458,27 @@ export function ContentBriefsWorkspace({
     setSelectedKeywordFromProject('')
     setKwKeywords([])
     setCreateStep(1)
-  }
+  }, [activeCustomer?.id])
 
-  const handleCreateOpen = () => {
+  const handleCreateOpen = useCallback(() => {
     resetCreateForm()
     setCreateOpen(true)
-  }
+  }, [resetCreateForm])
 
-  const handleCreateClose = () => {
+  const handleCreateClose = useCallback(() => {
     setCreateOpen(false)
     resetCreateForm()
-  }
+    if (searchParams.get('action') === 'create') {
+      startTransition(() => {
+        router.replace(pathname, { scroll: false })
+      })
+    }
+  }, [pathname, resetCreateForm, router, searchParams])
+
+  useEffect(() => {
+    if (actionFromUrl !== 'create' || createOpen) return
+    handleCreateOpen()
+  }, [actionFromUrl, createOpen, handleCreateOpen])
 
   const effectiveCustomerId = selectedCustomerId === 'none' ? null : selectedCustomerId
   const selectedCustomer =
