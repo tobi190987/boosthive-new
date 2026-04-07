@@ -17,6 +17,12 @@ interface E2ESeedResultLike {
   }
 }
 
+interface SeedCustomerOptions {
+  name: string
+  domain?: string | null
+  status?: 'active' | 'paused'
+}
+
 export function createAdminClientForTests() {
   const env = loadEnvLocalFallback()
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL ?? env.NEXT_PUBLIC_SUPABASE_URL
@@ -70,6 +76,8 @@ export async function activateTenantModule(
     module_id: module.id,
     status: 'active',
     cancel_at_period_end: false,
+  }, {
+    onConflict: 'tenant_id,module_id',
   })
 
   if (error) {
@@ -150,9 +158,50 @@ export async function completeTenantOnboarding(
   }
 }
 
+export async function seedCustomer(
+  admin: SupabaseAdmin,
+  seed: E2ESeedResultLike,
+  options: SeedCustomerOptions
+) {
+  const { data: adminMember, error: memberError } = await admin
+    .from('tenant_members')
+    .select('user_id')
+    .eq('tenant_id', seed.tenant.id)
+    .eq('role', 'admin')
+    .maybeSingle()
+
+  if (memberError || !adminMember) {
+    throw new Error(memberError?.message ?? 'Admin-Mitglied fuer Customer-Seed nicht gefunden.')
+  }
+
+  const { data: customer, error: customerError } = await admin
+    .from('customers')
+    .insert({
+      tenant_id: seed.tenant.id,
+      created_by: adminMember.user_id,
+      name: options.name,
+      domain: options.domain ?? null,
+      status: options.status ?? 'active',
+    })
+    .select('id, name, domain, status')
+    .single()
+
+  if (customerError || !customer) {
+    throw new Error(customerError?.message ?? 'Customer konnte nicht erstellt werden.')
+  }
+
+  return customer as {
+    id: string
+    name: string
+    domain: string | null
+    status: 'active' | 'paused'
+  }
+}
+
 export async function seedVisibilityReportingData(
   admin: SupabaseAdmin,
-  tenantId: string
+  tenantId: string,
+  customerId?: string | null
 ) {
   await activateTenantModule(admin, tenantId, 'ai_visibility')
 
@@ -160,6 +209,7 @@ export async function seedVisibilityReportingData(
     .from('visibility_projects')
     .insert({
       tenant_id: tenantId,
+      customer_id: customerId ?? null,
       brand_name: 'Acme AI',
       website_url: 'https://acme-ai.example',
       competitors: [{ name: 'Beta Search', url: 'https://beta-search.example' }],

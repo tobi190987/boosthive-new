@@ -1,8 +1,9 @@
 import { expect, test } from '@playwright/test'
-import { loginAsTenant, tenantUrl } from './helpers'
+import { loginAsTenant, setActiveCustomer, tenantUrl, type E2ECustomer } from './helpers'
 import {
   createAdminClientForTests,
   completeTenantOnboarding,
+  seedCustomer,
   seedVisibilityReportingData,
 } from './seed-data'
 import { cleanupTenant, seedTenant, type SeedResult } from './test-seed'
@@ -13,12 +14,17 @@ test.describe('ai visibility reporting flows', () => {
 
   const slug = 'e2e-ai-report'
   let seed: SeedResult
+  let customer: E2ECustomer
 
   test.beforeAll(async ({ request }) => {
     seed = await seedTenant(request, slug, { billingOnboardingCompleted: true })
     const admin = createAdminClientForTests()
     await completeTenantOnboarding(admin, seed)
-    await seedVisibilityReportingData(admin, seed.tenant.id)
+    customer = await seedCustomer(admin, seed, {
+      name: 'Acme GmbH',
+      domain: 'acme-ai.example',
+    })
+    await seedVisibilityReportingData(admin, seed.tenant.id, customer.id)
   })
 
   test.afterAll(async ({ request }) => {
@@ -30,6 +36,7 @@ test.describe('ai visibility reporting flows', () => {
   }) => {
     await loginAsTenant(page, seed.tenant.slug, seed.users.member.email, seed.users.member.password)
     await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/dashboard'), { timeout: 20_000 })
+    await setActiveCustomer(page, seed.tenant.slug, customer)
 
     await page.goto(tenantUrl(seed.tenant.slug, '/tools/ai-visibility'))
     await expect(page.getByRole('heading', { name: 'Analyse-Projekte' })).toBeVisible()

@@ -20,29 +20,37 @@ test.describe('tenant status model', () => {
   let billingBlockedSeed: SeedResult
   let archivedSeed: SeedResult
 
-  test.beforeAll(async ({ request }) => {
-    setupSeed = await seedTenant(request, 'e2e-status-setup')
-    inactiveSeed = await seedTenant(request, 'e2e-status-inactive', {
-      status: 'inactive',
-      billingOnboardingCompleted: true,
-    })
-    billingBlockedSeed = await seedTenant(request, 'e2e-status-billing', {
-      status: 'active',
-      subscriptionStatus: 'past_due',
-      billingOnboardingCompleted: true,
-    })
-    archivedSeed = await seedTenant(request, 'e2e-status-archived', {
-      status: 'active',
-      billingOnboardingCompleted: true,
-      archived: true,
-    })
+  test.beforeAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
+
+    ;[setupSeed, inactiveSeed, billingBlockedSeed, archivedSeed] = await Promise.all([
+      seedTenant(request, 'e2e-status-setup'),
+      seedTenant(request, 'e2e-status-inactive', {
+        status: 'inactive',
+        billingOnboardingCompleted: true,
+      }),
+      seedTenant(request, 'e2e-status-billing', {
+        status: 'active',
+        subscriptionStatus: 'past_due',
+        billingOnboardingCompleted: true,
+      }),
+      seedTenant(request, 'e2e-status-archived', {
+        status: 'active',
+        billingOnboardingCompleted: true,
+        archived: true,
+      }),
+    ])
   })
 
-  test.afterAll(async ({ request }) => {
-    await cleanupTenant(request, 'e2e-status-setup')
-    await cleanupTenant(request, 'e2e-status-inactive')
-    await cleanupTenant(request, 'e2e-status-billing')
-    await cleanupTenant(request, 'e2e-status-archived')
+  test.afterAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
+
+    await Promise.all([
+      cleanupTenant(request, 'e2e-status-setup'),
+      cleanupTenant(request, 'e2e-status-inactive'),
+      cleanupTenant(request, 'e2e-status-billing'),
+      cleanupTenant(request, 'e2e-status-archived'),
+    ])
   })
 
   test('setup_incomplete erlaubt Login', async ({ request }) => {

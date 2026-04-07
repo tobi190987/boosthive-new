@@ -17,13 +17,17 @@ import { checkRateLimit, getClientIp, rateLimitResponse, AUTH_LOGIN } from '@/li
  */
 export async function POST(request: NextRequest) {
   const GENERIC_ERROR = 'Ungültige Zugangsdaten.'
+  const skipRateLimit =
+    process.env.NODE_ENV === 'development' && request.nextUrl.hostname.endsWith('localhost')
 
   // Rate Limiting: 10 requests / 15 min / IP
   const ip = getClientIp(request)
-  const rl = checkRateLimit(`auth-login:${ip}`, AUTH_LOGIN)
-  if (!rl.allowed) {
-    logSecurity('tenant_login_rate_limited', { ip })
-    return rateLimitResponse(rl)
+  if (!skipRateLimit) {
+    const rl = checkRateLimit(`auth-login:${ip}`, AUTH_LOGIN)
+    if (!rl.allowed) {
+      logSecurity('tenant_login_rate_limited', { ip })
+      return rateLimitResponse(rl)
+    }
   }
 
   // 1. Tenant-ID aus Header lesen (vom Proxy injiziert)

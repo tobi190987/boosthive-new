@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { hasRequiredBillingDetails } from '@/lib/profile'
+import { invalidateTenantShellContext } from '@/lib/tenant-shell'
 import {
   BillingAddressSchema,
   type BillingAddressInput,
@@ -287,6 +288,8 @@ export async function executeTenantProfileUpdate(
   if ('error' in onboardingCompleted) {
     return { error: onboardingCompleted.error! }
   }
+
+  invalidateTenantShellContext(params.tenantId, params.userId)
 
   return {
     onboardingComplete: true,

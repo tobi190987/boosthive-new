@@ -47,51 +47,6 @@ export interface TenantShellContext {
   activeModuleCodes: string[]
 }
 
-type TenantShellContextCacheEntry = {
-  expiresAt: number
-  value: TenantShellContext
-}
-
-const TENANT_SHELL_CONTEXT_TTL_MS = 15_000
-const TENANT_SHELL_CONTEXT_MAX_ENTRIES = 200
-const tenantShellContextCache = new Map<string, TenantShellContextCacheEntry>()
-const tenantShellContextInflight = new Map<string, Promise<TenantShellContext>>()
-
-function readTenantShellContextCache(key: string): TenantShellContext | undefined {
-  const entry = tenantShellContextCache.get(key)
-  if (!entry) return undefined
-
-  if (entry.expiresAt <= Date.now()) {
-    tenantShellContextCache.delete(key)
-    return undefined
-  }
-
-  return entry.value
-}
-
-function writeTenantShellContextCache(key: string, value: TenantShellContext) {
-  if (tenantShellContextCache.size >= TENANT_SHELL_CONTEXT_MAX_ENTRIES) {
-    const now = Date.now()
-    for (const [entryKey, entry] of tenantShellContextCache.entries()) {
-      if (entry.expiresAt <= now) {
-        tenantShellContextCache.delete(entryKey)
-      }
-    }
-
-    if (tenantShellContextCache.size >= TENANT_SHELL_CONTEXT_MAX_ENTRIES) {
-      const oldestKey = tenantShellContextCache.keys().next().value
-      if (oldestKey) {
-        tenantShellContextCache.delete(oldestKey)
-      }
-    }
-  }
-
-  tenantShellContextCache.set(key, {
-    expiresAt: Date.now() + TENANT_SHELL_CONTEXT_TTL_MS,
-    value,
-  })
-}
-
 /**
  * Resolves the current authenticated tenant user together with tenant metadata.
  * Intended for tenant server layouts and pages that should render without FOUC.
@@ -153,18 +108,7 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
     throw new Error('User not authenticated.')
   }
 
-  const cacheKey = `${tenant.id}:${user.id}`
-  const cachedContext = readTenantShellContextCache(cacheKey)
-  if (cachedContext) {
-    return cachedContext
-  }
-
-  const inflightContext = tenantShellContextInflight.get(cacheKey)
-  if (inflightContext) {
-    return inflightContext
-  }
-
-  const loadContext = (async (): Promise<TenantShellContext> => {
+  try {
     const admin = createAdminClient()
 
     const [
@@ -262,16 +206,8 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
       activeModuleCodes,
     } satisfies TenantShellContext
 
-    writeTenantShellContextCache(cacheKey, resolvedContext)
     return resolvedContext
-  })()
-
-  tenantShellContextInflight.set(cacheKey, loadContext)
-
-  try {
-    return await loadContext
   } catch (error) {
-    tenantShellContextInflight.delete(cacheKey)
     // Fallback to mock data for development
     if (process.env.NODE_ENV === 'development') {
       return {
@@ -308,8 +244,9 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
     }
     throw error
   }
-
-  finally {
-    tenantShellContextInflight.delete(cacheKey)
-  }
 })
+
+export function invalidateTenantShellContext(tenantId: string, userId: string) {
+  void tenantId
+  void userId
+}

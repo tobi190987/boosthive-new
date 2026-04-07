@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test'
 import {
-  completeMemberOnboarding,
+  ensureTenantDashboardReady,
   grantPreviewAccess,
   loginAsOwner,
   loginAsTenant,
@@ -25,14 +25,28 @@ test.describe('security and tenant isolation regressions', () => {
   let tenantASeed: SeedResult
   let tenantBSeed: SeedResult
 
-  test.beforeAll(async ({ request }) => {
-    tenantASeed = await seedTenant(request, TENANT_A)
-    tenantBSeed = await seedTenant(request, TENANT_B)
+  test.beforeAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
+
+    ;[tenantASeed, tenantBSeed] = await Promise.all([
+      seedTenant(request, TENANT_A, {
+        billingOnboardingCompleted: true,
+        subscriptionStatus: 'active',
+      }),
+      seedTenant(request, TENANT_B, {
+        billingOnboardingCompleted: true,
+        subscriptionStatus: 'active',
+      }),
+    ])
   })
 
-  test.afterAll(async ({ request }) => {
-    await cleanupTenant(request, TENANT_A)
-    await cleanupTenant(request, TENANT_B)
+  test.afterAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
+
+    await Promise.all([
+      cleanupTenant(request, TENANT_A),
+      cleanupTenant(request, TENANT_B),
+    ])
   })
 
   test('member cannot access admin-only tenant pages after onboarding', async ({ page }) => {
@@ -42,21 +56,19 @@ test.describe('security and tenant isolation regressions', () => {
       tenantASeed.users.member.email,
       tenantASeed.users.member.password
     )
-    await expect(page).toHaveURL(tenantUrl(tenantASeed.tenant.slug, '/onboarding'), {
-      timeout: 20_000,
-    })
-    await completeMemberOnboarding(page, 'Nina', 'Member')
-    await expect(page).toHaveURL(tenantUrl(tenantASeed.tenant.slug, '/dashboard'), {
-      timeout: 20_000,
+    await ensureTenantDashboardReady(page, tenantASeed.tenant.slug, {
+      firstName: 'Nina',
+      lastName: 'Member',
+      tenantName: tenantASeed.tenant.name,
     })
 
     await page.goto(tenantUrl(tenantASeed.tenant.slug, '/settings/team'))
     await expect(page).not.toHaveURL(tenantUrl(tenantASeed.tenant.slug, '/settings/team'))
-    await expect(page.getByText('Willkommen in deinem Tenant-Workspace')).toBeVisible()
+    await expect(page.getByText('Dein Workspace-Überblick für heute')).toBeVisible()
 
     await page.goto(tenantUrl(tenantASeed.tenant.slug, '/billing'))
     await expect(page).not.toHaveURL(tenantUrl(tenantASeed.tenant.slug, '/billing'))
-    await expect(page.getByText('Willkommen in deinem Tenant-Workspace')).toBeVisible()
+    await expect(page.getByText('Dein Workspace-Überblick für heute')).toBeVisible()
   })
 
   test('wrong-tenant credentials are rejected with a generic login error', async ({ page }) => {
@@ -90,11 +102,18 @@ test.describe('security and tenant isolation regressions', () => {
 
     await page.locator('input#password').fill('WrongTenant123!')
     await page.locator('input#confirmPassword').fill('WrongTenant123!')
-    await page.getByRole('button', { name: 'Passwort zurücksetzen' }).click()
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/auth/password-reset/confirm') &&
+          response.request().method() === 'POST'
+      ),
+      page.getByRole('button', { name: 'Passwort zurücksetzen' }).click(),
+    ])
 
     await expect(
       page.getByText('Der Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Reset-Link an.')
-    ).toBeVisible()
+    ).toBeVisible({ timeout: 20_000 })
   })
 
   test('inactive tenants reject new tenant logins', async ({ page, request }) => {

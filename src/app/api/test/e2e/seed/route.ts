@@ -25,11 +25,19 @@ function isAllowed(request: NextRequest) {
 }
 
 function isMissingRelationError(error: unknown) {
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : null
+  const message =
+    typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+      ? error.message
+      : null
+
   return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === '42P01'
+    code === '42P01' ||
+    code === 'PGRST205' ||
+    message?.includes('Could not find the table') === true
   )
 }
 
@@ -56,6 +64,19 @@ function isMissingColumnError(error: unknown) {
     message?.includes("Could not find the 'archived_by' column") === true ||
     message?.includes("Could not find the 'archive_reason' column") === true
   )
+}
+
+function isGenericMissingColumnError(error: unknown) {
+  const code =
+    typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'string'
+      ? error.code
+      : null
+  const message =
+    typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string'
+      ? error.message
+      : null
+
+  return code === '42703' || message?.includes('does not exist') === true
 }
 
 function missingTenantColumn(error: unknown) {
@@ -156,9 +177,31 @@ async function deleteUserByEmail(email: string) {
 
 async function resetTenantState(tenantId: string) {
   const supabaseAdmin = createAdminClient()
+  const deleteByTenantId = async (table: string) => {
+    const { error } = await supabaseAdmin.from(table).delete().eq('tenant_id', tenantId)
+
+    if (error && !isMissingRelationError(error) && !isGenericMissingColumnError(error)) {
+      throw error
+    }
+  }
 
   await supabaseAdmin.from('tenant_invitations').delete().eq('tenant_id', tenantId)
   await supabaseAdmin.from('password_reset_tokens').delete().eq('tenant_id', tenantId)
+  await deleteByTenantId('visibility_scores')
+  await deleteByTenantId('visibility_sources')
+  await deleteByTenantId('visibility_recommendations')
+  await deleteByTenantId('visibility_raw_results')
+  await deleteByTenantId('visibility_analyses')
+  await deleteByTenantId('visibility_projects')
+  await deleteByTenantId('keyword_ranking_snapshots')
+  await deleteByTenantId('keyword_ranking_runs')
+  await deleteByTenantId('gsc_connections')
+  await deleteByTenantId('keyword_project_competitors')
+  await deleteByTenantId('keyword_project_keywords')
+  await deleteByTenantId('keyword_projects')
+  await deleteByTenantId('customer_integrations')
+  await deleteByTenantId('customer_documents')
+  await deleteByTenantId('customers')
   const { error: auditCleanupError } = await supabaseAdmin
     .from('owner_audit_logs')
     .delete()

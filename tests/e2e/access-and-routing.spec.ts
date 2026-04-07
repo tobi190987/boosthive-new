@@ -16,7 +16,8 @@ test.describe('preview access and routing', () => {
     await page.goto(rootUrl('/owner/login'))
 
     await expect(page).toHaveURL(rootUrl('/owner/login'))
-    await expect(page.getByText('Plattform-Zugang für BoostHive Owner')).toBeVisible()
+    await expect(page.getByText('Owner Login')).toBeVisible()
+    await expect(page.getByText('Nur für interne Plattformverwaltung')).toBeVisible()
   })
 
   test('blocks owner login on tenant subdomains', async ({ page }) => {
@@ -32,6 +33,9 @@ test.describe('preview access and routing', () => {
     await page.goto(tenantUrl('tenant-a', '/dashboard'))
 
     await expect(page).toHaveURL(tenantUrl('tenant-a', '/login?returnTo=%2Fdashboard'))
-    await expect(page.getByText('Tenant: tenant-a')).toBeVisible()
+    await expect(page.getByText('Willkommen zurück')).toBeVisible()
+    await expect(
+      page.getByText('Melde dich an, um direkt in deinen Workspace zu wechseln.')
+    ).toBeVisible()
   })
 })

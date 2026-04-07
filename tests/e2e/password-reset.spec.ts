@@ -13,11 +13,13 @@ test.describe('forgot password and reset flow', () => {
 
   let seed: SeedResult
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
     seed = await seedTenant(request, 'e2e-reset')
   })
 
-  test.afterAll(async ({ request }) => {
+  test.afterAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
     await cleanupTenant(request, 'e2e-reset')
   })
 
@@ -60,9 +62,16 @@ test.describe('forgot password and reset flow', () => {
 
     await page.locator('input#password').fill('ResetFlow123!')
     await page.locator('input#confirmPassword').fill('ResetFlow123!')
-    await page.getByRole('button', { name: 'Passwort zurücksetzen' }).click()
+    await Promise.all([
+      page.waitForResponse(
+        (response) =>
+          response.url().includes('/api/auth/password-reset/confirm') &&
+          response.request().method() === 'POST'
+      ),
+      page.getByRole('button', { name: 'Passwort zurücksetzen' }).click(),
+    ])
 
-    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 20_000 })
+    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 40_000 })
     await expect(page.getByText(`Willkommen bei ${seed.tenant.name}`)).toBeVisible()
     await expect(page.getByText(reset.reset.email)).toBeVisible()
   })

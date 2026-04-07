@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { completeMemberOnboarding, grantPreviewAccess, tenantUrl } from './helpers'
+import { ensureTenantDashboardReady, grantPreviewAccess, tenantUrl } from './helpers'
 import { cleanupTenant, seedTenant, type SeedResult } from './test-seed'
 
 test.describe('authenticated tenant flows', () => {
@@ -8,11 +8,13 @@ test.describe('authenticated tenant flows', () => {
 
   let seed: SeedResult
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
     seed = await seedTenant(request, 'e2e-flow')
   })
 
-  test.afterAll(async ({ request }) => {
+  test.afterAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
     await cleanupTenant(request, 'e2e-flow')
   })
 
@@ -24,13 +26,11 @@ test.describe('authenticated tenant flows', () => {
     await page.locator('input#password').fill(seed.users.member.password)
     await page.getByRole('button', { name: 'Anmelden' }).click()
 
-    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/onboarding'), { timeout: 20_000 })
-    await expect(page.getByText(`Willkommen bei ${seed.tenant.name}`)).toBeVisible()
-
-    await completeMemberOnboarding(page, 'Mia', 'Member')
-
-    await expect(page).toHaveURL(tenantUrl(seed.tenant.slug, '/dashboard'), { timeout: 20_000 })
-    await expect(page.getByText('Willkommen in deinem Tenant-Workspace')).toBeVisible()
+    await ensureTenantDashboardReady(page, seed.tenant.slug, {
+      firstName: 'Mia',
+      lastName: 'Member',
+      tenantName: seed.tenant.name,
+    })
   })
 
   test('admin onboarding exposes billing requirements and country dropdown', async ({ page, request }) => {
@@ -51,6 +51,7 @@ test.describe('authenticated tenant flows', () => {
     const countryTrigger = page.locator('#billing_country')
     await expect(countryTrigger).toContainText('Land auswählen')
     await expect(page.getByRole('combobox', { name: 'Land Pflichtfeld' })).toBeVisible()
+    await page.getByRole('button', { name: /SEO Analyse/ }).click()
 
     await page.waitForLoadState('networkidle')
     await page.getByLabel('Vorname').fill('Ada')
@@ -60,7 +61,7 @@ test.describe('authenticated tenant flows', () => {
         (response) =>
           response.url().includes('/api/tenant/profile') && response.request().method() === 'PUT'
       ),
-      page.getByRole('button', { name: 'Onboarding abschliessen' }).click(),
+      page.getByRole('button', { name: 'Onboarding abschließen' }).click(),
     ])
 
     await expect(

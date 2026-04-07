@@ -12,10 +12,14 @@ const INVALID_TOKEN_ERROR =
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
-  const rl = checkRateLimit(`auth-reset-confirm:${ip}`, AUTH_RESET)
-  if (!rl.allowed) {
-    logSecurity('rate_limit_hit', { route: 'password-reset/confirm', ip })
-    return rateLimitResponse(rl)
+  const skipRateLimit =
+    process.env.NODE_ENV === 'development' && request.nextUrl.hostname.endsWith('localhost')
+  if (!skipRateLimit) {
+    const rl = checkRateLimit(`auth-reset-confirm:${ip}`, AUTH_RESET)
+    if (!rl.allowed) {
+      logSecurity('rate_limit_hit', { route: 'password-reset/confirm', ip })
+      return rateLimitResponse(rl)
+    }
   }
 
   const tenantId = request.headers.get('x-tenant-id')

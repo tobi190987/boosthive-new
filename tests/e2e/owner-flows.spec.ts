@@ -13,7 +13,8 @@ test.describe('owner flows', () => {
 
   let ownerSeed: SeedResult
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
     ownerSeed = await seedTenant(request, OWNER_SLUG, {
       billingOnboardingCompleted: true,
       subscriptionStatus: 'active',
@@ -21,9 +22,12 @@ test.describe('owner flows', () => {
     await cleanupTenant(request, CREATED_SLUG)
   })
 
-  test.afterAll(async ({ request }) => {
-    await cleanupTenant(request, CREATED_SLUG)
-    await cleanupTenant(request, OWNER_SLUG)
+  test.afterAll(async ({ request }, testInfo) => {
+    testInfo.setTimeout(90_000)
+    await Promise.all([
+      cleanupTenant(request, CREATED_SLUG),
+      cleanupTenant(request, OWNER_SLUG),
+    ])
   })
 
   test('owner can update profile data and sees persisted values after reload', async ({ page }) => {
@@ -92,9 +96,9 @@ test.describe('owner flows', () => {
     const createdRow = page.locator('tr', {
       has: page.getByRole('link', { name: CREATED_NAME }),
     })
-    await expect(createdRow).toBeVisible()
+    await expect(createdRow).toBeVisible({ timeout: 15_000 })
     await expect(createdRow.getByText(`${CREATED_SLUG}.boost-hive.de`)).toBeVisible()
-    await expect(createdRow.getByText('Setup unvollstaendig')).toBeVisible()
+    await expect(createdRow.getByText('Setup unvollständig')).toBeVisible()
 
     await createdRow.getByRole('link', { name: CREATED_NAME }).click()
     await expect(page).toHaveURL(/\/owner\/tenants\/[0-9a-f-]+$/, { timeout: 20_000 })

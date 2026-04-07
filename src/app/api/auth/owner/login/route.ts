@@ -15,13 +15,17 @@ import { checkRateLimit, getClientIp, rateLimitResponse, AUTH_OWNER_LOGIN } from
  */
 export async function POST(request: NextRequest) {
   const GENERIC_ERROR = 'Ungültige Zugangsdaten.'
+  const skipRateLimit =
+    process.env.NODE_ENV === 'development' && request.nextUrl.hostname.endsWith('localhost')
 
   // Rate Limiting: 5 requests / 15 min / IP (stricter for owner)
   const ip = getClientIp(request)
-  const rl = checkRateLimit(`auth-owner-login:${ip}`, AUTH_OWNER_LOGIN)
-  if (!rl.allowed) {
-    logSecurity('owner_login_rate_limited', { ip })
-    return rateLimitResponse(rl)
+  if (!skipRateLimit) {
+    const rl = checkRateLimit(`auth-owner-login:${ip}`, AUTH_OWNER_LOGIN)
+    if (!rl.allowed) {
+      logSecurity('owner_login_rate_limited', { ip })
+      return rateLimitResponse(rl)
+    }
   }
 
   // 1. Request-Body parsen

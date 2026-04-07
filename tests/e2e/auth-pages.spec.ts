@@ -10,8 +10,9 @@ test.describe('tenant auth pages', () => {
     await page.goto(tenantUrl('tenant-a', '/login'))
 
     await expect(page.getByText('Willkommen zurück')).toBeVisible()
-    await expect(page.getByText('Anmeldung bei tenant-a')).toBeVisible()
-    await expect(page.getByText('Tenant: tenant-a')).toBeVisible()
+    await expect(
+      page.getByText('Melde dich an, um direkt in deinen Workspace zu wechseln.')
+    ).toBeVisible()
     await expect(
       page.getByRole('link', { name: 'Passwort vergessen?' }).first()
     ).toBeVisible()
@@ -45,10 +46,12 @@ test.describe('tenant auth pages', () => {
     await pageA.goto(tenantUrl('tenant-a', '/login'))
     await pageB.goto(tenantUrl('tenant-b', '/login'))
 
-    await expect(pageA.getByText('Tenant: tenant-a')).toBeVisible()
-    await expect(pageB.getByText('Tenant: tenant-b')).toBeVisible()
-    await expect(pageA.getByText('Tenant: tenant-b')).toHaveCount(0)
-    await expect(pageB.getByText('Tenant: tenant-a')).toHaveCount(0)
+    await expect(pageA.getByText('Willkommen zurück')).toBeVisible()
+    await expect(pageB.getByText('Willkommen zurück')).toBeVisible()
+    await expect(pageA.getByAltText('tenant-a Logo')).toBeVisible()
+    await expect(pageB.getByAltText('tenant-b Logo')).toBeVisible()
+    await expect(pageA.getByAltText('tenant-b Logo')).toHaveCount(0)
+    await expect(pageB.getByAltText('tenant-a Logo')).toHaveCount(0)
 
     await pageA.close()
     await pageB.close()
