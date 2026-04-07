@@ -590,10 +590,8 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   }, [file])
 
   useEffect(() => {
-    if (activeCustomer?.id) {
-      setSelectedCustomerId((current) => (current === 'all' ? activeCustomer.id : current))
-      setUploadCustomerId((current) => current || activeCustomer.id)
-    }
+    if (!activeCustomer?.id) return
+    setUploadCustomerId((current) => current || activeCustomer.id)
   }, [activeCustomer?.id])
 
   useEffect(() => {

@@ -18,6 +18,14 @@ function buildUploaderName(profile: { first_name: string | null; last_name: stri
   return fullName || 'Teammitglied'
 }
 
+function isMissingApprovalStatusColumn(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    error?.message?.includes('approval_status') === true
+  )
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -37,7 +45,7 @@ export async function GET(
   const { id } = await params
   const admin = createAdminClient()
 
-  const { data: asset, error } = await admin
+  const initialResult = await admin
     .from('ad_library_assets')
     .select(
       'id, customer_id, created_by, title, media_type, mime_type, file_format, width_px, height_px, duration_seconds, file_size_bytes, public_url, aspect_ratio, approval_status, notes, created_at, updated_at'
@@ -46,6 +54,26 @@ export async function GET(
     .eq('id', id)
     .is('deleted_at', null)
     .maybeSingle()
+
+  let asset = initialResult.data as Record<string, unknown> | null
+  let error = initialResult.error
+
+  if (isMissingApprovalStatusColumn(error)) {
+    const fallbackResult = await admin
+      .from('ad_library_assets')
+      .select(
+        'id, customer_id, created_by, title, media_type, mime_type, file_format, width_px, height_px, duration_seconds, file_size_bytes, public_url, aspect_ratio, notes, created_at, updated_at'
+      )
+      .eq('tenant_id', tenantId)
+      .eq('id', id)
+      .is('deleted_at', null)
+      .maybeSingle()
+
+    asset = fallbackResult.data
+      ? { ...(fallbackResult.data as Record<string, unknown>), approval_status: 'draft' }
+      : null
+    error = fallbackResult.error
+  }
 
   if (error || !asset) {
     return NextResponse.json({ error: 'Anzeige nicht gefunden.' }, { status: 404 })

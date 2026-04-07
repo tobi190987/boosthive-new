@@ -56,6 +56,14 @@ function fileTitleFromName(name: string) {
   return base || 'Anzeige'
 }
 
+function isMissingApprovalStatusColumn(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    error?.message?.includes('approval_status') === true
+  )
+}
+
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
@@ -83,10 +91,7 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
   const { limit, offset } = parsed.data
-  let query = admin
-    .from('ad_library_assets')
-    .select(
-      `
+  const baseSelect = `
       id,
       customer_id,
       created_by,
@@ -100,13 +105,17 @@ export async function GET(request: NextRequest) {
       file_size_bytes,
       public_url,
       aspect_ratio,
-      approval_status,
       notes,
       created_at,
       updated_at
-    `,
-      { count: 'exact' }
-    )
+    `
+  const selectWithApprovalStatus = `
+      ${baseSelect.trim().replace('notes,', 'approval_status,\n      notes,')}
+    `
+
+  let query = admin
+    .from('ad_library_assets')
+    .select(selectWithApprovalStatus, { count: 'exact' })
     .eq('tenant_id', tenantId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
@@ -124,7 +133,41 @@ export async function GET(request: NextRequest) {
     query = query.ilike('title', `%${parsed.data.search}%`)
   }
 
-  const { data, error, count } = await query
+  const initialResult = await query
+  let data = initialResult.data as Array<Record<string, unknown>> | null
+  let error = initialResult.error
+  let count = initialResult.count
+
+  if (isMissingApprovalStatusColumn(error)) {
+    let fallbackQuery = admin
+      .from('ad_library_assets')
+      .select(baseSelect, { count: 'exact' })
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
+
+    if (parsed.data.customer_id) {
+      fallbackQuery = fallbackQuery.eq('customer_id', parsed.data.customer_id)
+    }
+
+    if (parsed.data.media_type) {
+      fallbackQuery = fallbackQuery.eq('media_type', parsed.data.media_type)
+    }
+
+    if (parsed.data.search) {
+      fallbackQuery = fallbackQuery.ilike('title', `%${parsed.data.search}%`)
+    }
+
+    const fallbackResult = await fallbackQuery
+    data =
+      fallbackResult.data?.map((asset) => ({
+        ...(asset as Record<string, unknown>),
+        approval_status: 'draft',
+      })) ?? null
+    error = fallbackResult.error
+    count = fallbackResult.count
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -145,7 +188,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     assets: (data ?? []).map((asset) => ({
       ...asset,
-      uploader_name: uploaderMap.get(asset.created_by) ?? 'Teammitglied',
+      uploader_name:
+        uploaderMap.get(typeof asset.created_by === 'string' ? asset.created_by : '') ?? 'Teammitglied',
     })),
     total: count ?? 0,
   })
@@ -238,7 +282,7 @@ export async function POST(request: NextRequest) {
   const { data: publicUrlData } = admin.storage.from('ad-library-assets').getPublicUrl(storagePath)
   const assetTitle = title || fileTitleFromName(file.name)
 
-  const { data, error } = await admin
+  const insertResult = await admin
     .from('ad_library_assets')
     .insert({
       tenant_id: tenantId,
@@ -277,6 +321,40 @@ export async function POST(request: NextRequest) {
       updated_at
     `)
     .single()
+
+  let data = insertResult.data as Record<string, unknown> | null
+  let error = insertResult.error
+
+  if (isMissingApprovalStatusColumn(error)) {
+    const fallbackResult = await admin
+      .from('ad_library_assets')
+      .select(`
+        id,
+        customer_id,
+        created_by,
+        title,
+        media_type,
+        mime_type,
+        file_format,
+        width_px,
+        height_px,
+        duration_seconds,
+        file_size_bytes,
+        public_url,
+        aspect_ratio,
+        notes,
+        created_at,
+        updated_at
+      `)
+      .eq('tenant_id', tenantId)
+      .eq('storage_path', storagePath)
+      .single()
+
+    data = fallbackResult.data
+      ? { ...(fallbackResult.data as Record<string, unknown>), approval_status: 'draft' }
+      : null
+    error = fallbackResult.error
+  }
 
   if (error) {
     await admin.storage.from('ad-library-assets').remove([storagePath])
