@@ -72,6 +72,15 @@ function formatActivityTime(iso: string): string {
   return date.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
 }
 
+function formatActivityTimeFallback(iso: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(iso))
+}
+
 function activityIcon(type: ActivityItem['type']) {
   switch (type) {
     case 'approval_event':
@@ -141,6 +150,7 @@ export function TenantDashboardOverview({
 
   const [activities, setActivities] = useState<ActivityItem[]>(initialData?.activities ?? [])
   const [activitiesLoading, setActivitiesLoading] = useState(!initialData)
+  const [hasMounted, setHasMounted] = useState(false)
 
   const loadModules = useCallback(async () => {
     try {
@@ -213,14 +223,19 @@ export function TenantDashboardOverview({
     }
   }, [initialData, loadModules, loadStats, loadActivities])
 
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
   const activeModules = modules.filter((m) => m.status === 'active' || m.status === 'canceling')
   const gatedModules = modules.filter((m) => m.status === 'not_subscribed' || m.status === 'canceled')
+  const greeting = hasMounted ? getGreeting(firstName) : firstName ? `Willkommen, ${firstName}` : 'Willkommen'
 
   return (
     <div className="space-y-8">
       {/* Greeting Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{getGreeting(firstName)}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{greeting}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Dein Workspace-Überblick für heute</p>
       </div>
 
@@ -303,7 +318,7 @@ export function TenantDashboardOverview({
                         )}
                       </div>
                       <p className="shrink-0 text-[11px] text-slate-400 dark:text-slate-500">
-                        {formatActivityTime(item.created_at)}
+                        {hasMounted ? formatActivityTime(item.created_at) : formatActivityTimeFallback(item.created_at)}
                       </p>
                     </button>
                   </li>
