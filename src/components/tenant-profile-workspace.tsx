@@ -309,6 +309,7 @@ export function TenantProfileWorkspace({
     register,
     handleSubmit,
     control,
+    getValues,
     reset,
     setValue,
     trigger,
@@ -597,10 +598,12 @@ export function TenantProfileWorkspace({
     }
   }
 
-  async function saveProfile(values: ProfileFormValues, options?: { showToast?: boolean }) {
+  const saveProfile = useCallback(async (values: ProfileFormValues, options?: { showToast?: boolean }) => {
     try {
       setIsSaving(true)
       clearFeedback()
+      const submittedValues = normalizeProfileValues(values)
+      const submittedSnapshot = JSON.stringify(submittedValues)
 
       const isAdminOnboarding = mode === 'onboarding' && initialData.role === 'admin'
       const fallbackError =
@@ -619,7 +622,7 @@ export function TenantProfileWorkspace({
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify({
-          ...values,
+          ...submittedValues,
           complete_onboarding: mode === 'onboarding',
         }),
       })
@@ -648,8 +651,14 @@ export function TenantProfileWorkspace({
         return
       }
 
-      lastSavedProfileSnapshotRef.current = JSON.stringify(values)
-      reset(values)
+      lastSavedProfileSnapshotRef.current = submittedSnapshot
+
+      const currentValues = normalizeProfileValues(getValues())
+      const currentSnapshot = JSON.stringify(currentValues)
+
+      if (currentSnapshot === submittedSnapshot) {
+        reset(submittedValues)
+      }
 
       if (options?.showToast) {
         toast({
@@ -659,6 +668,8 @@ export function TenantProfileWorkspace({
       } else {
         setSuccess('Deine Profildaten wurden gespeichert.')
       }
+
+      return true
     } catch (submitError) {
       setError(
         submitError instanceof Error
@@ -667,10 +678,38 @@ export function TenantProfileWorkspace({
             ? 'Onboarding konnte nicht abgeschlossen werden.'
             : 'Profil konnte nicht gespeichert werden.'
       )
+
+      return false
     } finally {
       setIsSaving(false)
     }
-  }
+  }, [getValues, initialData.role, mode, reset, selectedModuleIds, setFieldError])
+
+  const handleNotifyOnApprovalDecisionChange = useCallback(
+    (checked: boolean) => {
+      setValue('notify_on_approval_decision', checked, {
+        shouldDirty: true,
+        shouldTouch: true,
+      })
+
+      if (mode !== 'settings') {
+        return
+      }
+
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current)
+        autoSaveTimeoutRef.current = null
+      }
+
+      const nextValues = normalizeProfileValues({
+        ...getValues(),
+        notify_on_approval_decision: checked,
+      })
+
+      void saveProfile(nextValues, { showToast: true })
+    },
+    [getValues, mode, saveProfile, setValue]
+  )
 
   async function onSubmit(values: ProfileFormValues) {
     await saveProfile(values)
@@ -801,7 +840,7 @@ export function TenantProfileWorkspace({
         autoSaveTimeoutRef.current = null
       }
     }
-  }, [isSaving, isSettingsMode, profileValues, trigger])
+  }, [isSaving, isSettingsMode, profileValues, saveProfile, trigger])
 
   return (
     <>
@@ -1166,12 +1205,7 @@ export function TenantProfileWorkspace({
                   <Switch
                     id="notify_on_approval_decision"
                     checked={notifyOnApprovalDecision}
-                    onCheckedChange={(checked) =>
-                      setValue('notify_on_approval_decision', checked, {
-                        shouldDirty: true,
-                        shouldTouch: true,
-                      })
-                    }
+                    onCheckedChange={handleNotifyOnApprovalDecisionChange}
                   />
                 </div>
               </div>

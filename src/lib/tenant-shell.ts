@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -249,4 +250,9 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
 export function invalidateTenantShellContext(tenantId: string, userId: string) {
   void tenantId
   void userId
+
+  revalidatePath('/', 'layout')
+  revalidatePath('/dashboard')
+  revalidatePath('/onboarding')
+  revalidatePath('/settings/profile')
 }
