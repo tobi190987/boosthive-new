@@ -22,6 +22,7 @@ import { clearSessionCache, readSessionCache, writeSessionCache } from '@/lib/cl
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -228,11 +229,21 @@ interface AssetGridCardProps {
   asset: AdAsset
   customerName: string
   isAdmin: boolean
+  isSelected: boolean
   onOpen: (asset: AdAsset) => void
   onDelete: (asset: AdAsset) => void
+  onToggleSelect: (assetId: string, checked: boolean) => void
 }
 
-function AssetGridCard({ asset, customerName, isAdmin, onOpen, onDelete }: AssetGridCardProps) {
+function AssetGridCard({
+  asset,
+  customerName,
+  isAdmin,
+  isSelected,
+  onOpen,
+  onDelete,
+  onToggleSelect,
+}: AssetGridCardProps) {
   return (
     <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-[#252d3a] dark:bg-[#101723]">
       <button
@@ -276,6 +287,19 @@ function AssetGridCard({ asset, customerName, isAdmin, onOpen, onDelete }: Asset
       <div className="space-y-4 p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
+            {isAdmin ? (
+              <div
+                className="mb-3 flex items-center gap-2"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onToggleSelect(asset.id, checked === true)}
+                  aria-label={`${asset.title} auswählen`}
+                />
+                <span className="text-xs text-slate-500 dark:text-slate-400">Auswählen</span>
+              </div>
+            ) : null}
             <button
               type="button"
               className="truncate text-left text-base font-semibold text-slate-950 dark:text-slate-50"
@@ -348,11 +372,22 @@ interface AssetListRowProps {
   customerName: string
   maxWidthPx: number
   isAdmin: boolean
+  isSelected: boolean
   onOpen: (asset: AdAsset) => void
   onDelete: (asset: AdAsset) => void
+  onToggleSelect: (assetId: string, checked: boolean) => void
 }
 
-function AssetListRow({ asset, customerName, maxWidthPx, isAdmin, onOpen, onDelete }: AssetListRowProps) {
+function AssetListRow({
+  asset,
+  customerName,
+  maxWidthPx,
+  isAdmin,
+  isSelected,
+  onOpen,
+  onDelete,
+  onToggleSelect,
+}: AssetListRowProps) {
   const previewWidth = Math.max(140, Math.min(240, Math.round(140 + (asset.width_px / maxWidthPx) * 100)))
 
   return (
@@ -389,6 +424,16 @@ function AssetListRow({ asset, customerName, maxWidthPx, isAdmin, onOpen, onDele
       <div className="flex-1 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
+            {isAdmin ? (
+              <div className="mb-3 flex items-center gap-2">
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onToggleSelect(asset.id, checked === true)}
+                  aria-label={`${asset.title} auswählen`}
+                />
+                <span className="text-xs text-slate-500 dark:text-slate-400">Auswählen</span>
+              </div>
+            ) : null}
             <div className="flex flex-wrap gap-2">
               <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
                 {asset.media_type === 'image' ? 'Bild' : 'Video'}
@@ -498,6 +543,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
 
   // Delete / detail state
   const [deletingAsset, setDeletingAsset] = useState<AdAsset | null>(null)
+  const [selectedAssetIds, setSelectedAssetIds] = useState<string[]>([])
   const [deleting, setDeleting] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<AdAsset | null>(null)
   const [downloadingAssetId, setDownloadingAssetId] = useState<string | null>(null)
@@ -526,6 +572,10 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       setUploadCustomerId((current) => current || activeCustomer.id)
     }
   }, [activeCustomer?.id])
+
+  useEffect(() => {
+    setSelectedAssetIds((current) => current.filter((assetId) => assets.some((asset) => asset.id === assetId)))
+  }, [assets])
 
   const loadAssets = useCallback(
     async (signal?: AbortSignal, appendOffset = 0) => {
@@ -761,21 +811,42 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     [openCreateCustomerDialog]
   )
 
+  const toggleAssetSelection = useCallback((assetId: string, checked: boolean) => {
+    setSelectedAssetIds((current) => {
+      if (checked) {
+        return current.includes(assetId) ? current : [...current, assetId]
+      }
+      return current.filter((id) => id !== assetId)
+    })
+  }, [])
+
   const handleDeleteAsset = useCallback(async () => {
     if (!deletingAsset) return
 
+    const targets = selectedAssetIds.includes(deletingAsset.id)
+      ? assets.filter((asset) => selectedAssetIds.includes(asset.id))
+      : [deletingAsset]
+
     setDeleting(true)
     try {
-      const response = await fetch(`/api/tenant/ad-library/${deletingAsset.id}`, {
-        method: 'DELETE',
-      })
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error || 'Anzeige konnte nicht gelöscht werden.')
+      for (const target of targets) {
+        const response = await fetch(`/api/tenant/ad-library/${target.id}`, {
+          method: 'DELETE',
+        })
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}))
+          throw new Error(payload.error || 'Anzeige konnte nicht gelöscht werden.')
+        }
       }
 
-      toast.success('Anzeige wurde entfernt.')
-      invalidateAdLibraryCache(deletingAsset.customer_id)
+      toast.success(targets.length === 1 ? 'Anzeige wurde entfernt.' : `${targets.length} Anzeigen wurden entfernt.`)
+      for (const customerId of new Set(targets.map((asset) => asset.customer_id))) {
+        invalidateAdLibraryCache(customerId)
+      }
+      if (selectedAsset && targets.some((asset) => asset.id === selectedAsset.id)) {
+        setSelectedAsset(null)
+      }
+      setSelectedAssetIds((current) => current.filter((assetId) => !targets.some((asset) => asset.id === assetId)))
       setDeletingAsset(null)
       await loadAssets(undefined, 0)
     } catch (error) {
@@ -783,7 +854,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     } finally {
       setDeleting(false)
     }
-  }, [deletingAsset, loadAssets])
+  }, [assets, deletingAsset, loadAssets, selectedAsset, selectedAssetIds])
 
   const handleDownloadAsset = useCallback(async (asset: AdAsset) => {
     setDownloadingAssetId(asset.id)
@@ -811,6 +882,8 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
 
   const customerOptions = customers.filter((customer) => customer.status === 'active')
   const hasMore = assets.length < total
+  const allVisibleSelected = assets.length > 0 && assets.every((asset) => selectedAssetIds.includes(asset.id))
+  const selectedVisibleCount = assets.filter((asset) => selectedAssetIds.includes(asset.id)).length
 
   return (
     <div className="space-y-6">
@@ -939,7 +1012,37 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           </div>
 
           <div className="flex items-center justify-end">
-            <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 dark:border-[#252d3a] dark:bg-[#101723]">
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              {isAdmin ? (
+                <>
+                  <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-sm dark:border-[#252d3a] dark:bg-[#101723]">
+                    <Checkbox
+                      checked={allVisibleSelected}
+                      onCheckedChange={(checked) =>
+                        setSelectedAssetIds(checked === true ? assets.map((asset) => asset.id) : [])
+                      }
+                      aria-label="Alle sichtbaren Anzeigen auswählen"
+                    />
+                    <span className="text-slate-600 dark:text-slate-300">
+                      {selectedVisibleCount > 0 ? `${selectedVisibleCount} ausgewählt` : 'Auswahl'}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
+                    disabled={selectedVisibleCount === 0 || deleting}
+                    onClick={() => {
+                      const firstSelected = assets.find((asset) => selectedAssetIds.includes(asset.id))
+                      if (firstSelected) setDeletingAsset(firstSelected)
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Ausgewählte löschen
+                  </Button>
+                </>
+              ) : null}
+              <div className="inline-flex rounded-full border border-slate-200 bg-white p-1 dark:border-[#252d3a] dark:bg-[#101723]">
               <Button
                 type="button"
                 variant="ghost"
@@ -970,6 +1073,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                 <List className="mr-2 h-4 w-4" />
                 Liste
               </Button>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -1022,8 +1126,10 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     asset={asset}
                     customerName={customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'}
                     isAdmin={isAdmin}
+                    isSelected={selectedAssetIds.includes(asset.id)}
                     onOpen={setSelectedAsset}
                     onDelete={setDeletingAsset}
+                    onToggleSelect={toggleAssetSelection}
                   />
                 ))}
               </div>
@@ -1050,8 +1156,10 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     customerName={customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'}
                     maxWidthPx={maxWidthPx}
                     isAdmin={isAdmin}
+                    isSelected={selectedAssetIds.includes(asset.id)}
                     onOpen={setSelectedAsset}
                     onDelete={setDeletingAsset}
+                    onToggleSelect={toggleAssetSelection}
                   />
                 ))}
               </div>
@@ -1383,6 +1491,17 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     <Download className="mr-2 h-4 w-4" />
                     {downloadingAssetId === selectedAsset.id ? 'Lädt...' : 'Original downloaden'}
                   </Button>
+                  {isAdmin ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
+                      onClick={() => setDeletingAsset(selectedAsset)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Löschen
+                    </Button>
+                  ) : null}
                 </div>
               </DialogHeader>
 
