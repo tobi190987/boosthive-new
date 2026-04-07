@@ -838,14 +838,6 @@ export function HelpCenterPage() {
             {selectedArticle ? (
               <div className="space-y-8">
                 <div className="border-b border-slate-200 pb-6 dark:border-border">
-                  <div className="mb-5 flex flex-wrap items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                    <span>Dokumentation</span>
-                    <ChevronRight className="h-4 w-4" />
-                    <span>{selectedCategory?.label}</span>
-                    <ChevronRight className="h-4 w-4" />
-                    <span>{selectedArticle.navLabel}</span>
-                  </div>
-
                   <div className="space-y-4">
                     <Badge
                       variant="outline"
