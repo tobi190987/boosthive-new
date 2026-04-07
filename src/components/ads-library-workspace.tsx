@@ -2,21 +2,23 @@
 
 /* eslint-disable @next/next/no-img-element */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { toast } from 'sonner'
 import {
   Clapperboard,
   Download,
   FileImage,
   Grid2x2,
+  HardDrive,
   List,
+  Play,
   Plus,
   Search,
   Trash2,
   Upload,
 } from 'lucide-react'
 import { useActiveCustomer } from '@/lib/active-customer-context'
-import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { clearSessionCache, readSessionCache, writeSessionCache } from '@/lib/client-cache'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -75,10 +77,23 @@ interface CustomerForm {
 
 type LibraryViewMode = 'grid' | 'list'
 
+const PAGE_SIZE = 100
+
 const emptyCustomerForm: CustomerForm = {
   name: '',
   domain: '',
   industry: '',
+}
+
+// ── Utilities ──────────────────────────────────────────────────────────────────
+
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value)
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay)
+    return () => clearTimeout(handler)
+  }, [value, delay])
+  return debouncedValue
 }
 
 function formatDate(value: string) {
@@ -104,16 +119,37 @@ function formatDuration(value: number | null) {
   return `${minutes}:${seconds.toString().padStart(2, '0')}`
 }
 
+function formatAspectRatio(width: number, height: number): string {
+  const ratio = width / height
+  const known: [number, number][] = [
+    [1, 1], [4, 3], [3, 4], [16, 9], [9, 16], [4, 5], [5, 4], [3, 2], [2, 3], [21, 9], [9, 21],
+  ]
+  for (const [w, h] of known) {
+    if (Math.abs(ratio - w / h) < 0.025) return `${w}:${h}`
+  }
+  return `${ratio.toFixed(2)}:1`
+}
+
 function cacheKey(customerId: string, mediaFilter: string) {
-  return `ad-library:list:${customerId}:${mediaFilter}`
+  return `ad-library:v2:${customerId}:${mediaFilter}`
+}
+
+function invalidateAdLibraryCache(customerId: string) {
+  for (const cId of [customerId, 'all']) {
+    for (const mType of ['all', 'image', 'video']) {
+      clearSessionCache(cacheKey(cId, mType))
+    }
+  }
 }
 
 async function readMetadata(file: File): Promise<UploadMetadata> {
-  const fileFormat = file.name.split('.').pop()?.toUpperCase() ?? file.type.split('/').pop()?.toUpperCase() ?? 'DATEI'
+  const fileFormat =
+    file.name.split('.').pop()?.toUpperCase() ??
+    file.type.split('/').pop()?.toUpperCase() ??
+    'DATEI'
 
   if (file.type.startsWith('image/')) {
     const objectUrl = URL.createObjectURL(file)
-
     try {
       const dimensions = await new Promise<{ width: number; height: number }>((resolve, reject) => {
         const img = new Image()
@@ -121,7 +157,6 @@ async function readMetadata(file: File): Promise<UploadMetadata> {
         img.onerror = () => reject(new Error('Bildmetadaten konnten nicht gelesen werden.'))
         img.src = objectUrl
       })
-
       return {
         mediaType: 'image',
         mimeType: file.type,
@@ -138,22 +173,22 @@ async function readMetadata(file: File): Promise<UploadMetadata> {
 
   if (file.type.startsWith('video/')) {
     const objectUrl = URL.createObjectURL(file)
-
     try {
-      const metadata = await new Promise<{ width: number; height: number; duration: number }>((resolve, reject) => {
-        const video = document.createElement('video')
-        video.preload = 'metadata'
-        video.onloadedmetadata = () => {
-          resolve({
-            width: video.videoWidth,
-            height: video.videoHeight,
-            duration: Number.isFinite(video.duration) ? video.duration : 0,
-          })
+      const metadata = await new Promise<{ width: number; height: number; duration: number }>(
+        (resolve, reject) => {
+          const video = document.createElement('video')
+          video.preload = 'metadata'
+          video.onloadedmetadata = () => {
+            resolve({
+              width: video.videoWidth,
+              height: video.videoHeight,
+              duration: Number.isFinite(video.duration) ? video.duration : 0,
+            })
+          }
+          video.onerror = () => reject(new Error('Videometadaten konnten nicht gelesen werden.'))
+          video.src = objectUrl
         }
-        video.onerror = () => reject(new Error('Videometadaten konnten nicht gelesen werden.'))
-        video.src = objectUrl
-      })
-
+      )
       return {
         mediaType: 'video',
         mimeType: file.type,
@@ -175,22 +210,266 @@ function baseTitleFromFilename(fileName: string) {
   return fileName.replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim() || 'Neue Anzeige'
 }
 
-function mediaFilterLabel(value: string) {
-  if (value === 'image') return 'Bilder'
-  if (value === 'video') return 'Videos'
-  return 'Alle Medien'
+// ── Sub-components ─────────────────────────────────────────────────────────────
+
+interface AssetGridCardProps {
+  asset: AdAsset
+  customerName: string
+  isAdmin: boolean
+  onOpen: (asset: AdAsset) => void
+  onDelete: (asset: AdAsset) => void
 }
+
+function AssetGridCard({ asset, customerName, isAdmin, onOpen, onDelete }: AssetGridCardProps) {
+  return (
+    <article className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-[#252d3a] dark:bg-[#101723]">
+      <button
+        type="button"
+        className="block w-full text-left"
+        onClick={() => onOpen(asset)}
+      >
+        <div
+          className="relative bg-slate-100 dark:bg-[#0b1220]"
+          style={{ aspectRatio: `${asset.width_px} / ${asset.height_px}` }}
+        >
+          {asset.media_type === 'image' ? (
+            <img src={asset.public_url} alt={asset.title} className="h-full w-full object-cover" />
+          ) : (
+            <>
+              <video
+                src={asset.public_url}
+                className="h-full w-full object-cover"
+                muted
+                playsInline
+                preload="metadata"
+              />
+              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white/90 shadow-md">
+                  <Play className="h-5 w-5 translate-x-0.5 text-slate-900" />
+                </div>
+              </div>
+            </>
+          )}
+          <div className="absolute left-3 top-3 flex flex-wrap gap-2">
+            <Badge className="rounded-full bg-white/90 text-slate-900 hover:bg-white">
+              {asset.media_type === 'image' ? 'Bild' : 'Video'}
+            </Badge>
+            <Badge className="rounded-full bg-slate-900/85 text-white hover:bg-slate-900/85">
+              {asset.file_format}
+            </Badge>
+          </div>
+        </div>
+      </button>
+
+      <div className="space-y-4 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <button
+              type="button"
+              className="truncate text-left text-base font-semibold text-slate-950 dark:text-slate-50"
+              onClick={() => onOpen(asset)}
+            >
+              {asset.title}
+            </button>
+            <div className="mt-2">
+              <Badge className="rounded-full border border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
+                {customerName}
+              </Badge>
+            </div>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Hochgeladen von {asset.uploader_name ?? 'Teammitglied'}
+            </p>
+          </div>
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-slate-400 opacity-100 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+              onClick={() => onDelete(asset)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : null}
+        </div>
+
+        <dl className="grid grid-cols-2 gap-3 text-sm">
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">Pixel</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {asset.width_px} × {asset.height_px}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">Verhältnis</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {formatAspectRatio(asset.width_px, asset.height_px)}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">Dateigröße</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {formatBytes(asset.file_size_bytes)}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">
+              {asset.media_type === 'video' ? 'Laufzeit' : 'Upload'}
+            </dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {asset.media_type === 'video'
+                ? formatDuration(asset.duration_seconds)
+                : formatDate(asset.created_at)}
+            </dd>
+          </div>
+        </dl>
+
+        {asset.notes ? (
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{asset.notes}</p>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+interface AssetListRowProps {
+  asset: AdAsset
+  customerName: string
+  maxWidthPx: number
+  isAdmin: boolean
+  onOpen: (asset: AdAsset) => void
+  onDelete: (asset: AdAsset) => void
+}
+
+function AssetListRow({ asset, customerName, maxWidthPx, isAdmin, onOpen, onDelete }: AssetListRowProps) {
+  const previewWidth = Math.max(140, Math.min(240, Math.round(140 + (asset.width_px / maxWidthPx) * 100)))
+
+  return (
+    <article className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-[#252d3a] dark:bg-[#101723] md:flex-row md:items-start">
+      <button
+        type="button"
+        className="relative overflow-hidden rounded-[1.25rem] bg-slate-100 dark:bg-[#0b1220]"
+        style={{
+          width: `min(100%, ${previewWidth}px)`,
+          aspectRatio: `${asset.width_px} / ${asset.height_px}`,
+        }}
+        onClick={() => onOpen(asset)}
+      >
+        {asset.media_type === 'image' ? (
+          <img src={asset.public_url} alt={asset.title} className="h-full w-full object-cover" />
+        ) : (
+          <>
+            <video
+              src={asset.public_url}
+              className="h-full w-full object-cover"
+              muted
+              playsInline
+              preload="metadata"
+            />
+            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/90 shadow">
+                <Play className="h-4 w-4 translate-x-0.5 text-slate-900" />
+              </div>
+            </div>
+          </>
+        )}
+      </button>
+
+      <div className="flex-1 space-y-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap gap-2">
+              <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
+                {asset.media_type === 'image' ? 'Bild' : 'Video'}
+              </Badge>
+              <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
+                {asset.file_format}
+              </Badge>
+              <Badge className="rounded-full border border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
+                {customerName}
+              </Badge>
+            </div>
+            <button
+              type="button"
+              className="mt-3 text-left text-base font-semibold text-slate-950 dark:text-slate-50"
+              onClick={() => onOpen(asset)}
+            >
+              {asset.title}
+            </button>
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+              Hochgeladen von {asset.uploader_name ?? 'Teammitglied'} · {formatDate(asset.created_at)}
+            </p>
+          </div>
+          {isAdmin ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
+              onClick={() => onDelete(asset)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          ) : null}
+        </div>
+
+        <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">Pixel</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {asset.width_px} × {asset.height_px}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">Verhältnis</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {formatAspectRatio(asset.width_px, asset.height_px)}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">Dateigröße</dt>
+            <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+              {formatBytes(asset.file_size_bytes)}
+            </dd>
+          </div>
+          <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
+            <dt className="text-slate-500 dark:text-slate-400">
+              {asset.media_type === 'video' ? 'Laufzeit' : 'Mime'}
+            </dt>
+            <dd className="mt-1 truncate font-medium text-slate-900 dark:text-slate-100">
+              {asset.media_type === 'video' ? formatDuration(asset.duration_seconds) : asset.mime_type}
+            </dd>
+          </div>
+        </dl>
+
+        {asset.notes ? (
+          <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{asset.notes}</p>
+        ) : null}
+      </div>
+    </article>
+  )
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 
 export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const { activeCustomer, customers, refetchCustomers } = useActiveCustomer()
+
+  // List state
   const [assets, setAssets] = useState<AdAsset[]>([])
+  const [total, setTotal] = useState(0)
+  const [offset, setOffset] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+
+  // Filter state
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('all')
   const [mediaFilter, setMediaFilter] = useState<'all' | 'image' | 'video'>('all')
   const [viewMode, setViewMode] = useState<LibraryViewMode>('grid')
+  const debouncedSearch = useDebounce(searchQuery, 300)
+
+  // Upload dialog state
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
-  const [createCustomerDialogOpen, setCreateCustomerDialogOpen] = useState(false)
   const [file, setFile] = useState<File | null>(null)
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null)
   const [metadata, setMetadata] = useState<UploadMetadata | null>(null)
@@ -199,8 +478,13 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const [uploadNotes, setUploadNotes] = useState('')
   const [extractingMetadata, setExtractingMetadata] = useState(false)
   const [savingUpload, setSavingUpload] = useState(false)
+
+  // Customer dialog state
+  const [createCustomerDialogOpen, setCreateCustomerDialogOpen] = useState(false)
   const [customerForm, setCustomerForm] = useState<CustomerForm>(emptyCustomerForm)
   const [savingCustomer, setSavingCustomer] = useState(false)
+
+  // Delete / detail state
   const [deletingAsset, setDeletingAsset] = useState<AdAsset | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [selectedAsset, setSelectedAsset] = useState<AdAsset | null>(null)
@@ -214,13 +498,11 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       })
       return
     }
-
     const objectUrl = URL.createObjectURL(file)
     setFilePreviewUrl((current) => {
       if (current) URL.revokeObjectURL(current)
       return objectUrl
     })
-
     return () => {
       URL.revokeObjectURL(objectUrl)
     }
@@ -233,49 +515,90 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     }
   }, [activeCustomer?.id])
 
-  const loadAssets = useCallback(async () => {
-    const activeFilterCustomerId = selectedCustomerId || 'all'
-    const cacheValue = !searchQuery.trim()
-      ? readSessionCache<AdAsset[]>(cacheKey(activeFilterCustomerId, mediaFilter))
-      : null
+  const loadAssets = useCallback(
+    async (signal?: AbortSignal, appendOffset = 0) => {
+      const activeFilterCustomerId = selectedCustomerId || 'all'
+      const isFreshLoad = appendOffset === 0
 
-    if (cacheValue) {
-      setAssets(cacheValue)
-      setLoading(false)
-    } else {
-      setLoading(true)
-    }
+      const cached =
+        isFreshLoad && !debouncedSearch.trim()
+          ? readSessionCache<{ assets: AdAsset[]; total: number }>(
+              cacheKey(activeFilterCustomerId, mediaFilter)
+            )
+          : null
 
-    try {
-      const params = new URLSearchParams()
-      if (activeFilterCustomerId !== 'all') params.set('customer_id', activeFilterCustomerId)
-      if (mediaFilter !== 'all') params.set('media_type', mediaFilter)
-      if (searchQuery.trim()) params.set('search', searchQuery.trim())
-
-      const response = await fetch(`/api/tenant/ad-library${params.toString() ? `?${params}` : ''}`)
-      if (!response.ok) {
-        const payload = await response.json().catch(() => ({}))
-        throw new Error(payload.error || 'Ads konnten nicht geladen werden.')
+      if (cached && isFreshLoad) {
+        setAssets(cached.assets)
+        setTotal(cached.total)
+        setLoading(false)
+      } else if (isFreshLoad) {
+        setLoading(true)
+      } else {
+        setLoadingMore(true)
       }
 
-      const payload = await response.json()
-      const nextAssets = (payload.assets ?? []) as AdAsset[]
-      setAssets(nextAssets)
+      try {
+        const params = new URLSearchParams()
+        if (activeFilterCustomerId !== 'all') params.set('customer_id', activeFilterCustomerId)
+        if (mediaFilter !== 'all') params.set('media_type', mediaFilter)
+        if (debouncedSearch.trim()) params.set('search', debouncedSearch.trim())
+        params.set('offset', String(appendOffset))
+        params.set('limit', String(PAGE_SIZE))
 
-      if (!searchQuery.trim()) {
-        writeSessionCache(cacheKey(activeFilterCustomerId, mediaFilter), nextAssets)
+        const response = await fetch(
+          `/api/tenant/ad-library${params.toString() ? `?${params}` : ''}`,
+          { signal }
+        )
+
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}))
+          throw new Error(payload.error || 'Ads konnten nicht geladen werden.')
+        }
+
+        const payload = await response.json()
+        const nextAssets = (payload.assets ?? []) as AdAsset[]
+        const nextTotal = (payload.total ?? nextAssets.length) as number
+
+        setTotal(nextTotal)
+
+        if (appendOffset > 0) {
+          setAssets((prev) => [...prev, ...nextAssets])
+        } else {
+          setAssets(nextAssets)
+          if (!debouncedSearch.trim()) {
+            writeSessionCache(cacheKey(activeFilterCustomerId, mediaFilter), {
+              assets: nextAssets,
+              total: nextTotal,
+            })
+          }
+        }
+      } catch (error) {
+        if (error instanceof Error && error.name === 'AbortError') return
+        toast.error(error instanceof Error ? error.message : 'Ads konnten nicht geladen werden.')
+        if (isFreshLoad) setAssets([])
+      } finally {
+        if (isFreshLoad) {
+          setLoading(false)
+        } else {
+          setLoadingMore(false)
+        }
       }
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Ads konnten nicht geladen werden.')
-      setAssets([])
-    } finally {
-      setLoading(false)
-    }
-  }, [mediaFilter, searchQuery, selectedCustomerId])
+    },
+    [mediaFilter, debouncedSearch, selectedCustomerId]
+  )
 
   useEffect(() => {
-    void loadAssets()
+    setOffset(0)
+    const controller = new AbortController()
+    void loadAssets(controller.signal, 0)
+    return () => controller.abort()
   }, [loadAssets])
+
+  const handleLoadMore = useCallback(async () => {
+    const nextOffset = offset + PAGE_SIZE
+    setOffset(nextOffset)
+    await loadAssets(undefined, nextOffset)
+  }, [loadAssets, offset])
 
   const customerMap = useMemo(() => {
     return new Map(customers.map((customer) => [customer.id, customer]))
@@ -285,13 +608,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     const imageCount = assets.filter((asset) => asset.media_type === 'image').length
     const videoCount = assets.filter((asset) => asset.media_type === 'video').length
     const totalSize = assets.reduce((sum, asset) => sum + asset.file_size_bytes, 0)
-
-    return {
-      total: assets.length,
-      imageCount,
-      videoCount,
-      totalSize,
-    }
+    return { total: assets.length, imageCount, videoCount, totalSize }
   }, [assets])
 
   const maxWidthPx = useMemo(() => {
@@ -306,12 +623,12 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     setExtractingMetadata(false)
     setSavingUpload(false)
     setUploadDialogOpen(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
   }, [])
 
   const handleFileSelect = useCallback(async (nextFile: File | null) => {
     setFile(nextFile)
     setMetadata(null)
-
     if (!nextFile) return
 
     setExtractingMetadata(true)
@@ -321,6 +638,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       setUploadTitle(baseTitleFromFilename(nextFile.name))
     } catch (error) {
       setFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
       toast.error(error instanceof Error ? error.message : 'Metadaten konnten nicht gelesen werden.')
     } finally {
       setExtractingMetadata(false)
@@ -332,7 +650,6 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       toast.error('Bitte wähle zuerst eine Bild- oder Videodatei aus.')
       return
     }
-
     if (!uploadCustomerId) {
       toast.error('Bitte ordne die Anzeige einem Kunden zu.')
       return
@@ -350,19 +667,16 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       formData.set('duration_seconds', String(metadata.durationSeconds ?? ''))
       formData.set('file_size_bytes', String(metadata.fileSizeBytes))
 
-      const response = await fetch('/api/tenant/ad-library', {
-        method: 'POST',
-        body: formData,
-      })
-
+      const response = await fetch('/api/tenant/ad-library', { method: 'POST', body: formData })
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
         throw new Error(payload.error || 'Anzeige konnte nicht hochgeladen werden.')
       }
 
       toast.success('Anzeige wurde zur Bibliothek hinzugefügt.')
+      invalidateAdLibraryCache(uploadCustomerId)
       resetUploadDialog()
-      await loadAssets()
+      await loadAssets(undefined, 0)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Anzeige konnte nicht hochgeladen werden.')
     } finally {
@@ -380,9 +694,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     try {
       const response = await fetch('/api/tenant/customers', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: customerForm.name.trim(),
           domain: customerForm.domain.trim() || null,
@@ -421,15 +733,15 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       const response = await fetch(`/api/tenant/ad-library/${deletingAsset.id}`, {
         method: 'DELETE',
       })
-
       if (!response.ok) {
         const payload = await response.json().catch(() => ({}))
         throw new Error(payload.error || 'Anzeige konnte nicht gelöscht werden.')
       }
 
       toast.success('Anzeige wurde entfernt.')
+      invalidateAdLibraryCache(deletingAsset.customer_id)
       setDeletingAsset(null)
-      await loadAssets()
+      await loadAssets(undefined, 0)
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Anzeige konnte nicht gelöscht werden.')
     } finally {
@@ -439,21 +751,17 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
 
   const handleDownloadAsset = useCallback(async (asset: AdAsset) => {
     setDownloadingAssetId(asset.id)
-
     try {
       const response = await fetch(asset.public_url)
-      if (!response.ok) {
-        throw new Error('Datei konnte nicht geladen werden.')
-      }
+      if (!response.ok) throw new Error('Datei konnte nicht geladen werden.')
 
       const blob = await response.blob()
       const objectUrl = URL.createObjectURL(blob)
       const link = document.createElement('a')
-      const safeTitle = asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ad'
-      const extension = asset.file_format.toLowerCase()
-
+      const safeTitle =
+        asset.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'ad'
       link.href = objectUrl
-      link.download = `${safeTitle}.${extension}`
+      link.download = `${safeTitle}.${asset.file_format.toLowerCase()}`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -466,15 +774,19 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   }, [])
 
   const customerOptions = customers.filter((customer) => customer.status === 'active')
+  const hasMore = assets.length < total
 
   return (
     <div className="space-y-6">
+      {/* Stats */}
       <div className="grid gap-4 xl:grid-cols-4 md:grid-cols-2">
         <Card className="rounded-[1.75rem] border-slate-100 dark:border-[#252d3a] dark:bg-[#151c28]">
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Gesamt</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">{metrics.total}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                {metrics.total}
+              </p>
             </div>
             <div className="rounded-2xl bg-slate-100 p-3 dark:bg-[#1e2635]">
               <Grid2x2 className="h-5 w-5 text-slate-600 dark:text-slate-300" />
@@ -485,7 +797,9 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Bilder</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">{metrics.imageCount}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                {metrics.imageCount}
+              </p>
             </div>
             <div className="rounded-2xl bg-emerald-50 p-3 dark:bg-emerald-950/30">
               <FileImage className="h-5 w-5 text-emerald-600 dark:text-emerald-300" />
@@ -496,7 +810,9 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Videos</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">{metrics.videoCount}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                {metrics.videoCount}
+              </p>
             </div>
             <div className="rounded-2xl bg-amber-50 p-3 dark:bg-amber-950/30">
               <Clapperboard className="h-5 w-5 text-amber-600 dark:text-amber-300" />
@@ -507,25 +823,30 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           <CardContent className="flex items-center justify-between px-5 py-5">
             <div>
               <p className="text-sm text-slate-500 dark:text-slate-400">Speicher</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">{formatBytes(metrics.totalSize)}</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50">
+                {formatBytes(metrics.totalSize)}
+              </p>
             </div>
-            <Badge className="rounded-full bg-slate-100 px-3 py-1 text-slate-700 hover:bg-slate-100 dark:bg-[#1e2635] dark:text-slate-200">
-              {mediaFilterLabel(mediaFilter)}
-            </Badge>
+            <div className="rounded-2xl bg-violet-50 p-3 dark:bg-violet-950/30">
+              <HardDrive className="h-5 w-5 text-violet-600 dark:text-violet-300" />
+            </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Library */}
       <Card className="rounded-[2rem] border-slate-100 shadow-soft dark:border-[#252d3a] dark:bg-[#151c28]">
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <CardTitle className="text-xl text-slate-950 dark:text-slate-50">Mediathek pro Kunde</CardTitle>
+              <CardTitle className="text-xl text-slate-950 dark:text-slate-50">
+                Mediathek pro Kunde
+              </CardTitle>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Hinterlege Bild- und Videoanzeigen je Kunde. Dateiformat, Auflösung, Größe und Videolänge werden automatisch erkannt.
+                Hinterlege Bild- und Videoanzeigen je Kunde. Dateiformat, Auflösung, Größe und
+                Videolänge werden automatisch erkannt.
               </p>
             </div>
-
             <div className="flex flex-wrap gap-2">
               <Button
                 className="rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
@@ -566,7 +887,10 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                 ))}
               </SelectContent>
             </Select>
-            <Select value={mediaFilter} onValueChange={(value) => setMediaFilter(value as 'all' | 'image' | 'video')}>
+            <Select
+              value={mediaFilter}
+              onValueChange={(value) => setMediaFilter(value as 'all' | 'image' | 'video')}
+            >
               <SelectTrigger className="rounded-full">
                 <SelectValue placeholder="Medientyp" />
               </SelectTrigger>
@@ -614,7 +938,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           </div>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="space-y-4">
           {loading ? (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
@@ -626,12 +950,18 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             </div>
           ) : customers.length === 0 ? (
             <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-[#252d3a] dark:bg-[#111827]">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Noch keine Kunden angelegt</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Noch keine Kunden angelegt
+              </h3>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Die Ads-Bibliothek organisiert Anzeigen immer je Kunde. Lege zuerst einen Kunden an und lade danach Bilder oder Videos hoch.
+                Die Ads-Bibliothek organisiert Anzeigen immer je Kunde. Lege zuerst einen Kunden an
+                und lade danach Bilder oder Videos hoch.
               </p>
               {isAdmin ? (
-                <Button className="mt-5 rounded-full" onClick={() => setCreateCustomerDialogOpen(true)}>
+                <Button
+                  className="mt-5 rounded-full"
+                  onClick={() => setCreateCustomerDialogOpen(true)}
+                >
                   <Plus className="mr-2 h-4 w-4" />
                   Ersten Kunden anlegen
                 </Button>
@@ -639,229 +969,78 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             </div>
           ) : assets.length === 0 ? (
             <div className="rounded-[1.75rem] border border-dashed border-slate-200 bg-slate-50 px-6 py-12 text-center dark:border-[#252d3a] dark:bg-[#111827]">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Keine Anzeigen gefunden</h3>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Keine Anzeigen gefunden
+              </h3>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Passe Filter an oder lade neue Ads hoch. Die Vorschau skaliert ihre Kacheln anhand der echten Pixelbreite und des Formats.
+                Passe Filter an oder lade neue Ads hoch. Die Vorschau skaliert ihre Kacheln anhand
+                der echten Pixelbreite und des Formats.
               </p>
             </div>
           ) : viewMode === 'grid' ? (
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {assets.map((asset) => {
-                const customerName = customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'
-
-                return (
-                  <article
+            <>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {assets.map((asset) => (
+                  <AssetGridCard
                     key={asset.id}
-                    className="group overflow-hidden rounded-[1.5rem] border border-slate-200 bg-white shadow-sm transition-shadow hover:shadow-lg dark:border-[#252d3a] dark:bg-[#101723]"
+                    asset={asset}
+                    customerName={customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'}
+                    isAdmin={isAdmin}
+                    onOpen={setSelectedAsset}
+                    onDelete={setDeletingAsset}
+                  />
+                ))}
+              </div>
+              {hasMore ? (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={loadingMore}
+                    onClick={() => void handleLoadMore()}
                   >
-                    <button
-                      type="button"
-                      className="block w-full text-left"
-                      onClick={() => setSelectedAsset(asset)}
-                    >
-                      <div className="relative bg-slate-100 dark:bg-[#0b1220]" style={{ aspectRatio: `${asset.width_px} / ${asset.height_px}` }}>
-                        {asset.media_type === 'image' ? (
-                          <img
-                            src={asset.public_url}
-                            alt={asset.title}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <video
-                            src={asset.public_url}
-                            className="h-full w-full object-cover"
-                            muted
-                            playsInline
-                            preload="metadata"
-                          />
-                        )}
-                        <div className="absolute left-3 top-3 flex flex-wrap gap-2">
-                          <Badge className="rounded-full bg-white/90 text-slate-900 hover:bg-white">
-                            {asset.media_type === 'image' ? 'Bild' : 'Video'}
-                          </Badge>
-                          <Badge className="rounded-full bg-slate-900/85 text-white hover:bg-slate-900/85">
-                            {asset.file_format}
-                          </Badge>
-                        </div>
-                      </div>
-                    </button>
-
-                    <div className="space-y-4 p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <button
-                            type="button"
-                            className="truncate text-left text-base font-semibold text-slate-950 dark:text-slate-50"
-                            onClick={() => setSelectedAsset(asset)}
-                          >
-                            {asset.title}
-                          </button>
-                          <div className="mt-2">
-                            <Badge className="rounded-full border border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
-                              {customerName}
-                            </Badge>
-                          </div>
-                          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                            Hochgeladen von {asset.uploader_name ?? 'Teammitglied'}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-full text-slate-400 opacity-100 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-                          onClick={() => setDeletingAsset(asset)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <dl className="grid grid-cols-2 gap-3 text-sm">
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Pixel</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {asset.width_px} x {asset.height_px}
-                          </dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Dateigröße</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{formatBytes(asset.file_size_bytes)}</dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Verhältnis</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {(asset.width_px / asset.height_px).toFixed(2)}:1
-                          </dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">{asset.media_type === 'video' ? 'Laufzeit' : 'Upload'}</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {asset.media_type === 'video' ? formatDuration(asset.duration_seconds) : formatDate(asset.created_at)}
-                          </dd>
-                        </div>
-                      </dl>
-
-                      {asset.notes ? (
-                        <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{asset.notes}</p>
-                      ) : null}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
+                    {loadingMore ? 'Lädt...' : `${total - assets.length} weitere laden`}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           ) : (
-            <div className="space-y-4">
-              {assets.map((asset) => {
-                const customerName = customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'
-                const previewWidth = Math.max(140, Math.min(240, Math.round(140 + (asset.width_px / maxWidthPx) * 100)))
-
-                return (
-                  <article
+            <>
+              <div className="space-y-4">
+                {assets.map((asset) => (
+                  <AssetListRow
                     key={asset.id}
-                    className="flex flex-col gap-4 rounded-[1.5rem] border border-slate-200 bg-white p-4 shadow-sm dark:border-[#252d3a] dark:bg-[#101723] md:flex-row md:items-start"
+                    asset={asset}
+                    customerName={customerMap.get(asset.customer_id)?.name ?? 'Unbekannter Kunde'}
+                    maxWidthPx={maxWidthPx}
+                    isAdmin={isAdmin}
+                    onOpen={setSelectedAsset}
+                    onDelete={setDeletingAsset}
+                  />
+                ))}
+              </div>
+              {hasMore ? (
+                <div className="flex justify-center pt-2">
+                  <Button
+                    variant="outline"
+                    className="rounded-full"
+                    disabled={loadingMore}
+                    onClick={() => void handleLoadMore()}
                   >
-                    <button
-                      type="button"
-                      className="overflow-hidden rounded-[1.25rem] bg-slate-100 dark:bg-[#0b1220]"
-                      style={{
-                        width: `min(100%, ${previewWidth}px)`,
-                        aspectRatio: `${asset.width_px} / ${asset.height_px}`,
-                      }}
-                      onClick={() => setSelectedAsset(asset)}
-                    >
-                      {asset.media_type === 'image' ? (
-                        <img
-                          src={asset.public_url}
-                          alt={asset.title}
-                          className="h-full w-full object-cover"
-                        />
-                      ) : (
-                        <video
-                          src={asset.public_url}
-                          className="h-full w-full object-cover"
-                          muted
-                          playsInline
-                          preload="metadata"
-                        />
-                      )}
-                    </button>
-
-                    <div className="flex-1 space-y-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap gap-2">
-                            <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
-                              {asset.media_type === 'image' ? 'Bild' : 'Video'}
-                            </Badge>
-                            <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
-                              {asset.file_format}
-                            </Badge>
-                            <Badge className="rounded-full border border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
-                              {customerName}
-                            </Badge>
-                          </div>
-                          <button
-                            type="button"
-                            className="mt-3 text-left text-base font-semibold text-slate-950 dark:text-slate-50"
-                            onClick={() => setSelectedAsset(asset)}
-                          >
-                            {asset.title}
-                          </button>
-                          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
-                            Hochgeladen von {asset.uploader_name ?? 'Teammitglied'}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-9 w-9 rounded-full text-slate-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/30"
-                          onClick={() => setDeletingAsset(asset)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-
-                      <dl className="grid gap-3 text-sm sm:grid-cols-2 xl:grid-cols-5">
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Pixel</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {asset.width_px} x {asset.height_px}
-                          </dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Verhältnis</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {(asset.width_px / asset.height_px).toFixed(2)}:1
-                          </dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Dateigröße</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">{formatBytes(asset.file_size_bytes)}</dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">{asset.media_type === 'video' ? 'Laufzeit' : 'Upload'}</dt>
-                          <dd className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                            {asset.media_type === 'video' ? formatDuration(asset.duration_seconds) : formatDate(asset.created_at)}
-                          </dd>
-                        </div>
-                        <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
-                          <dt className="text-slate-500 dark:text-slate-400">Mime</dt>
-                          <dd className="mt-1 truncate font-medium text-slate-900 dark:text-slate-100">{asset.mime_type}</dd>
-                        </div>
-                      </dl>
-
-                      {asset.notes ? (
-                        <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{asset.notes}</p>
-                      ) : null}
-                    </div>
-                  </article>
-                )
-              })}
-            </div>
+                    {loadingMore ? 'Lädt...' : `${total - assets.length} weitere laden`}
+                  </Button>
+                </div>
+              ) : null}
+            </>
           )}
         </CardContent>
       </Card>
 
-      <Dialog open={uploadDialogOpen} onOpenChange={(open) => (open ? setUploadDialogOpen(true) : resetUploadDialog())}>
+      {/* Upload dialog */}
+      <Dialog
+        open={uploadDialogOpen}
+        onOpenChange={(open) => (open ? setUploadDialogOpen(true) : resetUploadDialog())}
+      >
         <DialogContent className="max-w-3xl rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Anzeige hochladen</DialogTitle>
@@ -872,13 +1051,15 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               <div className="space-y-2">
                 <Label htmlFor="ad-file">Datei</Label>
                 <Input
+                  ref={fileInputRef}
                   id="ad-file"
                   type="file"
                   accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
                   onChange={(event) => void handleFileSelect(event.target.files?.[0] ?? null)}
                 />
                 <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  Unterstützt: JPG, PNG, WebP, GIF, MP4, WebM und MOV. Breite, Höhe, Dateigröße und Laufzeit werden automatisch erkannt.
+                  Unterstützt: JPG, PNG, WebP, GIF, MP4, WebM und MOV. Breite, Höhe, Dateigröße
+                  und Laufzeit werden automatisch erkannt.
                 </p>
               </div>
 
@@ -898,7 +1079,6 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     </SelectContent>
                   </Select>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="ad-title">Titel</Label>
                   <Input
@@ -928,12 +1108,24 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                       'mx-auto max-h-[360px] overflow-hidden bg-slate-100 dark:bg-[#0b1220]',
                       metadata ? '' : 'min-h-[200px]'
                     )}
-                    style={metadata ? { aspectRatio: `${metadata.widthPx} / ${metadata.heightPx}` } : undefined}
+                    style={
+                      metadata ? { aspectRatio: `${metadata.widthPx} / ${metadata.heightPx}` } : undefined
+                    }
                   >
                     {metadata?.mediaType === 'image' ? (
-                      <img src={filePreviewUrl} alt="Vorschau" className="h-full w-full object-contain" />
-                    ) : file ? (
-                      <video src={filePreviewUrl} className="h-full w-full object-contain" controls muted playsInline />
+                      <img
+                        src={filePreviewUrl}
+                        alt="Vorschau"
+                        className="h-full w-full object-contain"
+                      />
+                    ) : metadata?.mediaType === 'video' ? (
+                      <video
+                        src={filePreviewUrl}
+                        className="h-full w-full object-contain"
+                        controls
+                        muted
+                        playsInline
+                      />
                     ) : null}
                   </div>
                 </div>
@@ -941,36 +1133,44 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             </div>
 
             <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-[#252d3a] dark:bg-[#111827]">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Automatische Asset-Daten</h3>
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Automatische Asset-Daten
+              </h3>
               <div className="mt-4 space-y-3 text-sm">
-                <div className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
-                  <p className="text-slate-500 dark:text-slate-400">Typ</p>
-                  <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                    {extractingMetadata ? 'Wird erkannt...' : metadata?.mediaType === 'video' ? 'Video' : metadata?.mediaType === 'image' ? 'Bild' : 'Noch keine Datei'}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
-                  <p className="text-slate-500 dark:text-slate-400">Format</p>
-                  <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">{metadata?.fileFormat ?? '-'}</p>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
-                  <p className="text-slate-500 dark:text-slate-400">Auflösung</p>
-                  <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                    {metadata ? `${metadata.widthPx} x ${metadata.heightPx}px` : '-'}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
-                  <p className="text-slate-500 dark:text-slate-400">Dateigröße</p>
-                  <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                    {metadata ? formatBytes(metadata.fileSizeBytes) : '-'}
-                  </p>
-                </div>
-                <div className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
-                  <p className="text-slate-500 dark:text-slate-400">Laufzeit</p>
-                  <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                    {metadata?.mediaType === 'video' ? formatDuration(metadata.durationSeconds) : '-'}
-                  </p>
-                </div>
+                {[
+                  {
+                    label: 'Typ',
+                    value: extractingMetadata
+                      ? 'Wird erkannt...'
+                      : metadata?.mediaType === 'video'
+                        ? 'Video'
+                        : metadata?.mediaType === 'image'
+                          ? 'Bild'
+                          : 'Noch keine Datei',
+                  },
+                  { label: 'Format', value: metadata?.fileFormat ?? '-' },
+                  {
+                    label: 'Auflösung',
+                    value: metadata ? `${metadata.widthPx} × ${metadata.heightPx}px` : '-',
+                  },
+                  {
+                    label: 'Verhältnis',
+                    value: metadata ? formatAspectRatio(metadata.widthPx, metadata.heightPx) : '-',
+                  },
+                  { label: 'Dateigröße', value: metadata ? formatBytes(metadata.fileSizeBytes) : '-' },
+                  {
+                    label: 'Laufzeit',
+                    value:
+                      metadata?.mediaType === 'video'
+                        ? formatDuration(metadata.durationSeconds)
+                        : '-',
+                  },
+                ].map(({ label, value }) => (
+                  <div key={label} className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
+                    <p className="text-slate-500 dark:text-slate-400">{label}</p>
+                    <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">{value}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -991,19 +1191,21 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         </DialogContent>
       </Dialog>
 
+      {/* Create customer dialog */}
       <Dialog open={createCustomerDialogOpen} onOpenChange={setCreateCustomerDialogOpen}>
         <DialogContent className="max-w-lg rounded-[2rem]">
           <DialogHeader>
             <DialogTitle>Kunde anlegen</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="customer-name">Kundenname</Label>
               <Input
                 id="customer-name"
                 value={customerForm.name}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, name: event.target.value }))}
+                onChange={(event) =>
+                  setCustomerForm((current) => ({ ...current, name: event.target.value }))
+                }
                 placeholder="z. B. Muster GmbH"
               />
             </div>
@@ -1012,7 +1214,9 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               <Input
                 id="customer-domain"
                 value={customerForm.domain}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, domain: event.target.value }))}
+                onChange={(event) =>
+                  setCustomerForm((current) => ({ ...current, domain: event.target.value }))
+                }
                 placeholder="https://www.kunde.de"
               />
             </div>
@@ -1021,12 +1225,13 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               <Input
                 id="customer-industry"
                 value={customerForm.industry}
-                onChange={(event) => setCustomerForm((current) => ({ ...current, industry: event.target.value }))}
+                onChange={(event) =>
+                  setCustomerForm((current) => ({ ...current, industry: event.target.value }))
+                }
                 placeholder="z. B. E-Commerce"
               />
             </div>
           </div>
-
           <DialogFooter className="gap-2 sm:justify-end">
             <Button
               variant="outline"
@@ -1038,7 +1243,11 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
             >
               Abbrechen
             </Button>
-            <Button className="rounded-full" disabled={savingCustomer} onClick={() => void handleCreateCustomer()}>
+            <Button
+              className="rounded-full"
+              disabled={savingCustomer}
+              onClick={() => void handleCreateCustomer()}
+            >
               <Plus className="mr-2 h-4 w-4" />
               {savingCustomer ? 'Wird angelegt...' : 'Kunde speichern'}
             </Button>
@@ -1046,6 +1255,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         </DialogContent>
       </Dialog>
 
+      {/* Delete confirm */}
       <AlertDialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(null)}>
         <AlertDialogContent className="rounded-[2rem]">
           <AlertDialogHeader>
@@ -1071,6 +1281,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Asset detail */}
       <Dialog open={!!selectedAsset} onOpenChange={(open) => !open && setSelectedAsset(null)}>
         <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto rounded-[2rem]">
           {selectedAsset ? (
@@ -1091,7 +1302,6 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                       </Badge>
                     </div>
                   </div>
-
                   <Button
                     type="button"
                     variant="outline"
@@ -1131,18 +1341,18 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                   </div>
                 </div>
 
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
                     <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Auflösung</p>
                       <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                        {selectedAsset.width_px} x {selectedAsset.height_px} px
+                        {selectedAsset.width_px} × {selectedAsset.height_px} px
                       </p>
                     </div>
                     <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Seitenverhältnis</p>
                       <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                        {(selectedAsset.width_px / selectedAsset.height_px).toFixed(2)}:1
+                        {formatAspectRatio(selectedAsset.width_px, selectedAsset.height_px)}
                       </p>
                     </div>
                     <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
@@ -1157,26 +1367,30 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                         {selectedAsset.mime_type}
                       </p>
                     </div>
+                    {selectedAsset.media_type === 'video' ? (
+                      <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
+                        <p className="text-sm text-slate-500 dark:text-slate-400">Laufzeit</p>
+                        <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                          {formatDuration(selectedAsset.duration_seconds)}
+                        </p>
+                      </div>
+                    ) : null}
                     <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {selectedAsset.media_type === 'video' ? 'Laufzeit' : 'Hochgeladen am'}
-                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Hochgeladen am</p>
                       <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                        {selectedAsset.media_type === 'video'
-                          ? formatDuration(selectedAsset.duration_seconds)
-                          : formatDate(selectedAsset.created_at)}
-                      </p>
-                    </div>
-                    <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
-                      <p className="text-sm text-slate-500 dark:text-slate-400">Zuletzt aktualisiert</p>
-                      <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
-                        {formatDate(selectedAsset.updated_at)}
+                        {formatDate(selectedAsset.created_at)}
                       </p>
                     </div>
                     <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
                       <p className="text-sm text-slate-500 dark:text-slate-400">Hochgeladen von</p>
                       <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
                         {selectedAsset.uploader_name ?? 'Teammitglied'}
+                      </p>
+                    </div>
+                    <div className="rounded-[1.25rem] bg-slate-50 px-4 py-3 dark:bg-[#172131]">
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Zuletzt aktualisiert</p>
+                      <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">
+                        {formatDate(selectedAsset.updated_at)}
                       </p>
                     </div>
                   </div>

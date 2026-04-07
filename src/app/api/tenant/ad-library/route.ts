@@ -27,6 +27,8 @@ const listQuerySchema = z.object({
   customer_id: z.string().uuid().optional(),
   media_type: z.enum(['image', 'video']).optional(),
   search: z.string().trim().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
 })
 
 function buildUploaderName(profile: { first_name: string | null; last_name: string | null } | null) {
@@ -71,6 +73,8 @@ export async function GET(request: NextRequest) {
     customer_id: request.nextUrl.searchParams.get('customer_id') ?? undefined,
     media_type: request.nextUrl.searchParams.get('media_type') ?? undefined,
     search: request.nextUrl.searchParams.get('search') ?? undefined,
+    limit: request.nextUrl.searchParams.get('limit') ?? undefined,
+    offset: request.nextUrl.searchParams.get('offset') ?? undefined,
   })
 
   if (!parsed.success) {
@@ -78,9 +82,11 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient()
+  const { limit, offset } = parsed.data
   let query = admin
     .from('ad_library_assets')
-    .select(`
+    .select(
+      `
       id,
       customer_id,
       created_by,
@@ -97,11 +103,13 @@ export async function GET(request: NextRequest) {
       notes,
       created_at,
       updated_at
-    `)
+    `,
+      { count: 'exact' }
+    )
     .eq('tenant_id', tenantId)
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
-    .limit(500)
+    .range(offset, offset + limit - 1)
 
   if (parsed.data.customer_id) {
     query = query.eq('customer_id', parsed.data.customer_id)
@@ -115,7 +123,7 @@ export async function GET(request: NextRequest) {
     query = query.ilike('title', `%${parsed.data.search}%`)
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -138,6 +146,7 @@ export async function GET(request: NextRequest) {
       ...asset,
       uploader_name: uploaderMap.get(asset.created_by) ?? 'Teammitglied',
     })),
+    total: count ?? 0,
   })
 }
 
