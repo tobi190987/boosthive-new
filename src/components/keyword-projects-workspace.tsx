@@ -591,7 +591,7 @@ function ProjectList({
 
       {/* Empty state */}
       {projects.length === 0 ? (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
               <Search className="h-7 w-7 text-blue-600" />

@@ -51,7 +51,7 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
   )
 
   return (
-    <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-border px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">

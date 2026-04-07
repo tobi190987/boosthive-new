@@ -95,7 +95,7 @@ export function WizardView({
   }
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardContent className="p-6 sm:p-8">
         {/* Progress */}
         <div className="mb-8">

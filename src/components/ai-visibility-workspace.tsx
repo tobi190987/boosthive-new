@@ -324,7 +324,7 @@ function ProjectListView({
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
             <Sparkles className="h-5 w-5 text-blue-600" />
@@ -373,7 +373,7 @@ function ProjectListView({
 
       {/* ── Empty State ────────────────────────────────────── */}
       {projects.length === 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
               <Eye className="h-7 w-7 text-blue-600" />

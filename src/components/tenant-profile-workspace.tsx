@@ -813,7 +813,7 @@ export function TenantProfileWorkspace({
           }
         }}
       >
-        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-0 shadow-soft">
+        <DialogContent className="max-w-2xl rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-0 shadow-soft">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">Profilbild anpassen</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -823,7 +823,7 @@ export function TenantProfileWorkspace({
 
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
             <div className="flex justify-center">
-              <div className="relative rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
+              <div className="relative rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
                 <div
                   className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-secondary shadow-soft"
                   style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
@@ -943,7 +943,7 @@ export function TenantProfileWorkspace({
       </Dialog>
 
       <div className="space-y-6">
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader className="space-y-3">
           <div className="flex items-center gap-2">
             <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
@@ -996,7 +996,7 @@ export function TenantProfileWorkspace({
                   Optional, aber hilfreich für Sidebar und Team-Kontext.
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+              <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                 <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                   <Avatar className="h-24 w-24 border border-slate-100 dark:border-border shadow-sm">
                     <AvatarImage src={avatarUrl ?? undefined} alt="Profilbild" />
@@ -1062,7 +1062,7 @@ export function TenantProfileWorkspace({
                     Das Logo erscheint in der Sidebar und auf den öffentlichen Auth-Seiten eures Tenants.
                   </p>
                 </div>
-                <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+                <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                     <div className="flex h-24 w-32 items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card px-4 shadow-sm">
                       {tenantLogoUrl ? (
@@ -1126,7 +1126,7 @@ export function TenantProfileWorkspace({
                   Diese Angaben erscheinen in deinem Profil und in der Sidebar.
                 </p>
               </div>
-              <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
+              <div className="grid gap-4 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="first_name">Vorname</Label>
                   <Input id="first_name" className={fieldClassName} {...register('first_name')} />
@@ -1153,7 +1153,7 @@ export function TenantProfileWorkspace({
                   Lege fest, ob du zusätzlich zur Dashboard-Benachrichtigung auch E-Mails erhalten möchtest.
                 </p>
               </div>
-              <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+              <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                 <div className="flex items-start justify-between gap-4 rounded-2xl border border-slate-100 bg-slate-50/70 p-4 dark:border-border dark:bg-secondary/50">
                   <div className="space-y-1">
                     <Label htmlFor="notify_on_approval_decision" className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -1188,7 +1188,7 @@ export function TenantProfileWorkspace({
                       Diese Angaben sind für Admins verpflichtend. Mit * markierte Felder müssen ausgefüllt werden.
                     </p>
                   </div>
-                  <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
+                  <div className="grid gap-4 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
                     {mode === 'onboarding' && (
                       <div className="md:col-span-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
                         Rechnungsdaten sind für Admins Pflichtfelder und werden benötigt, bevor das Onboarding abgeschlossen werden kann.
@@ -1296,7 +1296,7 @@ export function TenantProfileWorkspace({
                       Diese Adresse verwendest du für den Login in deinen Workspace.
                     </p>
                   </div>
-                  <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+                  <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                     <form
                       className="grid gap-4 md:grid-cols-2"
                       onSubmit={emailForm.handleSubmit(onSubmitEmail)}
@@ -1379,7 +1379,7 @@ export function TenantProfileWorkspace({
                       Ändere dein Passwort direkt hier, ohne den Reset-Flow nutzen zu müssen.
                     </p>
                   </div>
-                  <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+                  <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                     <form
                       className="grid gap-4 md:grid-cols-2"
                       onSubmit={passwordForm.handleSubmit(onSubmitPassword)}
@@ -1520,7 +1520,7 @@ export function TenantProfileWorkspace({
                     : 'Zahlungsmethode für Abrechnung und späteres Abo verwalten.'}
                 </p>
               </div>
-              <div className="space-y-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+              <div className="space-y-4 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">

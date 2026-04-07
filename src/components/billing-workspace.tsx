@@ -360,7 +360,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
     return (
       <div className="space-y-6">
         <BillingHero tenantSlug={tenantSlug} />
-        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <div className="flex min-h-48 items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             Billing-Daten werden geladen...
@@ -380,7 +380,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
             {error}
           </div>
         )}
-        <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <div className="flex min-h-48 flex-col items-center justify-center gap-4 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <p className="text-sm text-slate-600 dark:text-slate-300">
             Billing-Daten konnten nicht geladen werden.
           </p>
@@ -424,7 +424,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ----- Subscription Status Card ----- */}
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <Zap className="h-5 w-5 text-blue-600" />
@@ -497,7 +497,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         </Card>
 
         {/* ----- Payment Method Section ----- */}
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <CreditCard className="h-5 w-5 text-blue-600" />
@@ -556,7 +556,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
       </div>
 
       {/* ----- Subscription Actions ----- */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
             <Shield className="h-5 w-5 text-blue-600" />
@@ -692,7 +692,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
       {/* ----- Invoices Section ----- */}
       {invoices.length > 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <FileText className="h-5 w-5 text-blue-600" />
@@ -983,7 +983,7 @@ function ModuleSection({
   const hasActivePlan = subscriptionStatus === 'active' || subscriptionStatus === 'canceling'
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardHeader>
         <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
           <Package className="h-5 w-5 text-blue-600" />

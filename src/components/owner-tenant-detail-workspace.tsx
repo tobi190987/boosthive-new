@@ -843,8 +843,8 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-44 w-full rounded-[2rem]" />
-        <Skeleton className="h-[520px] w-full rounded-[2rem]" />
+        <Skeleton className="h-44 w-full rounded-2xl" />
+        <Skeleton className="h-[520px] w-full rounded-2xl" />
       </div>
     )
   }
@@ -1030,7 +1030,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsList>
 
         <TabsContent value="general" className="mt-0">
-          <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
@@ -1116,7 +1116,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardContent>
           </Card>
           {/* Logo-Karte */}
-          <Card className="mt-4 rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="mt-4 rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
@@ -1216,7 +1216,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
             </CardContent>
           </Card>
 
-          <Card className="mt-4 rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="mt-4 rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-slate-100 dark:bg-secondary p-3 text-slate-700 dark:text-slate-300">
@@ -1283,7 +1283,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                           Wiederherstellen
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+                      <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Tenant wiederherstellen?</AlertDialogTitle>
                           <AlertDialogDescription className="leading-6">
@@ -1318,7 +1318,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                           Endgültig löschen
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+                      <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                         <AlertDialogHeader>
                           <AlertDialogTitle>Tenant endgültig löschen?</AlertDialogTitle>
                           <AlertDialogDescription className="leading-6">
@@ -1354,7 +1354,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         Tenant archivieren
                       </Button>
                     </AlertDialogTrigger>
-                    <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+                    <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                       <AlertDialogHeader>
                         <AlertDialogTitle>Tenant archivieren?</AlertDialogTitle>
                         <AlertDialogDescription className="leading-6">
@@ -1379,7 +1379,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="billing" className="mt-0">
-          <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
@@ -1516,7 +1516,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="contact" className="mt-0">
-          <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
@@ -1598,7 +1598,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
 
         <TabsContent value="admin" className="mt-0">
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+            <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
               <CardHeader className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="rounded-2xl bg-blue-50 p-3 text-blue-700">
@@ -1641,7 +1641,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
               </CardContent>
             </Card>
 
-            <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+            <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
               <CardHeader className="space-y-3">
                 <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Neuen Admin zuweisen</CardTitle>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -1693,7 +1693,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="users" className="mt-0">
-          <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
@@ -1801,7 +1801,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         </TabsContent>
 
         <TabsContent value="audit" className="mt-0">
-          <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardHeader className="space-y-3">
               <div className="flex items-center gap-3">
                 <div className="rounded-2xl bg-blue-50 p-3 text-blue-600">
@@ -1880,7 +1880,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+        <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>User wirklich löschen?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
@@ -2010,8 +2010,8 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
   if (loading) {
     return (
       <div className="space-y-4">
-        <Skeleton className="h-48 rounded-[2rem]" />
-        <Skeleton className="h-32 rounded-[2rem]" />
+        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-32 rounded-2xl" />
       </div>
     )
   }
@@ -2106,7 +2106,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Subscription Status */}
-        <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="space-y-3">
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <CreditCard className="h-5 w-5 text-blue-600" />
@@ -2152,7 +2152,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
         </Card>
 
         {/* Access Override */}
-        <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="space-y-3">
             <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
               <ShieldCheck className="h-5 w-5 text-blue-600" />
@@ -2212,7 +2212,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
                   </Button>
                 )}
               </AlertDialogTrigger>
-              <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+              <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                 <AlertDialogHeader>
                   <AlertDialogTitle>
                     {isLocked ? "Tenant freischalten?" : "Tenant sperren?"}
@@ -2244,7 +2244,7 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
       </div>
 
       {/* Module Breakdown */}
-      <Card className="rounded-[2rem] border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader className="space-y-3">
           <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
             <Package className="h-5 w-5 text-blue-600" />

@@ -16,7 +16,7 @@ export function NoCustomerSelected({ toolName }: NoCustomerSelectedProps) {
   const hasCustomers = customers.length > 0
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-border dark:border-slate-800 dark:bg-card dark:bg-slate-950">
+    <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:border-slate-800 dark:bg-card dark:bg-slate-950">
       <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
           <Users2 className="h-7 w-7 text-blue-500 dark:text-blue-400" />

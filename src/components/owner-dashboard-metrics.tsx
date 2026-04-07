@@ -60,7 +60,7 @@ export function OwnerDashboardMetrics({
       {metrics.map((metric) => (
         <Card
           key={metric.label}
-          className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
+          className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>

@@ -45,12 +45,15 @@ const emptyForm: CustomerForm = {
 
 const CUSTOMERS_CACHE_KEY = 'customers:list'
 
+const PAGE_SIZE = 20
+
 export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const { refetchCustomers: refetchSidebar } = useActiveCustomer()
   const [customers, setCustomers] = useState<CustomerExtended[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
+  const [currentPage, setCurrentPage] = useState(1)
   const [form, setForm] = useState<CustomerForm>(emptyForm)
   const [editingCustomer, setEditingCustomer] = useState<CustomerExtended | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -96,6 +99,8 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     return matchesSearch && matchesStatus
   })
   const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== 'all'
+  const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE)
+  const pagedCustomers = filteredCustomers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
   const openCreate = useCallback(() => {
     setEditingCustomer(null)
@@ -205,12 +210,12 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               <Input
                 placeholder="Kunden suchen..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
                 className="pl-10"
               />
             </div>
             <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | 'active' | 'paused')}>
+              <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as 'all' | 'active' | 'paused'); setCurrentPage(1) }}>
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
@@ -281,7 +286,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredCustomers.map((customer) => (
+                  {pagedCustomers.map((customer) => (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">{customer.name}</TableCell>
                       <TableCell>
@@ -331,6 +336,35 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                   ))}
                 </TableBody>
               </Table>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {!loading && totalPages > 1 && (
+            <div className="flex items-center justify-between mt-4 text-sm text-slate-500 dark:text-slate-400">
+              <span>
+                {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredCustomers.length)} von {filteredCustomers.length}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={currentPage === 1}
+                  onClick={() => setCurrentPage((p) => p - 1)}
+                >
+                  Zurück
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={currentPage === totalPages}
+                  onClick={() => setCurrentPage((p) => p + 1)}
+                >
+                  Weiter
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>

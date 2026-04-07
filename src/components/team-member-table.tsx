@@ -141,7 +141,7 @@ export function TeamMemberTable({
     searchQuery.trim().length > 0 || statusFilter !== 'all' || kindFilter !== 'all'
 
   return (
-    <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-border px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
@@ -347,7 +347,7 @@ export function TeamMemberTable({
                           {hasPendingInvite ? 'Einladung löschen' : 'User löschen'}
                         </Button>
                       </AlertDialogTrigger>
-                      <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+                      <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
                         <AlertDialogHeader>
                           <AlertDialogTitle>
                             {hasPendingInvite ? 'Einladung wirklich löschen?' : 'User wirklich löschen?'}

@@ -169,7 +169,7 @@ function BillingMetricsRow({ metrics }: { metrics: BillingMetrics }) {
       {items.map((item) => (
         <Card
           key={item.label}
-          className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
+          className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft"
         >
           <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-3">
             <div>
@@ -302,7 +302,7 @@ export function OwnerBillingWorkspace() {
   return (
     <div className="space-y-8">
       {/* Hero */}
-      <section className="relative overflow-hidden rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
+      <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
         <div className="absolute left-[-2rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-600/12 blur-3xl" />
         <div className="absolute bottom-[-3rem] right-[-1rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
 
@@ -365,16 +365,16 @@ export function OwnerBillingWorkspace() {
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Skeleton key={index} className="h-40 rounded-[2rem]" />
+              <Skeleton key={index} className="h-40 rounded-2xl" />
             ))}
           </div>
-          <Skeleton className="h-80 rounded-[2rem]" />
+          <Skeleton className="h-80 rounded-2xl" />
         </div>
       ) : (
         <>
           <BillingMetricsRow metrics={metrics} />
 
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="space-y-5 p-6">
               <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>

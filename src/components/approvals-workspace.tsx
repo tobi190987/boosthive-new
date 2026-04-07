@@ -152,6 +152,8 @@ function SummaryCard({ label, count, icon, colorClass, onClick, active }: Summar
   )
 }
 
+const PAGE_SIZE = 20
+
 export function ApprovalsWorkspace() {
   const router = useRouter()
   const { toast } = useToast()
@@ -164,6 +166,7 @@ export function ApprovalsWorkspace() {
   const [customerFilter, setCustomerFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     if (activeCustomer) {
@@ -185,6 +188,7 @@ export function ApprovalsWorkspace() {
       if (!res.ok) throw new Error('Freigaben konnten nicht geladen werden.')
       const data = await res.json()
       setApprovals(data.approvals ?? [])
+      setCurrentPage(1)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
     } finally {
@@ -235,8 +239,12 @@ export function ApprovalsWorkspace() {
     (!activeCustomer && customerFilter !== 'all') ||
     searchQuery.trim() !== ''
 
+  const totalPages = Math.ceil(filteredApprovals.length / PAGE_SIZE)
+  const pagedApprovals = filteredApprovals.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
+
   const handleResetFilters = () => {
     setStatusFilter('open')
+    setCurrentPage(1)
     setTypeFilter('all')
     if (!activeCustomer) setCustomerFilter('all')
     setSearchQuery('')
@@ -383,7 +391,7 @@ export function ApprovalsWorkspace() {
 
         {/* Loading */}
         {loading && (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="p-6 space-y-4">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="flex gap-4">
@@ -400,7 +408,7 @@ export function ApprovalsWorkspace() {
 
         {/* Empty */}
         {!loading && !error && filteredApprovals.length === 0 && (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
                 <CheckSquare className="h-7 w-7 text-blue-500 dark:text-blue-400" />
@@ -424,7 +432,7 @@ export function ApprovalsWorkspace() {
 
         {/* Table */}
         {!loading && !error && filteredApprovals.length > 0 && (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft overflow-hidden">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow className="border-slate-100 dark:border-border">
@@ -438,7 +446,7 @@ export function ApprovalsWorkspace() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredApprovals.map((item) => {
+                {pagedApprovals.map((item) => {
                   const iterationCount = item.history.length
                   const isPending = item.status === 'pending_approval'
                   const displayDate = !isPending && item.decided_at ? item.decided_at : item.created_at
@@ -519,6 +527,35 @@ export function ApprovalsWorkspace() {
               </TableBody>
             </Table>
           </Card>
+        )}
+
+        {/* Pagination */}
+        {!loading && !error && totalPages > 1 && (
+          <div className="flex items-center justify-between text-sm text-slate-500 dark:text-slate-400">
+            <span>
+              {(currentPage - 1) * PAGE_SIZE + 1}–{Math.min(currentPage * PAGE_SIZE, filteredApprovals.length)} von {filteredApprovals.length}
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Zurück
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="rounded-full"
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Weiter
+              </Button>
+            </div>
+          </div>
         )}
       </div>
     </TooltipProvider>

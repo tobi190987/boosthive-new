@@ -245,7 +245,7 @@ export function ResultsView({
   return (
     <div className="space-y-6">
       {/* Header */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
@@ -563,7 +563,7 @@ export function ResultsView({
 
       {/* Empty state if nothing in result */}
       {Object.keys(result).length === 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
           <CardContent className="flex flex-col items-center gap-4 p-8 py-16 text-center">
             <AlertCircle className="h-10 w-10 text-slate-300 dark:text-slate-600" />
             <p className="text-sm text-slate-500 dark:text-slate-400">

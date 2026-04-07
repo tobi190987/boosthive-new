@@ -83,7 +83,7 @@ export function InviteDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-[2rem] border-slate-200 dark:border-border bg-slate-50 dark:bg-card p-0 sm:max-w-[560px]">
+      <DialogContent className="rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card p-0 sm:max-w-[560px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader className="space-y-3 border-b border-slate-100 dark:border-border px-6 py-6 text-left">
             <DialogTitle className="text-2xl font-semibold text-slate-950 dark:text-slate-50">

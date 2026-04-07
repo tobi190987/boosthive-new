@@ -45,7 +45,7 @@ export function GeneratingView({ platforms }: { platforms: PlatformId[] }) {
   }, [])
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardContent className="flex flex-col items-center gap-6 p-8 py-16 text-center">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/30">
           <Loader2 className="h-8 w-8 animate-spin text-blue-500" />

@@ -1059,7 +1059,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       </div>
 
       {/* Library */}
-      <Card className="rounded-[2rem] border-slate-100 shadow-soft dark:border-border dark:bg-card">
+      <Card className="rounded-2xl border-slate-100 shadow-soft dark:border-border dark:bg-card">
         <CardHeader className="gap-4">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
@@ -1300,7 +1300,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         open={uploadDialogOpen}
         onOpenChange={(open) => (open ? setUploadDialogOpen(true) : resetUploadDialog())}
       >
-        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-[2rem]">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>
               {uploadDialogMode === 'customer' ? 'Neuen Kunden anlegen' : 'Anzeige hochladen'}
@@ -1551,7 +1551,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
 
       {/* Delete confirm */}
       <AlertDialog open={!!deletingAsset} onOpenChange={(open) => !open && setDeletingAsset(null)}>
-        <AlertDialogContent className="rounded-[2rem]">
+        <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
             <AlertDialogTitle>Anzeige entfernen?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -1587,7 +1587,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           router.replace(params.toString() ? `?${params.toString()}` : '/tools/ads-library', { scroll: false })
         }}
       >
-        <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto rounded-[2rem]">
+        <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto rounded-2xl">
           {selectedAsset ? (
             <>
               <DialogHeader className="pr-14">

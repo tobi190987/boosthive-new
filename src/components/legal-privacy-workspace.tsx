@@ -109,7 +109,7 @@ export function LegalPrivacyWorkspace() {
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
+      <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
             <ShieldCheck className="h-5 w-5 text-blue-600" />
@@ -156,7 +156,7 @@ export function LegalPrivacyWorkspace() {
         </CardContent>
       </Card>
 
-      <Card className="rounded-[2rem] border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
+      <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
         <CardHeader>
           <CardTitle className="text-lg text-slate-900 dark:text-slate-100">Audit-Log</CardTitle>
           <p className="text-sm text-slate-600 dark:text-slate-300">

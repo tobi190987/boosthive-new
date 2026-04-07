@@ -28,7 +28,7 @@ const STATUS_CONFIG: Record<ApprovalStatus, {
   changes_requested: {
     label: 'Korrektur angefragt',
     icon: MessageSquare,
-    className: 'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-400',
+    className: 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400',
   },
 }
 
@@ -46,7 +46,7 @@ export function ApprovalStatusBadge({ status, className }: ApprovalStatusBadgePr
       variant="outline"
       className={`rounded-full gap-1.5 ${config.className} ${className ?? ''}`}
     >
-      <Icon className="h-3 w-3" />
+      <Icon className="h-4 w-4" />
       {config.label}
     </Badge>
   )

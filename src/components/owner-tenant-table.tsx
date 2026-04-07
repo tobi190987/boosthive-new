@@ -126,7 +126,7 @@ export function OwnerTenantTable({
 
   if (tenants.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-[2rem] border border-dashed border-slate-100 dark:border-border bg-white dark:bg-card px-6 py-16 text-center shadow-soft">
+      <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-100 dark:border-border bg-white dark:bg-card px-6 py-16 text-center shadow-soft">
         <div className="mb-4 rounded-full bg-blue-50 p-4 text-blue-600">
           <SearchX className="h-6 w-6" />
         </div>
@@ -142,7 +142,7 @@ export function OwnerTenantTable({
 
   return (
     <>
-      <div className="overflow-hidden rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <div className="overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <div className="flex flex-col gap-4 border-b border-slate-100 dark:border-border px-6 py-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
@@ -375,7 +375,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+        <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {confirmTenant ? `Tenant ${ownerToggleTenantStatusLabel(confirmTenant.status).toLowerCase()}?` : 'Tenant-Status ändern?'}
@@ -411,7 +411,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+        <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Tenant archivieren?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
@@ -444,7 +444,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+        <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>Agentur aktivieren?</AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
@@ -476,7 +476,7 @@ export function OwnerTenantTable({
         <AlertDialogTrigger asChild>
           <span className="hidden" />
         </AlertDialogTrigger>
-        <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
+        <AlertDialogContent className="rounded-2xl border-slate-100 dark:border-border bg-slate-50 dark:bg-card">
           <AlertDialogHeader>
             <AlertDialogTitle>
               {deleteTenant?.is_archived ? 'Tenant endgültig löschen?' : 'Tenant archivieren?'}

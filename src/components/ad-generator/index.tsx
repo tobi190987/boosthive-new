@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Plus } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { getAdTypesForPlatforms, type PlatformId } from '@/lib/ad-limits'
 import { useActiveCustomer } from '@/lib/active-customer-context'
@@ -184,29 +183,15 @@ export function AdGeneratorWorkspace() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Ad Generator</h1>
-            <Badge variant="secondary" className="rounded-full text-[10px] px-2 py-0.5 self-center font-mono">DE</Badge>
-          </div>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            KI-gestützte Anzeigentexte für Facebook, LinkedIn, TikTok und Google Ads
-          </p>
+      {/* Neue Generierung Action */}
+      {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
+        <div className="flex justify-end">
+          <Button variant="dark" onClick={resetWizard}>
+            <Plus className="mr-2 h-4 w-4" />
+            Neue Generierung
+          </Button>
         </div>
-        <div className="flex gap-2">
-          {view !== 'wizard' && view !== 'generating' && !hideNavigationActions && (
-            <Button
-              variant="dark"
-              onClick={resetWizard}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              Neue Generierung
-            </Button>
-          )}
-        </div>
-      </div>
+      )}
 
       {/* Views */}
       {view === 'wizard' && (

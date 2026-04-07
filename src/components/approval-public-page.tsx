@@ -399,7 +399,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] sm:py-12">
       <div className="mx-auto max-w-5xl space-y-6">
         {/* Header with branding */}
-        <div className="flex items-center justify-between gap-4 rounded-[2rem] border border-white/70 bg-white/80 px-5 py-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-border dark:bg-card/85">
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-white/70 bg-white/80 px-5 py-4 shadow-[0_20px_60px_-35px_rgba(15,23,42,0.35)] backdrop-blur dark:border-border dark:bg-card/85">
           <div className="flex items-center gap-3">
           {data.tenant_logo_url ? (
             <Image
@@ -468,7 +468,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
         )}
 
         {/* Content card */}
-        <Card className="overflow-hidden rounded-[2rem] border-white/80 bg-white/90 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/90">
+        <Card className="overflow-hidden rounded-2xl border-white/80 bg-white/90 shadow-[0_28px_80px_-40px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/90">
           <CardHeader className="border-b border-slate-100 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.95))] px-6 py-5 dark:border-border dark:bg-[linear-gradient(135deg,rgba(17,24,39,0.98),rgba(30,41,59,0.95))] sm:px-8">
             <div className="flex items-start gap-4">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 dark:bg-muted dark:ring-[#2a3444]">
@@ -515,7 +515,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
         </Card>
 
         {data.history.length > 0 && (
-          <Card className="rounded-[2rem] border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)] dark:border-border dark:bg-card/90">
+          <Card className="rounded-2xl border-white/80 bg-white/90 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.42)] dark:border-border dark:bg-card/90">
             <CardHeader className="border-b border-slate-100 px-6 py-5 dark:border-border sm:px-8">
               <CardTitle className="text-lg font-semibold text-slate-900 dark:text-slate-100">Abnahmeverlauf</CardTitle>
             </CardHeader>

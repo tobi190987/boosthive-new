@@ -217,7 +217,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
 
   return (
     <div className="space-y-6">
-      <section className="rounded-[2rem] border border-slate-100 bg-white p-6 shadow-soft dark:border-border dark:bg-card">
+      <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-soft dark:border-border dark:bg-card">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -293,7 +293,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       </div>
 
       {isLoading ? (
-        <div className="flex min-h-48 items-center justify-center rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <div className="flex min-h-48 items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
             Teamübersicht wird geladen...

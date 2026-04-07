@@ -630,7 +630,7 @@ export function AiVisibilityReport({
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-col gap-3 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-sm sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <Badge className="rounded-full bg-white dark:bg-card px-3 py-1 text-xs text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-[#1e2635]">

@@ -627,7 +627,7 @@ export function ContentBriefsWorkspace({
         </Button>
 
         {detailLoading && !detail ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="p-8 space-y-6">
               <Skeleton className="h-8 w-64" />
               <Skeleton className="h-4 w-48" />
@@ -637,7 +637,7 @@ export function ContentBriefsWorkspace({
         ) : detail ? (
           <>
             {/* Header */}
-            <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+            <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
               <CardContent className="p-6 md:p-8">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="space-y-2">
@@ -728,7 +728,7 @@ export function ContentBriefsWorkspace({
 
             {/* Generating state */}
             {(detail.status === 'pending' || detail.status === 'generating') && (
-              <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+              <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
                 <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
                     <Sparkles className="h-7 w-7 animate-pulse text-blue-500 dark:text-blue-400" />
@@ -813,7 +813,7 @@ export function ContentBriefsWorkspace({
       {loading && (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map((i) => (
-            <Card key={i} className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+            <Card key={i} className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
               <CardContent className="p-6 space-y-4">
                 <Skeleton className="h-5 w-40" />
                 <Skeleton className="h-4 w-24" />
@@ -826,7 +826,7 @@ export function ContentBriefsWorkspace({
 
       {/* Empty state */}
       {!loading && !error && briefs.length === 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50 dark:bg-blue-950/50">
               <FileText className="h-7 w-7 text-blue-500 dark:text-blue-400" />
@@ -854,7 +854,7 @@ export function ContentBriefsWorkspace({
           {briefs.map((brief) => (
             <Card
               key={brief.id}
-              className="group cursor-pointer rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft transition-all hover:border-slate-200 hover:shadow-md dark:hover:border-[#2d3847]"
+              className="group cursor-pointer rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft transition-all hover:border-slate-200 hover:shadow-md dark:hover:border-[#2d3847]"
               onClick={() => {
                 router.replace(`${pathname}?briefId=${brief.id}`, { scroll: false })
               }}
@@ -886,7 +886,7 @@ export function ContentBriefsWorkspace({
 
       {/* Create dialog */}
       <Dialog open={createOpen} onOpenChange={(open) => { if (!open) handleCreateClose() }}>
-        <DialogContent className="sm:max-w-lg rounded-[2rem]">
+        <DialogContent className="sm:max-w-lg rounded-2xl">
           <DialogHeader>
             <DialogTitle>Neues Content Briefing</DialogTitle>
             <DialogDescription>
@@ -1149,7 +1149,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
   return (
     <div className="space-y-6 print:space-y-4" id="brief-content">
       {/* Search Intent */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Search className="h-4 w-4 text-blue-500" />
@@ -1167,7 +1167,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* H1 Titles */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-amber-500" />
@@ -1187,7 +1187,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* Meta Descriptions */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-emerald-500" />
@@ -1209,7 +1209,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* Outline */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <FileText className="h-4 w-4 text-purple-500" />
@@ -1236,7 +1236,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       </Card>
 
       {/* Keywords */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Search className="h-4 w-4 text-indigo-500" />
@@ -1267,7 +1267,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
 
       {/* Internal Linking Hints */}
       {brief.internal_linking_hints && brief.internal_linking_hints.length > 0 && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Link className="h-4 w-4 text-violet-500" />
@@ -1289,7 +1289,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
 
       {/* Competitor Hints */}
       {brief.competitor_hints && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
               <Sparkles className="h-4 w-4 text-orange-500" />
@@ -1305,7 +1305,7 @@ function BriefContent({ brief, keyword }: { brief: BriefJson; keyword: string })
       )}
 
       {/* CTA Recommendation */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft print:shadow-none print:border print:rounded-lg">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Sparkles className="h-4 w-4 text-pink-500" />
@@ -1372,7 +1372,7 @@ function DeleteConfirmDialog({
 }) {
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
-      <DialogContent className="sm:max-w-md rounded-[2rem]">
+      <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
           <DialogTitle>Brief löschen?</DialogTitle>
           <DialogDescription>

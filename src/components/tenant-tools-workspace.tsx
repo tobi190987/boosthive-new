@@ -428,7 +428,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
   }
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
@@ -834,7 +834,7 @@ function SeoResultsView({
         </div>
       </div>
 
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-xl text-slate-950 dark:text-slate-50">SEO-Analyse abgeschlossen</CardTitle>
         </CardHeader>
@@ -887,7 +887,7 @@ function SeoResultsView({
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-2">
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
               <AlertCircle className="h-5 w-5 text-blue-600" />
@@ -903,7 +903,7 @@ function SeoResultsView({
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
               <Sparkles className="h-5 w-5 text-blue-600" />
@@ -922,7 +922,7 @@ function SeoResultsView({
       </div>
 
       {result.technicalSeo && (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
               <Zap className="h-5 w-5 text-blue-600" />
@@ -1149,7 +1149,7 @@ function SeoReportContent({
 
   return (
     <div className="mx-auto w-full max-w-[210mm] bg-white dark:bg-card p-8 text-slate-900 dark:text-slate-100">
-      <section className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-8">
+      <section className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-8">
         <div className="flex items-start justify-between gap-6">
           <div className="space-y-4">
             <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
@@ -1254,7 +1254,7 @@ function SeoReportContent({
       </section>
 
       <section className="mt-6 grid gap-4 xl:grid-cols-2">
-        <Card className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none">
+        <Card className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
               <AlertCircle className="h-5 w-5 text-blue-600" />
@@ -1266,7 +1266,7 @@ function SeoReportContent({
           </CardContent>
         </Card>
 
-        <Card className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none">
+        <Card className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none">
           <CardHeader>
             <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
               <Sparkles className="h-5 w-5 text-blue-600" />
@@ -1286,7 +1286,7 @@ function SeoReportContent({
 
       {result.technicalSeo ? (
         <section className="mt-6">
-          <Card className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-none">
+          <Card className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-none">
             <CardHeader>
               <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
                 <Zap className="h-5 w-5 text-blue-600" />
@@ -1338,7 +1338,7 @@ function SeoReportContent({
         {printablePages.map((page) => (
           <Card
             key={page.url}
-            className="print-avoid-break rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-none"
+            className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-none"
           >
             <CardHeader>
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -1413,7 +1413,7 @@ function AnalysisHistoryRow({
     analysis.overallScore !== null ? scoreTone(analysis.overallScore) : scoreTone(0)
 
   return (
-    <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+    <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
       <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center">
         <div className="flex items-center gap-4">
           <div
@@ -1919,7 +1919,7 @@ function SeoAnalysisWorkspace({
 
   if (detailLoading) {
     return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
           Analyse wird geladen
@@ -1935,7 +1935,7 @@ function SeoAnalysisWorkspace({
         : 0
 
     return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="flex flex-col items-center gap-6 px-6 py-14 text-center">
           <div className="relative flex h-24 w-24 items-center justify-center">
             <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-border" />
@@ -1974,7 +1974,7 @@ function SeoAnalysisWorkspace({
 
   if (initialAnalysisId) {
     return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
           <div className="space-y-2">
             <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">Analyse nicht verfügbar</h2>
@@ -2030,7 +2030,7 @@ function SeoAnalysisWorkspace({
 
       {activeTab === 'analyse' && (
       <>
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
             <Search className="h-5 w-5 text-blue-600" />
@@ -2216,14 +2216,14 @@ function SeoAnalysisWorkspace({
         </div>
 
         {loading ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
             <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Verlauf wird geladen
             </CardContent>
           </Card>
         ) : analyses.length === 0 ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
                 <Search className="h-6 w-6 text-blue-600" />
@@ -2294,7 +2294,7 @@ export function TenantToolsWorkspace({
           initialAnalysisStatus={initialAnalysisStatus}
         />
       ) : (
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-card">
               <Lock className="h-7 w-7 text-slate-400 dark:text-slate-500" />

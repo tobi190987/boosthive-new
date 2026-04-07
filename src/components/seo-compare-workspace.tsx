@@ -579,7 +579,7 @@ function CompareResultView({
         </Alert>
       )}
 
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-base text-slate-950 dark:text-slate-50">Side-by-Side Vergleich</CardTitle>
         </CardHeader>
@@ -588,7 +588,7 @@ function CompareResultView({
         </CardContent>
       </Card>
 
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-base text-slate-950 dark:text-slate-50">Lückenanalyse — Top Verbesserungspotenziale</CardTitle>
         </CardHeader>
@@ -755,7 +755,7 @@ export function SeoCompareWorkspace() {
 
   if (view.type === 'running') {
     return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="flex flex-col items-center gap-6 px-6 py-14 text-center">
           <div className="relative flex h-24 w-24 items-center justify-center">
             <div className="absolute inset-0 rounded-full border-4 border-slate-100 dark:border-border" />
@@ -799,7 +799,7 @@ export function SeoCompareWorkspace() {
   return (
     <div className="space-y-6">
       {/* Form */}
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
             <GitCompare className="h-5 w-5 text-blue-600" />
@@ -960,14 +960,14 @@ export function SeoCompareWorkspace() {
         </div>
 
         {historyLoading ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card">
             <CardContent className="flex items-center gap-3 p-6 text-sm text-slate-500 dark:text-slate-400">
               <Loader2 className="h-4 w-4 animate-spin" />
               Verlauf wird geladen
             </CardContent>
           </Card>
         ) : history.length === 0 ? (
-          <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
             <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
                 <GitCompare className="h-6 w-6 text-blue-600" />

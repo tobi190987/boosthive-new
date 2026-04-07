@@ -1,4 +1,5 @@
-import { Lock } from 'lucide-react'
+import { ChevronRight, Lock } from 'lucide-react'
+import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,9 +19,9 @@ export default async function KeywordRankingsDetailPage({
 
   if (!hasAccess) {
     return (
-      <Card className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardContent className="flex flex-col items-center gap-5 px-6 py-12 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-[#151c28]">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-50 dark:bg-card">
             <Lock className="h-7 w-7 text-slate-400" />
           </div>
           <div className="space-y-2">
@@ -30,11 +31,11 @@ export default async function KeywordRankingsDetailPage({
             </p>
           </div>
           {isAdmin ? (
-            <Button asChild className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]">
+            <Button asChild variant="dark">
               <a href="/billing">Zur Abrechnung</a>
             </Button>
           ) : (
-            <Badge className="rounded-full bg-slate-100 px-4 py-1.5 text-sm text-slate-400 hover:bg-slate-100 dark:bg-[#1e2635] dark:text-slate-300 dark:hover:bg-[#263247]">
+            <Badge className="rounded-full bg-slate-100 px-4 py-1.5 text-sm text-slate-400 hover:bg-slate-100 dark:bg-secondary dark:text-slate-300 dark:hover:bg-[#263247]">
               Bitte Admin kontaktieren
             </Badge>
           )}
@@ -49,12 +50,27 @@ export default async function KeywordRankingsDetailPage({
   ])
 
   return (
-    <KeywordProjectsWorkspace
-      role={context.membership.role}
-      initialProjectId={id}
-      initialTab="rankings"
-      initialProject={initialProject}
-      initialGscStatus={initialGscStatus}
-    />
+    <div className="space-y-4">
+      <nav className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+        <Link href="/tools" className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+          Tools
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+        <Link href="/tools/keywords" className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+          Keywords
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
+        <span className="text-slate-900 dark:text-slate-100 font-medium">
+          {initialProject?.name ?? 'Projekt'}
+        </span>
+      </nav>
+      <KeywordProjectsWorkspace
+        role={context.membership.role}
+        initialProjectId={id}
+        initialTab="rankings"
+        initialProject={initialProject}
+        initialGscStatus={initialGscStatus}
+      />
+    </div>
   )
 }

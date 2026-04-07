@@ -4,7 +4,7 @@ export default function ImpressumPage() {
   return (
     <main className="min-h-screen bg-[#f8fafc] px-4 py-10 dark:bg-[#0b1120] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="rounded-[2rem] border border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] p-8 shadow-soft sm:p-10">
+        <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card p-8 shadow-soft sm:p-10">
           <div className="space-y-8">
             <div className="space-y-4">
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
@@ -69,7 +69,7 @@ export default function ImpressumPage() {
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 dark:border-[#252d3a] pt-6 text-sm text-slate-600 dark:text-slate-300">
+            <div className="flex flex-wrap items-center gap-4 border-t border-slate-100 dark:border-border pt-6 text-sm text-slate-600 dark:text-slate-300">
               <Link
                 href="/access"
                 className="font-medium text-blue-600 underline decoration-blue-300 underline-offset-4"

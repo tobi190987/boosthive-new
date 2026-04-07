@@ -470,7 +470,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           }
         }}
       >
-        <DialogContent className="max-w-2xl rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-0 shadow-soft">
+        <DialogContent className="max-w-2xl rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-0 shadow-soft">
           <DialogHeader className="px-6 pt-6">
             <DialogTitle className="text-xl text-slate-900 dark:text-slate-100">Profilbild anpassen</DialogTitle>
             <DialogDescription className="text-sm leading-6 text-slate-600 dark:text-slate-300">
@@ -480,7 +480,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
 
           <div className="grid gap-6 px-6 pb-6 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
             <div className="flex justify-center">
-              <div className="relative rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
+              <div className="relative rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
                 <div
                   className="relative overflow-hidden rounded-full border-4 border-white bg-slate-100 dark:bg-secondary shadow-soft"
                   style={{ width: AVATAR_PREVIEW_SIZE, height: AVATAR_PREVIEW_SIZE }}
@@ -600,7 +600,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
       </Dialog>
 
       <div className="space-y-6">
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="space-y-3">
             <div className="flex items-center gap-2">
               <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
@@ -649,7 +649,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                     Optional, aber hilfreich für Sidebar und Account-Kontext.
                   </p>
                 </div>
-                <div className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
+                <div className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5">
                   <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
                     <Avatar className="h-24 w-24 border border-slate-100 dark:border-border shadow-sm">
                       <AvatarImage src={avatarUrl ?? undefined} alt="Profilbild" />
@@ -714,7 +714,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
                     Diese Angaben erscheinen in deinem Profil und in der Sidebar.
                   </p>
                 </div>
-                <div className="grid gap-4 rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
+                <div className="grid gap-4 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="owner-first_name">Vorname</Label>
                     <Input id="owner-first_name" className={fieldClassName} {...form.register('first_name')} />
@@ -736,7 +736,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Login-E-Mail</CardTitle>
           </CardHeader>
@@ -796,7 +796,7 @@ export function OwnerProfileWorkspace({ initialData }: OwnerProfileWorkspaceProp
           </CardContent>
         </Card>
 
-        <Card className="rounded-[2rem] border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader>
             <CardTitle className="text-xl text-slate-900 dark:text-slate-100">Passwort ändern</CardTitle>
           </CardHeader>

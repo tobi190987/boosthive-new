@@ -374,7 +374,7 @@ function Hero({
         </div>
       </div>
 
-      <div className="rounded-[2rem] border border-[#0f172a]/10 bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_rgba(255,255,255,0.96)_45%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,253,250,0.96))] p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] dark:border-[#1f2937] dark:bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_rgba(15,23,42,0.96)_45%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] sm:p-8">
+      <div className="rounded-2xl border border-[#0f172a]/10 bg-[radial-gradient(circle_at_top_left,_rgba(15,118,110,0.18),_rgba(255,255,255,0.96)_45%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(240,253,250,0.96))] p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] dark:border-[#1f2937] dark:bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.18),_rgba(15,23,42,0.96)_45%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.98))] sm:p-8">
         <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-6 backdrop-blur dark:border-border dark:bg-[#0f172a]/80">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">
             {isTenant ? 'Tenant Snapshot' : 'Platform Snapshot'}
@@ -442,7 +442,7 @@ function AccessPanel({ returnTo }: { returnTo?: string }) {
   return (
     <section
       id="access-form"
-      className="mt-16 rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] backdrop-blur dark:border-border dark:bg-card/90 sm:p-8"
+      className="mt-16 rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.5)] backdrop-blur dark:border-border dark:bg-card/90 sm:p-8"
     >
       <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
         <div className="space-y-4">
@@ -482,7 +482,7 @@ function FeatureGroups({ tenant }: { tenant: MarketingTenantBranding | null }) {
       </div>
 
       {groups.map((group) => (
-        <div key={group.title} className="rounded-[2rem] border border-white/70 bg-white/70 p-6 shadow-[0_20px_70px_-46px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/80 sm:p-8">
+        <div key={group.title} className="rounded-2xl border border-white/70 bg-white/70 p-6 shadow-[0_20px_70px_-46px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/80 sm:p-8">
           <div className="max-w-3xl">
             <h3 className="text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">{group.title}</h3>
             <p className="mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300">{group.intro}</p>
@@ -522,7 +522,7 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
       </div>
 
       <div className="mt-8 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <div className="rounded-[2rem] bg-[#0f172a] p-8 text-white shadow-[0_30px_100px_-48px_rgba(15,23,42,0.9)]">
+        <div className="rounded-2xl bg-[#0f172a] p-8 text-white shadow-[0_30px_100px_-48px_rgba(15,23,42,0.9)]">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#99f6e4]">
             Einstieg
           </p>
@@ -546,7 +546,7 @@ function PricingSection({ pricing }: { pricing: MarketingPriceItem[] }) {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/90 sm:p-8">
+        <div className="rounded-2xl border border-slate-200/80 bg-white/90 p-6 shadow-[0_30px_100px_-52px_rgba(15,23,42,0.45)] backdrop-blur dark:border-border dark:bg-card/90 sm:p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#0f766e]">
@@ -589,7 +589,7 @@ function Cta({ tenant, mode }: { tenant: MarketingTenantBranding | null; mode: P
   const isTenant = Boolean(tenant)
 
   return (
-    <section className="mt-20 rounded-[2rem] border border-[#0f172a]/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.97),rgba(15,118,110,0.9))] p-8 text-white shadow-[0_30px_100px_-48px_rgba(15,23,42,0.9)] sm:p-10">
+    <section className="mt-20 rounded-2xl border border-[#0f172a]/10 bg-[linear-gradient(135deg,rgba(15,23,42,0.97),rgba(15,118,110,0.9))] p-8 text-white shadow-[0_30px_100px_-48px_rgba(15,23,42,0.9)] sm:p-10">
       <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-3xl">
           <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[#99f6e4]">
