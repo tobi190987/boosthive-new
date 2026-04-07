@@ -23,6 +23,23 @@ const compareSchema = z.object({
   customerId: z.string().uuid().nullable().optional(),
 })
 
+async function validateCustomerId(
+  tenantId: string,
+  customerId: string | null | undefined,
+  admin: ReturnType<typeof createAdminClient>
+) {
+  if (!customerId) return null
+
+  const { data: customer } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  return customer
+}
+
 // ---------------------------------------------------------------------------
 // Single page fetch + analyse
 // ---------------------------------------------------------------------------
@@ -246,6 +263,13 @@ export async function POST(request: NextRequest) {
   }
 
   const admin = createAdminClient()
+  if (customerId) {
+    const customer = await validateCustomerId(tenantId, customerId, admin)
+    if (!customer) {
+      return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+    }
+  }
+
   const { data: saved, error: dbError } = await admin
     .from('seo_comparisons')
     .insert({

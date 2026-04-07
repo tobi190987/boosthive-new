@@ -11,8 +11,6 @@ import {
   VISIBILITY_READ,
 } from '@/lib/rate-limit'
 
-const PROJECT_LIMIT = 5
-
 function normalizeDomain(raw: string): string {
   let d = raw.trim().toLowerCase()
   d = d.replace(/^https?:\/\//, '')
@@ -35,6 +33,23 @@ const createProjectSchema = z.object({
   language_code: z.string().min(2).max(10).default('de'),
   country_code: z.string().min(2).max(10).default('DE'),
 })
+
+async function validateCustomerId(
+  tenantId: string,
+  customerId: string | null | undefined,
+  admin: ReturnType<typeof createAdminClient>
+) {
+  if (!customerId) return null
+
+  const { data: customer } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  return customer
+}
 
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
@@ -124,18 +139,11 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  // Enforce project limit
-  const { count, error: countError } = await admin
-    .from('keyword_projects')
-    .select('id', { count: 'exact', head: true })
-    .eq('tenant_id', tenantId)
-
-  if (countError) return NextResponse.json({ error: countError.message }, { status: 500 })
-  if ((count ?? 0) >= PROJECT_LIMIT) {
-    return NextResponse.json(
-      { error: `Maximale Projektanzahl (${PROJECT_LIMIT}) erreicht.` },
-      { status: 422 }
-    )
+  if (parsed.data.customer_id) {
+    const customer = await validateCustomerId(tenantId, parsed.data.customer_id, admin)
+    if (!customer) {
+      return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+    }
   }
 
   const { data, error } = await admin

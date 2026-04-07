@@ -70,7 +70,6 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
-import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 type WorkspaceRole = 'admin' | 'member'
 
@@ -130,20 +129,25 @@ export function AiVisibilityWorkspace({
 }: AiVisibilityWorkspaceProps) {
   const [view, setView] = useState<View>({ type: 'list' })
   const { toast } = useToast()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
 
   // ── Projekte ────────────────────────────────────────────────
   const [projects, setProjects] = useState<VisibilityProject[]>(initialProjects)
   const [loadingProjects, setLoadingProjects] = useState(initialProjects.length === 0)
   const [projectError, setProjectError] = useState<string | null>(null)
-  const projectsCacheKey = `${AI_VISIBILITY_PROJECTS_CACHE_PREFIX}${activeCustomer?.id ?? 'all'}`
+  const [customerFilter, setCustomerFilter] = useState<string>(activeCustomer?.id ?? 'all')
+  const projectsCacheKey = `${AI_VISIBILITY_PROJECTS_CACHE_PREFIX}${customerFilter}`
+
+  useEffect(() => {
+    setCustomerFilter(activeCustomer?.id ?? 'all')
+  }, [activeCustomer])
 
   const fetchProjects = useCallback(async () => {
     setLoadingProjects(true)
     setProjectError(null)
     try {
-      const url = activeCustomer
-        ? `/api/tenant/visibility/projects?customer_id=${activeCustomer.id}`
+      const url = customerFilter !== 'all'
+        ? `/api/tenant/visibility/projects?customer_id=${customerFilter}`
         : '/api/tenant/visibility/projects'
       const res = await fetch(url)
       if (!res.ok) {
@@ -158,13 +162,13 @@ export function AiVisibilityWorkspace({
     } finally {
       setLoadingProjects(false)
     }
-  }, [activeCustomer, projectsCacheKey])
+  }, [customerFilter, projectsCacheKey])
 
   useEffect(() => {
-    if (!activeCustomer && initialProjects.length > 0) {
+    if (customerFilter === 'all' && initialProjects.length > 0) {
       writeSessionCache(projectsCacheKey, initialProjects)
     }
-  }, [activeCustomer, initialProjects, projectsCacheKey])
+  }, [customerFilter, initialProjects, projectsCacheKey])
 
   useEffect(() => {
     const cachedProjects = readSessionCache<VisibilityProject[]>(projectsCacheKey)
@@ -174,14 +178,14 @@ export function AiVisibilityWorkspace({
       return
     }
 
-    if (!activeCustomer && initialProjects.length > 0) {
+    if (customerFilter === 'all' && initialProjects.length > 0) {
       setProjects(initialProjects)
       setLoadingProjects(false)
       return
     }
 
     void fetchProjects()
-  }, [activeCustomer, fetchProjects, initialProjects, projectsCacheKey])
+  }, [customerFilter, fetchProjects, initialProjects, projectsCacheKey])
 
   // ── Navigation ──────────────────────────────────────────────
 
@@ -200,10 +204,6 @@ export function AiVisibilityWorkspace({
 
   // ── Views ───────────────────────────────────────────────────
 
-  if (view.type === 'list' && !activeCustomer) {
-    return <NoCustomerSelected toolName="AI Visibility" />
-  }
-
   if (view.type === 'list') {
     return (
       <ProjectListView
@@ -213,6 +213,9 @@ export function AiVisibilityWorkspace({
         error={projectError}
         onRetry={fetchProjects}
         onOpenProject={goToDetail}
+        customerFilter={customerFilter}
+        customers={customers}
+        onCustomerFilterChange={setCustomerFilter}
         onProjectCreated={(projectId, analysisId) => {
           if (analysisId) {
             goToProgress(projectId, analysisId)
@@ -265,6 +268,9 @@ interface ProjectListViewProps {
   error: string | null
   onRetry: () => void
   onOpenProject: (id: string) => void
+  customerFilter: string
+  customers: Array<{ id: string; name: string }>
+  onCustomerFilterChange: (value: string) => void
   onProjectCreated: (projectId: string, analysisId: string | null) => void
 }
 
@@ -275,6 +281,9 @@ function ProjectListView({
   error,
   onRetry,
   onOpenProject,
+  customerFilter,
+  customers,
+  onCustomerFilterChange,
   onProjectCreated,
 }: ProjectListViewProps) {
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -338,13 +347,28 @@ function ProjectListView({
               : `${projects.length} Projekt${projects.length !== 1 ? 'e' : ''}`}
           </p>
         </div>
-        <Button
-          onClick={() => setDialogOpen(true)}
-          className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
-        >
-          <Plus className="mr-1.5 h-4 w-4" />
-          Neues Projekt
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select value={customerFilter} onValueChange={onCustomerFilterChange}>
+            <SelectTrigger className="w-[220px] rounded-full">
+              <SelectValue placeholder="Kunde filtern" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Kunden</SelectItem>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={() => setDialogOpen(true)}
+            variant="dark"
+          >
+            <Plus className="mr-1.5 h-4 w-4" />
+            Neues Projekt
+          </Button>
+        </div>
       </div>
 
       {/* ── Empty State ────────────────────────────────────── */}
@@ -362,7 +386,7 @@ function ProjectListView({
             </div>
             <Button
               onClick={() => setDialogOpen(true)}
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
             >
               <Plus className="mr-1.5 h-4 w-4" />
               Erstes Projekt erstellen
@@ -481,7 +505,7 @@ interface CreateProjectDialogProps {
 
 function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDialogProps) {
   const { toast } = useToast()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
 
   // ── Form-State ──────────────────────────────────────────────
   const [brandName, setBrandName] = useState('')
@@ -489,6 +513,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
   const [competitors, setCompetitors] = useState<Competitor[]>([{ name: '', url: '' }])
   const [keywords, setKeywords] = useState<string[]>([''])
   const [selectedModels, setSelectedModels] = useState<string[]>(DEFAULT_AI_MODEL_IDS)
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
   const [iterations, setIterations] = useState(DEFAULT_AI_VISIBILITY_ITERATIONS)
   const [submitting, setSubmitting] = useState(false)
   const [step, setStep] = useState<'form' | 'review'>('form')
@@ -500,6 +525,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
     setCompetitors([{ name: '', url: '' }])
     setKeywords([''])
     setSelectedModels(DEFAULT_AI_MODEL_IDS)
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
     setIterations(DEFAULT_AI_VISIBILITY_ITERATIONS)
     setStep('form')
     setSubmitting(false)
@@ -580,7 +606,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer_id: activeCustomer?.id ?? null,
+          customer_id: selectedCustomerId === 'none' ? null : selectedCustomerId,
           brand_name: brandName.trim(),
           website_url: websiteUrl.trim() || null,
           competitors: cleanCompetitors.map((c) => ({
@@ -694,6 +720,33 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                   Der Name ist kurz und möglicherweise mehrdeutig. Füge eine URL oder Branche hinzu, um die Ergebnisse zu verbessern.
                 </p>
               )}
+            </fieldset>
+
+            <Separator />
+
+            <fieldset className="space-y-3">
+              <legend className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Kunde <span className="font-normal text-slate-400 dark:text-slate-500">(optional)</span>
+              </legend>
+              <div className="space-y-1.5">
+                <Label htmlFor="visibility-customer">Kundenzuordnung</Label>
+                <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+                  <SelectTrigger id="visibility-customer">
+                    <SelectValue placeholder="Ohne Kunde anlegen" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Ohne Kunde</SelectItem>
+                    {customers.map((customer) => (
+                      <SelectItem key={customer.id} value={customer.id}>
+                        {customer.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Optional. Das Projekt kann auch ohne Kundenzuordnung erstellt werden.
+                </p>
+              </div>
             </fieldset>
 
             <Separator />
@@ -953,7 +1006,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
               <Button
                 onClick={() => setStep('review')}
                 disabled={!isValid}
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                variant="dark"
               >
                 Weiter zur Übersicht
               </Button>
@@ -1758,7 +1811,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
           <AlertDescription>
             {status.error_message
               ? status.error_message
-              : 'Die Analyse konnte nicht vollständig abgeschlossen werden. Pruefe das Fehler-Log unten oder starte sie mit denselben Einstellungen erneut.'}
+              : 'Die Analyse konnte nicht vollständig abgeschlossen werden. Prüfe das Fehler-Log unten oder starte sie mit denselben Einstellungen erneut.'}
           </AlertDescription>
         </Alert>
       )}
@@ -1768,7 +1821,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
           <Button
             onClick={handleRetry}
             disabled={retrying}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             {retrying && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
             Analyse erneut starten

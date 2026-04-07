@@ -18,12 +18,18 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { PreviewResult, AnalyzeResult, CompareResult, KPIs, PerformanceAnalysis } from '@/lib/performance/types'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
-import { NoCustomerSelected } from '@/components/no-customer-selected'
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -676,7 +682,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
 // ─── Analyse tab ──────────────────────────────────────────────────────────────
 
 function AnalyseTab() {
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [file, setFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<PreviewResult | null>(null)
@@ -684,6 +690,7 @@ function AnalyseTab() {
   const [activeOnly, setActiveOnly] = useState(false)
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([])
   const [clientLabel, setClientLabel] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
   const [result, setResult] = useState<AnalyzeResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -726,7 +733,7 @@ function AnalyseTab() {
       fd.append('file', file)
       fd.append('filters', JSON.stringify({ active_only: activeOnly, campaigns: selectedCampaigns }))
       fd.append('client_label', clientLabel)
-      if (activeCustomer) fd.append('customer_id', activeCustomer.id)
+      if (selectedCustomerId !== 'none') fd.append('customer_id', selectedCustomerId)
       const res = await fetch('/api/tenant/performance/analyze', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Analyse fehlgeschlagen')
@@ -780,12 +787,31 @@ function AnalyseTab() {
             onSelected={setSelectedCampaigns}
           />
 
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              Kunde <span className="font-normal">(optional)</span>
+            </p>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Ohne Kunde analysieren" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Ohne Kunde</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <ClientLabelInput value={clientLabel} onChange={setClientLabel} />
 
           <Button
             onClick={handleAnalyze}
             disabled={loading}
-            className="w-full gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark" className="w-full gap-2"
           >
             {loading ? (
               <>
@@ -808,12 +834,13 @@ function AnalyseTab() {
 // ─── Vergleich tab ────────────────────────────────────────────────────────────
 
 function VergleichTab() {
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [fileA, setFileA] = useState<File | null>(null)
   const [fileB, setFileB] = useState<File | null>(null)
   const [labelA, setLabelA] = useState('')
   const [labelB, setLabelB] = useState('')
   const [clientLabel, setClientLabel] = useState('')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
   const [previewA, setPreviewA] = useState<PreviewResult | null>(null)
   const [previewB, setPreviewB] = useState<PreviewResult | null>(null)
   const [loading, setLoading] = useState(false)
@@ -852,7 +879,7 @@ function VergleichTab() {
       fd.append('labelA', labelA || 'Zeitraum A')
       fd.append('labelB', labelB || 'Zeitraum B')
       fd.append('client_label', clientLabel)
-      if (activeCustomer) fd.append('customer_id', activeCustomer.id)
+      if (selectedCustomerId !== 'none') fd.append('customer_id', selectedCustomerId)
       const res = await fetch('/api/tenant/performance/compare', { method: 'POST', body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Vergleich fehlgeschlagen')
@@ -867,6 +894,7 @@ function VergleichTab() {
   const handleReset = () => {
     setFileA(null); setFileB(null); setPreviewA(null); setPreviewB(null)
     setResult(null); setError(null); setLabelA(''); setLabelB(''); setClientLabel('')
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
   }
 
   if (result) return <CompareResultView result={result} onReset={handleReset} />
@@ -961,6 +989,25 @@ function VergleichTab() {
         </Card>
       )}
 
+      <div className="space-y-2">
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          Kunde <span className="font-normal">(optional)</span>
+        </p>
+        <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+          <SelectTrigger>
+            <SelectValue placeholder="Ohne Kunde vergleichen" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Ohne Kunde</SelectItem>
+            {customers.map((customer) => (
+              <SelectItem key={customer.id} value={customer.id}>
+                {customer.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <ClientLabelInput value={clientLabel} onChange={setClientLabel} />
 
       {error && (
@@ -972,7 +1019,7 @@ function VergleichTab() {
       <Button
         onClick={handleCompare}
         disabled={!fileA || !fileB || loading}
-        className="w-full gap-2 rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+        variant="dark" className="w-full gap-2"
       >
         {loading ? (
           <>
@@ -993,19 +1040,24 @@ function VergleichTab() {
 // ─── Verlauf tab ──────────────────────────────────────────────────────────────
 
 function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAnalysis[] }) {
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [analyses, setAnalyses] = useState<PerformanceAnalysis[]>(initialAnalyses)
   const [loading, setLoading] = useState(initialAnalyses.length === 0)
   const [error, setError] = useState<string | null>(null)
   const [openItem, setOpenItem] = useState<(AnalyzeResult | CompareResult) | null>(null)
   const [openLoading, setOpenLoading] = useState(false)
-  const analysesCacheKey = `ai-performance:history:${activeCustomer?.id ?? 'all'}`
+  const [customerFilter, setCustomerFilter] = useState<string>(activeCustomer?.id ?? 'all')
+  const analysesCacheKey = `ai-performance:history:${customerFilter}`
 
   useEffect(() => {
-    if (!activeCustomer && initialAnalyses.length > 0) {
+    setCustomerFilter(activeCustomer?.id ?? 'all')
+  }, [activeCustomer])
+
+  useEffect(() => {
+    if (customerFilter === 'all' && initialAnalyses.length > 0) {
       writeSessionCache(analysesCacheKey, initialAnalyses)
     }
-  }, [activeCustomer, analysesCacheKey, initialAnalyses])
+  }, [analysesCacheKey, customerFilter, initialAnalyses])
 
   useEffect(() => {
     const cachedAnalyses = readSessionCache<PerformanceAnalysis[]>(analysesCacheKey)
@@ -1015,14 +1067,14 @@ function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAna
       return
     }
 
-    if (!activeCustomer && initialAnalyses.length > 0) {
+    if (customerFilter === 'all' && initialAnalyses.length > 0) {
       setAnalyses(initialAnalyses)
       setLoading(false)
       return
     }
 
-    const url = activeCustomer
-      ? `/api/tenant/performance/history?customer_id=${activeCustomer.id}`
+    const url = customerFilter !== 'all'
+      ? `/api/tenant/performance/history?customer_id=${customerFilter}`
       : '/api/tenant/performance/history'
     fetch(url)
       .then(r => r.json())
@@ -1033,7 +1085,7 @@ function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAna
       })
       .catch(e => setError(e instanceof Error ? e.message : 'Fehler beim Laden'))
       .finally(() => setLoading(false))
-  }, [activeCustomer, analysesCacheKey, initialAnalyses])
+  }, [analysesCacheKey, customerFilter, initialAnalyses])
 
   const handleOpen = async (id: string) => {
     setOpenLoading(true)
@@ -1096,22 +1148,50 @@ function VerlaufTab({ initialAnalyses = [] }: { initialAnalyses?: PerformanceAna
 
   if (analyses.length === 0) {
     return (
-      <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
-        <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 dark:bg-[#151c28]">
-            <History className="h-5 w-5 text-slate-400 dark:text-slate-500" />
-          </div>
-          <div>
-            <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Noch keine Analysen gespeichert</p>
-            <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Starte eine Analyse im Tab &bdquo;Analyse&ldquo; oder &bdquo;Vergleich&ldquo;.</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="space-y-4">
+        <Select value={customerFilter} onValueChange={setCustomerFilter}>
+          <SelectTrigger className="w-[220px] rounded-xl">
+            <SelectValue placeholder="Kunde filtern" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Alle Kunden</SelectItem>
+            {customers.map((customer) => (
+              <SelectItem key={customer.id} value={customer.id}>
+                {customer.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Card className="rounded-2xl border border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] shadow-soft">
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 dark:bg-[#151c28]">
+              <History className="h-5 w-5 text-slate-400 dark:text-slate-500" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Noch keine Analysen gespeichert</p>
+              <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">Starte eine Analyse im Tab &bdquo;Analyse&ldquo; oder &bdquo;Vergleich&ldquo;.</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
     <div className="space-y-2">
+      <Select value={customerFilter} onValueChange={setCustomerFilter}>
+        <SelectTrigger className="w-[220px] rounded-xl">
+          <SelectValue placeholder="Kunde filtern" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">Alle Kunden</SelectItem>
+          {customers.map((customer) => (
+            <SelectItem key={customer.id} value={customer.id}>
+              {customer.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
       {openLoading && (
         <div className="flex items-center gap-2 pb-2 text-sm text-slate-500 dark:text-slate-400">
           <Loader2 className="h-4 w-4 animate-spin" />
@@ -1184,7 +1264,6 @@ export function AiPerformanceWorkspace({
 }: {
   initialAnalyses?: PerformanceAnalysis[]
 }) {
-  const { activeCustomer } = useActiveCustomer()
   const [activeTab, setActiveTab] = useState<'analyse' | 'vergleich' | 'verlauf'>('analyse')
   const [mountedTabs, setMountedTabs] = useState<Array<'analyse' | 'vergleich' | 'verlauf'>>(['analyse'])
   const handleTabChange = useCallback((value: string) => {
@@ -1192,10 +1271,6 @@ export function AiPerformanceWorkspace({
     setActiveTab(nextTab)
     setMountedTabs((prev) => (prev.includes(nextTab) ? prev : [...prev, nextTab]))
   }, [])
-
-  if (!activeCustomer) {
-    return <NoCustomerSelected toolName="AI Performance" />
-  }
 
   return (
     <Tabs value={activeTab} onValueChange={handleTabChange}>

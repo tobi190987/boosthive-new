@@ -38,6 +38,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Pagination,
   PaginationContent,
   PaginationItem,
@@ -48,7 +55,6 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { SeoCompareWorkspace } from '@/components/seo-compare-workspace'
-import { NoCustomerSelected } from '@/components/no-customer-selected'
 import type { SeoAnalysisStatusPayload } from '@/lib/tenant-app-data'
 
 type WorkspaceRole = 'admin' | 'member'
@@ -1558,7 +1564,7 @@ function SeoAnalysisWorkspace({
   initialAnalysisStatus?: SeoAnalysisStatusPayload | null
 }) {
   const router = useRouter()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [view, setView] = useState<View>({ type: 'list' })
   const [analyses, setAnalyses] = useState<SeoAnalysisSummary[]>(initialAnalyses)
   const [loading, setLoading] = useState(initialAnalyses.length === 0)
@@ -1567,6 +1573,8 @@ function SeoAnalysisWorkspace({
   const [detailLoading, setDetailLoading] = useState(Boolean(initialAnalysisId))
   const [urlInput, setUrlInput] = useState('')
   const [crawlMode, setCrawlMode] = useState<SeoCrawlMode>('single')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
+  const [customerFilter, setCustomerFilter] = useState<string>(activeCustomer?.id ?? 'all')
   const isMountedRef = useRef(true)
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [activeTab, setActiveTab] = useState<'analyse' | 'compare'>('analyse')
@@ -1575,10 +1583,14 @@ function SeoAnalysisWorkspace({
     crawlMode !== 'multiple'
   )
 
+  useEffect(() => {
+    setCustomerFilter(activeCustomer?.id ?? 'all')
+  }, [activeCustomer])
+
   const loadAnalyses = useCallback(async () => {
     try {
-      const url = activeCustomer
-        ? `/api/tenant/seo/analyses?customer_id=${activeCustomer.id}`
+      const url = customerFilter !== 'all'
+        ? `/api/tenant/seo/analyses?customer_id=${customerFilter}`
         : '/api/tenant/seo/analyses'
       const response = await fetch(url, { credentials: 'include' })
       if (!response.ok) {
@@ -1593,7 +1605,7 @@ function SeoAnalysisWorkspace({
     } finally {
       setLoading(false)
     }
-  }, [activeCustomer])
+  }, [customerFilter])
 
   useEffect(() => {
     isMountedRef.current = true
@@ -1688,14 +1700,14 @@ function SeoAnalysisWorkspace({
   )
 
   useEffect(() => {
-    if (!activeCustomer && initialAnalyses.length > 0) {
+    if (customerFilter === 'all' && initialAnalyses.length > 0) {
       setAnalyses(initialAnalyses)
       setLoading(false)
       return
     }
 
     void loadAnalyses()
-  }, [activeCustomer, initialAnalyses, loadAnalyses])
+  }, [customerFilter, initialAnalyses, loadAnalyses])
 
   useEffect(() => {
     try {
@@ -1859,7 +1871,7 @@ function SeoAnalysisWorkspace({
           urls,
           crawlMode,
           maxPages: 50,
-          customerId: activeCustomer?.id ?? null,
+          customerId: selectedCustomerId === 'none' ? null : selectedCustomerId,
         }),
       })
 
@@ -1984,43 +1996,6 @@ function SeoAnalysisWorkspace({
     )
   }
 
-  if (!activeCustomer) {
-    return (
-      <div className="space-y-6">
-        <div className="flex gap-1 rounded-2xl border border-slate-100 bg-slate-50 p-1 w-fit dark:border-[#252d3a] dark:bg-[#1e2635]">
-          <button
-            type="button"
-            onClick={() => setActiveTab('analyse')}
-            className={cn(
-              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
-              activeTab === 'analyse'
-                ? 'bg-white text-slate-900 shadow-sm dark:bg-[#151c28] dark:text-slate-100'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-            )}
-          >
-            Analyse
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('compare')}
-            className={cn(
-              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
-              activeTab === 'compare'
-                ? 'bg-white text-slate-900 shadow-sm dark:bg-[#151c28] dark:text-slate-100'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300'
-            )}
-          >
-            Vergleich
-          </button>
-        </div>
-
-        <NoCustomerSelected
-          toolName={activeTab === 'compare' ? 'SEO Competitor Analyse' : 'SEO Analyse'}
-        />
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
       {/* Tab switcher */}
@@ -2070,6 +2045,26 @@ function SeoAnalysisWorkspace({
               <AlertDescription>{error}</AlertDescription>
             </Alert>
           )}
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Kunde</label>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="h-12 rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28] text-slate-900 dark:text-slate-100">
+                <SelectValue placeholder="Ohne Kunde analysieren" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Ohne Kunde</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
+              Optional. Die Analyse kann auch ohne Kundenzuordnung gestartet werden.
+            </p>
+          </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Crawl-Modus</label>
@@ -2170,7 +2165,7 @@ function SeoAnalysisWorkspace({
               type="button"
               onClick={() => void handleSubmit()}
               disabled={submitting}
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
             >
               {submitting ? (
                 <>
@@ -2200,9 +2195,24 @@ function SeoAnalysisWorkspace({
               Vergangene und laufende SEO-Analysen für diesen Tenant.
             </p>
           </div>
-          <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
-            {analyses.length} Einträge
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Select value={customerFilter} onValueChange={setCustomerFilter}>
+              <SelectTrigger className="w-[220px] rounded-full">
+                <SelectValue placeholder="Kunde filtern" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Kunden</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+              {analyses.length} Einträge
+            </Badge>
+          </div>
         </div>
 
         {loading ? (
@@ -2298,7 +2308,7 @@ export function TenantToolsWorkspace({
               </p>
             </div>
             {role === 'admin' ? (
-              <Button asChild className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]">
+              <Button asChild variant="dark">
                 <Link href="/billing">
                   Zum Billing
                   <ArrowRight className="h-4 w-4" />

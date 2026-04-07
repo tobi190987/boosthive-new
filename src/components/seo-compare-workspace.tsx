@@ -22,6 +22,13 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 
 // ---------------------------------------------------------------------------
@@ -630,7 +637,7 @@ function CompareHistoryRow({
 // ---------------------------------------------------------------------------
 
 export function SeoCompareWorkspace() {
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const { toast } = useToast()
 
   const [view, setView] = useState<CompareView>({ type: 'list' })
@@ -642,14 +649,20 @@ export function SeoCompareWorkspace() {
   const [ownUrl, setOwnUrl] = useState('')
   const [competitorUrls, setCompetitorUrls] = useState<string[]>([''])
   const [crawlMode, setCrawlMode] = useState<'single' | 'full-domain'>('single')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
+  const [customerFilter, setCustomerFilter] = useState<string>(activeCustomer?.id ?? 'all')
   const [submitting, setSubmitting] = useState(false)
   const [pendingUrls, setPendingUrls] = useState<string[]>([])
+
+  useEffect(() => {
+    setCustomerFilter(activeCustomer?.id ?? 'all')
+  }, [activeCustomer])
 
   const loadHistory = useCallback(async () => {
     setHistoryLoading(true)
     try {
-      const url = activeCustomer
-        ? `/api/tenant/seo/compare?customer_id=${activeCustomer.id}`
+      const url = customerFilter !== 'all'
+        ? `/api/tenant/seo/compare?customer_id=${customerFilter}`
         : '/api/tenant/seo/compare'
       const response = await fetch(url, { credentials: 'include' })
       if (!response.ok) throw new Error('Verlauf konnte nicht geladen werden.')
@@ -660,7 +673,7 @@ export function SeoCompareWorkspace() {
     } finally {
       setHistoryLoading(false)
     }
-  }, [activeCustomer])
+  }, [customerFilter])
 
   useEffect(() => {
     void loadHistory()
@@ -709,7 +722,7 @@ export function SeoCompareWorkspace() {
           competitorUrls: trimmedCompetitors,
           crawlMode,
           maxPages: 10,
-          customerId: activeCustomer?.id ?? null,
+          customerId: selectedCustomerId === 'none' ? null : selectedCustomerId,
         }),
       })
 
@@ -803,6 +816,26 @@ export function SeoCompareWorkspace() {
           )}
 
           <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Kunde</label>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
+              <SelectTrigger className="h-12 rounded-2xl border-slate-200 dark:border-[#252d3a] bg-slate-50 dark:bg-[#1e2635]">
+                <SelectValue placeholder="Ohne Kunde vergleichen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Ohne Kunde</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+              Optional. Der Vergleich kann auch ohne Kundenzuordnung gespeichert werden.
+            </p>
+          </div>
+
+          <div className="space-y-2">
             <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Deine URL</label>
             <Input
               value={ownUrl}
@@ -882,7 +915,7 @@ export function SeoCompareWorkspace() {
             type="button"
             onClick={() => void handleSubmit()}
             disabled={submitting}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             {submitting ? (
               <>
@@ -906,9 +939,24 @@ export function SeoCompareWorkspace() {
             <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Vergleiche</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">Gespeicherte Wettbewerbervergleiche für diesen Tenant.</p>
           </div>
-          <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
-            {history.length} Einträge
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Select value={customerFilter} onValueChange={setCustomerFilter}>
+              <SelectTrigger className="w-[220px] rounded-full">
+                <SelectValue placeholder="Kunde filtern" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Kunden</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Badge className="rounded-full bg-slate-50 dark:bg-[#151c28] text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+              {history.length} Einträge
+            </Badge>
+          </div>
         </div>
 
         {historyLoading ? (

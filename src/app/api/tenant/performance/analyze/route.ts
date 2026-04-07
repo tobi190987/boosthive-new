@@ -9,6 +9,23 @@ import type { Filters } from '@/lib/performance/types'
 
 export const maxDuration = 60
 
+async function validateCustomerId(
+  tenantId: string,
+  customerId: string | null | undefined,
+  admin: ReturnType<typeof createAdminClient>
+) {
+  if (!customerId) return null
+
+  const { data: customer } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  return customer
+}
+
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
@@ -77,6 +94,13 @@ export async function POST(request: NextRequest) {
     }
 
     const admin = createAdminClient()
+    if (customerId) {
+      const customer = await validateCustomerId(tenantId, customerId, admin)
+      if (!customer) {
+        return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+      }
+    }
+
     const { data: saved } = await admin
       .from('performance_analyses')
       .insert({

@@ -66,7 +66,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
-import { NoCustomerSelected } from '@/components/no-customer-selected'
 import type { KeywordProjectDetailItem, KeywordProjectGscStatus } from '@/lib/tenant-app-data'
 
 // ---------------------------------------------------------------------------
@@ -205,7 +204,6 @@ type View =
 
 type WorkspaceRole = 'admin' | 'member'
 
-const PROJECT_LIMIT = 5
 const KEYWORD_LIMIT = 50
 const COMPETITOR_LIMIT = 5
 
@@ -438,19 +436,24 @@ function ProjectList({
   onOpenProject,
 }: ProjectListProps) {
   const { toast } = useToast()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [projects, setProjects] = useState<KeywordProject[]>(initialProjects)
   const [loading, setLoading] = useState(initialProjects.length === 0)
   const [error, setError] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
-  const customerCacheKey = `${PROJECT_LIST_CACHE_PREFIX}${activeCustomer?.id ?? 'all'}`
+  const [customerFilter, setCustomerFilter] = useState<string>(activeCustomer?.id ?? 'all')
+  const customerCacheKey = `${PROJECT_LIST_CACHE_PREFIX}${customerFilter}`
+
+  useEffect(() => {
+    setCustomerFilter(activeCustomer?.id ?? 'all')
+  }, [activeCustomer])
 
   const loadProjects = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const url = activeCustomer
-        ? `${API_BASE}?customer_id=${activeCustomer.id}`
+      const url = customerFilter !== 'all'
+        ? `${API_BASE}?customer_id=${customerFilter}`
         : API_BASE
       const data = await apiFetch<{ projects: KeywordProject[] }>(url)
       setProjects(data.projects)
@@ -460,13 +463,13 @@ function ProjectList({
     } finally {
       setLoading(false)
     }
-  }, [activeCustomer, customerCacheKey])
+  }, [customerCacheKey, customerFilter])
 
   useEffect(() => {
-    if (!activeCustomer && initialProjects.length > 0) {
+    if (customerFilter === 'all' && initialProjects.length > 0) {
       writeSessionCache(customerCacheKey, initialProjects)
     }
-  }, [activeCustomer, customerCacheKey, initialProjects])
+  }, [customerCacheKey, customerFilter, initialProjects])
 
   useEffect(() => {
     const cachedProjects = readSessionCache<KeywordProject[]>(customerCacheKey)
@@ -476,21 +479,16 @@ function ProjectList({
       return
     }
 
-    if (!activeCustomer && initialProjects.length > 0) {
+    if (customerFilter === 'all' && initialProjects.length > 0) {
       setProjects(initialProjects)
       setLoading(false)
       return
     }
 
     void loadProjects()
-  }, [activeCustomer, customerCacheKey, initialProjects, loadProjects])
+  }, [customerCacheKey, customerFilter, initialProjects, loadProjects])
 
   const isAdmin = role === 'admin'
-  const atLimit = projects.length >= PROJECT_LIMIT
-
-  if (!activeCustomer) {
-    return <NoCustomerSelected toolName="Keywordranking" />
-  }
 
   // Loading skeleton
   if (loading) {
@@ -548,17 +546,23 @@ function ProjectList({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge
-            variant="outline"
-            className="rounded-full border-slate-100 dark:border-[#252d3a] bg-white dark:bg-[#151c28] px-3 py-1 text-xs text-slate-600 dark:text-slate-300"
-          >
-            {projects.length}/{PROJECT_LIMIT} Projekte
-          </Badge>
+          <Select value={customerFilter} onValueChange={setCustomerFilter}>
+            <SelectTrigger className="w-[220px] rounded-full">
+              <SelectValue placeholder="Kunde filtern" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Alle Kunden</SelectItem>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {isAdmin && (
             <Button
               onClick={() => setCreateOpen(true)}
-              disabled={atLimit}
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
               aria-label="Neues Keyword-Projekt erstellen"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -567,17 +571,6 @@ function ProjectList({
           )}
         </div>
       </div>
-
-      {/* Limit warning */}
-      {atLimit && isAdmin && (
-        <Alert className="rounded-2xl border-amber-200 bg-amber-50">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800">Projektlimit erreicht</AlertTitle>
-          <AlertDescription className="text-amber-700">
-            Du hast das Maximum von {PROJECT_LIMIT} Projekten erreicht. Lösche ein bestehendes Projekt oder kontaktiere den Support für ein Upgrade.
-          </AlertDescription>
-        </Alert>
-      )}
 
       {/* Empty state */}
       {projects.length === 0 ? (
@@ -595,7 +588,7 @@ function ProjectList({
             {isAdmin && (
               <Button
                 onClick={() => setCreateOpen(true)}
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                variant="dark"
               >
                 <Plus className="mr-2 h-4 w-4" />
                 Erstes Projekt erstellen
@@ -692,11 +685,12 @@ interface CreateProjectDialogProps {
 
 function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDialogProps) {
   const { toast } = useToast()
-  const { activeCustomer } = useActiveCustomer()
+  const { activeCustomer, customers } = useActiveCustomer()
   const [name, setName] = useState('')
   const [domain, setDomain] = useState('')
   const [language, setLanguage] = useState('de')
   const [country, setCountry] = useState('DE')
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
   const [saving, setSaving] = useState(false)
   const [fieldError, setFieldError] = useState<string | null>(null)
 
@@ -705,6 +699,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
     setDomain('')
     setLanguage('de')
     setCountry('DE')
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
     setFieldError(null)
   }
 
@@ -734,7 +729,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
           target_domain: normalized,
           language_code: language,
           country_code: country,
-          customer_id: activeCustomer?.id ?? null,
+          customer_id: selectedCustomerId === 'none' ? null : selectedCustomerId,
         }),
       })
       toast({ title: 'Projekt erstellt', description: `"${trimmedName}" wurde angelegt.` })
@@ -822,6 +817,26 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
             </div>
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="project-customer">Kunde</Label>
+            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId} disabled={saving}>
+              <SelectTrigger id="project-customer">
+                <SelectValue placeholder="Ohne Kunde anlegen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Ohne Kunde</SelectItem>
+                {customers.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Optional. Standardmäßig ist der aktuell ausgewählte Kunde vorbelegt.
+            </p>
+          </div>
+
           {fieldError && (
             <Alert variant="destructive" className="rounded-xl">
               <AlertCircle className="h-4 w-4" />
@@ -842,7 +857,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
             <Button
               type="submit"
               disabled={saving}
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
             >
               {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Erstellen
@@ -1338,7 +1353,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
           </div>
           <Button
             onClick={onOpenIntegrations}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             Zu den Integrationen
           </Button>
@@ -1420,7 +1435,7 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
                 <Button
                   onClick={handleRefresh}
                   disabled={refreshing || status === 'running' || status === 'queued'}
-                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                  variant="dark"
                 >
                   {refreshing ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -2104,7 +2119,7 @@ function KeywordsTab({ projectId, targetDomain }: KeywordsTabProps) {
           <Button
             type="submit"
             disabled={adding || atLimit || !newKeyword.trim()}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             {adding ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -2433,7 +2448,7 @@ function CompetitorsTab({ projectId, targetDomain }: CompetitorsTabProps) {
           <Button
             type="submit"
             disabled={adding || atLimit || !newDomain.trim()}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             {adding ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -2710,12 +2725,12 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
               onChange={(e) => setEditName(e.target.value)}
               disabled={savingName}
               className="flex-1"
-              aria-label="Projektname aendern"
+              aria-label="Projektname ändern"
             />
             <Button
               type="submit"
               disabled={savingName || editName.trim() === project.name || !editName.trim()}
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
             >
               {savingName && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Speichern
@@ -2793,7 +2808,7 @@ function SettingsTab({ project, role, onUpdated, onDeleted }: SettingsTabProps) 
                   editCountry === project.country_code &&
                   editTrackingInterval === (project.tracking_interval ?? 'daily'))
               }
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              variant="dark"
             >
               {savingSettings && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Speichern
@@ -3077,7 +3092,7 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
           </div>
           <Button
             onClick={onOpenIntegrations}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             Zu den Integrationen
           </Button>
@@ -3104,7 +3119,7 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
           </div>
           <Button
             onClick={onOpenIntegrations}
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
           >
             Zu den Integrationen
           </Button>
@@ -3622,7 +3637,7 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
                 <Button
                   onClick={handleConnect}
                   disabled={connecting}
-                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                  variant="dark"
                 >
                   {connecting ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -3672,7 +3687,7 @@ function IntegrationsTab({ projectId, role, isActive }: IntegrationsTabProps) {
                   <Button
                     onClick={handleConnect}
                     disabled={connecting}
-                    className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                    variant="dark"
                   >
                     {connecting ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

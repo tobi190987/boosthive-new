@@ -45,6 +45,23 @@ const createProjectSchema = z.object({
     .max(10, 'Maximal 10 Keywords.'),
 })
 
+async function validateCustomerId(
+  tenantId: string,
+  customerId: string | null | undefined,
+  admin: ReturnType<typeof createAdminClient>
+) {
+  if (!customerId) return null
+
+  const { data: customer } = await admin
+    .from('customers')
+    .select('id')
+    .eq('id', customerId)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  return customer
+}
+
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
@@ -134,6 +151,13 @@ export async function POST(request: NextRequest) {
   const { customer_id, brand_name, website_url, competitors, keywords } = parsed.data
 
   const admin = createAdminClient()
+  if (customer_id) {
+    const customer = await validateCustomerId(tenantId, customer_id, admin)
+    if (!customer) {
+      return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
+    }
+  }
+
   const { data, error } = await admin
     .from('visibility_projects')
     .insert({
