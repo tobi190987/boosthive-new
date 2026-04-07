@@ -19,6 +19,7 @@ import {
   Megaphone,
   Menu,
   Search,
+  ShieldCheck,
   UserRound,
   Users2,
 } from 'lucide-react'
@@ -102,6 +103,7 @@ function tenantNav(context: TenantShellContext) {
       ? [
           { label: 'Kunden', href: '/tools/customers', icon: UserRound },
           { label: 'User-Management', href: '/settings/team', icon: Users2 },
+          { label: 'Rechtliches & Datenschutz', href: '/settings/legal', icon: ShieldCheck },
           { label: 'Abrechnung', href: '/billing', icon: CreditCard },
         ]
       : []

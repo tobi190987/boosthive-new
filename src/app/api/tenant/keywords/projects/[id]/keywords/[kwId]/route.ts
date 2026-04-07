@@ -3,6 +3,7 @@ import { requireTenantUser } from '@/lib/auth-guards'
 import { checkRateLimit, getClientIp, rateLimitResponse, VISIBILITY_PROJECT_WRITE, VISIBILITY_READ } from '@/lib/rate-limit'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 
 export async function DELETE(
   request: NextRequest,
@@ -32,6 +33,15 @@ export async function DELETE(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!count) return NextResponse.json({ error: 'Keyword nicht gefunden.' }, { status: 404 })
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'keyword',
+    resourceId: kwId,
+    context: { project_id: projectId },
+  })
 
   return NextResponse.json({})
 }

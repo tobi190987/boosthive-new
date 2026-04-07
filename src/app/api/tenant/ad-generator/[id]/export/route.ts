@@ -5,6 +5,7 @@ import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { AD_PLATFORMS_MAP, type AdTypeConfig } from '@/lib/ad-limits'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 import {
   checkRateLimit,
   getClientIp,
@@ -80,6 +81,15 @@ export async function GET(
       : 'produkt'
   const date = new Date(data.created_at).toISOString().slice(0, 10)
   const fileName = `ads_${slugify(product)}_${date}.xlsx`
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_export',
+    resourceType: 'ad_generation_export',
+    resourceId: id,
+    context: { file_name: fileName },
+  })
 
   return new NextResponse(bytes, {
     status: 200,

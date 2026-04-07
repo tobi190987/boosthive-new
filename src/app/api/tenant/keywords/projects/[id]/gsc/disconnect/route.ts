@@ -10,6 +10,7 @@ import { requireTenantAdmin } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, GSC_WRITE } from '@/lib/rate-limit'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 
 const paramsSchema = z.object({
   id: z.string().uuid('Ungültige Projekt-ID.'),
@@ -58,6 +59,15 @@ export async function DELETE(
     .eq('id', conn.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'gsc_connection',
+    resourceId: conn.id,
+    context: { project_id: projectId },
+  })
 
   return NextResponse.json({})
 }

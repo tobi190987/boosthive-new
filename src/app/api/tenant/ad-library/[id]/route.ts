@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 import {
   AD_GENERATOR_READ,
   AD_GENERATOR_WRITE,
@@ -111,6 +112,14 @@ export async function DELETE(
   }
 
   await admin.storage.from('ad-library-assets').remove([asset.storage_path])
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'ad_library_asset',
+    resourceId: id,
+  })
 
   return new NextResponse(null, { status: 204 })
 }

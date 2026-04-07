@@ -2,7 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
-import { parseCSV, applyFilters, buildLLMContext, computeKPIDeltas } from '@/lib/performance/csv-parser'
+import {
+  parseCSV,
+  applyFilters,
+  buildLLMContext,
+  computeKPIDeltas,
+  anonymizePiiText,
+} from '@/lib/performance/csv-parser'
 import { SYSTEM_PROMPT, buildCompareUserPrompt } from '@/lib/performance/prompts'
 import { createAdminClient } from '@/lib/supabase-admin'
 import type { Filters } from '@/lib/performance/types'
@@ -92,21 +98,24 @@ export async function POST(request: NextRequest) {
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const analysis = (response.content[0] as { text: string }).text
-      .replace(/\[Entfällt\]/g, '').replace(/\[entfällt\]/g, '')
+    const analysis = anonymizePiiText(
+      (response.content[0] as { text: string }).text
+        .replace(/\[Entfällt\]/g, '')
+        .replace(/\[entfällt\]/g, '')
+    )
 
     const resultMeta = {
       compare: true as const,
       platform: metaA.platform,
       a: {
-        file_name: fileA.name,
+        file_name: anonymizePiiText(fileA.name),
         label: labelA,
         rows: filteredA.length,
         kpis: metaA.kpis,
         date_range: metaA.date_range,
       },
       b: {
-        file_name: fileB.name,
+        file_name: anonymizePiiText(fileB.name),
         label: labelB,
         rows: filteredB.length,
         kpis: metaB.kpis,

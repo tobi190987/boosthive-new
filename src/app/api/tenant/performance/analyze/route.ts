@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
-import { parseCSV, applyFilters, buildLLMContext } from '@/lib/performance/csv-parser'
+import { parseCSV, applyFilters, buildLLMContext, anonymizePiiText } from '@/lib/performance/csv-parser'
 import { SYSTEM_PROMPT, CONTENT_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/performance/prompts'
 import { createAdminClient } from '@/lib/supabase-admin'
 import type { Filters } from '@/lib/performance/types'
@@ -78,8 +78,11 @@ export async function POST(request: NextRequest) {
       messages: [{ role: 'user', content: userPrompt }],
     })
 
-    const analysis = (response.content[0] as { text: string }).text
-      .replace(/\[Entfällt\]/g, '').replace(/\[entfällt\]/g, '')
+    const analysis = anonymizePiiText(
+      (response.content[0] as { text: string }).text
+        .replace(/\[Entfällt\]/g, '')
+        .replace(/\[entfällt\]/g, '')
+    )
 
     const resultMeta = {
       rows: filteredRows.length,

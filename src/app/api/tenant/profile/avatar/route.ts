@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 
 const PROFILE_AVATAR_BUCKET = 'profile-avatars'
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp']
@@ -126,6 +127,14 @@ export async function DELETE(request: NextRequest) {
     console.error('[DELETE /api/tenant/profile/avatar] Profilbild konnte nicht entfernt werden:', updateError)
     return NextResponse.json({ error: 'Profilbild konnte nicht entfernt werden.' }, { status: 500 })
   }
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'profile_avatar',
+    resourceId: authResult.auth.userId,
+  })
 
   return NextResponse.json({ avatar_url: null })
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 
 export async function DELETE(
   request: NextRequest,
@@ -55,6 +56,15 @@ export async function DELETE(
       )
     }
   }
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'tenant_invitation',
+    resourceId: id,
+    context: { revoked: true },
+  })
 
   return NextResponse.json({ success: true })
 }

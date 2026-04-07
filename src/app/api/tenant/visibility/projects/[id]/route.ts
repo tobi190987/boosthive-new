@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 import {
   checkRateLimit,
   getClientIp,
@@ -164,6 +165,14 @@ export async function DELETE(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (count === 0) return NextResponse.json({ error: 'Projekt nicht gefunden.' }, { status: 404 })
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'visibility_project',
+    resourceId: id,
+  })
 
   return new NextResponse(null, { status: 204 })
 }

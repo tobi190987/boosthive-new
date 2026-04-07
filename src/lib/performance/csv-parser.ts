@@ -42,6 +42,15 @@ const COLUMN_MAP: Record<string, string> = {
 }
 
 type Row = Record<string, string | number | null>
+const EMAIL_PATTERN = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi
+
+function anonymizePiiString(value: string) {
+  return value.replace(EMAIL_PATTERN, '[redacted-email]')
+}
+
+export function anonymizePiiText(value: string) {
+  return anonymizePiiString(value)
+}
 
 function detectDelimiter(line: string): string {
   const candidates = [',', ';', '\t', '|']
@@ -301,7 +310,8 @@ export function parseCSV(fileContent: string): { rows: Row[]; meta: ParseMeta } 
       for (const [orig, mapped] of Object.entries(colMap)) {
         if (!usedCols.includes(mapped)) continue
         if (nonNumeric.has(mapped)) {
-          row[mapped] = String(rawRow[orig] ?? '').trim() || null
+          const rawValue = String(rawRow[orig] ?? '').trim()
+          row[mapped] = rawValue ? anonymizePiiString(rawValue) : null
         } else {
           row[mapped] = parseNumber(rawRow[orig] ?? '')
         }
@@ -372,7 +382,7 @@ export function buildLLMContext(rows: Row[], meta: ParseMeta): string {
     const v = r[c]
     if (v === null || v === undefined) return '\u2014'
     if (typeof v === 'number') return isNaN(v) ? '\u2014' : v.toFixed(2)
-    return String(v)
+    return anonymizePiiString(String(v))
   }).join(' | '))
 
   return [header, separator, ...dataRows].join('\n')

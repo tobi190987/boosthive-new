@@ -40,6 +40,22 @@ function inlineFormat(raw: string): string {
     .replace(/`(.+?)`/g, '<code class="px-1 py-0.5 rounded bg-slate-100 dark:bg-[#1e2635] text-xs font-mono text-slate-700 dark:text-slate-300">$1</code>')
 }
 
+async function recordClientExportAudit(resourceType: string, context: Record<string, unknown> = {}) {
+  try {
+    await fetch('/api/tenant/legal/audit-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action_type: 'data_export',
+        resource_type: resourceType,
+        context,
+      }),
+    })
+  } catch {
+    // Export soll nicht blockieren, wenn Audit-Log fehlschlaegt.
+  }
+}
+
 function renderMarkdown(text: string): string {
   const rawLines = text.split('\n')
   const out: string[] = []
@@ -502,6 +518,14 @@ function AnalysisResult({ result, onReset }: { result: AnalyzeResult; onReset: (
   const html = renderMarkdown(bodyText)
   const visibleKpis = KPI_DEFS.filter(d => result.meta.kpis[d.key] !== null)
 
+  const handlePdfExport = () => {
+    void recordClientExportAudit('ai_performance_pdf', {
+      analysis_id: result.id ?? null,
+      mode: 'analyze',
+    })
+    window.print()
+  }
+
   return (
     <div className="space-y-4 print-area">
       {/* Print header — nur beim Drucken sichtbar */}
@@ -546,7 +570,7 @@ function AnalysisResult({ result, onReset }: { result: AnalyzeResult; onReset: (
             </div>
           </div>
           <div className="flex gap-2 no-print">
-            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs rounded-full" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs rounded-full" onClick={handlePdfExport}>
               <FileDown className="h-3.5 w-3.5" />
               Als PDF exportieren
             </Button>
@@ -596,6 +620,14 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
   const html = renderMarkdown(result.analysis)
   const shownKpis = KPI_DEFS.filter(d => result.meta.a.kpis[d.key] !== null || result.meta.b.kpis[d.key] !== null)
 
+  const handlePdfExport = () => {
+    void recordClientExportAudit('ai_performance_pdf', {
+      analysis_id: result.id ?? null,
+      mode: 'compare',
+    })
+    window.print()
+  }
+
   return (
     <div className="space-y-4 print-area">
       {/* Print header */}
@@ -625,7 +657,7 @@ function CompareResultView({ result, onReset }: { result: CompareResult; onReset
               </Badge>
             )}
             <div className="ml-auto flex gap-2 no-print">
-              <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs rounded-full" onClick={() => window.print()}>
+              <Button variant="outline" size="sm" className="h-7 gap-1.5 text-xs rounded-full" onClick={handlePdfExport}>
                 <FileDown className="h-3.5 w-3.5" />
                 Als PDF exportieren
               </Button>

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireTenantUser, requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 import {
   checkRateLimit,
   getClientIp,
@@ -130,6 +131,15 @@ export async function DELETE(
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'customer_document',
+    resourceId: docId,
+    context: { customer_id: id },
+  })
 
   return new NextResponse(null, { status: 204 })
 }

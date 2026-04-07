@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
 
 const ALLOWED_MIME_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
 const MAX_FILE_SIZE = 2 * 1024 * 1024
@@ -146,6 +147,13 @@ export async function DELETE(request: NextRequest) {
     console.error('[DELETE /api/tenant/logo] logo_url Reset fehlgeschlagen:', updateError)
     return NextResponse.json({ error: 'Logo-URL konnte nicht zurückgesetzt werden.' }, { status: 500 })
   }
+
+  await recordTenantDataAuditLog({
+    tenantId,
+    actorUserId: authResult.auth.userId,
+    actionType: 'data_delete',
+    resourceType: 'tenant_logo',
+  })
 
   return NextResponse.json({ success: true })
 }
