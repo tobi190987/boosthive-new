@@ -44,14 +44,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Pagination,
-  PaginationContent,
-  PaginationItem,
-  PaginationLink,
-  PaginationNext,
-  PaginationPrevious,
-} from '@/components/ui/pagination'
 import { Textarea } from '@/components/ui/textarea'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { SeoCompareWorkspace } from '@/components/seo-compare-workspace'
@@ -662,9 +654,12 @@ function SeoResultsView({
   onBack: () => void
 }) {
   const tone = scoreTone(result.overallScore)
-  const [detailsPage, setDetailsPage] = useState(1)
+  const [visibleDetailCount, setVisibleDetailCount] = useState(DETAIL_PAGE_SIZE)
   const [activeProblemFilterKey, setActiveProblemFilterKey] = useState<string | null>(null)
+  const [showDetailsBackToTop, setShowDetailsBackToTop] = useState(false)
   const printRef = useRef<HTMLDivElement | null>(null)
+  const detailsTopRef = useRef<HTMLDivElement | null>(null)
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
   const recommendations = extractInsightSection(result.aiInsights, 'Handlungsempfehlungen')
   const sortedPages = useMemo(
@@ -715,15 +710,62 @@ function SeoResultsView({
     ? sortedPages.filter((page) => activeProblemFilter.matches(page))
     : sortedPages
   const hiddenPagesCount = activeProblemFilter ? sortedPages.length - matchingPages.length : 0
-  const totalDetailPages = Math.max(1, Math.ceil(matchingPages.length / DETAIL_PAGE_SIZE))
-  const paginatedPages = matchingPages.slice(
-    (detailsPage - 1) * DETAIL_PAGE_SIZE,
-    detailsPage * DETAIL_PAGE_SIZE
-  )
+  const visiblePages = matchingPages.slice(0, visibleDetailCount)
+  const hasMorePages = visiblePages.length < matchingPages.length
+  const handleLoadMoreDetails = useCallback(() => {
+    setVisibleDetailCount((current) => Math.min(current + DETAIL_PAGE_SIZE, matchingPages.length))
+  }, [matchingPages.length])
   const handleProblemFilterSelect = useCallback((filterKey: string | null) => {
     setActiveProblemFilterKey(filterKey)
-    setDetailsPage(1)
-  }, [setDetailsPage])
+    setVisibleDetailCount(DETAIL_PAGE_SIZE)
+  }, [])
+  const handleScrollDetailsToTop = useCallback(() => {
+    detailsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [])
+
+  useEffect(() => {
+    setVisibleDetailCount(DETAIL_PAGE_SIZE)
+  }, [result.pages, activeProblemFilterKey])
+
+  useEffect(() => {
+    if (!hasMorePages || !loadMoreTriggerRef.current) return
+
+    const trigger = loadMoreTriggerRef.current
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setVisibleDetailCount((current) => Math.min(current + DETAIL_PAGE_SIZE, matchingPages.length))
+        }
+      },
+      { rootMargin: '240px 0px' }
+    )
+
+    observer.observe(trigger)
+
+    return () => observer.disconnect()
+  }, [hasMorePages, matchingPages.length, visiblePages.length])
+
+  useEffect(() => {
+    if (!detailsTopRef.current || visiblePages.length <= DETAIL_PAGE_SIZE) {
+      setShowDetailsBackToTop(false)
+      return
+    }
+
+    const trigger = detailsTopRef.current
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        setShowDetailsBackToTop(!entry.isIntersecting && entry.boundingClientRect.top < 0)
+      },
+      {
+        threshold: 0,
+      }
+    )
+
+    observer.observe(trigger)
+
+    return () => observer.disconnect()
+  }, [visiblePages.length])
 
   const handleExportPdf = useCallback(() => {
     if (!printRef.current) {
@@ -1024,6 +1066,7 @@ function SeoResultsView({
       )}
 
       <div className="space-y-4">
+        <div ref={detailsTopRef} className="h-px w-full" aria-hidden="true" />
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Seiten im Detail</h2>
@@ -1034,8 +1077,7 @@ function SeoResultsView({
             </p>
           </div>
           <Badge className="rounded-full bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
-            {(detailsPage - 1) * DETAIL_PAGE_SIZE + 1}-
-            {Math.min(detailsPage * DETAIL_PAGE_SIZE, matchingPages.length)} von {matchingPages.length}
+            {matchingPages.length === 0 ? 0 : 1}-{visiblePages.length} von {matchingPages.length}
           </Badge>
         </div>
         {activeProblemFilter ? (
@@ -1056,64 +1098,39 @@ function SeoResultsView({
             </Button>
           </div>
         ) : null}
-        {paginatedPages.map((page) => (
+        {visiblePages.map((page) => (
           <PageResultCard key={page.url} page={page} />
         ))}
-        {totalDetailPages > 1 ? (
-          <Pagination className="justify-start">
-            <PaginationContent>
-              <PaginationItem>
-                <PaginationPrevious
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setDetailsPage((current) => Math.max(1, current - 1))
-                  }}
-                  className={cn(
-                    'rounded-full border border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
-                    detailsPage === 1 && 'pointer-events-none opacity-50'
-                  )}
-                />
-              </PaginationItem>
-
-              {Array.from({ length: totalDetailPages }, (_, index) => index + 1).map((page) => (
-                <PaginationItem key={page}>
-                  <PaginationLink
-                    href="#"
-                    isActive={page === detailsPage}
-                    onClick={(event) => {
-                      event.preventDefault()
-                      setDetailsPage(page)
-                    }}
-                    className={cn(
-                      'rounded-full',
-                      page === detailsPage
-                        ? 'border-blue-600 bg-blue-50 text-blue-600'
-                        : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]'
-                    )}
-                  >
-                    {page}
-                  </PaginationLink>
-                </PaginationItem>
-              ))}
-
-              <PaginationItem>
-                <PaginationNext
-                  href="#"
-                  onClick={(event) => {
-                    event.preventDefault()
-                    setDetailsPage((current) => Math.min(totalDetailPages, current + 1))
-                  }}
-                  className={cn(
-                    'rounded-full border border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
-                    detailsPage === totalDetailPages && 'pointer-events-none opacity-50'
-                  )}
-                />
-              </PaginationItem>
-            </PaginationContent>
-          </Pagination>
+        {hasMorePages ? (
+          <div className="flex flex-col items-start gap-3 pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleLoadMoreDetails}
+              className="rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]"
+            >
+              Weitere {Math.min(DETAIL_PAGE_SIZE, matchingPages.length - visiblePages.length)} Seiten laden
+            </Button>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Beim Scrollen wird die Liste automatisch erweitert.
+            </p>
+            <div ref={loadMoreTriggerRef} className="h-px w-full" aria-hidden="true" />
+          </div>
         ) : null}
       </div>
+      {showDetailsBackToTop ? (
+        <div className="pointer-events-none fixed bottom-6 right-6 z-40">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleScrollDetailsToTop}
+            className="pointer-events-auto rounded-full border-slate-200 dark:border-border bg-white/95 dark:bg-card/95 text-slate-700 dark:text-slate-200 shadow-lg backdrop-blur hover:bg-white dark:hover:bg-[#1e2635]"
+          >
+            <ChevronUp className="h-4 w-4" />
+            Zurück nach oben
+          </Button>
+        </div>
+      ) : null}
     </div>
   )
 }
