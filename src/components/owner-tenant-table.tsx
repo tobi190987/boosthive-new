@@ -378,7 +378,7 @@ export function OwnerTenantTable({
         <AlertDialogContent className="rounded-[2rem] border-slate-100 dark:border-[#252d3a] bg-slate-50 dark:bg-[#151c28]">
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {confirmTenant ? `Tenant ${ownerToggleTenantStatusLabel(confirmTenant.status).toLowerCase()}?` : 'Tenant-Status aendern?'}
+              {confirmTenant ? `Tenant ${ownerToggleTenantStatusLabel(confirmTenant.status).toLowerCase()}?` : 'Tenant-Status ändern?'}
             </AlertDialogTitle>
             <AlertDialogDescription className="leading-6">
               {confirmTenant
@@ -389,7 +389,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-[#1f2937] hover:bg-[#111827]"
+              className="rounded-full bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               onClick={async () => {
                 if (!confirmTenant) return
                 await onToggleStatus(confirmTenant)

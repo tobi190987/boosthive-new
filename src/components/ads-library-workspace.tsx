@@ -35,7 +35,14 @@ import {
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectSeparator,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
@@ -73,9 +80,11 @@ interface CustomerForm {
   name: string
   domain: string
   industry: string
+  status: 'active' | 'paused'
 }
 
 type LibraryViewMode = 'grid' | 'list'
+type UploadDialogMode = 'upload' | 'customer'
 
 const PAGE_SIZE = 100
 
@@ -83,7 +92,10 @@ const emptyCustomerForm: CustomerForm = {
   name: '',
   domain: '',
   industry: '',
+  status: 'active',
 }
+
+const CREATE_CUSTOMER_SELECT_VALUE = '__create_customer__'
 
 // ── Utilities ──────────────────────────────────────────────────────────────────
 
@@ -470,6 +482,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   // Upload dialog state
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
+  const [uploadDialogMode, setUploadDialogMode] = useState<UploadDialogMode>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [filePreviewUrl, setFilePreviewUrl] = useState<string | null>(null)
   const [metadata, setMetadata] = useState<UploadMetadata | null>(null)
@@ -480,7 +493,6 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const [savingUpload, setSavingUpload] = useState(false)
 
   // Customer dialog state
-  const [createCustomerDialogOpen, setCreateCustomerDialogOpen] = useState(false)
   const [customerForm, setCustomerForm] = useState<CustomerForm>(emptyCustomerForm)
   const [savingCustomer, setSavingCustomer] = useState(false)
 
@@ -620,11 +632,24 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     setMetadata(null)
     setUploadTitle('')
     setUploadNotes('')
+    setUploadDialogMode('upload')
+    setCustomerForm(emptyCustomerForm)
     setExtractingMetadata(false)
     setSavingUpload(false)
     setUploadDialogOpen(false)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }, [])
+
+  const openCreateCustomerDialog = useCallback(() => {
+    setCustomerForm(emptyCustomerForm)
+    setUploadDialogMode('customer')
+  }, [])
+
+  const closeCreateCustomerDialog = useCallback(() => {
+    if (savingCustomer) return
+    setCustomerForm(emptyCustomerForm)
+    setUploadDialogMode('upload')
+  }, [savingCustomer])
 
   const handleFileSelect = useCallback(async (nextFile: File | null) => {
     setFile(nextFile)
@@ -699,7 +724,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           name: customerForm.name.trim(),
           domain: customerForm.domain.trim() || null,
           industry: customerForm.industry.trim() || null,
-          status: 'active',
+          status: customerForm.status,
         }),
       })
 
@@ -716,14 +741,25 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         setUploadCustomerId(newCustomerId)
       }
       setCustomerForm(emptyCustomerForm)
-      setCreateCustomerDialogOpen(false)
+      setUploadDialogMode('upload')
       toast.success('Kunde wurde angelegt.')
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Kunde konnte nicht angelegt werden.')
     } finally {
       setSavingCustomer(false)
     }
-  }, [customerForm.domain, customerForm.industry, customerForm.name, refetchCustomers])
+  }, [customerForm.domain, customerForm.industry, customerForm.name, customerForm.status, refetchCustomers])
+
+  const handleUploadCustomerChange = useCallback(
+    (value: string) => {
+      if (value === CREATE_CUSTOMER_SELECT_VALUE) {
+        openCreateCustomerDialog()
+        return
+      }
+      setUploadCustomerId(value)
+    },
+    [openCreateCustomerDialog]
+  )
 
   const handleDeleteAsset = useCallback(async () => {
     if (!deletingAsset) return
@@ -960,7 +996,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               {isAdmin ? (
                 <Button
                   className="mt-5 rounded-full"
-                  onClick={() => setCreateCustomerDialogOpen(true)}
+                  onClick={openCreateCustomerDialog}
                 >
                   <Plus className="mr-2 h-4 w-4" />
                   Ersten Kunden anlegen
@@ -1041,217 +1077,252 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         open={uploadDialogOpen}
         onOpenChange={(open) => (open ? setUploadDialogOpen(true) : resetUploadDialog())}
       >
-        <DialogContent className="max-w-3xl rounded-[2rem]">
+        <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-[2rem]">
           <DialogHeader>
-            <DialogTitle>Anzeige hochladen</DialogTitle>
+            <DialogTitle>
+              {uploadDialogMode === 'customer' ? 'Neuen Kunden anlegen' : 'Anzeige hochladen'}
+            </DialogTitle>
           </DialogHeader>
 
-          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="ad-file">Datei</Label>
-                <Input
-                  ref={fileInputRef}
-                  id="ad-file"
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-                  onChange={(event) => void handleFileSelect(event.target.files?.[0] ?? null)}
-                />
-                <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
-                  Unterstützt: JPG, PNG, WebP, GIF, MP4, WebM und MOV. Breite, Höhe, Dateigröße
-                  und Laufzeit werden automatisch erkannt.
-                </p>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
+          {uploadDialogMode === 'customer' ? (
+            <>
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="ad-customer">Kunde</Label>
-                  <Select value={uploadCustomerId} onValueChange={setUploadCustomerId}>
-                    <SelectTrigger id="ad-customer">
-                      <SelectValue placeholder="Kunde auswählen" />
+                  <Label htmlFor="customer-name">Name *</Label>
+                  <Input
+                    id="customer-name"
+                    value={customerForm.name}
+                    onChange={(event) =>
+                      setCustomerForm((current) => ({ ...current, name: event.target.value }))
+                    }
+                    placeholder="Kundenname"
+                    disabled={savingCustomer}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-domain">Website</Label>
+                  <Input
+                    id="customer-domain"
+                    value={customerForm.domain}
+                    onChange={(event) =>
+                      setCustomerForm((current) => ({ ...current, domain: event.target.value }))
+                    }
+                    placeholder="https://beispiel.de"
+                    disabled={savingCustomer}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-industry">Branche</Label>
+                  <Input
+                    id="customer-industry"
+                    value={customerForm.industry}
+                    onChange={(event) =>
+                      setCustomerForm((current) => ({ ...current, industry: event.target.value }))
+                    }
+                    placeholder="z.B. E-Commerce"
+                    disabled={savingCustomer}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customer-status">Status</Label>
+                  <Select
+                    value={customerForm.status}
+                    onValueChange={(value) =>
+                      setCustomerForm((current) => ({
+                        ...current,
+                        status: value as 'active' | 'paused',
+                      }))
+                    }
+                  >
+                    <SelectTrigger id="customer-status" disabled={savingCustomer}>
+                      <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {customerOptions.map((customer) => (
-                        <SelectItem key={customer.id} value={customer.id}>
-                          {customer.name}
-                        </SelectItem>
-                      ))}
+                      <SelectItem value="active">Aktiv</SelectItem>
+                      <SelectItem value="paused">Pausiert</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="ad-title">Titel</Label>
-                  <Input
-                    id="ad-title"
-                    value={uploadTitle}
-                    onChange={(event) => setUploadTitle(event.target.value)}
-                    placeholder="z. B. Frühlingskampagne 1080x1350"
-                  />
+              </div>
+
+              <DialogFooter className="gap-2 sm:justify-end">
+                <Button
+                  variant="outline"
+                  className="rounded-full"
+                  onClick={closeCreateCustomerDialog}
+                  disabled={savingCustomer}
+                >
+                  Zurück
+                </Button>
+                <Button
+                  className="rounded-full"
+                  disabled={savingCustomer}
+                  onClick={() => void handleCreateCustomer()}
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {savingCustomer ? 'Speichern...' : 'Kunde speichern'}
+                </Button>
+              </DialogFooter>
+            </>
+          ) : (
+            <>
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_260px]">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="ad-file">Datei</Label>
+                    <Input
+                      ref={fileInputRef}
+                      id="ad-file"
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
+                      onChange={(event) => void handleFileSelect(event.target.files?.[0] ?? null)}
+                    />
+                    <p className="text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      Unterstützt: JPG, PNG, WebP, GIF, MP4, WebM und MOV. Breite, Höhe,
+                      Dateigröße und Laufzeit werden automatisch erkannt.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="ad-customer">Kunde</Label>
+                      <Select value={uploadCustomerId} onValueChange={handleUploadCustomerChange}>
+                        <SelectTrigger id="ad-customer">
+                          <SelectValue placeholder="Kunde auswählen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {customerOptions.map((customer) => (
+                            <SelectItem key={customer.id} value={customer.id}>
+                              {customer.name}
+                            </SelectItem>
+                          ))}
+                          {isAdmin ? (
+                            <>
+                              <SelectSeparator />
+                              <SelectItem value={CREATE_CUSTOMER_SELECT_VALUE}>
+                                + Neuen Kunden anlegen
+                              </SelectItem>
+                            </>
+                          ) : null}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="ad-title">Titel</Label>
+                      <Input
+                        id="ad-title"
+                        value={uploadTitle}
+                        onChange={(event) => setUploadTitle(event.target.value)}
+                        placeholder="z. B. Frühlingskampagne 1080x1350"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ad-notes">Notizen</Label>
+                    <Textarea
+                      id="ad-notes"
+                      value={uploadNotes}
+                      onChange={(event) => setUploadNotes(event.target.value)}
+                      placeholder="Optional: Kampagne, Hook, CTA oder Produktionshinweise"
+                      rows={4}
+                    />
+                  </div>
+
+                  {filePreviewUrl ? (
+                    <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 dark:border-[#252d3a] dark:bg-[#0f1726]">
+                      <div
+                        className={cn(
+                          'mx-auto max-h-[360px] overflow-hidden bg-slate-100 dark:bg-[#0b1220]',
+                          metadata ? '' : 'min-h-[200px]'
+                        )}
+                        style={
+                          metadata
+                            ? { aspectRatio: `${metadata.widthPx} / ${metadata.heightPx}` }
+                            : undefined
+                        }
+                      >
+                        {metadata?.mediaType === 'image' ? (
+                          <img
+                            src={filePreviewUrl}
+                            alt="Vorschau"
+                            className="h-full w-full object-contain"
+                          />
+                        ) : metadata?.mediaType === 'video' ? (
+                          <video
+                            src={filePreviewUrl}
+                            className="h-full w-full object-contain"
+                            controls
+                            muted
+                            playsInline
+                          />
+                        ) : null}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="ad-notes">Notizen</Label>
-                <Textarea
-                  id="ad-notes"
-                  value={uploadNotes}
-                  onChange={(event) => setUploadNotes(event.target.value)}
-                  placeholder="Optional: Kampagne, Hook, CTA oder Produktionshinweise"
-                  rows={4}
-                />
-              </div>
-
-              {filePreviewUrl ? (
-                <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-50 dark:border-[#252d3a] dark:bg-[#0f1726]">
-                  <div
-                    className={cn(
-                      'mx-auto max-h-[360px] overflow-hidden bg-slate-100 dark:bg-[#0b1220]',
-                      metadata ? '' : 'min-h-[200px]'
-                    )}
-                    style={
-                      metadata ? { aspectRatio: `${metadata.widthPx} / ${metadata.heightPx}` } : undefined
-                    }
-                  >
-                    {metadata?.mediaType === 'image' ? (
-                      <img
-                        src={filePreviewUrl}
-                        alt="Vorschau"
-                        className="h-full w-full object-contain"
-                      />
-                    ) : metadata?.mediaType === 'video' ? (
-                      <video
-                        src={filePreviewUrl}
-                        className="h-full w-full object-contain"
-                        controls
-                        muted
-                        playsInline
-                      />
-                    ) : null}
+                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-[#252d3a] dark:bg-[#111827]">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    Automatische Asset-Daten
+                  </h3>
+                  <div className="mt-4 space-y-3 text-sm">
+                    {[
+                      {
+                        label: 'Typ',
+                        value: extractingMetadata
+                          ? 'Wird erkannt...'
+                          : metadata?.mediaType === 'video'
+                            ? 'Video'
+                            : metadata?.mediaType === 'image'
+                              ? 'Bild'
+                              : 'Noch keine Datei',
+                      },
+                      { label: 'Format', value: metadata?.fileFormat ?? '-' },
+                      {
+                        label: 'Auflösung',
+                        value: metadata ? `${metadata.widthPx} × ${metadata.heightPx}px` : '-',
+                      },
+                      {
+                        label: 'Verhältnis',
+                        value: metadata ? formatAspectRatio(metadata.widthPx, metadata.heightPx) : '-',
+                      },
+                      {
+                        label: 'Dateigröße',
+                        value: metadata ? formatBytes(metadata.fileSizeBytes) : '-',
+                      },
+                      {
+                        label: 'Laufzeit',
+                        value:
+                          metadata?.mediaType === 'video'
+                            ? formatDuration(metadata.durationSeconds)
+                            : '-',
+                      },
+                    ].map(({ label, value }) => (
+                      <div key={label} className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
+                        <p className="text-slate-500 dark:text-slate-400">{label}</p>
+                        <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">{value}</p>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              ) : null}
-            </div>
-
-            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4 dark:border-[#252d3a] dark:bg-[#111827]">
-              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Automatische Asset-Daten
-              </h3>
-              <div className="mt-4 space-y-3 text-sm">
-                {[
-                  {
-                    label: 'Typ',
-                    value: extractingMetadata
-                      ? 'Wird erkannt...'
-                      : metadata?.mediaType === 'video'
-                        ? 'Video'
-                        : metadata?.mediaType === 'image'
-                          ? 'Bild'
-                          : 'Noch keine Datei',
-                  },
-                  { label: 'Format', value: metadata?.fileFormat ?? '-' },
-                  {
-                    label: 'Auflösung',
-                    value: metadata ? `${metadata.widthPx} × ${metadata.heightPx}px` : '-',
-                  },
-                  {
-                    label: 'Verhältnis',
-                    value: metadata ? formatAspectRatio(metadata.widthPx, metadata.heightPx) : '-',
-                  },
-                  { label: 'Dateigröße', value: metadata ? formatBytes(metadata.fileSizeBytes) : '-' },
-                  {
-                    label: 'Laufzeit',
-                    value:
-                      metadata?.mediaType === 'video'
-                        ? formatDuration(metadata.durationSeconds)
-                        : '-',
-                  },
-                ].map(({ label, value }) => (
-                  <div key={label} className="rounded-2xl bg-white px-3 py-2 dark:bg-[#172131]">
-                    <p className="text-slate-500 dark:text-slate-400">{label}</p>
-                    <p className="mt-1 font-medium text-slate-900 dark:text-slate-100">{value}</p>
-                  </div>
-                ))}
               </div>
-            </div>
-          </div>
 
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button variant="outline" className="rounded-full" onClick={resetUploadDialog}>
-              Abbrechen
-            </Button>
-            <Button
-              className="rounded-full"
-              onClick={() => void handleUpload()}
-              disabled={savingUpload || extractingMetadata || !file || !metadata || !uploadCustomerId}
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              {savingUpload ? 'Wird gespeichert...' : 'Anzeige speichern'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Create customer dialog */}
-      <Dialog open={createCustomerDialogOpen} onOpenChange={setCreateCustomerDialogOpen}>
-        <DialogContent className="max-w-lg rounded-[2rem]">
-          <DialogHeader>
-            <DialogTitle>Kunde anlegen</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="customer-name">Kundenname</Label>
-              <Input
-                id="customer-name"
-                value={customerForm.name}
-                onChange={(event) =>
-                  setCustomerForm((current) => ({ ...current, name: event.target.value }))
-                }
-                placeholder="z. B. Muster GmbH"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customer-domain">Domain</Label>
-              <Input
-                id="customer-domain"
-                value={customerForm.domain}
-                onChange={(event) =>
-                  setCustomerForm((current) => ({ ...current, domain: event.target.value }))
-                }
-                placeholder="https://www.kunde.de"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customer-industry">Branche</Label>
-              <Input
-                id="customer-industry"
-                value={customerForm.industry}
-                onChange={(event) =>
-                  setCustomerForm((current) => ({ ...current, industry: event.target.value }))
-                }
-                placeholder="z. B. E-Commerce"
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              className="rounded-full"
-              onClick={() => {
-                setCreateCustomerDialogOpen(false)
-                setCustomerForm(emptyCustomerForm)
-              }}
-            >
-              Abbrechen
-            </Button>
-            <Button
-              className="rounded-full"
-              disabled={savingCustomer}
-              onClick={() => void handleCreateCustomer()}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              {savingCustomer ? 'Wird angelegt...' : 'Kunde speichern'}
-            </Button>
-          </DialogFooter>
+              <DialogFooter className="gap-2 sm:justify-end">
+                <Button variant="outline" className="rounded-full" onClick={resetUploadDialog}>
+                  Abbrechen
+                </Button>
+                <Button
+                  className="rounded-full"
+                  onClick={() => void handleUpload()}
+                  disabled={savingUpload || extractingMetadata || !file || !metadata || !uploadCustomerId}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {savingUpload ? 'Wird gespeichert...' : 'Anzeige speichern'}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
 

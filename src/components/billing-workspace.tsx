@@ -473,7 +473,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
             )}
 
             <div className="flex items-center justify-between">
-              <span className="text-sm text-slate-600 dark:text-slate-300">Naechste Abrechnung</span>
+              <span className="text-sm text-slate-600 dark:text-slate-300">Nächste Abrechnung</span>
               <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {formatDate(billing.subscription_period_end)}
               </span>
@@ -544,7 +544,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                   </p>
                 </div>
                 <Button
-                  className="w-full rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                  variant="dark" className="w-full"
                   onClick={() => setShowCardForm(true)}
                 >
                   Karte hinterlegen
@@ -632,7 +632,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                 aus. Du kannst die Kündigung jederzeit zurücknehmen.
               </p>
               <Button
-                className="shrink-0 rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                variant="dark" className="shrink-0"
                 disabled={actionLoading === 'reactivate'}
                 onClick={() => void handleReactivate()}
               >
@@ -656,7 +656,7 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
                 behalten.
               </div>
               <Button
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                variant="dark"
                 onClick={() => setShowCardForm(true)}
               >
                 Zahlungsmethode aktualisieren
@@ -880,7 +880,7 @@ function SubscribeWithModules({
       <AlertDialog open={dialogOpen} onOpenChange={handleOpenChange}>
         <AlertDialogTrigger asChild>
           <Button
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
             disabled={!canSubscribe || isLoading}
           >
             {isLoading ? (
@@ -920,7 +920,7 @@ function SubscribeWithModules({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+              className="rounded-full bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-400 disabled:pointer-events-none disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
               disabled={!agbAccepted}
               onClick={() => { onSubscribe(selectedIds); setDialogOpen(false) }}
             >
@@ -1079,7 +1079,7 @@ function ModuleCatalogCard({
             <AlertDialogTrigger asChild>
               <Button
                 size="sm"
-                className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+                variant="dark"
                 disabled={!hasActivePlan || isAnyActionOnThis}
               >
                 {isSubscribing ? (
@@ -1132,7 +1132,7 @@ function ModuleCatalogCard({
               <AlertDialogFooter>
                 <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                 <AlertDialogAction
-                  className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827] disabled:opacity-50"
+                  className="rounded-full bg-slate-900 text-white hover:bg-slate-800 focus:ring-slate-400 disabled:pointer-events-none disabled:opacity-50 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
                   disabled={!agbAccepted}
                   onClick={() => { void onSubscribe(mod.id); setDialogOpen(false) }}
                 >
@@ -1186,7 +1186,7 @@ function ModuleCatalogCard({
         {mod.status === 'canceling' && (
           <Button
             size="sm"
-            className="rounded-full bg-[#1f2937] text-white hover:bg-[#111827]"
+            variant="dark"
             disabled={isAnyActionOnThis}
             onClick={() => void onReactivate(mod.id)}
           >
