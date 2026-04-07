@@ -57,27 +57,14 @@ interface ToolNavItem {
   href: string
   icon: ComponentType<{ className?: string }>
   moduleCode: string
-  children?: ToolNavItem[]
 }
 
 const TOOL_GROUPS: { label: string; items: ToolNavItem[] }[] = [
   {
     label: 'Analyse & SEO',
     items: [
-      {
-        label: 'SEO Analyse',
-        href: '/tools/seo-analyse',
-        icon: BarChart3,
-        moduleCode: 'seo_analyse',
-        children: [
-          {
-            label: 'Keywordranking',
-            href: '/tools/keywords',
-            icon: Search,
-            moduleCode: 'seo_analyse',
-          },
-        ],
-      },
+      { label: 'SEO Analyse', href: '/tools/seo-analyse', icon: BarChart3, moduleCode: 'seo_analyse' },
+      { label: 'Keywordranking', href: '/tools/keywords', icon: Search, moduleCode: 'seo_analyse' },
       { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
       { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
     ],
@@ -130,6 +117,46 @@ function NavigationContent({
   const prefetchedTargets = useRef(new Set<string>())
   const [openApprovalsCount] = useState(initialOpenApprovalsCount)
   const [pendingHref, setPendingHref] = useState<string | null>(null)
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    if (typeof window === 'undefined') return {}
+    try {
+      const stored = localStorage.getItem('sidebar-sections-open')
+      return stored ? JSON.parse(stored) : {}
+    } catch { return {} }
+  })
+
+  const isSectionOpen = (label: string) => openSections[label] !== false
+
+  const toggleSection = (label: string) => {
+    setOpenSections(prev => {
+      const next = { ...prev, [label]: !isSectionOpen(label) }
+      localStorage.setItem('sidebar-sections-open', JSON.stringify(next))
+      return next
+    })
+  }
+
+  useEffect(() => {
+    const updates: Record<string, boolean> = {}
+    for (const group of TOOL_GROUPS) {
+      const hasActive = group.items.some(item => isNavActive(pathname, item.href))
+      if (hasActive && openSections[group.label] === false) {
+        updates[group.label] = true
+      }
+    }
+    const adminActive = sections.administration.some(item => isNavActive(pathname, item.href))
+    if (adminActive && openSections['Verwaltung'] === false) {
+      updates['Verwaltung'] = true
+    }
+    if (Object.keys(updates).length > 0) {
+      setOpenSections(prev => {
+        const next = { ...prev, ...updates }
+        localStorage.setItem('sidebar-sections-open', JSON.stringify(next))
+        return next
+      })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   const prefetchJson = useCallback(async (url: string, cacheKey?: string, select?: (data: unknown) => unknown) => {
     const res = await fetch(url, { credentials: 'include' })
@@ -296,10 +323,16 @@ function NavigationContent({
           {/* Tool-Gruppen */}
           {TOOL_GROUPS.map((group) => (
             <div key={group.label}>
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+              <button
+                type="button"
+                onClick={() => toggleSection(group.label)}
+                className="flex w-full items-center justify-between mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                aria-expanded={isSectionOpen(group.label)}
+              >
                 {group.label}
-              </p>
-              <ul className="space-y-1">
+                <ChevronRight className={cn('h-3 w-3 transition-transform', isSectionOpen(group.label) ? 'rotate-90' : 'rotate-0')} />
+              </button>
+              {isSectionOpen(group.label) && <ul className="space-y-1">
                 {group.items.map((tool) => {
                   const hasAccess = context.activeModuleCodes.includes(tool.moduleCode)
                   const active = isNavActive(pathname, tool.href)
@@ -347,57 +380,25 @@ function NavigationContent({
                         )}
                       </Link>
 
-                      {tool.children && tool.children.length > 0 && (
-                        <ul className="ml-4 mt-0.5 space-y-0.5 border-l border-slate-100 pl-3 dark:border-border">
-                          {tool.children.map((child) => {
-                            const childHasAccess = context.activeModuleCodes.includes(child.moduleCode)
-                            const childActive = isNavActive(pathname, child.href)
-
-                            return (
-                              <li key={child.href}>
-                                <Link
-                                  href={child.href}
-                                  onClick={() => handleNavigate(child.href)}
-                                  onMouseEnter={() => prefetchModule(child.href)}
-                                  onFocus={() => prefetchModule(child.href)}
-                                  className={cn(
-                                    'flex items-center justify-between rounded-xl px-3 py-2 text-sm transition-colors',
-                                    childActive
-                                      ? 'bg-blue-50 font-medium text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-                                      : childHasAccess
-                                        ? 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
-                                        : 'text-slate-400 hover:bg-slate-50 dark:text-slate-600 dark:hover:bg-[#1e2635]/40'
-                                  )}
-                                  aria-current={childActive ? 'page' : undefined}
-                                >
-                                  <span className="flex items-center gap-2.5">
-                                    {childHasAccess ? (
-                                      <child.icon className={cn('h-3.5 w-3.5', childActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
-                                    ) : (
-                                      <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
-                                    )}
-                                    {child.label}
-                                  </span>
-                                  {!childHasAccess && <Lock className="h-3 w-3 text-slate-300 dark:text-slate-600" />}
-                                </Link>
-                              </li>
-                            )
-                          })}
-                        </ul>
-                      )}
                     </li>
                   )
                 })}
-              </ul>
+              </ul>}
             </div>
           ))}
 
           {sections.administration.length > 0 && (
             <div>
-              <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+              <button
+                type="button"
+                onClick={() => toggleSection('Verwaltung')}
+                className="flex w-full items-center justify-between mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                aria-expanded={isSectionOpen('Verwaltung')}
+              >
                 Verwaltung
-              </p>
-              <ul className="space-y-1">
+                <ChevronRight className={cn('h-3 w-3 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
+              </button>
+              {isSectionOpen('Verwaltung') && <ul className="space-y-1">
                 {sections.administration.map((item) => {
                   const active = isNavActive(pathname, item.href)
                   return (
@@ -428,7 +429,7 @@ function NavigationContent({
                     </li>
                   )
                 })}
-              </ul>
+              </ul>}
             </div>
           )}
         </div>
