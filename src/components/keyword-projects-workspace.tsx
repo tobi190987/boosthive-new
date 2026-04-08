@@ -459,6 +459,8 @@ function ProjectList({
   const [error, setError] = useState<string | null>(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [customerFilter, setCustomerFilter] = useState<string>(activeCustomer?.id ?? 'all')
+  const [deleteProjectId, setDeleteProjectId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const customerCacheKey = `${PROJECT_LIST_CACHE_PREFIX}${customerFilter}`
 
   useEffect(() => {
@@ -506,6 +508,23 @@ function ProjectList({
   }, [customerCacheKey, customerFilter, initialProjects, loadProjects])
 
   const isAdmin = role === 'admin'
+
+  async function handleDeleteProject() {
+    if (!deleteProjectId) return
+    try {
+      setIsDeleting(true)
+      await apiFetch(`${API_BASE}/${deleteProjectId}`, { method: 'DELETE' })
+      clearSessionCache(`${PROJECT_DETAIL_CACHE_PREFIX}${deleteProjectId}`)
+      clearKeywordProjectListCaches()
+      setProjects((prev) => prev.filter((p) => p.id !== deleteProjectId))
+      toast({ title: 'Projekt gelöscht' })
+    } catch (err) {
+      toast({ title: 'Fehler', description: err instanceof Error ? err.message : 'Löschen fehlgeschlagen.', variant: 'destructive' })
+    } finally {
+      setIsDeleting(false)
+      setDeleteProjectId(null)
+    }
+  }
 
   // Loading skeleton
   if (loading) {
@@ -617,13 +636,7 @@ function ProjectList({
         /* Project cards */
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {projects.map((project) => (
-            <button
-              key={project.id}
-              type="button"
-              onClick={() => onOpenProject(project.id)}
-              className="text-left"
-              aria-label={`Projekt ${project.name} öffnen`}
-            >
+            <div key={project.id} className="group">
               <Card
                 className={cn(
                   'rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card transition-all hover:border-blue-600/30 hover:shadow-md',
@@ -632,50 +645,98 @@ function ProjectList({
               >
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">
-                      {project.name}
-                    </CardTitle>
-                    <Badge
-                      className={cn(
-                        'shrink-0 rounded-full text-xs',
-                        project.status === 'active'
-                          ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
-                          : 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
-                      )}
+                    <button
+                      type="button"
+                      onClick={() => onOpenProject(project.id)}
+                      className="text-left flex-1 min-w-0"
+                      aria-label={`Projekt ${project.name} öffnen`}
                     >
-                      {project.status === 'active' ? 'Aktiv' : 'Inaktiv'}
-                    </Badge>
+                      <CardTitle className="text-base font-semibold text-slate-900 dark:text-slate-100 leading-tight">
+                        {project.name}
+                      </CardTitle>
+                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Badge
+                        className={cn(
+                          'rounded-full text-xs',
+                          project.status === 'active'
+                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50'
+                            : 'bg-slate-100 dark:bg-secondary text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
+                        )}
+                      >
+                        {project.status === 'active' ? 'Aktiv' : 'Inaktiv'}
+                      </Badge>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          onClick={() => setDeleteProjectId(project.id)}
+                          aria-label={`Projekt ${project.name} löschen`}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
-                    <Globe className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                    <span className="truncate">{project.target_domain}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span>
-                      {LANGUAGES.find((l) => l.code === project.language_code)?.label ?? project.language_code}
-                    </span>
-                    <span>
-                      {COUNTRIES.find((c) => c.code === project.country_code)?.label ?? project.country_code}
-                    </span>
-                  </div>
-                  <Separator className="bg-slate-100 dark:bg-secondary" />
-                  <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                    <span>{project.keyword_count} Keywords</span>
-                    <span>{project.competitor_count} Wettbewerber</span>
-                  </div>
-                  {project.last_tracking_run && (
-                    <p className="text-xs text-slate-400 dark:text-slate-500">
-                      Letzter Lauf: {formatDate(project.last_tracking_run)}
-                    </p>
-                  )}
-                </CardContent>
+                <button
+                  type="button"
+                  onClick={() => onOpenProject(project.id)}
+                  className="text-left w-full"
+                  tabIndex={-1}
+                  aria-hidden
+                >
+                  <CardContent className="space-y-3">
+                    <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                      <Globe className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                      <span className="truncate">{project.target_domain}</span>
+                    </div>
+                    <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                      <span>
+                        {LANGUAGES.find((l) => l.code === project.language_code)?.label ?? project.language_code}
+                      </span>
+                      <span>
+                        {COUNTRIES.find((c) => c.code === project.country_code)?.label ?? project.country_code}
+                      </span>
+                    </div>
+                    <Separator className="bg-slate-100 dark:bg-secondary" />
+                    <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
+                      <span>{project.keyword_count} Keywords</span>
+                      <span>{project.competitor_count} Wettbewerber</span>
+                    </div>
+                    {project.last_tracking_run && (
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        Letzter Lauf: {formatDate(project.last_tracking_run)}
+                      </p>
+                    )}
+                  </CardContent>
+                </button>
               </Card>
-            </button>
+            </div>
           ))}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deleteProjectId} onOpenChange={(open) => { if (!open) setDeleteProjectId(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Projekt löschen?</DialogTitle>
+            <DialogDescription>
+              Alle Keywords, Wettbewerber und Ranking-Daten dieses Projekts werden unwiderruflich gelöscht.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteProjectId(null)} disabled={isDeleting}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteProject} disabled={isDeleting}>
+              {isDeleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />}
+              Löschen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create project dialog */}
       <CreateProjectDialog
