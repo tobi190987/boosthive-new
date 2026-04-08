@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { toast } from 'sonner'
 import {
   AlertCircle,
   ArrowDownRight,
@@ -42,6 +43,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
+import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
 import { TrendAreaChart } from '@/components/trend-area-chart'
 import type { TenantShellContext } from '@/lib/tenant-shell'
@@ -143,6 +145,19 @@ interface PlatformState<T> {
   error: string | null
   data: T | null
   trend: number | null
+}
+
+interface CustomerDetailData {
+  id: string
+  name: string
+  domain?: string | null
+  status: 'active' | 'paused'
+  created_at: string
+  updated_at: string
+  industry?: string
+  contact_email?: string | null
+  logo_url?: string
+  internal_notes?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -267,7 +282,15 @@ function PlatformBadge({ connected }: { connected: boolean }) {
   )
 }
 
-function NotConnectedCard({ platformName }: { platformName: string }) {
+function NotConnectedCard({
+  platformName,
+  onConnect,
+  connecting,
+}: {
+  platformName: string
+  onConnect: () => void
+  connecting: boolean
+}) {
   return (
     <div className="flex flex-col items-center gap-4 py-10 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800">
@@ -281,11 +304,13 @@ function NotConnectedCard({ platformName }: { platformName: string }) {
           Verbinde diese Plattform in der Kundenverwaltung.
         </p>
       </div>
-      <Button asChild variant="outline" size="sm" className="rounded-xl">
-        <Link href="/tools/customers">
-          Verbinden
-          <ExternalLink className="ml-2 h-3.5 w-3.5" />
-        </Link>
+      <Button variant="outline" size="sm" className="rounded-xl" onClick={onConnect} disabled={connecting}>
+        {connecting ? (
+          <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <ExternalLink className="mr-2 h-3.5 w-3.5" />
+        )}
+        Verbinden
       </Button>
     </div>
   )
@@ -392,8 +417,26 @@ function DashboardCustomerPickerCard({
 // GA4 Section
 // ---------------------------------------------------------------------------
 
-function GA4Section({ state, onRetry }: { state: PlatformState<GA4Data>; onRetry: () => void }) {
-  if (!state.connected) return <NotConnectedCard platformName="Google Analytics 4" />
+function GA4Section({
+  state,
+  onRetry,
+  onConnect,
+  connecting,
+}: {
+  state: PlatformState<GA4Data>
+  onRetry: () => void
+  onConnect: () => void
+  connecting: boolean
+}) {
+  if (!state.connected) {
+    return (
+      <NotConnectedCard
+        platformName="Google Analytics 4"
+        onConnect={onConnect}
+        connecting={connecting}
+      />
+    )
+  }
   if (state.loading) return <PlatformSkeleton />
   if (state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.data) return <PlatformSkeleton />
@@ -452,8 +495,26 @@ function GA4Section({ state, onRetry }: { state: PlatformState<GA4Data>; onRetry
 // GSC Section
 // ---------------------------------------------------------------------------
 
-function GSCSection({ state, onRetry }: { state: PlatformState<GSCData>; onRetry: () => void }) {
-  if (!state.connected) return <NotConnectedCard platformName="Google Search Console" />
+function GSCSection({
+  state,
+  onRetry,
+  onConnect,
+  connecting,
+}: {
+  state: PlatformState<GSCData>
+  onRetry: () => void
+  onConnect: () => void
+  connecting: boolean
+}) {
+  if (!state.connected) {
+    return (
+      <NotConnectedCard
+        platformName="Google Search Console"
+        onConnect={onConnect}
+        connecting={connecting}
+      />
+    )
+  }
   if (state.loading) return <PlatformSkeleton />
   if (state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.data) return <PlatformSkeleton />
@@ -504,8 +565,26 @@ function GSCSection({ state, onRetry }: { state: PlatformState<GSCData>; onRetry
 // Google Ads Section
 // ---------------------------------------------------------------------------
 
-function GoogleAdsSection({ state, onRetry }: { state: PlatformState<GoogleAdsData>; onRetry: () => void }) {
-  if (!state.connected) return <NotConnectedCard platformName="Google Ads" />
+function GoogleAdsSection({
+  state,
+  onRetry,
+  onConnect,
+  connecting,
+}: {
+  state: PlatformState<GoogleAdsData>
+  onRetry: () => void
+  onConnect: () => void
+  connecting: boolean
+}) {
+  if (!state.connected) {
+    return (
+      <NotConnectedCard
+        platformName="Google Ads"
+        onConnect={onConnect}
+        connecting={connecting}
+      />
+    )
+  }
   if (state.loading) return <PlatformSkeleton />
   if (state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.data) return <PlatformSkeleton />
@@ -555,8 +634,26 @@ function GoogleAdsSection({ state, onRetry }: { state: PlatformState<GoogleAdsDa
 // Meta Ads Section
 // ---------------------------------------------------------------------------
 
-function MetaAdsSection({ state, onRetry }: { state: PlatformState<MetaAdsData>; onRetry: () => void }) {
-  if (!state.connected) return <NotConnectedCard platformName="Meta Ads" />
+function MetaAdsSection({
+  state,
+  onRetry,
+  onConnect,
+  connecting,
+}: {
+  state: PlatformState<MetaAdsData>
+  onRetry: () => void
+  onConnect: () => void
+  connecting: boolean
+}) {
+  if (!state.connected) {
+    return (
+      <NotConnectedCard
+        platformName="Meta Ads"
+        onConnect={onConnect}
+        connecting={connecting}
+      />
+    )
+  }
   if (state.loading) return <PlatformSkeleton />
   if (state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.data) return <PlatformSkeleton />
@@ -641,8 +738,26 @@ function MetaAdsSection({ state, onRetry }: { state: PlatformState<MetaAdsData>;
 // TikTok Ads Section
 // ---------------------------------------------------------------------------
 
-function TikTokSection({ state, onRetry }: { state: PlatformState<TikTokData>; onRetry: () => void }) {
-  if (!state.connected) return <NotConnectedCard platformName="TikTok Ads" />
+function TikTokSection({
+  state,
+  onRetry,
+  onConnect,
+  connecting,
+}: {
+  state: PlatformState<TikTokData>
+  onRetry: () => void
+  onConnect: () => void
+  connecting: boolean
+}) {
+  if (!state.connected) {
+    return (
+      <NotConnectedCard
+        platformName="TikTok Ads"
+        onConnect={onConnect}
+        connecting={connecting}
+      />
+    )
+  }
   if (state.loading) return <PlatformSkeleton />
   if (state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.data) return <PlatformSkeleton />
@@ -781,6 +896,9 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
   const [metaAds, setMetaAds] = useState<PlatformState<MetaAdsData>>({ connected: false, loading: false, error: null, data: null, trend: null })
   const [tiktok, setTikTok] = useState<PlatformState<TikTokData>>({ connected: false, loading: false, error: null, data: null, trend: null })
   const [exporting, setExporting] = useState(false)
+  const [detailCustomer, setDetailCustomer] = useState<CustomerDetailData | null>(null)
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [openingIntegrations, setOpeningIntegrations] = useState(false)
 
   const platformStates: Record<string, PlatformState<unknown>> = {
     ga4, gsc, googleAds, metaAds, tiktok,
@@ -864,6 +982,50 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       setExporting(false)
     }, 300)
   }, [])
+
+  const fetchCustomerDetail = useCallback(async (customerId: string) => {
+    const res = await fetch(`/api/tenant/customers/${customerId}`, {
+      credentials: 'include',
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(
+        typeof data.error === 'string' ? data.error : 'Kunde konnte nicht geladen werden.'
+      )
+    }
+
+    return data.customer as CustomerDetailData
+  }, [])
+
+  const handleOpenCustomerIntegrations = useCallback(async () => {
+    if (!activeCustomer) return
+
+    setOpeningIntegrations(true)
+    try {
+      const customer = await fetchCustomerDetail(activeCustomer.id)
+      setDetailCustomer(customer)
+      setDetailDialogOpen(true)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Kunde konnte nicht geladen werden.')
+    } finally {
+      setOpeningIntegrations(false)
+    }
+  }, [activeCustomer, fetchCustomerDetail])
+
+  const handleCloseCustomerIntegrations = useCallback(() => {
+    setDetailDialogOpen(false)
+    if (activeCustomer) {
+      fetchAll(activeCustomer.id, range)
+    }
+  }, [activeCustomer, fetchAll, range])
+
+  const handleCustomerDetailUpdate = useCallback(() => {
+    if (!activeCustomer) return
+    void fetchCustomerDetail(activeCustomer.id)
+      .then((customer) => setDetailCustomer(customer))
+      .catch(() => {})
+    fetchAll(activeCustomer.id, range)
+  }, [activeCustomer, fetchAll, fetchCustomerDetail, range])
 
   // Computed KPIs
   const kpis = useMemo(() => {
@@ -1034,13 +1196,23 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                 Keine Integrationen verbunden
               </p>
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                Verbinde Plattformen in der{' '}
-                <Link href="/tools/customers" className="underline hover:no-underline">
-                  Kundenverwaltung
-                </Link>
-                , um Marketing-Daten anzuzeigen.
+                Verbinde Plattformen direkt im Kunden-Modal, um Marketing-Daten anzuzeigen.
               </p>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl"
+              onClick={handleOpenCustomerIntegrations}
+              disabled={openingIntegrations}
+            >
+              {openingIntegrations ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <ExternalLink className="mr-2 h-4 w-4" />
+              )}
+              Integrationen öffnen
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -1127,30 +1299,40 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                   <GA4Section
                     state={ga4}
                     onRetry={() => activeCustomer && fetchPlatform<GA4Data>('/api/tenant/dashboard/ga4', activeCustomer.id, range, setGA4)}
+                    onConnect={handleOpenCustomerIntegrations}
+                    connecting={openingIntegrations}
                   />
                 )}
                 {platform.key === 'gsc' && (
                   <GSCSection
                     state={gsc}
                     onRetry={() => activeCustomer && fetchPlatform<GSCData>('/api/tenant/dashboard/gsc', activeCustomer.id, range, setGSC)}
+                    onConnect={handleOpenCustomerIntegrations}
+                    connecting={openingIntegrations}
                   />
                 )}
                 {platform.key === 'googleAds' && (
                   <GoogleAdsSection
                     state={googleAds}
                     onRetry={() => activeCustomer && fetchPlatform<GoogleAdsData>('/api/tenant/dashboard/google-ads', activeCustomer.id, range, setGoogleAds)}
+                    onConnect={handleOpenCustomerIntegrations}
+                    connecting={openingIntegrations}
                   />
                 )}
                 {platform.key === 'metaAds' && (
                   <MetaAdsSection
                     state={metaAds}
                     onRetry={() => activeCustomer && fetchPlatform<MetaAdsData>('/api/tenant/dashboard/meta-ads', activeCustomer.id, range, setMetaAds)}
+                    onConnect={handleOpenCustomerIntegrations}
+                    connecting={openingIntegrations}
                   />
                 )}
                 {platform.key === 'tiktok' && (
                   <TikTokSection
                     state={tiktok}
                     onRetry={() => activeCustomer && fetchPlatform<TikTokData>('/api/tenant/dashboard/tiktok', activeCustomer.id, range, setTikTok)}
+                    onConnect={handleOpenCustomerIntegrations}
+                    connecting={openingIntegrations}
                   />
                 )}
               </AccordionContent>
@@ -1184,6 +1366,17 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
           )}
         </div>
       </div>
+
+      {detailCustomer && (
+        <CustomerDetailWorkspace
+          customer={detailCustomer}
+          open={detailDialogOpen}
+          onClose={handleCloseCustomerIntegrations}
+          isAdmin={context.membership.role === 'admin'}
+          onUpdate={handleCustomerDetailUpdate}
+          initialTab="integrations"
+        />
+      )}
     </div>
   )
 }

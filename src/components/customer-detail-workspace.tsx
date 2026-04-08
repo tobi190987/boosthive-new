@@ -33,15 +33,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
-import {
   Building2,
   Globe,
-  Shield,
   Link2,
   FileText,
   Edit3,
@@ -51,7 +44,6 @@ import {
   EyeOff,
   CheckCircle,
   XCircle,
-  HelpCircle,
   File,
   ExternalLink,
   Loader2,
@@ -138,27 +130,6 @@ interface CustomerDetailWorkspaceProps {
   onUpdate: () => void
   initialTab?: CustomerDetailTab
 }
-
-const integrationTypes = [
-  {
-    key: 'google_ads',
-    label: 'Google Ads',
-    icon: Building2,
-    tooltip: 'Die Customer ID findest du in Google Ads oben rechts im Format 123-456-7890. Kein Trennzeichen nötig.',
-  },
-  {
-    key: 'meta_pixel',
-    label: 'Meta Pixel',
-    icon: Shield,
-    tooltip: 'Die Pixel-ID findest du im Meta Business Manager unter Events Manager → Datenquellen. Format: 15-stellige Zahl.',
-  },
-  {
-    key: 'gsc',
-    label: 'Google Search Console',
-    icon: Globe,
-    tooltip: 'Die Property-URL aus der Google Search Console, z.B. "https://example.com/" oder "sc-domain:example.com".',
-  },
-]
 
 export function CustomerDetailWorkspace({
   customer,
@@ -343,6 +314,12 @@ export function CustomerDetailWorkspace({
     typeof tikTokCredentials.currency === 'string' ? tikTokCredentials.currency : ''
   const tikTokNeedsReconnect = tikTokIntegration?.status === 'token_expired'
   const tikTokIsConnected = Boolean(tikTokIntegration && !tikTokNeedsReconnect)
+  const googleAdsIntegration = integrations.find(
+    (integration) => integration.integration_type === 'google_ads'
+  )
+  const googleAdsValue = integrationForm.google_ads ?? ''
+  const gscIntegration = integrations.find((integration) => integration.integration_type === 'gsc')
+  const gscValue = integrationForm.gsc ?? ''
 
   const loadGa4Properties = useCallback(async () => {
     if (!ga4Integration || !open) return
@@ -1340,8 +1317,162 @@ export function CustomerDetailWorkspace({
     </div>
   )
 
+  const renderGoogleAdsIntegrationCard = () => (
+    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-emerald-50 via-white to-lime-50 p-4 dark:border-slate-800 dark:from-emerald-950/20 dark:via-slate-950 dark:to-lime-950/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+              <Building2 className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Google Ads</p>
+                {getStatusBadge(googleAdsIntegration?.status ?? 'disconnected')}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Customer ID fuer Kampagnen-, Kosten- und Conversion-Daten dieses Kunden hinterlegen.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="google-ads-id">Google Ads Customer ID</Label>
+            {isAdmin ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="google-ads-id"
+                    type={showCredentials.google_ads ? 'text' : 'password'}
+                    placeholder="1234567890"
+                    value={googleAdsValue}
+                    onChange={(e) =>
+                      setIntegrationForm({ ...integrationForm, google_ads: e.target.value })
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setShowCredentials({
+                        ...showCredentials,
+                        google_ads: !showCredentials.google_ads,
+                      })
+                    }
+                  >
+                    {showCredentials.google_ads ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Die Customer ID findest du in Google Ads oben rechts im Format 123-456-7890. Du kannst sie mit oder ohne Trennzeichen speichern.
+                </p>
+              </>
+            ) : (
+              <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                <p className="font-medium text-slate-700 dark:text-slate-200">
+                  {googleAdsValue ? 'Customer ID hinterlegt' : 'Noch keine Customer ID hinterlegt'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2">
+          <Badge
+            variant="outline"
+            className="justify-center rounded-xl border-emerald-200 bg-white/70 px-3 py-2 text-emerald-700 dark:border-emerald-900/40 dark:bg-slate-900/60 dark:text-emerald-300"
+          >
+            Vault-Eintrag
+          </Badge>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderGscIntegrationCard = () => (
+    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-sky-50 via-white to-indigo-50 p-4 dark:border-slate-800 dark:from-sky-950/20 dark:via-slate-950 dark:to-indigo-950/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-400">
+              <Globe className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Google Search Console</p>
+                {getStatusBadge(gscIntegration?.status ?? 'disconnected')}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Property-URL oder Domain-Property fuer diesen Kunden im selben Stil wie die neuen Integrationskarten pflegen.
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="gsc-property">Search Console Property</Label>
+            {isAdmin ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="gsc-property"
+                    type={showCredentials.gsc ? 'text' : 'password'}
+                    placeholder="https://example.com/ oder sc-domain:example.com"
+                    value={gscValue}
+                    onChange={(e) =>
+                      setIntegrationForm({ ...integrationForm, gsc: e.target.value })
+                    }
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() =>
+                      setShowCredentials({
+                        ...showCredentials,
+                        gsc: !showCredentials.gsc,
+                      })
+                    }
+                  >
+                    {showCredentials.gsc ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Beispiel: `https://example.com/` oder `sc-domain:example.com`.
+                </p>
+              </>
+            ) : (
+              <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                <p className="font-medium text-slate-700 dark:text-slate-200">
+                  {gscValue ? 'Property hinterlegt' : 'Noch keine Property hinterlegt'}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2">
+          <Badge
+            variant="outline"
+            className="justify-center rounded-xl border-sky-200 bg-white/70 px-3 py-2 text-sky-700 dark:border-sky-900/40 dark:bg-slate-900/60 dark:text-sky-300"
+          >
+            Vault-Eintrag
+          </Badge>
+        </div>
+      </div>
+    </div>
+  )
+
   return (
-    <TooltipProvider>
+    <>
       <Dialog open={open} onOpenChange={onClose}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1516,7 +1647,9 @@ export function CustomerDetailWorkspace({
               </CardHeader>
               <CardContent className="space-y-4">
                   {renderGa4IntegrationCard()}
+                  {renderGoogleAdsIntegrationCard()}
                   {renderMetaAdsIntegrationCard()}
+                  {renderGscIntegrationCard()}
                   {renderTikTokIntegrationCard()}
 
                   {loadingIntegrations ? (
@@ -1524,61 +1657,7 @@ export function CustomerDetailWorkspace({
                       <Skeleton className="h-20 w-full" />
                       <Skeleton className="h-20 w-full" />
                     </div>
-                  ) : (
-                    integrationTypes.map((type) => {
-                      const integration = integrations.find((i) => i.integration_type === type.key)
-                      const Icon = type.icon
-                      return (
-                        <div key={type.key} className="border rounded-lg p-4 space-y-3 dark:border-slate-800">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <Icon className="w-4 h-4 text-slate-500" />
-                              <span className="font-medium text-sm">{type.label}</span>
-                              {integration && getStatusBadge(integration.status)}
-                            </div>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <HelpCircle className="w-4 h-4 text-slate-400 cursor-help" />
-                              </TooltipTrigger>
-                              <TooltipContent side="left" className="max-w-xs">
-                                <p className="text-xs">{type.tooltip}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </div>
-
-                          {isAdmin && (
-                            <div className="flex items-center gap-2">
-                              <Input
-                                type={showCredentials[type.key] ? 'text' : 'password'}
-                                placeholder={`${type.label} Key / ID`}
-                                value={integrationForm[type.key] ?? ''}
-                                onChange={(e) =>
-                                  setIntegrationForm({ ...integrationForm, [type.key]: e.target.value })
-                                }
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="icon"
-                                onClick={() =>
-                                  setShowCredentials({
-                                    ...showCredentials,
-                                    [type.key]: !showCredentials[type.key],
-                                  })
-                                }
-                              >
-                                {showCredentials[type.key] ? (
-                                  <EyeOff className="w-4 h-4" />
-                                ) : (
-                                  <Eye className="w-4 h-4" />
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    })
-                  )}
+                  ) : null}
 
                   {isAdmin && (
                     <>
@@ -1907,6 +1986,6 @@ export function CustomerDetailWorkspace({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </TooltipProvider>
+    </>
   )
 }
