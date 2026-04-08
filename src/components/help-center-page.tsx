@@ -148,6 +148,44 @@ const articles: HelpArticle[] = [
     ],
   },
   {
+    id: 'keyboard-shortcuts',
+    category: 'einstieg',
+    navLabel: 'Tastaturkürzel',
+    title: 'Tastaturkürzel & Schnellnavigation',
+    summary:
+      'BoostHive unterstützt Tastaturkürzel für schnelleres Navigieren und Arbeiten. Die wichtigsten Shortcuts sind jederzeit über die Befehlspalette oder das Shortcut-Modal abrufbar.',
+    sections: [
+      {
+        title: 'Shortcut-Übersicht öffnen',
+        paragraphs: [
+          'Drücke ? (Fragezeichen) an einer beliebigen Stelle im Workspace, um die vollständige Shortcut-Übersicht zu öffnen. Das Modal zeigt alle verfügbaren Kürzel nach Kategorie geordnet. Es schließt sich mit Escape.',
+        ],
+      },
+      {
+        title: 'Befehlspalette',
+        paragraphs: [
+          'Mit ⌘K (Mac) bzw. Strg+K (Windows/Linux) öffnet sich die Befehlspalette. Damit kannst du jede Seite im Workspace direkt anspringen, nach Kunden suchen oder zu einem bestimmten Content-Element navigieren — ohne die Maus zu benutzen.',
+        ],
+      },
+      {
+        title: 'Verfügbare Kürzel',
+        bullets: [
+          '? — Shortcut-Übersicht öffnen',
+          '⌘K / Strg+K — Befehlspalette öffnen',
+          'G D — Direkt zum Dashboard navigieren',
+          'G C — Direkt zur Kunden-Übersicht navigieren',
+          'Esc — Offene Dialoge und Modals schließen',
+        ],
+      },
+      {
+        title: 'Hinweise',
+        paragraphs: [
+          'Shortcuts sind nur aktiv, wenn kein Eingabefeld fokussiert ist. Beim Schreiben in einem Textfeld oder einer Suche werden Kürzel wie ? nicht ausgelöst.',
+        ],
+      },
+    ],
+  },
+  {
     id: 'dashboard-metrics',
     category: 'dashboard',
     navLabel: 'Dashboard',
