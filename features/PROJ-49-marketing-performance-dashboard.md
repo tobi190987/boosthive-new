@@ -1,8 +1,18 @@
 # PROJ-49: Marketing Performance Dashboard
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-04-08
 **Last Updated:** 2026-04-08
+
+### Implementation Notes (Frontend)
+- Dashboard page replaced: `/dashboard` now uses `MarketingDashboardWorkspace` instead of `TenantDashboardOverview`
+- 5 stub API routes created under `/api/tenant/dashboard/` (ga4, gsc, google-ads, meta-ads, tiktok) -- all return `connected: false`
+- All components in single `marketing-dashboard-workspace.tsx`: KPICard, TrendBadge, PlatformBadge, NotConnectedCard, PlatformErrorState, PlatformSkeleton, MetricItem, GA4Section, GSCSection, GoogleAdsSection, MetaAdsSection, TikTokSection
+- Uses existing: `CustomerSelectorDropdown`, `NoCustomerSelected`, `TrendAreaChart`, `useActiveCustomer`
+- URL state: `?range=30d` (customer selection via ActiveCustomerContext/localStorage)
+- PDF export via `window.print()` with print-specific CSS classes
+- Loading skeleton updated to match 6-card KPI grid + 5 accordion sections
+- All platform sections show "Nicht verbunden" with link to Kundenverwaltung until real integrations (PROJ-50..53) are built
 
 ## Dependencies
 - PROJ-28: Globaler Kunden-Selektor — für Kunden-Auswahl
