@@ -1357,7 +1357,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       {/* Upload dialog */}
       <Dialog
         open={uploadDialogOpen}
-        onOpenChange={(open) => (open ? setUploadDialogOpen(true) : resetUploadDialog())}
+        onOpenChange={(open) => { if (open) { setUploadDialogOpen(true) } else if (!savingUpload) { resetUploadDialog() } }}
       >
         <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto rounded-2xl">
           <DialogHeader>
@@ -1591,7 +1591,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
               </div>
 
               <DialogFooter className="gap-2 sm:justify-end">
-                <Button variant="outline" className="rounded-full" onClick={resetUploadDialog}>
+                <Button variant="outline" className="rounded-full" onClick={resetUploadDialog} disabled={savingUpload}>
                   Abbrechen
                 </Button>
                 <Button

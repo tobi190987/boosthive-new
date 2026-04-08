@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   AlertCircle,
   Check,
@@ -13,6 +13,7 @@ import {
   FileImage,
   FileText,
   MessageSquare,
+  RefreshCw,
   Type,
   X,
 } from 'lucide-react'
@@ -156,6 +157,7 @@ const PAGE_SIZE = 20
 
 export function ApprovalsWorkspace() {
   const router = useRouter()
+  const pathname = usePathname()
   const { toast } = useToast()
   const { activeCustomer, customers } = useActiveCustomer()
   const [approvals, setApprovals] = useState<ApprovalItem[]>([])
@@ -199,6 +201,12 @@ export function ApprovalsWorkspace() {
   useEffect(() => {
     fetchApprovals()
   }, [fetchApprovals])
+
+  // Re-fetch wenn der User zurück auf diese Seite navigiert (z.B. nach Freigabe-Einreichung)
+  useEffect(() => {
+    fetchApprovals()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname])
 
   // Summary stats computed from loaded data (before local search filter)
   const summaryStats = useMemo(() => {
@@ -293,6 +301,16 @@ export function ApprovalsWorkspace() {
               </p>
             )}
           </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="shrink-0 gap-2 rounded-full"
+            onClick={() => void fetchApprovals()}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            Aktualisieren
+          </Button>
         </div>
 
         {/* Summary Cards */}
