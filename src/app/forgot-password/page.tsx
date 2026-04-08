@@ -11,7 +11,7 @@ export default async function ForgotPasswordPage() {
       title="Passwort vergessen?"
       brandLogoUrl={tenant?.logoUrl}
       brandAlt={tenant ? `${tenant.slug} Logo` : 'BoostHive Logo'}
-      contextLabel={tenant ? `Reset fuer ${tenant.slug}` : 'BoostHive Workspace'}
+      contextLabel={tenant ? `Reset für ${tenant.slug}` : 'BoostHive Workspace'}
       description="Gib die E-Mail-Adresse deines Kontos ein. Falls ein passender Zugang in diesem Tenant existiert, senden wir dir einen sicheren Reset-Link."
       backHref="/login"
     >

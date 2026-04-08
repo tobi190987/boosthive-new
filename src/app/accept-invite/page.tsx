@@ -19,7 +19,7 @@ export default async function AcceptInvitePage({ searchParams }: AcceptInvitePag
       title={hasToken ? 'Willkommen im Team' : 'Einladung prüfen'}
       brandLogoUrl={tenant?.logoUrl}
       brandAlt={tenant ? `${tenant.slug} Logo` : 'BoostHive Logo'}
-      contextLabel={tenant ? `Einladung fuer ${tenant.slug}` : 'BoostHive Workspace'}
+      contextLabel={tenant ? `Einladung für ${tenant.slug}` : 'BoostHive Workspace'}
       description={
         hasToken
           ? 'Lege dein Passwort fest, um deinen Zugang zu aktivieren.'

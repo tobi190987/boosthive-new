@@ -128,7 +128,7 @@ export default function NewTenantPage() {
       )}
 
       {/* Form */}
-      <div className="max-w-lg rounded-xl border bg-white dark:bg-[#151c28] p-6 shadow-sm">
+      <div className="max-w-lg rounded-xl border bg-white dark:bg-card p-6 shadow-sm">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField

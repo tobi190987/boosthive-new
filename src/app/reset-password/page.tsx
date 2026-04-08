@@ -16,7 +16,7 @@ export default async function ResetPasswordPage({ searchParams }: ResetPasswordP
       title="Passwort neu setzen"
       brandLogoUrl={tenant?.logoUrl}
       brandAlt={tenant ? `${tenant.slug} Logo` : 'BoostHive Logo'}
-      contextLabel={tenant ? `Neues Passwort fuer ${tenant.slug}` : 'BoostHive Workspace'}
+      contextLabel={tenant ? `Neues Passwort für ${tenant.slug}` : 'BoostHive Workspace'}
       description="Lege ein neues Passwort fest und bestätige es. Danach geht es direkt weiter in deinen geschützten Tenant-Bereich."
       backHref="/forgot-password"
       backLabel="Neuen Link anfordern"

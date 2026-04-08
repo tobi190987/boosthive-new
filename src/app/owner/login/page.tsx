@@ -16,7 +16,7 @@ export default async function OwnerLoginPage({ searchParams }: OwnerLoginPagePro
       eyebrow="Owner Access"
       title="Owner Login"
       description="Melde dich an, um Tenants, Billing und Plattformfunktionen zu verwalten."
-      contextLabel="Nur fuer interne Plattformverwaltung"
+      contextLabel="Nur für interne Plattformverwaltung"
       brandAlt="BoostHive Owner"
     >
       <LoginForm

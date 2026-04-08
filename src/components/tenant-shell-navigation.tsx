@@ -7,7 +7,6 @@ import { usePathname, useRouter } from 'next/navigation'
 import {
   BarChart3,
   Bot,
-  CheckSquare,
   ChevronRight,
   CircleHelp,
   CreditCard,
@@ -78,7 +77,6 @@ const TOOL_GROUPS: { label: string; items: ToolNavItem[] }[] = [
       { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
       { label: 'Ads Bibliothek', href: '/tools/ads-library', icon: FileImage, moduleCode: 'ad_generator' },
       { label: 'Kanban Board', href: '/tools/kanban', icon: LayoutGrid, moduleCode: 'kanban' },
-      { label: 'Freigaben', href: '/tools/approvals', icon: CheckSquare, moduleCode: 'approvals' },
     ],
   },
 ]
@@ -396,7 +394,7 @@ function NavigationContent({
                         </span>
                         {hasAccess ? (
                           <span className="flex items-center gap-2">
-                            {tool.href === '/tools/approvals' && openApprovalsCount > 0 && (
+                            {tool.href === '/tools/kanban' && openApprovalsCount > 0 && (
                               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                                 {openApprovalsCount}
                               </span>

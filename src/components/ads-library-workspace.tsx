@@ -1646,76 +1646,52 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
           router.replace(params.toString() ? `?${params.toString()}` : '/tools/ads-library', { scroll: false })
         }}
       >
-        <DialogContent className="max-h-[90vh] max-w-5xl overflow-y-auto rounded-2xl">
+        <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col overflow-hidden rounded-2xl">
           {selectedAsset ? (
             <>
-              <DialogHeader className="pr-14">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-3">
-                    <DialogTitle className="text-left text-2xl">{selectedAsset.title}</DialogTitle>
-                    <div className="flex flex-wrap gap-2">
-                      <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
-                        {selectedAsset.media_type === 'image' ? 'Bild' : 'Video'}
-                      </Badge>
-                      <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
-                        {selectedAsset.file_format}
-                      </Badge>
-                      <Badge className="rounded-full border border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
-                        {customerMap.get(selectedAsset.customer_id)?.name ?? 'Unbekannter Kunde'}
-                      </Badge>
-                    </div>
-                    {selectedAssetApproval ? (
-                      <ApprovalSubmitPanel
-                        contentType="ad_library_asset"
-                        contentId={selectedAsset.id}
-                        approvalStatus={selectedAssetApproval.status}
-                        approvalLink={selectedAssetApproval.link}
-                        feedback={selectedAssetApproval.feedback}
-                        onStatusChange={(status, link) => {
-                          setSelectedAssetApproval((current) => ({
-                            status,
-                            link: link ?? current?.link ?? null,
-                            feedback: status === 'changes_requested' ? current?.feedback ?? null : null,
-                            history: current?.history ?? [],
-                          }))
-                          setAssets((current) =>
-                            current.map((asset) =>
-                              asset.id === selectedAsset.id ? { ...asset, approval_status: status } : asset
-                            )
-                          )
-                          setSelectedAsset((current) =>
-                            current ? { ...current, approval_status: status } : current
-                          )
-                        }}
-                      />
-                    ) : null}
-                  </div>
-                  <div className="flex shrink-0 gap-2 sm:mr-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="rounded-full"
-                      onClick={() => void handleDownloadAsset(selectedAsset)}
-                      disabled={downloadingAssetId === selectedAsset.id}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      {downloadingAssetId === selectedAsset.id ? 'Lädt...' : 'Downloaden'}
-                    </Button>
-                    {isAdmin ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="icon"
-                        className="shrink-0 rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
-                        onClick={() => setDeletingAsset(selectedAsset)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    ) : null}
-                  </div>
+              <DialogHeader className="shrink-0 pr-10">
+                <DialogTitle className="text-left text-xl">{selectedAsset.title}</DialogTitle>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
+                    {selectedAsset.media_type === 'image' ? 'Bild' : 'Video'}
+                  </Badge>
+                  <Badge className="rounded-full bg-slate-100 text-slate-700 hover:bg-slate-100 dark:bg-[#172131] dark:text-slate-200">
+                    {selectedAsset.file_format}
+                  </Badge>
+                  <Badge className="rounded-full border border-sky-200 bg-sky-100 text-sky-800 hover:bg-sky-100 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-200">
+                    {customerMap.get(selectedAsset.customer_id)?.name ?? 'Unbekannter Kunde'}
+                  </Badge>
                 </div>
+                {selectedAssetApproval ? (
+                  <div className="pt-1">
+                    <ApprovalSubmitPanel
+                      contentType="ad_library_asset"
+                      contentId={selectedAsset.id}
+                      approvalStatus={selectedAssetApproval.status}
+                      approvalLink={selectedAssetApproval.link}
+                      feedback={selectedAssetApproval.feedback}
+                      onStatusChange={(status, link) => {
+                        setSelectedAssetApproval((current) => ({
+                          status,
+                          link: link ?? current?.link ?? null,
+                          feedback: status === 'changes_requested' ? current?.feedback ?? null : null,
+                          history: current?.history ?? [],
+                        }))
+                        setAssets((current) =>
+                          current.map((asset) =>
+                            asset.id === selectedAsset.id ? { ...asset, approval_status: status } : asset
+                          )
+                        )
+                        setSelectedAsset((current) =>
+                          current ? { ...current, approval_status: status } : current
+                        )
+                      }}
+                    />
+                  </div>
+                ) : null}
               </DialogHeader>
 
+              <div className="min-h-0 flex-1 overflow-y-auto">
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,360px)]">
                 <div className="overflow-hidden rounded-[1.5rem] border border-slate-200 bg-slate-100 dark:border-border dark:bg-[#0b1220]">
                   <div
@@ -1839,6 +1815,37 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                   ) : null}
                 </div>
               </div>
+              </div>
+
+              <DialogFooter className="shrink-0 border-t border-slate-100 pt-4 dark:border-[#1e2d42]">
+                <div className="flex w-full items-center justify-between gap-2">
+                  {isAdmin ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="rounded-full border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-900/40 dark:hover:bg-red-950/30"
+                      onClick={() => setDeletingAsset(selectedAsset)}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Löschen
+                    </Button>
+                  ) : (
+                    <span />
+                  )}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => void handleDownloadAsset(selectedAsset)}
+                    disabled={downloadingAssetId === selectedAsset.id}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {downloadingAssetId === selectedAsset.id ? 'Lädt...' : 'Downloaden'}
+                  </Button>
+                </div>
+              </DialogFooter>
             </>
           ) : null}
         </DialogContent>
