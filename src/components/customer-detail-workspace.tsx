@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect, useRef } from 'react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 import {
   Card,
@@ -18,6 +19,7 @@ import { Separator } from '@/components/ui/separator'
 import {
   Dialog,
   DialogContent,
+  DialogFooter,
   DialogDescription,
   DialogHeader,
   DialogTitle,
@@ -52,6 +54,11 @@ import {
   HelpCircle,
   File,
   ExternalLink,
+  Loader2,
+  Unlink,
+  BarChart3,
+  AlertCircle,
+  Zap,
 } from 'lucide-react'
 
 interface CustomerExtended {
@@ -79,8 +86,28 @@ interface CustomerFormData {
 interface IntegrationData {
   id: string
   integration_type: string
-  status: 'connected' | 'active' | 'disconnected'
+  status: 'connected' | 'active' | 'disconnected' | 'token_expired'
   last_activity?: string
+  credentials?: Record<string, unknown>
+}
+
+interface GA4Property {
+  propertyId: string
+  displayName: string
+  name?: string
+}
+
+interface MetaAdsAccount {
+  id: string
+  name: string
+  businessName?: string
+  currency?: string
+}
+
+interface TikTokAdvertiser {
+  id: string
+  name: string
+  currency?: string
 }
 
 interface DocumentLink {
@@ -92,12 +119,24 @@ interface DocumentLink {
   file_name?: string
 }
 
+type CustomerDetailTab = 'master-data' | 'integrations' | 'documents' | 'notes'
+
+async function getResponseErrorMessage(res: Response, fallback: string) {
+  const data = await res.json().catch(() => ({}))
+  return typeof data.error === 'string'
+    ? data.error
+    : typeof data.message === 'string'
+      ? data.message
+      : fallback
+}
+
 interface CustomerDetailWorkspaceProps {
   customer: CustomerExtended
   open: boolean
   onClose: () => void
   isAdmin: boolean
   onUpdate: () => void
+  initialTab?: CustomerDetailTab
 }
 
 const integrationTypes = [
@@ -127,8 +166,9 @@ export function CustomerDetailWorkspace({
   onClose,
   isAdmin,
   onUpdate,
+  initialTab = 'master-data',
 }: CustomerDetailWorkspaceProps) {
-  const [activeTab, setActiveTab] = useState('master-data')
+  const [activeTab, setActiveTab] = useState<CustomerDetailTab>(initialTab)
   const [form, setForm] = useState<CustomerFormData>({
     name: customer.name,
     domain: customer.domain ?? '',
@@ -146,6 +186,24 @@ export function CustomerDetailWorkspace({
   const [loadingDocuments, setLoadingDocuments] = useState(false)
   const [integrationForm, setIntegrationForm] = useState<Record<string, string>>({})
   const [showCredentials, setShowCredentials] = useState<Record<string, boolean>>({})
+  const [ga4Properties, setGa4Properties] = useState<GA4Property[]>([])
+  const [loadingGa4Properties, setLoadingGa4Properties] = useState(false)
+  const [connectingGa4, setConnectingGa4] = useState(false)
+  const [disconnectingGa4, setDisconnectingGa4] = useState(false)
+  const [savingGa4Property, setSavingGa4Property] = useState(false)
+  const [ga4DisconnectOpen, setGa4DisconnectOpen] = useState(false)
+  const [metaAdsAccounts, setMetaAdsAccounts] = useState<MetaAdsAccount[]>([])
+  const [loadingMetaAdsAccounts, setLoadingMetaAdsAccounts] = useState(false)
+  const [connectingMetaAds, setConnectingMetaAds] = useState(false)
+  const [disconnectingMetaAds, setDisconnectingMetaAds] = useState(false)
+  const [savingMetaAdsAccount, setSavingMetaAdsAccount] = useState(false)
+  const [metaAdsDisconnectOpen, setMetaAdsDisconnectOpen] = useState(false)
+  const [tikTokAdvertisers, setTikTokAdvertisers] = useState<TikTokAdvertiser[]>([])
+  const [loadingTikTokAdvertisers, setLoadingTikTokAdvertisers] = useState(false)
+  const [connectingTikTok, setConnectingTikTok] = useState(false)
+  const [disconnectingTikTok, setDisconnectingTikTok] = useState(false)
+  const [savingTikTokAdvertiser, setSavingTikTokAdvertiser] = useState(false)
+  const [tikTokDisconnectOpen, setTikTokDisconnectOpen] = useState(false)
   const [documentForm, setDocumentForm] = useState({ title: '', url: '', description: '' })
   const [editingDocument, setEditingDocument] = useState<DocumentLink | null>(null)
   const [docInputMode, setDocInputMode] = useState<'link' | 'file'>('link')
@@ -166,13 +224,42 @@ export function CustomerDetailWorkspace({
     setLocalLogoUrl(customer.logo_url ?? null)
   }, [customer])
 
+  useEffect(() => {
+    if (!open) return
+    setActiveTab(initialTab)
+  }, [initialTab, open])
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as CustomerDetailTab)
+  }
+
   const loadIntegrations = useCallback(async () => {
     setLoadingIntegrations(true)
     try {
       const res = await fetch(`/api/tenant/customers/${customer.id}/integrations`)
       if (res.ok) {
         const data = await res.json()
-        setIntegrations(data.integrations || [])
+        const nextIntegrations = data.integrations || []
+        setIntegrations(nextIntegrations)
+        setIntegrationForm(
+          nextIntegrations.reduce((acc: Record<string, string>, integration: IntegrationData) => {
+            const credentials = integration.credentials
+            const value =
+              typeof credentials?.value === 'string'
+                ? credentials.value
+                : typeof credentials?.id === 'string'
+                  ? credentials.id
+                  : typeof credentials?.key === 'string'
+                    ? credentials.key
+                    : ''
+
+            if (value) {
+              acc[integration.integration_type] = value
+            }
+
+            return acc
+          }, {})
+        )
       }
     } catch {
       // silent
@@ -201,6 +288,157 @@ export function CustomerDetailWorkspace({
       loadIntegrations()
     }
   }, [activeTab, integrations.length, loadIntegrations, open])
+
+  const ga4Integration = integrations.find((integration) => integration.integration_type === 'ga4')
+  const ga4Credentials = (ga4Integration?.credentials ?? {}) as Record<string, unknown>
+  const ga4PropertyId =
+    typeof ga4Credentials.ga4_property_id === 'string' ? ga4Credentials.ga4_property_id : ''
+  const ga4PropertyName =
+    typeof ga4Credentials.ga4_property_name === 'string' ? ga4Credentials.ga4_property_name : ''
+  const ga4GoogleEmail =
+    typeof ga4Credentials.google_email === 'string' ? ga4Credentials.google_email : ''
+  const ga4NeedsReconnect = ga4Integration?.status === 'token_expired'
+  const ga4IsConnected = Boolean(ga4Integration && !ga4NeedsReconnect)
+  const metaAdsIntegration = integrations.find(
+    (integration) => integration.integration_type === 'meta_ads'
+  )
+  const metaAdsCredentials = (metaAdsIntegration?.credentials ?? {}) as Record<string, unknown>
+  const metaAdsAccountId =
+    typeof metaAdsCredentials.selected_ad_account_id === 'string'
+      ? metaAdsCredentials.selected_ad_account_id
+      : ''
+  const metaAdsAccountName =
+    typeof metaAdsCredentials.selected_ad_account_name === 'string'
+      ? metaAdsCredentials.selected_ad_account_name
+      : ''
+  const metaAdsBusinessName =
+    typeof metaAdsCredentials.business_name === 'string'
+      ? metaAdsCredentials.business_name
+      : ''
+  const metaAdsUserName =
+    typeof metaAdsCredentials.meta_user_name === 'string'
+      ? metaAdsCredentials.meta_user_name
+      : ''
+  const metaAdsCurrency =
+    typeof metaAdsCredentials.currency === 'string' ? metaAdsCredentials.currency : ''
+  const metaAdsNeedsReconnect = metaAdsIntegration?.status === 'token_expired'
+  const metaAdsIsConnected = Boolean(metaAdsIntegration && !metaAdsNeedsReconnect)
+  const tikTokIntegration = integrations.find(
+    (integration) => integration.integration_type === 'tiktok_ads'
+  )
+  const tikTokCredentials = (tikTokIntegration?.credentials ?? {}) as Record<string, unknown>
+  const tikTokAdvertiserId =
+    typeof tikTokCredentials.selected_advertiser_id === 'string'
+      ? tikTokCredentials.selected_advertiser_id
+      : ''
+  const tikTokAdvertiserName =
+    typeof tikTokCredentials.selected_advertiser_name === 'string'
+      ? tikTokCredentials.selected_advertiser_name
+      : ''
+  const tikTokDisplayName =
+    typeof tikTokCredentials.tiktok_display_name === 'string'
+      ? tikTokCredentials.tiktok_display_name
+      : ''
+  const tikTokCurrency =
+    typeof tikTokCredentials.currency === 'string' ? tikTokCredentials.currency : ''
+  const tikTokNeedsReconnect = tikTokIntegration?.status === 'token_expired'
+  const tikTokIsConnected = Boolean(tikTokIntegration && !tikTokNeedsReconnect)
+
+  const loadGa4Properties = useCallback(async () => {
+    if (!ga4Integration || !open) return
+
+    setLoadingGa4Properties(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/ga4/${customer.id}/properties`)
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        throw new Error(error.error || 'GA4-Properties konnten nicht geladen werden.')
+      }
+
+      const data = await res.json()
+      setGa4Properties(data.properties ?? [])
+    } catch (err) {
+      setGa4Properties([])
+      toast.error(err instanceof Error ? err.message : 'GA4-Properties konnten nicht geladen werden.')
+    } finally {
+      setLoadingGa4Properties(false)
+    }
+  }, [customer.id, ga4Integration, open])
+
+  useEffect(() => {
+    if (!open || activeTab !== 'integrations' || !ga4IsConnected) return
+    void loadGa4Properties()
+  }, [activeTab, ga4IsConnected, loadGa4Properties, open])
+
+  const loadMetaAdsAccounts = useCallback(async () => {
+    if (!metaAdsIntegration || !open) return
+
+    setLoadingMetaAdsAccounts(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/meta-ads/${customer.id}/accounts`)
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 405) {
+          setMetaAdsAccounts([])
+          return
+        }
+
+        throw new Error(
+          await getResponseErrorMessage(res, 'Meta-Ad-Accounts konnten nicht geladen werden.')
+        )
+      }
+
+      const data = await res.json()
+      setMetaAdsAccounts(data.accounts ?? [])
+    } catch (err) {
+      setMetaAdsAccounts([])
+      toast.error(
+        err instanceof Error ? err.message : 'Meta-Ad-Accounts konnten nicht geladen werden.'
+      )
+    } finally {
+      setLoadingMetaAdsAccounts(false)
+    }
+  }, [customer.id, metaAdsIntegration, open])
+
+  useEffect(() => {
+    if (!open || activeTab !== 'integrations' || !metaAdsIsConnected || !isAdmin) return
+    void loadMetaAdsAccounts()
+  }, [activeTab, isAdmin, loadMetaAdsAccounts, metaAdsIsConnected, open])
+
+  const loadTikTokAdvertisers = useCallback(async () => {
+    if (!tikTokIntegration || !open) return
+
+    setLoadingTikTokAdvertisers(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/tiktok-ads/${customer.id}/advertisers`)
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 405) {
+          setTikTokAdvertisers([])
+          return
+        }
+
+        throw new Error(
+          await getResponseErrorMessage(res, 'TikTok-Advertiser konnten nicht geladen werden.')
+        )
+      }
+
+      const data = await res.json()
+      setTikTokAdvertisers(data.advertisers ?? [])
+    } catch (err) {
+      setTikTokAdvertisers([])
+      toast.error(
+        err instanceof Error ? err.message : 'TikTok-Advertiser konnten nicht geladen werden.'
+      )
+    } finally {
+      setLoadingTikTokAdvertisers(false)
+    }
+  }, [customer.id, open, tikTokIntegration])
+
+  useEffect(() => {
+    if (!open || activeTab !== 'integrations' || !tikTokIsConnected || !isAdmin) return
+    void loadTikTokAdvertisers()
+  }, [activeTab, isAdmin, loadTikTokAdvertisers, open, tikTokIsConnected])
 
   useEffect(() => {
     if (open && activeTab === 'documents' && documents.length === 0) {
@@ -320,6 +558,268 @@ export function CustomerDetailWorkspace({
     }
   }
 
+  const handleConnectGa4 = async () => {
+    setConnectingGa4(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/ga4/oauth/start?customerId=${customer.id}`, {
+        credentials: 'include',
+      })
+
+      if (res.redirected) {
+        window.location.href = res.url
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      const redirectUrl = typeof data.url === 'string' ? data.url : null
+
+      if (!res.ok || !redirectUrl) {
+        throw new Error(data.error || 'GA4-Verbindung konnte nicht gestartet werden.')
+      }
+
+      window.location.href = redirectUrl
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'GA4-Verbindung konnte nicht gestartet werden.')
+      setConnectingGa4(false)
+    }
+  }
+
+  const handleSelectGa4Property = async (propertyId: string) => {
+    setSavingGa4Property(true)
+    try {
+      const selected = ga4Properties.find((property) => property.propertyId === propertyId)
+      const res = await fetch(`/api/tenant/integrations/ga4/${customer.id}/select-property`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          propertyId,
+          propertyName: selected?.displayName ?? propertyId,
+        }),
+      })
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        throw new Error(error.error || 'GA4-Property konnte nicht gespeichert werden.')
+      }
+
+      toast.success('GA4-Property gespeichert.')
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'GA4-Property konnte nicht gespeichert werden.')
+    } finally {
+      setSavingGa4Property(false)
+    }
+  }
+
+  const handleDisconnectGa4 = async () => {
+    setDisconnectingGa4(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/ga4/${customer.id}`, {
+        method: 'DELETE',
+      })
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({}))
+        throw new Error(error.error || 'GA4-Verbindung konnte nicht getrennt werden.')
+      }
+
+      toast.success('GA4-Verbindung getrennt.')
+      setGa4DisconnectOpen(false)
+      setGa4Properties([])
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'GA4-Verbindung konnte nicht getrennt werden.')
+    } finally {
+      setDisconnectingGa4(false)
+    }
+  }
+
+  const handleConnectMetaAds = async () => {
+    setConnectingMetaAds(true)
+    try {
+      const res = await fetch(
+        `/api/tenant/integrations/meta-ads/oauth/start?customerId=${customer.id}`,
+        {
+          credentials: 'include',
+        }
+      )
+
+      if (res.redirected) {
+        window.location.href = res.url
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      const redirectUrl = typeof data.url === 'string' ? data.url : null
+
+      if (!res.ok || !redirectUrl) {
+        throw new Error(
+          data.error || 'Meta-Ads-Verbindung konnte nicht gestartet werden.'
+        )
+      }
+
+      window.location.href = redirectUrl
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Meta-Ads-Verbindung konnte nicht gestartet werden.'
+      )
+      setConnectingMetaAds(false)
+    }
+  }
+
+  const handleSelectMetaAdsAccount = async (accountId: string) => {
+    setSavingMetaAdsAccount(true)
+    try {
+      const selected = metaAdsAccounts.find((account) => account.id === accountId)
+      const res = await fetch(`/api/tenant/integrations/meta-ads/${customer.id}/select-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId,
+          accountName: selected?.name ?? accountId,
+          businessName: selected?.businessName,
+          currency: selected?.currency,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error(
+          await getResponseErrorMessage(res, 'Meta-Ad-Account konnte nicht gespeichert werden.')
+        )
+      }
+
+      toast.success('Meta-Ad-Account gespeichert.')
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Meta-Ad-Account konnte nicht gespeichert werden.'
+      )
+    } finally {
+      setSavingMetaAdsAccount(false)
+    }
+  }
+
+  const handleDisconnectMetaAds = async () => {
+    setDisconnectingMetaAds(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/meta-ads/${customer.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error(
+          await getResponseErrorMessage(res, 'Meta-Ads-Verbindung konnte nicht getrennt werden.')
+        )
+      }
+
+      toast.success('Meta-Ads-Verbindung getrennt.')
+      setMetaAdsDisconnectOpen(false)
+      setMetaAdsAccounts([])
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Meta-Ads-Verbindung konnte nicht getrennt werden.'
+      )
+    } finally {
+      setDisconnectingMetaAds(false)
+    }
+  }
+
+  const handleConnectTikTok = async () => {
+    setConnectingTikTok(true)
+    try {
+      const res = await fetch(
+        `/api/tenant/integrations/tiktok-ads/oauth/start?customerId=${customer.id}`,
+        {
+          credentials: 'include',
+        }
+      )
+
+      if (res.redirected) {
+        window.location.href = res.url
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      const redirectUrl = typeof data.url === 'string' ? data.url : null
+
+      if (!res.ok || !redirectUrl) {
+        throw new Error(
+          data.error || 'TikTok-Verbindung konnte nicht gestartet werden.'
+        )
+      }
+
+      window.location.href = redirectUrl
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'TikTok-Verbindung konnte nicht gestartet werden.'
+      )
+      setConnectingTikTok(false)
+    }
+  }
+
+  const handleSelectTikTokAdvertiser = async (advertiserId: string) => {
+    setSavingTikTokAdvertiser(true)
+    try {
+      const selected = tikTokAdvertisers.find((advertiser) => advertiser.id === advertiserId)
+      const res = await fetch(
+        `/api/tenant/integrations/tiktok-ads/${customer.id}/select-advertiser`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            advertiserId,
+            advertiserName: selected?.name ?? advertiserId,
+            currency: selected?.currency,
+          }),
+        }
+      )
+
+      if (!res.ok) {
+        throw new Error(
+          await getResponseErrorMessage(
+            res,
+            'TikTok-Advertiser konnte nicht gespeichert werden.'
+          )
+        )
+      }
+
+      toast.success('TikTok-Advertiser gespeichert.')
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'TikTok-Advertiser konnte nicht gespeichert werden.'
+      )
+    } finally {
+      setSavingTikTokAdvertiser(false)
+    }
+  }
+
+  const handleDisconnectTikTok = async () => {
+    setDisconnectingTikTok(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/tiktok-ads/${customer.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error(
+          await getResponseErrorMessage(res, 'TikTok-Verbindung konnte nicht getrennt werden.')
+        )
+      }
+
+      toast.success('TikTok-Verbindung getrennt.')
+      setTikTokDisconnectOpen(false)
+      setTikTokAdvertisers([])
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'TikTok-Verbindung konnte nicht getrennt werden.'
+      )
+    } finally {
+      setDisconnectingTikTok(false)
+    }
+  }
+
   const handleSaveDocument = async () => {
     if (!documentForm.title.trim() || !documentForm.url.trim()) {
       toast.error('Titel und URL sind erforderlich.')
@@ -415,12 +915,430 @@ export function CustomerDetailWorkspace({
         </Badge>
       )
     }
+    if (status === 'token_expired') {
+      return (
+        <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+          <AlertCircle className="w-3 h-3 mr-1" />Erneut verbinden
+        </Badge>
+      )
+    }
     return (
       <Badge className="bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
         <XCircle className="w-3 h-3 mr-1" />Nicht verbunden
       </Badge>
     )
   }
+
+  const renderGa4IntegrationCard = () => (
+    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-orange-50 via-white to-amber-50 p-4 dark:border-slate-800 dark:from-orange-950/20 dark:via-slate-950 dark:to-amber-950/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
+              <BarChart3 className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Google Analytics 4</p>
+                {getStatusBadge(ga4Integration?.status ?? 'disconnected')}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Besucher, Nutzer und Seitenaufrufe werden per Google OAuth angebunden.
+              </p>
+            </div>
+          </div>
+
+          {!ga4Integration && (
+            <div className="space-y-2">
+              <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Verbinde ein Google-Konto und waehle danach die passende GA4-Property fuer diesen Kunden aus.
+              </p>
+              {!isAdmin && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Nur Admins koennen die Verbindung einrichten.
+                </p>
+              )}
+            </div>
+          )}
+
+          {ga4Integration && (
+            <div className="space-y-3">
+              {ga4GoogleEmail && (
+                <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Google-Konto</p>
+                  <p className="truncate font-medium text-slate-700 dark:text-slate-200">{ga4GoogleEmail}</p>
+                </div>
+              )}
+
+              {ga4NeedsReconnect && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Das gespeicherte Token ist nicht mehr gueltig. Bitte verbinde das Konto erneut, damit das Dashboard wieder Daten laden kann.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="ga4-property-select">GA4-Property</Label>
+                {ga4IsConnected && isAdmin ? (
+                  <>
+                    {loadingGa4Properties ? (
+                      <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Properties werden geladen...
+                      </div>
+                    ) : ga4Properties.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        Fuer dieses Konto wurden noch keine GA4-Properties gefunden.
+                      </div>
+                    ) : (
+                      <Select value={ga4PropertyId} onValueChange={handleSelectGa4Property} disabled={savingGa4Property}>
+                        <SelectTrigger id="ga4-property-select" className="w-full sm:w-[26rem]">
+                          <SelectValue placeholder="Property auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ga4Properties.map((property) => (
+                            <SelectItem key={property.propertyId} value={property.propertyId}>
+                              {property.displayName} ({property.propertyId})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {savingGa4Property && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Property wird gespeichert...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      {ga4PropertyName || 'Noch keine Property ausgewaehlt'}
+                    </p>
+                    {ga4PropertyId && (
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        Property-ID: {ga4PropertyId}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2">
+          {isAdmin ? (
+            <>
+              <Button onClick={handleConnectGa4} disabled={connectingGa4} className="rounded-xl">
+                {connectingGa4 ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                )}
+                {ga4Integration ? (ga4NeedsReconnect ? 'Erneut verbinden' : 'Google-Konto wechseln') : 'Mit Google verbinden'}
+              </Button>
+              {ga4Integration && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setGa4DisconnectOpen(true)}
+                  className="rounded-xl text-red-600 hover:text-red-700"
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Verbindung trennen
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href="/dashboard">Zum Dashboard</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderMetaAdsIntegrationCard = () => (
+    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-blue-50 via-white to-cyan-50 p-4 dark:border-slate-800 dark:from-blue-950/20 dark:via-slate-950 dark:to-cyan-950/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+              <Eye className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Meta Ads</p>
+                {getStatusBadge(metaAdsIntegration?.status ?? 'disconnected')}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Facebook- und Instagram-Kampagnen werden pro Kunde ueber Meta OAuth angebunden.
+              </p>
+            </div>
+          </div>
+
+          {!metaAdsIntegration && (
+            <div className="space-y-2">
+              <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Verbinde ein Meta-Konto und waehle danach den passenden Werbe-Account fuer diesen Kunden aus.
+              </p>
+              {!isAdmin && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Nur Admins koennen die Verbindung einrichten.
+                </p>
+              )}
+            </div>
+          )}
+
+          {metaAdsIntegration && (
+            <div className="space-y-3">
+              {metaAdsUserName && (
+                <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Meta-Konto</p>
+                  <p className="truncate font-medium text-slate-700 dark:text-slate-200">{metaAdsUserName}</p>
+                </div>
+              )}
+
+              {metaAdsNeedsReconnect && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Die gespeicherte Meta-Ads-Verbindung ist nicht mehr gueltig. Bitte verbinde das Konto erneut, damit das Dashboard wieder Daten laden kann.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="meta-ads-account-select">Ad Account</Label>
+                {metaAdsIsConnected && isAdmin ? (
+                  <>
+                    {loadingMetaAdsAccounts ? (
+                      <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Werbekonten werden geladen...
+                      </div>
+                    ) : metaAdsAccounts.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        Sobald die Backend-Anbindung verfuegbar ist, erscheinen hier die Meta Ad Accounts zur Auswahl.
+                      </div>
+                    ) : (
+                      <Select
+                        value={metaAdsAccountId}
+                        onValueChange={handleSelectMetaAdsAccount}
+                        disabled={savingMetaAdsAccount}
+                      >
+                        <SelectTrigger id="meta-ads-account-select" className="w-full sm:w-[26rem]">
+                          <SelectValue placeholder="Ad Account auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {metaAdsAccounts.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.name} ({account.id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {savingMetaAdsAccount && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Ad Account wird gespeichert...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      {metaAdsAccountName || 'Noch kein Ad Account ausgewaehlt'}
+                    </p>
+                    <div className="mt-1 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      {metaAdsAccountId && <p>Account-ID: {metaAdsAccountId}</p>}
+                      {metaAdsBusinessName && <p>Business: {metaAdsBusinessName}</p>}
+                      {metaAdsCurrency && <p>Waehrung: {metaAdsCurrency}</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2">
+          {isAdmin ? (
+            <>
+              <Button onClick={handleConnectMetaAds} disabled={connectingMetaAds} className="rounded-xl">
+                {connectingMetaAds ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                )}
+                {metaAdsIntegration
+                  ? metaAdsNeedsReconnect
+                    ? 'Erneut verbinden'
+                    : 'Meta-Konto wechseln'
+                  : 'Mit Meta verbinden'}
+              </Button>
+              {metaAdsIntegration && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMetaAdsDisconnectOpen(true)}
+                  className="rounded-xl text-red-600 hover:text-red-700"
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Verbindung trennen
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href="/dashboard">Zum Dashboard</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderTikTokIntegrationCard = () => (
+    <div className="rounded-xl border border-slate-200 bg-gradient-to-br from-pink-50 via-white to-rose-50 p-4 dark:border-slate-800 dark:from-pink-950/20 dark:via-slate-950 dark:to-rose-950/10">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-pink-100 text-pink-600 dark:bg-pink-950/40 dark:text-pink-400">
+              <Zap className="h-4 w-4" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">TikTok Ads</p>
+                {getStatusBadge(tikTokIntegration?.status ?? 'disconnected')}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Kampagnen, Video Views und Kosten werden pro Kunde ueber TikTok OAuth angebunden.
+              </p>
+            </div>
+          </div>
+
+          {!tikTokIntegration && (
+            <div className="space-y-2">
+              <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Verbinde ein TikTok-for-Business-Konto und waehle danach den passenden Advertiser fuer diesen Kunden aus.
+              </p>
+              <div className="rounded-lg border border-pink-100 bg-pink-50/80 px-3 py-2 text-xs text-pink-700 dark:border-pink-900/40 dark:bg-pink-950/20 dark:text-pink-200">
+                Die UI ist vorbereitet. Sobald der Backend-Flow verfuegbar ist, startet hier direkt der OAuth-Connect.
+              </div>
+              {!isAdmin && (
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Nur Admins koennen die Verbindung einrichten.
+                </p>
+              )}
+            </div>
+          )}
+
+          {tikTokIntegration && (
+            <div className="space-y-3">
+              {tikTokDisplayName && (
+                <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">TikTok-Konto</p>
+                  <p className="truncate font-medium text-slate-700 dark:text-slate-200">{tikTokDisplayName}</p>
+                </div>
+              )}
+
+              {tikTokNeedsReconnect && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Die gespeicherte TikTok-Verbindung ist nicht mehr gueltig. Bitte verbinde das Konto erneut, damit das Dashboard wieder Daten laden kann.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="tiktok-advertiser-select">Advertiser</Label>
+                {tikTokIsConnected && isAdmin ? (
+                  <>
+                    {loadingTikTokAdvertisers ? (
+                      <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Advertiser werden geladen...
+                      </div>
+                    ) : tikTokAdvertisers.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        Sobald die Backend-Anbindung verfuegbar ist, erscheinen hier die TikTok Advertiser zur Auswahl.
+                      </div>
+                    ) : (
+                      <Select
+                        value={tikTokAdvertiserId}
+                        onValueChange={handleSelectTikTokAdvertiser}
+                        disabled={savingTikTokAdvertiser}
+                      >
+                        <SelectTrigger id="tiktok-advertiser-select" className="w-full sm:w-[26rem]">
+                          <SelectValue placeholder="Advertiser auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tikTokAdvertisers.map((advertiser) => (
+                            <SelectItem key={advertiser.id} value={advertiser.id}>
+                              {advertiser.name} ({advertiser.id})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {savingTikTokAdvertiser && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Advertiser wird gespeichert...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      {tikTokAdvertiserName || 'Noch kein Advertiser ausgewaehlt'}
+                    </p>
+                    <div className="mt-1 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      {tikTokAdvertiserId && <p>Advertiser-ID: {tikTokAdvertiserId}</p>}
+                      {tikTokCurrency && <p>Waehrung: {tikTokCurrency}</p>}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col gap-2">
+          {isAdmin ? (
+            <>
+              <Button onClick={handleConnectTikTok} disabled={connectingTikTok} className="rounded-xl">
+                {connectingTikTok ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                )}
+                {tikTokIntegration
+                  ? tikTokNeedsReconnect
+                    ? 'Erneut verbinden'
+                    : 'TikTok-Konto wechseln'
+                  : 'Mit TikTok verbinden'}
+              </Button>
+              {tikTokIntegration && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setTikTokDisconnectOpen(true)}
+                  className="rounded-xl text-red-600 hover:text-red-700"
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Verbindung trennen
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href="/dashboard">Zum Dashboard</Link>
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <TooltipProvider>
@@ -466,7 +1384,7 @@ export function CustomerDetailWorkspace({
             </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="master-data">Stammdaten</TabsTrigger>
               <TabsTrigger value="integrations">Integrationen</TabsTrigger>
@@ -594,9 +1512,13 @@ export function CustomerDetailWorkspace({
             <TabsContent value="integrations" className="space-y-4">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-base">Credentials Vault</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+                <CardTitle className="text-base">Credentials Vault</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                  {renderGa4IntegrationCard()}
+                  {renderMetaAdsIntegrationCard()}
+                  {renderTikTokIntegrationCard()}
+
                   {loadingIntegrations ? (
                     <div className="space-y-3">
                       <Skeleton className="h-20 w-full" />
@@ -907,6 +1829,82 @@ export function CustomerDetailWorkspace({
               </Card>
             </TabsContent>
           </Tabs>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={ga4DisconnectOpen} onOpenChange={setGa4DisconnectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>GA4-Verbindung trennen?</DialogTitle>
+            <DialogDescription>
+              Das verbundene Google-Konto und die ausgewaehlte Property werden fuer diesen Kunden entfernt. Bereits angezeigte Berichte bleiben erhalten, neue GA4-Daten koennen danach aber nicht mehr geladen werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGa4DisconnectOpen(false)} disabled={disconnectingGa4}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleDisconnectGa4} disabled={disconnectingGa4}>
+              {disconnectingGa4 && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verbindung trennen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={metaAdsDisconnectOpen} onOpenChange={setMetaAdsDisconnectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Meta-Ads-Verbindung trennen?</DialogTitle>
+            <DialogDescription>
+              Das verbundene Meta-Konto und der ausgewaehlte Werbe-Account werden fuer diesen Kunden entfernt. Bereits angezeigte Berichte bleiben erhalten, neue Meta-Ads-Daten koennen danach aber nicht mehr geladen werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setMetaAdsDisconnectOpen(false)}
+              disabled={disconnectingMetaAds}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnectMetaAds}
+              disabled={disconnectingMetaAds}
+            >
+              {disconnectingMetaAds && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verbindung trennen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={tikTokDisconnectOpen} onOpenChange={setTikTokDisconnectOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>TikTok-Verbindung trennen?</DialogTitle>
+            <DialogDescription>
+              Das verbundene TikTok-Konto und der ausgewaehlte Advertiser werden fuer diesen Kunden entfernt. Bereits angezeigte Berichte bleiben erhalten, neue TikTok-Daten koennen danach aber nicht mehr geladen werden.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setTikTokDisconnectOpen(false)}
+              disabled={disconnectingTikTok}
+            >
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnectTikTok}
+              disabled={disconnectingTikTok}
+            >
+              {disconnectingTikTok && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              Verbindung trennen
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </TooltipProvider>

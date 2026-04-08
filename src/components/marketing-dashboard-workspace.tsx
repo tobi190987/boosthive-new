@@ -64,6 +64,12 @@ interface GA4Data {
   bounceRate: number
   avgSessionDuration: number
   timeseries: { label: string; value: number }[]
+  isCached?: boolean
+  cacheAgeMinutes?: number
+  googleEmail?: string
+  propertyName?: string
+  propertyId?: string
+  message?: string
 }
 
 interface GSCData {
@@ -102,10 +108,16 @@ interface MetaAdsData {
   campaigns: MetaCampaign[]
   totalCost: number
   avgCpm: number
+  totalReach?: number
+  totalImpressions?: number
+  totalConversions?: number
+  currency?: string
 }
 
 interface TikTokCampaign {
   name: string
+  status?: string
+  videoViews?: number
   views: number
   clicks: number
   cpc: number
@@ -115,6 +127,14 @@ interface TikTokCampaign {
 interface TikTokData {
   campaigns: TikTokCampaign[]
   totalCost: number
+  totalClicks?: number
+  totalVideoViews?: number
+  averageCpc?: number
+  activeCampaigns?: number
+  currency?: string
+  isCached?: boolean
+  cacheAgeMinutes?: number
+  message?: string
 }
 
 interface PlatformState<T> {
@@ -316,6 +336,25 @@ function MetricItem({ label, value }: { label: string; value: string }) {
   )
 }
 
+function PlatformInfoBanner({
+  tone = 'neutral',
+  children,
+}: {
+  tone?: 'neutral' | 'warning'
+  children: React.ReactNode
+}) {
+  const toneClass =
+    tone === 'warning'
+      ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/20 dark:text-amber-200'
+      : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300'
+
+  return (
+    <div className={`rounded-xl border px-3 py-2 text-sm ${toneClass}`}>
+      {children}
+    </div>
+  )
+}
+
 function DashboardCustomerPickerCard({
   activeCustomerName,
   hasCustomers,
@@ -362,6 +401,30 @@ function GA4Section({ state, onRetry }: { state: PlatformState<GA4Data>; onRetry
   const d = state.data
   return (
     <div className="space-y-5 py-2">
+      {(d.googleEmail || d.propertyName) && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {d.googleEmail && (
+            <PlatformInfoBanner>
+              <span className="font-medium">Google-Konto:</span> {d.googleEmail}
+            </PlatformInfoBanner>
+          )}
+          {d.propertyName && (
+            <PlatformInfoBanner>
+              <span className="font-medium">Property:</span> {d.propertyName}
+              {d.propertyId ? ` (${d.propertyId})` : ''}
+            </PlatformInfoBanner>
+          )}
+        </div>
+      )}
+      {d.isCached && (
+        <PlatformInfoBanner tone="warning">
+          Daten aus dem Cache
+          {typeof d.cacheAgeMinutes === 'number' ? `, zuletzt vor ${d.cacheAgeMinutes} Min. aktualisiert.` : '.'}
+        </PlatformInfoBanner>
+      )}
+      {d.message && !d.isCached && (
+        <PlatformInfoBanner>{d.message}</PlatformInfoBanner>
+      )}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
         <MetricItem label="Sessions" value={formatNumber(d.sessions)} />
         <MetricItem label="Nutzer" value={formatNumber(d.users)} />
@@ -369,13 +432,17 @@ function GA4Section({ state, onRetry }: { state: PlatformState<GA4Data>; onRetry
         <MetricItem label="Absprungrate" value={formatPercent(d.bounceRate)} />
         <MetricItem label="Verweildauer" value={formatDuration(d.avgSessionDuration)} />
       </div>
-      {d.timeseries.length > 0 && (
+      {d.timeseries.length > 0 ? (
         <TrendAreaChart
           title="Besucher im Zeitverlauf"
           data={d.timeseries}
           color="#f97316"
           type="area"
         />
+      ) : (
+        <PlatformInfoBanner>
+          Fuer den gewaehlten Zeitraum sind noch keine GA4-Daten verfuegbar.
+        </PlatformInfoBanner>
       )}
     </div>
   )
@@ -495,8 +562,45 @@ function MetaAdsSection({ state, onRetry }: { state: PlatformState<MetaAdsData>;
   if (!state.data) return <PlatformSkeleton />
 
   const d = state.data
+  const totalReach = d.totalReach ?? d.campaigns.reduce((sum, campaign) => sum + campaign.reach, 0)
+  const totalImpressions =
+    d.totalImpressions ?? d.campaigns.reduce((sum, campaign) => sum + campaign.impressions, 0)
+  const totalConversions =
+    d.totalConversions ?? d.campaigns.reduce((sum, campaign) => sum + campaign.conversions, 0)
+  const currencyLabel = d.currency ?? 'EUR'
+
   return (
     <div className="space-y-5 py-2">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
+          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Gesamt-Reichweite</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            {formatNumber(totalReach)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
+          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Impressions</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            {formatNumber(totalImpressions)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
+          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Durchschnittlicher CPM</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            {formatCurrency(d.avgCpm)}
+          </p>
+        </div>
+        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
+          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Gesamtausgaben</p>
+          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
+            {formatCurrency(d.totalCost)}
+          </p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Waehrung: {currencyLabel}
+          </p>
+        </div>
+      </div>
+
       {d.campaigns.length === 0 ? (
         <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Keine aktiven Kampagnen</p>
       ) : (
@@ -525,6 +629,10 @@ function MetaAdsSection({ state, onRetry }: { state: PlatformState<MetaAdsData>;
           </Table>
         </div>
       )}
+
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        Gesamt-Conversions im Zeitraum: {formatNumber(totalConversions)}
+      </p>
     </div>
   )
 }
@@ -540,16 +648,53 @@ function TikTokSection({ state, onRetry }: { state: PlatformState<TikTokData>; o
   if (!state.data) return <PlatformSkeleton />
 
   const d = state.data
+  const totalVideoViews =
+    d.totalVideoViews ?? d.campaigns.reduce((sum, campaign) => sum + (campaign.videoViews ?? campaign.views ?? 0), 0)
+  const totalClicks = d.totalClicks ?? d.campaigns.reduce((sum, campaign) => sum + campaign.clicks, 0)
+  const totalCost = d.totalCost ?? d.campaigns.reduce((sum, campaign) => sum + campaign.cost, 0)
+  const averageCpc =
+    d.averageCpc ??
+    (totalClicks > 0 ? totalCost / totalClicks : 0)
+  const activeCampaigns =
+    d.activeCampaigns ??
+    d.campaigns.filter((campaign) => {
+      const status = campaign.status?.toLowerCase()
+      return !status || status === 'active' || status === 'enabled'
+    }).length
+
   return (
     <div className="space-y-5 py-2">
+      {d.message && <PlatformInfoBanner>{d.message}</PlatformInfoBanner>}
+      {d.isCached && (
+        <PlatformInfoBanner tone="warning">
+          TikTok-Daten werden aus dem Cache angezeigt
+          {typeof d.cacheAgeMinutes === 'number' ? ` (${d.cacheAgeMinutes} Min. alt)` : ''}.
+        </PlatformInfoBanner>
+      )}
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <MetricItem label="Aktive Kampagnen" value={formatNumber(activeCampaigns)} />
+        <MetricItem label="Video Views" value={formatNumber(totalVideoViews)} />
+        <MetricItem label="Klicks" value={formatNumber(totalClicks)} />
+        <MetricItem label="Avg. CPC" value={formatCurrency(averageCpc)} />
+      </div>
+
       {d.campaigns.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Keine aktiven Kampagnen</p>
+        <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center dark:border-slate-800">
+          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
+            Keine TikTok-Kampagnen im gewaehlten Zeitraum
+          </p>
+          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+            Sobald ein Advertiser verbunden ist und Daten liefert, erscheinen hier Kampagnen, Views und Kosten.
+          </p>
+        </div>
       ) : (
         <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="text-xs">Kampagne</TableHead>
+                <TableHead className="text-xs">Status</TableHead>
                 <TableHead className="text-right text-xs">Views</TableHead>
                 <TableHead className="text-right text-xs">Klicks</TableHead>
                 <TableHead className="text-right text-xs">CPC</TableHead>
@@ -560,7 +705,12 @@ function TikTokSection({ state, onRetry }: { state: PlatformState<TikTokData>; o
               {d.campaigns.map((c) => (
                 <TableRow key={c.name}>
                   <TableCell className="text-sm font-medium">{c.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.views)}</TableCell>
+                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">
+                    {c.status ?? 'Aktiv'}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums">
+                    {formatNumber(c.videoViews ?? c.views ?? 0)}
+                  </TableCell>
                   <TableCell className="text-right tabular-nums">{formatNumber(c.clicks)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatCurrency(c.cpc)}</TableCell>
                   <TableCell className="text-right tabular-nums">{formatCurrency(c.cost)}</TableCell>
@@ -570,6 +720,11 @@ function TikTokSection({ state, onRetry }: { state: PlatformState<TikTokData>; o
           </Table>
         </div>
       )}
+
+      <p className="text-xs text-slate-500 dark:text-slate-400">
+        Gesamt-Kosten im Zeitraum: {formatCurrency(totalCost)}
+        {d.currency ? ` (${d.currency})` : ''}
+      </p>
     </div>
   )
 }
@@ -644,8 +799,16 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         const res = await fetch(`${endpoint}?customerId=${customerId}&range=${dateRange}`, {
           credentials: 'include',
         })
-        if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const json = await res.json()
+        if (!res.ok) {
+          throw new Error(
+            typeof json.error === 'string'
+              ? json.error
+              : typeof json.message === 'string'
+                ? json.message
+                : `HTTP ${res.status}`
+          )
+        }
         setState({
           connected: json.connected ?? false,
           loading: false,
@@ -712,7 +875,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       value:
         (googleAds.data?.campaigns.filter((c) => c.status === 'ENABLED').length ?? 0) +
         (metaAds.data?.campaigns.length ?? 0) +
-        (tiktok.data?.campaigns.length ?? 0),
+        (tiktok.data?.activeCampaigns ?? tiktok.data?.campaigns.length ?? 0),
       trend: null,
     }
     const avgCpc: TrendValue = {

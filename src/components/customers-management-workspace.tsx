@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +50,8 @@ const CUSTOMERS_CACHE_KEY = 'customers:list'
 const PAGE_SIZE = 20
 
 export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const { refetchCustomers: refetchSidebar } = useActiveCustomer()
   const [customers, setCustomers] = useState<CustomerExtended[]>([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +65,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
   const [deletingCustomer, setDeletingCustomer] = useState<CustomerExtended | null>(null)
   const [detailCustomer, setDetailCustomer] = useState<CustomerExtended | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [detailInitialTab, setDetailInitialTab] = useState<'master-data' | 'integrations' | 'documents' | 'notes'>('master-data')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
@@ -127,8 +131,27 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
 
   const openDetail = useCallback((customer: CustomerExtended) => {
     setDetailCustomer(customer)
+    setDetailInitialTab('master-data')
     setDetailDialogOpen(true)
   }, [])
+
+  const closeDetail = useCallback(() => {
+    setDetailDialogOpen(false)
+
+    const params = new URLSearchParams(searchParams.toString())
+    let shouldReplace = false
+    for (const key of ['customer', 'tab', 'ga4', 'ga4_error', 'meta_ads', 'meta_ads_error', 'tiktok', 'tiktok_error']) {
+      if (params.has(key)) {
+        params.delete(key)
+        shouldReplace = true
+      }
+    }
+
+    if (shouldReplace) {
+      const next = params.toString()
+      router.replace(next ? `/tools/customers?${next}` : '/tools/customers', { scroll: false })
+    }
+  }, [router, searchParams])
 
   const handleSave = useCallback(async () => {
     if (!form.name.trim()) {
@@ -194,6 +217,68 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
       setDeleting(false)
     }
   }, [deletingCustomer, refetchCustomers, refetchSidebar])
+
+  useEffect(() => {
+    const customerId = searchParams.get('customer')
+    const tab = searchParams.get('tab')
+    const ga4 = searchParams.get('ga4')
+    const ga4Error = searchParams.get('ga4_error')
+    const metaAds = searchParams.get('meta_ads')
+    const metaAdsError = searchParams.get('meta_ads_error')
+    const tiktok = searchParams.get('tiktok')
+    const tiktokError = searchParams.get('tiktok_error')
+
+    if (!customerId) return
+
+    let cancelled = false
+
+    async function openCustomerFromQuery() {
+      try {
+        const response = await fetch(`/api/tenant/customers/${customerId}`)
+        if (!response.ok) {
+          const data = await response.json().catch(() => ({}))
+          throw new Error(data.error || 'Kunde konnte nicht geladen werden.')
+        }
+
+        const data = await response.json()
+        if (cancelled) return
+
+        setDetailCustomer(data.customer)
+        setDetailInitialTab(
+          tab === 'integrations' || tab === 'documents' || tab === 'notes' ? tab : 'master-data'
+        )
+        setDetailDialogOpen(true)
+
+        if (ga4 === 'connected') {
+          toast.success('Google Analytics 4 wurde verbunden.')
+        }
+        if (ga4Error) {
+          toast.error(`GA4-Verbindung fehlgeschlagen: ${ga4Error}`)
+        }
+        if (metaAds === 'connected') {
+          toast.success('Meta Ads wurde verbunden.')
+        }
+        if (metaAdsError) {
+          toast.error(`Meta-Ads-Verbindung fehlgeschlagen: ${metaAdsError}`)
+        }
+        if (tiktok === 'connected') {
+          toast.success('TikTok Ads wurde verbunden.')
+        }
+        if (tiktokError) {
+          toast.error(`TikTok-Verbindung fehlgeschlagen: ${tiktokError}`)
+        }
+      } catch (err) {
+        if (cancelled) return
+        toast.error(err instanceof Error ? err.message : 'Kunde konnte nicht geladen werden.')
+      }
+    }
+
+    void openCustomerFromQuery()
+
+    return () => {
+      cancelled = true
+    }
+  }, [searchParams])
 
   return (
     <div className="space-y-6">
@@ -468,8 +553,9 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
           customer={detailCustomer}
           open={detailDialogOpen}
           isAdmin={isAdmin}
-          onClose={() => setDetailDialogOpen(false)}
+          onClose={closeDetail}
           onUpdate={refetchCustomers}
+          initialTab={detailInitialTab}
         />
       )}
     </div>

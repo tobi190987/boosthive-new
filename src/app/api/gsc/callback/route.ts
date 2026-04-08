@@ -10,6 +10,8 @@ import { verifyOAuthState } from '@/lib/gsc-oauth'
 import { exchangeCodeForTokens, getGoogleEmail } from '@/lib/gsc-oauth'
 import { encryptToken } from '@/lib/gsc-crypto'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { verifyGA4OAuthState, exchangeGA4CodeForTokens, getGA4GoogleEmail } from '@/lib/ga4-oauth'
+import { upsertGA4Connection } from '@/lib/ga4-api'
 
 const stateProjectSchema = z.object({
   projectId: z.string().uuid(),
@@ -44,6 +46,30 @@ function buildRedirectUrl(tenantSlug: string, projectId: string, result: 'connec
   return `${protocol}://${host}/tools/keywords?${params.toString()}`
 }
 
+function buildGa4RedirectUrl(
+  tenantSlug: string,
+  customerId: string,
+  result: 'connected' | 'error',
+  errorMsg?: string
+): string {
+  const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000'
+  const isLocalhost = rootDomain.startsWith('localhost')
+  const protocol = isLocalhost ? 'http' : 'https'
+  const host = isLocalhost ? `${tenantSlug}.localhost:3000` : `${tenantSlug}.${rootDomain}`
+  const params = new URLSearchParams({
+    customer: customerId,
+    tab: 'integrations',
+  })
+
+  if (result === 'connected') {
+    params.set('ga4', 'connected')
+  } else {
+    params.set('ga4_error', errorMsg ?? 'unknown_error')
+  }
+
+  return `${protocol}://${host}/tools/customers?${params.toString()}`
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
   const code = searchParams.get('code')
@@ -55,6 +81,78 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL(process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'))
     }
     return NextResponse.json({ error: 'Ungültige Callback-Parameter.' }, { status: 400 })
+  }
+
+  const admin = createAdminClient()
+
+  // GA4 branch: reuse the same Google callback route as GSC so only one
+  // redirect URI has to be registered in Google Cloud Console.
+  const ga4Payload = verifyGA4OAuthState(state)
+  if (ga4Payload) {
+    const { data: tenant } = await admin
+      .from('tenants')
+      .select('slug')
+      .eq('id', ga4Payload.tenantId)
+      .single()
+
+    if (!tenant?.slug) {
+      return NextResponse.json({ error: 'Tenant nicht gefunden.' }, { status: 400 })
+    }
+
+    if (error === 'access_denied') {
+      return NextResponse.redirect(
+        buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', 'access_denied')
+      )
+    }
+
+    if (!code) {
+      return NextResponse.redirect(
+        buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', 'missing_code')
+      )
+    }
+
+    try {
+      const { data: customer, error: customerError } = await admin
+        .from('customers')
+        .select('id')
+        .eq('id', ga4Payload.customerId)
+        .eq('tenant_id', ga4Payload.tenantId)
+        .is('deleted_at', null)
+        .maybeSingle()
+
+      if (customerError || !customer) {
+        return NextResponse.redirect(
+          buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', 'customer_not_found')
+        )
+      }
+
+      const tokens = await exchangeGA4CodeForTokens(code)
+      if (!tokens.refresh_token) {
+        return NextResponse.redirect(
+          buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', 'no_refresh_token')
+        )
+      }
+
+      const googleEmail = await getGA4GoogleEmail(tokens.access_token)
+      await upsertGA4Connection({
+        tenantId: ga4Payload.tenantId,
+        customerId: ga4Payload.customerId,
+        userId: ga4Payload.userId,
+        googleEmail,
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token,
+        tokenExpiry: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+      })
+
+      return NextResponse.redirect(
+        buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'connected')
+      )
+    } catch (err) {
+      console.error('[ga4/gsc-callback] Error:', err)
+      return NextResponse.redirect(
+        buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', toSafeErrorCode(err))
+      )
+    }
   }
 
   // Verify state (CSRF protection)
@@ -71,7 +169,6 @@ export async function GET(request: NextRequest) {
   const { projectId, tenantId, userId } = parsedPayload.data
 
   // Look up tenant slug for redirect
-  const admin = createAdminClient()
   const { data: tenant } = await admin
     .from('tenants')
     .select('slug')
