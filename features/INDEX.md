@@ -61,7 +61,7 @@
 | PROJ-47 | Onboarding Guided Tour | Deployed | [PROJ-47-onboarding-guided-tour.md](PROJ-47-onboarding-guided-tour.md) | 2026-04-08 |
 | PROJ-48 | Security Hardening Sprint | In Progress | [PROJ-48-security-hardening.md](PROJ-48-security-hardening.md) | 2026-04-08 |
 | PROJ-49 | Marketing Performance Dashboard | In Progress | [PROJ-49-marketing-performance-dashboard.md](PROJ-49-marketing-performance-dashboard.md) | 2026-04-08 |
-| PROJ-50 | GA4 Integration | Planned | [PROJ-50-ga4-integration.md](PROJ-50-ga4-integration.md) | 2026-04-08 |
+| PROJ-50 | GA4 Integration | In Progress | [PROJ-50-ga4-integration.md](PROJ-50-ga4-integration.md) | 2026-04-08 |
 | PROJ-51 | Google Ads Integration | Planned | [PROJ-51-google-ads-integration.md](PROJ-51-google-ads-integration.md) | 2026-04-08 |
 | PROJ-52 | Meta Ads Integration | Planned | [PROJ-52-meta-ads-integration.md](PROJ-52-meta-ads-integration.md) | 2026-04-08 |
 | PROJ-53 | TikTok Ads Integration | Planned | [PROJ-53-tiktok-ads-integration.md](PROJ-53-tiktok-ads-integration.md) | 2026-04-08 |
