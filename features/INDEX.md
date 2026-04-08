@@ -59,7 +59,8 @@
 | PROJ-45 | Progress Indicators | Deployed | [PROJ-45-progress-indicators.md](PROJ-45-progress-indicators.md) | 2026-04-08 |
 | PROJ-46 | Drag-and-Drop Content Workflow | Deployed | [PROJ-46-drag-drop-content-workflow.md](PROJ-46-drag-drop-content-workflow.md) | 2026-04-08 |
 | PROJ-47 | Onboarding Guided Tour | Deployed | [PROJ-47-onboarding-guided-tour.md](PROJ-47-onboarding-guided-tour.md) | 2026-04-08 |
+| PROJ-48 | Security Hardening Sprint | In Progress | [PROJ-48-security-hardening.md](PROJ-48-security-hardening.md) | 2026-04-08 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-48
+## Next Available ID: PROJ-49

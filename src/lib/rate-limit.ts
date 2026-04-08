@@ -161,11 +161,11 @@ export function rateLimitResponse(result: RateLimitResult): NextResponse {
  * Falls back to 'unknown' if no IP is detectable.
  */
 export function getClientIp(request: Request): string {
-  // x-real-ip is set by Vercel's edge network and cannot be spoofed by clients.
-  // x-forwarded-for as fallback (first IP in chain = original client).
+  // x-forwarded-for is the Vercel standard (first entry = original client, prepended by edge).
+  // x-real-ip as fallback for environments that set it directly.
   return (
-    request.headers.get('x-real-ip') ??
     request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    request.headers.get('x-real-ip') ??
     'unknown'
   )
 }

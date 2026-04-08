@@ -5,61 +5,6 @@ import { createMiddlewareClient } from '@/lib/supabase-middleware'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
 // ---------------------------------------------------------------------------
-// BUG-2: Rate Limiting für /api/owner/* Routen
-// ---------------------------------------------------------------------------
-// In-Memory-Rate-Limiter pro IP + Pfad.
-// WICHTIG: Funktioniert nur bei Single-Instance (lokaler Dev-Server).
-// In Produktion (Vercel serverless) durch Upstash Redis ersetzen:
-// https://github.com/upstash/ratelimit
-// ---------------------------------------------------------------------------
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT_WINDOW_MS = 60 * 1000 // 1 Minute
-const RATE_LIMIT_MAX_REQUESTS = 30 // max. 30 Requests pro Minute pro IP
-const AUTH_RATE_LIMIT_MAX_REQUESTS = 5 // max. 5 Requests pro Minute pro IP (Auth-Routen)
-// BUG-12: Maximale Map-Groesse — bei Überschreitung werden abgelaufene Eintraege bereinigt
-const RATE_LIMIT_MAX_ENTRIES = 10_000
-
-// BUG-12: Bereinigt abgelaufene Eintraege aus der Rate-Limit-Map
-function pruneRateLimitMap(): void {
-  const now = Date.now()
-  for (const [key, entry] of rateLimitMap.entries()) {
-    if (now > entry.resetAt) {
-      rateLimitMap.delete(key)
-    }
-  }
-}
-
-function checkRateLimit(request: NextRequest, maxRequests = RATE_LIMIT_MAX_REQUESTS): boolean {
-  if (process.env.NODE_ENV === 'development') {
-    return true
-  }
-
-  // BUG-11: In Produktion auf Vercel wird x-forwarded-for von der Edge-Network gesetzt
-  // (nicht vom Client spoofbar). x-real-ip als weiterer Fallback, 'unknown' für lokale Dev.
-  // Für Multi-Instance-Produktion: durch Upstash Redis ersetzen (dann echte Client-IP via Vercel).
-  const ip =
-    request.headers.get('x-real-ip') ??
-    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    'unknown'
-  const key = `${ip}:${request.nextUrl.pathname}`
-  const now = Date.now()
-  const entry = rateLimitMap.get(key)
-
-  if (!entry || now > entry.resetAt) {
-    // BUG-12: Abgelaufene Eintraege bereinigen, wenn Map zu gross wird
-    if (rateLimitMap.size >= RATE_LIMIT_MAX_ENTRIES) {
-      pruneRateLimitMap()
-    }
-    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS })
-    return true
-  }
-  if (entry.count >= maxRequests) return false
-  entry.count++
-  return true
-}
-
-// ---------------------------------------------------------------------------
 // BUG-5: CSRF-Schutz für zustandsändernde Methoden
 // ---------------------------------------------------------------------------
 // Prüft den Origin-Header für POST/PATCH/PUT/DELETE auf /api/owner/*.
@@ -344,12 +289,12 @@ export async function proxy(request: NextRequest) {
     return new NextResponse('Not Found', { status: 404 })
   }
 
-  // CSRF-Schutz und Rate Limiting für /api/auth/* und /api/owner/* Routen
-  const isAuthRoute = pathname.startsWith('/api/auth/')
-  const isOwnerApiRoute = pathname.startsWith('/api/owner/')
-
-  if (isAuthRoute || isOwnerApiRoute) {
-    // CSRF: Origin-Prüfung für zustandsändernde Methoden
+  // CSRF-Schutz für /api/auth/* und /api/owner/* Routen
+  // Rate Limiting liegt vollständig bei den Route-Handlern (src/lib/rate-limit.ts)
+  if (
+    pathname.startsWith('/api/auth/') ||
+    pathname.startsWith('/api/owner/')
+  ) {
     if (STATE_CHANGING_METHODS.has(request.method)) {
       const origin = request.headers.get('origin')
       if (origin !== null && !isAllowedOrigin(origin)) {
@@ -359,15 +304,6 @@ export async function proxy(request: NextRequest) {
           { status: 403 }
         )
       }
-    }
-
-    // Rate Limiting: Auth-Routen strenger (5/min), Owner-API normal (30/min)
-    const maxReqs = isAuthRoute ? AUTH_RATE_LIMIT_MAX_REQUESTS : RATE_LIMIT_MAX_REQUESTS
-    if (!checkRateLimit(request, maxReqs)) {
-      return NextResponse.json(
-        { error: 'Zu viele Anfragen. Bitte warte eine Minute.' },
-        { status: 429 }
-      )
     }
   }
 
