@@ -8,6 +8,7 @@ import {
   CheckSquare,
   Eye,
   FileText,
+  Keyboard,
   LayoutGrid,
   LayoutDashboard,
   Loader2,
@@ -23,6 +24,21 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Badge } from '@/components/ui/badge'
+
+const SHORTCUTS = [
+  { category: 'Navigation', keys: ['⌘', 'K'], label: 'Befehlspalette öffnen' },
+  { category: 'Navigation', keys: ['?'], label: 'Shortcuts anzeigen' },
+  { category: 'Navigation', keys: ['G', 'D'], label: 'Dashboard' },
+  { category: 'Navigation', keys: ['G', 'C'], label: 'Kunden' },
+  { category: 'Allgemein', keys: ['Esc'], label: 'Dialoge schließen' },
+]
 
 interface SearchResult {
   id: string
@@ -48,6 +64,7 @@ const NAV_ITEMS = [
 export function GlobalCommandPalette() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -55,9 +72,17 @@ export function GlobalCommandPalette() {
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target as HTMLElement).isContentEditable
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault()
         setOpen((prev) => !prev)
+        return
+      }
+      if (e.key === '?' && !isInput && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault()
+        setShortcutsOpen((prev) => !prev)
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -121,6 +146,38 @@ export function GlobalCommandPalette() {
   )
 
   return (
+    <>
+    <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Keyboard className="h-4 w-4" />
+            Tastaturkürzel
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {Array.from(new Set(SHORTCUTS.map((s) => s.category))).map((cat) => (
+            <div key={cat}>
+              <p className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400">{cat}</p>
+              <ul className="space-y-1.5">
+                {SHORTCUTS.filter((s) => s.category === cat).map((s) => (
+                  <li key={s.label} className="flex items-center justify-between">
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{s.label}</span>
+                    <div className="flex items-center gap-1">
+                      {s.keys.map((k) => (
+                        <Badge key={k} variant="outline" className="rounded px-1.5 py-0.5 font-mono text-[11px]">
+                          {k}
+                        </Badge>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </DialogContent>
+    </Dialog>
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput
         placeholder="Suche nach Seiten, Kunden, Briefs, Ads, Projekten und Analysen..."
@@ -172,5 +229,6 @@ export function GlobalCommandPalette() {
         </CommandGroup>
       </CommandList>
     </CommandDialog>
+    </>
   )
 }

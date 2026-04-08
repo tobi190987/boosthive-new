@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Search, Plus, Trash2, Users, Pencil, Globe } from 'lucide-react'
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
+import { FilterChips } from '@/components/filter-chips'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 
@@ -204,27 +205,17 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input
-                placeholder="Kunden suchen..."
-                value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
-                className="pl-10"
-              />
-            </div>
-            <div className="flex gap-2">
-              <Select value={statusFilter} onValueChange={(value) => { setStatusFilter(value as 'all' | 'active' | 'paused'); setCurrentPage(1) }}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Alle</SelectItem>
-                  <SelectItem value="active">Aktiv</SelectItem>
-                  <SelectItem value="paused">Pausiert</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input
+                  placeholder="Kunden suchen..."
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1) }}
+                  className="pl-10"
+                />
+              </div>
               {isAdmin && (
                 <Button onClick={openCreate}>
                   <Plus className="w-4 h-4 mr-2" />
@@ -232,6 +223,18 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                 </Button>
               )}
             </div>
+            <FilterChips
+              chips={[
+                { id: 'active', label: 'Aktiv' },
+                { id: 'paused', label: 'Pausiert' },
+              ]}
+              activeIds={statusFilter === 'all' ? [] : [statusFilter]}
+              onToggle={(id) => {
+                setCurrentPage(1)
+                setStatusFilter((prev) => (prev === id ? 'all' : id as typeof statusFilter))
+              }}
+              onClear={() => { setStatusFilter('all'); setCurrentPage(1) }}
+            />
           </div>
 
           {loading ? (

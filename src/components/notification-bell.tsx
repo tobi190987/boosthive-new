@@ -9,6 +9,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
@@ -95,21 +100,26 @@ export function NotificationBell({ initialNotifications = [] }: { initialNotific
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="relative h-9 w-9 rounded-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-          aria-label={`Benachrichtigungen${unreadCount > 0 ? ` (${unreadCount} ungelesen)` : ''}`}
-        >
-          <Bell className="h-4 w-4" />
-          {unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </Button>
-      </PopoverTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <PopoverTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative h-9 w-9 rounded-full text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              aria-label={`Benachrichtigungen${unreadCount > 0 ? ` (${unreadCount} ungelesen)` : ''}`}
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          </PopoverTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">Benachrichtigungen</TooltipContent>
+      </Tooltip>
       <PopoverContent align="end" className="w-80 p-0 rounded-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-border">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Benachrichtigungen</p>
@@ -167,6 +177,18 @@ export function NotificationBell({ initialNotifications = [] }: { initialNotific
               ))}
             </ul>
           )}
+        </div>
+        <div className="border-t border-slate-100 px-4 py-2.5 dark:border-border">
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false)
+              router.push('/notifications')
+            }}
+            className="w-full text-center text-xs text-blue-600 hover:underline dark:text-blue-400"
+          >
+            Alle anzeigen
+          </button>
         </div>
       </PopoverContent>
     </Popover>

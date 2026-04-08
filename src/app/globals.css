@@ -284,6 +284,15 @@
   }
 }
 
+/* NProgress top-loading bar */
+#nprogress .bar {
+  background: hsl(221 83% 53%) !important;
+  height: 2px !important;
+}
+#nprogress .peg {
+  box-shadow: 0 0 10px hsl(221 83% 53%), 0 0 5px hsl(221 83% 53%) !important;
+}
+
 @media print {
   /* Remove browser-added URL, date, page numbers */
   @page {

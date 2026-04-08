@@ -28,6 +28,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
+import { FilterChips } from '@/components/filter-chips'
 import { cn } from '@/lib/utils'
 
 type ApprovalStatus = 'draft' | 'pending_approval' | 'approved' | 'changes_requested'
@@ -309,17 +310,17 @@ export function KanbanWorkspace() {
           />
         </div>
 
-        <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value as 'all' | ContentType)}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Inhaltstyp" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Typen</SelectItem>
-            <SelectItem value="content_brief">Content Briefs</SelectItem>
-            <SelectItem value="ad_generation">Ad-Texte</SelectItem>
-            <SelectItem value="ad_library_asset">Creatives</SelectItem>
-          </SelectContent>
-        </Select>
+        <FilterChips
+          chips={[
+            { id: 'content_brief', label: 'Content Briefs' },
+            { id: 'ad_generation', label: 'Ad-Texte' },
+            { id: 'ad_library_asset', label: 'Creatives' },
+          ]}
+          activeIds={typeFilter === 'all' ? [] : [typeFilter]}
+          onToggle={(id) => setTypeFilter((prev) => (prev === id ? 'all' : id as ContentType))}
+          onClear={() => setTypeFilter('all')}
+          className="items-center"
+        />
 
         <Select value={customerFilter} onValueChange={setCustomerFilter}>
           <SelectTrigger className="w-full">

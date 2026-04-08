@@ -8,6 +8,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
 
 const options = [
@@ -24,18 +29,23 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          className={cn(
-            'flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300',
-            className
-          )}
-          aria-label="Theme wechseln"
-        >
-          <ActiveIcon className="h-4 w-4" />
-        </button>
-      </DropdownMenuTrigger>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                'flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300',
+                className
+              )}
+              aria-label="Theme wechseln"
+            >
+              <ActiveIcon className="h-4 w-4" />
+            </button>
+          </DropdownMenuTrigger>
+        </TooltipTrigger>
+        <TooltipContent side="top">Theme wechseln</TooltipContent>
+      </Tooltip>
       <DropdownMenuContent align="end" side="top" className="w-36">
         {options.map(({ value, icon: Icon, label }) => (
           <DropdownMenuItem
@@ -54,3 +64,4 @@ export function ThemeToggle({ className }: { className?: string }) {
     </DropdownMenu>
   )
 }
+

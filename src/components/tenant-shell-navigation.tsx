@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getUserDisplayName, getUserInitials } from '@/lib/profile'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
@@ -296,25 +297,31 @@ function NavigationContent({
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{context.tenant.name}</p>
         </div>
         {!inMobileSheet ? (
-          <Link
-            href="/help"
-            onClick={() => handleNavigate('/help')}
-            onMouseEnter={() => router.prefetch('/help')}
-            onFocus={() => router.prefetch('/help')}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
-            aria-label="Hilfe öffnen"
-            title="Hilfe"
-          >
-            <CircleHelp className="h-4 w-4" />
-          </Link>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link
+                href="/help"
+                onClick={() => handleNavigate('/help')}
+                onMouseEnter={() => router.prefetch('/help')}
+                onFocus={() => router.prefetch('/help')}
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
+                aria-label="Hilfe öffnen"
+              >
+                <CircleHelp className="h-4 w-4" />
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent side="right">Hilfe</TooltipContent>
+          </Tooltip>
         ) : null}
       </div>
 
-      <CustomerSelectorDropdown />
+      <div data-tour="customer-selector">
+        <CustomerSelectorDropdown />
+      </div>
 
       <Separator className="bg-slate-100 dark:bg-slate-800" />
 
-      <nav className="flex-1 px-3 py-3" aria-label="Tenant Navigation">
+      <nav className="flex-1 px-3 py-3" aria-label="Tenant Navigation" data-tour="sidebar-nav">
         <div className="space-y-6">
           {/* Dashboard — alleinstehend ohne Label */}
           <ul className="space-y-1">
@@ -495,12 +502,16 @@ function NavigationContent({
             </div>
           </Link>
           <div className="ml-auto flex items-center gap-1.5">
-            <NotificationBell initialNotifications={initialNotifications} />
+            <div data-tour="notification-bell">
+              <NotificationBell initialNotifications={initialNotifications} />
+            </div>
             <ThemeToggle className="shrink-0" />
           </div>
         </div>
       </div>
-      <GlobalCommandPalette />
+      <div data-tour="command-palette">
+        <GlobalCommandPalette />
+      </div>
     </>
   )
 }

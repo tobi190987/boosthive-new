@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { RouterProgressBar } from "@/components/router-progress-bar";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -38,9 +40,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${manrope.variable} ${inter.variable}`}>
       <body className="antialiased font-body">
         <ThemeProvider>
-          {children}
-          <Toaster />
-          <SonnerToaster />
+          <TooltipProvider delayDuration={400}>
+            <RouterProgressBar />
+            {children}
+            <Toaster />
+            <SonnerToaster />
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

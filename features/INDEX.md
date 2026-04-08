@@ -47,7 +47,19 @@
 | PROJ-33 | Ad Text Generator | In Progress | [PROJ-33-ad-text-generator.md](PROJ-33-ad-text-generator.md) | 2026-04-04 |
 | PROJ-34 | Client Approval Hub (Freigabe-Workflow) | In Progress | [PROJ-34-client-approval-hub.md](PROJ-34-client-approval-hub.md) | 2026-04-04 |
 | PROJ-35 | Realtime Notifications | Deployed | [PROJ-35-realtime-notifications.md](PROJ-35-realtime-notifications.md) | 2026-04-08 |
+| PROJ-36 | Breadcrumb Navigation | Deployed | [PROJ-36-breadcrumb-navigation.md](PROJ-36-breadcrumb-navigation.md) | 2026-04-08 |
+| PROJ-37 | Page Transition Loader | Deployed | [PROJ-37-page-transition-loader.md](PROJ-37-page-transition-loader.md) | 2026-04-08 |
+| PROJ-38 | Verbesserte Fehler-Recovery | Deployed | [PROJ-38-error-recovery.md](PROJ-38-error-recovery.md) | 2026-04-08 |
+| PROJ-39 | Tooltips auf Icon-Buttons | Deployed | [PROJ-39-tooltips-icon-buttons.md](PROJ-39-tooltips-icon-buttons.md) | 2026-04-08 |
+| PROJ-40 | Data Visualization / Charts | Deployed | [PROJ-40-data-visualization-charts.md](PROJ-40-data-visualization-charts.md) | 2026-04-08 |
+| PROJ-41 | Notification History Seite | Deployed | [PROJ-41-notification-history-page.md](PROJ-41-notification-history-page.md) | 2026-04-08 |
+| PROJ-42 | Erweiterte Filter-UI | Deployed | [PROJ-42-advanced-filter-ui.md](PROJ-42-advanced-filter-ui.md) | 2026-04-08 |
+| PROJ-43 | Inline-Confirms | Deployed | [PROJ-43-inline-confirms.md](PROJ-43-inline-confirms.md) | 2026-04-08 |
+| PROJ-44 | Keyboard Shortcuts ausbauen | Deployed | [PROJ-44-keyboard-shortcuts.md](PROJ-44-keyboard-shortcuts.md) | 2026-04-08 |
+| PROJ-45 | Progress Indicators | Deployed | [PROJ-45-progress-indicators.md](PROJ-45-progress-indicators.md) | 2026-04-08 |
+| PROJ-46 | Drag-and-Drop Content Workflow | Deployed | [PROJ-46-drag-drop-content-workflow.md](PROJ-46-drag-drop-content-workflow.md) | 2026-04-08 |
+| PROJ-47 | Onboarding Guided Tour | Deployed | [PROJ-47-onboarding-guided-tour.md](PROJ-47-onboarding-guided-tour.md) | 2026-04-08 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-36
+## Next Available ID: PROJ-48
