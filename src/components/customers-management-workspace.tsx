@@ -49,6 +49,38 @@ const CUSTOMERS_CACHE_KEY = 'customers:list'
 
 const PAGE_SIZE = 20
 
+function formatIntegrationQueryError(error: string): string {
+  switch (error) {
+    case 'access_denied':
+      return 'Der Login wurde abgebrochen.'
+    case 'missing_code':
+      return 'Google hat keinen gueltigen Autorisierungscode zurueckgegeben.'
+    case 'no_refresh_token':
+      return 'Google hat kein Refresh-Token geliefert. Bitte die Verbindung erneut starten.'
+    case 'customer_not_found':
+      return 'Der ausgewaehlte Kunde wurde nicht gefunden.'
+    case 'unknown_error':
+      return 'Die Verbindung konnte nicht abgeschlossen werden.'
+    default: {
+      const normalized = error.toLowerCase()
+
+      if (normalized.includes('customer_credentials_encryption_key')) {
+        return 'Die sichere Speicherung der Zugangsdaten ist aktuell nicht korrekt konfiguriert. Bitte CUSTOMER_CREDENTIALS_ENCRYPTION_KEY pruefen.'
+      }
+
+      if (
+        normalized.includes('unable_to_authenticate_data') ||
+        normalized.includes('unsupported_state') ||
+        normalized.includes('ungueltiges_credentials-format')
+      ) {
+        return 'Die gespeicherten Zugangsdaten konnten nicht verarbeitet werden. Bitte die Verbindung trennen und erneut herstellen.'
+      }
+
+      return error.replace(/_/g, ' ')
+    }
+  }
+}
+
 export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -253,7 +285,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
           toast.success('Google Analytics 4 wurde verbunden.')
         }
         if (ga4Error) {
-          toast.error(`GA4-Verbindung fehlgeschlagen: ${ga4Error}`)
+          toast.error(`GA4-Verbindung fehlgeschlagen: ${formatIntegrationQueryError(ga4Error)}`)
         }
         if (metaAds === 'connected') {
           toast.success('Meta Ads wurde verbunden.')

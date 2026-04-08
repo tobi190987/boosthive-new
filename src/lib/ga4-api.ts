@@ -54,6 +54,16 @@ export interface GA4IntegrationRecord {
   credentials_encrypted: string | null
 }
 
+class GoogleApiError extends Error {
+  status: number
+
+  constructor(status: number, message: string) {
+    super(message)
+    this.name = 'GoogleApiError'
+    this.status = status
+  }
+}
+
 function formatDate(date: Date): string {
   return date.toISOString().split('T')[0]
 }
@@ -247,41 +257,150 @@ export async function getValidGA4Token(
 }
 
 export async function listGA4Properties(accessToken: string): Promise<GA4Property[]> {
-  const accountsRes = await fetch(`${GA4_ADMIN_API}/accounts`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-
-  if (!accountsRes.ok) {
-    if (accountsRes.status === 401) {
-      throw new GA4TokenRevokedError('GA4 Access-Token abgelaufen oder widerrufen.')
+  try {
+    const properties = await listGA4PropertiesFromAccountSummaries(accessToken)
+    if (properties.length > 0) return properties
+  } catch (error) {
+    if (error instanceof GA4TokenRevokedError) throw error
+    if (!(error instanceof GoogleApiError) || error.status !== 403) {
+      throw error
     }
-    throw new Error(`GA4 Accounts-Abfrage fehlgeschlagen: ${accountsRes.status}`)
   }
 
-  const accountsData = (await accountsRes.json()) as { accounts?: { name: string }[] }
-  const properties: GA4Property[] = []
+  return listGA4PropertiesFromAccounts(accessToken)
+}
 
-  for (const account of accountsData.accounts ?? []) {
-    const propsRes = await fetch(`${GA4_ADMIN_API}/properties?filter=parent:${account.name}`, {
+async function listGA4PropertiesFromAccountSummaries(accessToken: string): Promise<GA4Property[]> {
+  const properties = new Map<string, GA4Property>()
+  let pageToken: string | undefined
+
+  do {
+    const params = new URLSearchParams({ pageSize: '200' })
+    if (pageToken) params.set('pageToken', pageToken)
+
+    const summariesRes = await fetch(`${GA4_ADMIN_API}/accountSummaries?${params.toString()}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
 
-    if (!propsRes.ok) continue
-
-    const propsData = (await propsRes.json()) as {
-      properties?: { name: string; displayName: string }[]
+    if (!summariesRes.ok) {
+      throw await createGoogleApiError(summariesRes, 'GA4 Account-Summaries-Abfrage fehlgeschlagen')
     }
 
-    for (const prop of propsData.properties ?? []) {
-      properties.push({
-        name: prop.name,
-        displayName: prop.displayName,
-        propertyId: prop.name.replace('properties/', ''),
-      })
+    const summariesData = (await summariesRes.json()) as {
+      accountSummaries?: {
+        propertySummaries?: { property?: string; displayName?: string }[]
+      }[]
+      nextPageToken?: string
     }
+
+    for (const summary of summariesData.accountSummaries ?? []) {
+      for (const property of summary.propertySummaries ?? []) {
+        if (!property.property) continue
+
+        const propertyId = property.property.replace('properties/', '')
+        properties.set(propertyId, {
+          name: property.property,
+          displayName: property.displayName ?? propertyId,
+          propertyId,
+        })
+      }
+    }
+
+    pageToken = summariesData.nextPageToken || undefined
+  } while (pageToken)
+
+  return Array.from(properties.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
+}
+
+async function listGA4PropertiesFromAccounts(accessToken: string): Promise<GA4Property[]> {
+  const properties = new Map<string, GA4Property>()
+  let accountsPageToken: string | undefined
+
+  do {
+    const accountsParams = new URLSearchParams({ pageSize: '200' })
+    if (accountsPageToken) accountsParams.set('pageToken', accountsPageToken)
+
+    const accountsRes = await fetch(`${GA4_ADMIN_API}/accounts?${accountsParams.toString()}`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+
+    if (!accountsRes.ok) {
+      throw await createGoogleApiError(accountsRes, 'GA4 Accounts-Abfrage fehlgeschlagen')
+    }
+
+    const accountsData = (await accountsRes.json()) as {
+      accounts?: { name: string }[]
+      nextPageToken?: string
+    }
+
+    for (const account of accountsData.accounts ?? []) {
+      let propertiesPageToken: string | undefined
+
+      do {
+        const propertiesParams = new URLSearchParams({
+          filter: `parent:${account.name}`,
+          pageSize: '200',
+        })
+        if (propertiesPageToken) propertiesParams.set('pageToken', propertiesPageToken)
+
+        const propsRes = await fetch(`${GA4_ADMIN_API}/properties?${propertiesParams.toString()}`, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        })
+
+        if (!propsRes.ok) {
+          throw await createGoogleApiError(propsRes, 'GA4 Properties-Abfrage fehlgeschlagen')
+        }
+
+        const propsData = (await propsRes.json()) as {
+          properties?: { name: string; displayName: string }[]
+          nextPageToken?: string
+        }
+
+        for (const prop of propsData.properties ?? []) {
+          const propertyId = prop.name.replace('properties/', '')
+          properties.set(propertyId, {
+            name: prop.name,
+            displayName: prop.displayName,
+            propertyId,
+          })
+        }
+
+        propertiesPageToken = propsData.nextPageToken || undefined
+      } while (propertiesPageToken)
+    }
+
+    accountsPageToken = accountsData.nextPageToken || undefined
+  } while (accountsPageToken)
+
+  return Array.from(properties.values()).sort((a, b) => a.displayName.localeCompare(b.displayName))
+}
+
+async function createGoogleApiError(response: Response, prefix: string): Promise<Error> {
+  if (response.status === 401) {
+    return new GA4TokenRevokedError('GA4 Access-Token abgelaufen oder widerrufen.')
   }
 
-  return properties.sort((a, b) => a.displayName.localeCompare(b.displayName))
+  const errorText = await response.text().catch(() => '')
+  const detail = extractGoogleApiErrorMessage(errorText)
+  return new GoogleApiError(
+    response.status,
+    detail ? `${prefix}: ${response.status} ${detail}` : `${prefix}: ${response.status}`
+  )
+}
+
+function extractGoogleApiErrorMessage(errorText: string): string {
+  if (!errorText) return ''
+
+  try {
+    const parsed = JSON.parse(errorText) as {
+      error?: { message?: unknown; status?: unknown }
+    }
+    const message = typeof parsed.error?.message === 'string' ? parsed.error.message : ''
+    const status = typeof parsed.error?.status === 'string' ? parsed.error.status : ''
+    return [message, status].filter(Boolean).join(' ')
+  } catch {
+    return errorText
+  }
 }
 
 export async function fetchGA4Metrics(

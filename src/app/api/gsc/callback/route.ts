@@ -27,6 +27,45 @@ function toSafeErrorCode(error: unknown) {
     .replace(/[^a-zA-Z0-9._-]/g, '_')
 }
 
+function toSafeGa4ErrorMessage(error: unknown) {
+  const raw = error instanceof Error ? error.message : 'unknown_error'
+  const normalized = raw.toLowerCase()
+
+  if (normalized.includes('customer_credentials_encryption_key')) {
+    return 'Die sichere Speicherung der GA4-Zugangsdaten ist aktuell nicht korrekt konfiguriert. Bitte CUSTOMER_CREDENTIALS_ENCRYPTION_KEY prüfen.'
+  }
+
+  if (
+    normalized.includes('unable to authenticate data') ||
+    normalized.includes('unsupported state') ||
+    normalized.includes('ungültiges credentials-format')
+  ) {
+    return 'Die gespeicherten GA4-Zugangsdaten konnten nicht verarbeitet werden. Bitte die Verbindung trennen und erneut herstellen.'
+  }
+
+  if (normalized.includes('google_client_id')) {
+    return 'Google OAuth ist nicht korrekt konfiguriert: GOOGLE_CLIENT_ID fehlt.'
+  }
+
+  if (normalized.includes('google_client_secret')) {
+    return 'Google OAuth ist nicht korrekt konfiguriert: GOOGLE_CLIENT_SECRET fehlt.'
+  }
+
+  if (normalized.includes('ga4_state_secret') || normalized.includes('gsc_state_secret')) {
+    return 'Google OAuth ist nicht korrekt konfiguriert: Das GA4-State-Secret fehlt oder ist zu kurz.'
+  }
+
+  if (normalized.includes('ga4 token-exchange fehlgeschlagen')) {
+    return 'Google hat den GA4-Login nicht akzeptiert. Bitte die Verbindung erneut starten.'
+  }
+
+  if (normalized.includes('google userinfo abfrage fehlgeschlagen')) {
+    return 'Das Google-Konto konnte nach dem Login nicht gelesen werden. Bitte erneut versuchen.'
+  }
+
+  return 'Die GA4-Verbindung konnte nicht abgeschlossen werden. Bitte erneut versuchen.'
+}
+
 function buildRedirectUrl(tenantSlug: string, projectId: string, result: 'connected' | 'error', errorMsg?: string): string {
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'localhost:3000'
   const isLocalhost = rootDomain.startsWith('localhost')
@@ -150,7 +189,7 @@ export async function GET(request: NextRequest) {
     } catch (err) {
       console.error('[ga4/gsc-callback] Error:', err)
       return NextResponse.redirect(
-        buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', toSafeErrorCode(err))
+        buildGa4RedirectUrl(tenant.slug, ga4Payload.customerId, 'error', toSafeGa4ErrorMessage(err))
       )
     }
   }

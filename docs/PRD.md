@@ -53,6 +53,11 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 | P2 | Content Brief Generator | Planned |
 | P2 | Ad Text Generator | Planned |
 | P2 | Client Approval Hub (Freigabe-Workflow) | Planned |
+| P1 | Marketing Performance Dashboard | Planned |
+| P1 | GA4 Integration | Planned |
+| P1 | Google Ads Integration | Planned |
+| P1 | Meta Ads Integration | Planned |
+| P1 | TikTok Ads Integration | Planned |
 
 ## Success Metrics
 - **Technische Stabilität:** Zero-Downtime-Deployment, nachgewiesene Datenisolation zwischen Tenants
