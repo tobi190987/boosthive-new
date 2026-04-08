@@ -52,6 +52,7 @@ import {
   AlertCircle,
   Zap,
 } from 'lucide-react'
+import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
 
 interface CustomerExtended {
   id: string
@@ -243,6 +244,10 @@ export function CustomerDetailWorkspace({
   const handleTabChange = (value: string) => {
     setActiveTab(value as CustomerDetailTab)
   }
+
+  const refreshMarketingDashboard = useCallback(() => {
+    triggerMarketingDashboardRefresh(customer.id)
+  }, [customer.id])
 
   const loadIntegrations = useCallback(async () => {
     setLoadingIntegrations(true)
@@ -688,6 +693,8 @@ export function CustomerDetailWorkspace({
 
       toast.success('GA4-Property gespeichert.')
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'GA4-Property konnte nicht gespeichert werden.')
     } finally {
@@ -710,6 +717,8 @@ export function CustomerDetailWorkspace({
       setGa4DisconnectOpen(false)
       setGa4Properties([])
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'GA4-Verbindung konnte nicht getrennt werden.')
     } finally {
@@ -773,6 +782,8 @@ export function CustomerDetailWorkspace({
 
       toast.success('Meta-Ad-Account gespeichert.')
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Meta-Ad-Account konnte nicht gespeichert werden.'
@@ -799,6 +810,8 @@ export function CustomerDetailWorkspace({
       setMetaAdsDisconnectOpen(false)
       setMetaAdsAccounts([])
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Meta-Ads-Verbindung konnte nicht getrennt werden.'
@@ -869,6 +882,8 @@ export function CustomerDetailWorkspace({
 
       toast.success('TikTok-Advertiser gespeichert.')
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'TikTok-Advertiser konnte nicht gespeichert werden.'
@@ -931,6 +946,8 @@ export function CustomerDetailWorkspace({
 
       toast.success('Google-Ads-Account gespeichert.')
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Google-Ads-Account konnte nicht gespeichert werden.'
@@ -957,6 +974,8 @@ export function CustomerDetailWorkspace({
       setGoogleAdsDisconnectOpen(false)
       setGoogleAdsAccounts([])
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Google-Ads-Verbindung konnte nicht getrennt werden.'
@@ -1007,6 +1026,8 @@ export function CustomerDetailWorkspace({
 
       toast.success('GSC-Property gespeichert.')
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'GSC-Property konnte nicht gespeichert werden.')
     } finally {
@@ -1029,6 +1050,8 @@ export function CustomerDetailWorkspace({
       setGscDisconnectOpen(false)
       setGscProperties([])
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'GSC-Verbindung konnte nicht getrennt werden.')
     } finally {
@@ -1053,6 +1076,8 @@ export function CustomerDetailWorkspace({
       setTikTokDisconnectOpen(false)
       setTikTokAdvertisers([])
       await loadIntegrations()
+      refreshMarketingDashboard()
+      onUpdate()
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'TikTok-Verbindung konnte nicht getrennt werden.'
@@ -1695,18 +1720,20 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              <Button onClick={handleConnectGoogleAds} disabled={connectingGoogleAds} className="rounded-xl">
-                {connectingGoogleAds ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                )}
-                {googleAdsIntegration
-                  ? googleAdsNeedsReconnect
-                    ? 'Erneut verbinden'
-                    : 'Google-Konto wechseln'
-                  : 'Mit Google verbinden'}
-              </Button>
+              {(!googleAdsAccountId || googleAdsNeedsReconnect) && (
+                <Button onClick={handleConnectGoogleAds} disabled={connectingGoogleAds} className="rounded-xl">
+                  {connectingGoogleAds ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  {googleAdsIntegration
+                    ? googleAdsNeedsReconnect
+                      ? 'Erneut verbinden'
+                      : 'Google-Konto wechseln'
+                    : 'Mit Google verbinden'}
+                </Button>
+              )}
               {googleAdsIntegration && (
                 <Button
                   type="button"
@@ -1829,18 +1856,20 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              <Button onClick={handleConnectGsc} disabled={connectingGsc} className="rounded-xl">
-                {connectingGsc ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                )}
-                {gscIntegration
-                  ? gscNeedsReconnect
-                    ? 'Erneut verbinden'
-                    : 'Google-Konto wechseln'
-                  : 'Mit Google verbinden'}
-              </Button>
+              {(!gscSelectedProperty || gscNeedsReconnect) && (
+                <Button onClick={handleConnectGsc} disabled={connectingGsc} className="rounded-xl">
+                  {connectingGsc ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  {gscIntegration
+                    ? gscNeedsReconnect
+                      ? 'Erneut verbinden'
+                      : 'Google-Konto wechseln'
+                    : 'Mit Google verbinden'}
+                </Button>
+              )}
               {gscIntegration && (
                 <Button
                   type="button"

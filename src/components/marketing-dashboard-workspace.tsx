@@ -46,6 +46,11 @@ import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdow
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
 import { TrendAreaChart } from '@/components/trend-area-chart'
+import {
+  MARKETING_DASHBOARD_REFRESH_EVENT,
+  MARKETING_DASHBOARD_REFRESH_STORAGE_KEY,
+  readMarketingDashboardRefreshPayload,
+} from '@/lib/marketing-dashboard-refresh'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
 // ---------------------------------------------------------------------------
@@ -962,6 +967,36 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
     if (!activeCustomer) return
     fetchAll(activeCustomer.id, range)
   }, [activeCustomer, range, fetchAll])
+
+  useEffect(() => {
+    if (!activeCustomer) return
+
+    const refreshDashboard = (customerId?: string) => {
+      if (customerId && customerId !== activeCustomer.id) return
+      fetchAll(activeCustomer.id, range)
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== MARKETING_DASHBOARD_REFRESH_STORAGE_KEY) return
+      const payload = readMarketingDashboardRefreshPayload(event.newValue)
+      refreshDashboard(payload?.customerId)
+    }
+
+    const handleRefresh = (event: Event) => {
+      const payload = event instanceof CustomEvent
+        ? (event.detail as { customerId?: string } | undefined)
+        : undefined
+      refreshDashboard(payload?.customerId)
+    }
+
+    window.addEventListener('storage', handleStorage)
+    window.addEventListener(MARKETING_DASHBOARD_REFRESH_EVENT, handleRefresh)
+
+    return () => {
+      window.removeEventListener('storage', handleStorage)
+      window.removeEventListener(MARKETING_DASHBOARD_REFRESH_EVENT, handleRefresh)
+    }
+  }, [activeCustomer, fetchAll, range])
 
   // Date range change handler
   const handleRangeChange = useCallback(

@@ -17,6 +17,7 @@ import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { FilterChips } from '@/components/filter-chips'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
 
 // Extended customer type for enhanced features
 interface CustomerExtended {
@@ -172,7 +173,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
 
     const params = new URLSearchParams(searchParams.toString())
     let shouldReplace = false
-    for (const key of ['customer', 'tab', 'ga4', 'ga4_error', 'meta_ads', 'meta_ads_error', 'tiktok', 'tiktok_error']) {
+    for (const key of ['customer', 'tab', 'ga4', 'ga4_error', 'meta_ads', 'meta_ads_error', 'tiktok', 'tiktok_error', 'google_ads', 'google_ads_error', 'gsc', 'gsc_error']) {
       if (params.has(key)) {
         params.delete(key)
         shouldReplace = true
@@ -259,14 +260,20 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     const metaAdsError = searchParams.get('meta_ads_error')
     const tiktok = searchParams.get('tiktok')
     const tiktokError = searchParams.get('tiktok_error')
+    const googleAds = searchParams.get('google_ads')
+    const googleAdsError = searchParams.get('google_ads_error')
+    const gsc = searchParams.get('gsc')
+    const gscError = searchParams.get('gsc_error')
 
     if (!customerId) return
+
+    const resolvedCustomerId = customerId
 
     let cancelled = false
 
     async function openCustomerFromQuery() {
       try {
-        const response = await fetch(`/api/tenant/customers/${customerId}`)
+        const response = await fetch(`/api/tenant/customers/${resolvedCustomerId}`)
         if (!response.ok) {
           const data = await response.json().catch(() => ({}))
           throw new Error(data.error || 'Kunde konnte nicht geladen werden.')
@@ -282,22 +289,39 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
         setDetailDialogOpen(true)
 
         if (ga4 === 'connected') {
+          triggerMarketingDashboardRefresh(resolvedCustomerId)
           toast.success('Google Analytics 4 wurde verbunden.')
         }
         if (ga4Error) {
           toast.error(`GA4-Verbindung fehlgeschlagen: ${formatIntegrationQueryError(ga4Error)}`)
         }
         if (metaAds === 'connected') {
+          triggerMarketingDashboardRefresh(resolvedCustomerId)
           toast.success('Meta Ads wurde verbunden.')
         }
         if (metaAdsError) {
           toast.error(`Meta-Ads-Verbindung fehlgeschlagen: ${metaAdsError}`)
         }
         if (tiktok === 'connected') {
+          triggerMarketingDashboardRefresh(resolvedCustomerId)
           toast.success('TikTok Ads wurde verbunden.')
         }
         if (tiktokError) {
           toast.error(`TikTok-Verbindung fehlgeschlagen: ${tiktokError}`)
+        }
+        if (googleAds === 'connected') {
+          triggerMarketingDashboardRefresh(resolvedCustomerId)
+          toast.success('Google Ads wurde verbunden.')
+        }
+        if (googleAdsError) {
+          toast.error(`Google-Ads-Verbindung fehlgeschlagen: ${formatIntegrationQueryError(googleAdsError)}`)
+        }
+        if (gsc === 'connected') {
+          triggerMarketingDashboardRefresh(resolvedCustomerId)
+          toast.success('Google Search Console wurde verbunden.')
+        }
+        if (gscError) {
+          toast.error(`GSC-Verbindung fehlgeschlagen: ${formatIntegrationQueryError(gscError)}`)
         }
       } catch (err) {
         if (cancelled) return

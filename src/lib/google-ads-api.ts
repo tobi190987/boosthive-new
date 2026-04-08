@@ -5,7 +5,8 @@ import {
 } from '@/lib/google-ads-oauth'
 import { createAdminClient } from '@/lib/supabase-admin'
 
-const GOOGLE_ADS_API_BASE = 'https://googleads.googleapis.com/v18'
+// v18 is sunset; use a currently supported Google Ads API version.
+const GOOGLE_ADS_API_BASE = 'https://googleads.googleapis.com/v22'
 const CACHE_TTL_MS = 15 * 60 * 1000
 
 export interface GoogleAdsAccount {
@@ -69,6 +70,13 @@ interface GoogleAdsSearchStreamRow {
     descriptiveName?: string
     currencyCode?: string
     manager?: boolean
+  }
+  customerClient?: {
+    id?: string | number
+    descriptiveName?: string
+    currencyCode?: string
+    manager?: boolean
+    level?: string | number
   }
   campaign?: {
     name?: string
@@ -170,6 +178,33 @@ async function fetchGoogleAdsJson<T>(
   }
 
   return text ? (JSON.parse(text) as T) : ({} as T)
+}
+
+function toSafeGoogleAdsErrorMessage(error: unknown, fallback: string): string {
+  const raw = error instanceof Error ? error.message : fallback
+  const normalized = raw.toLowerCase()
+
+  if (normalized.includes('google_ads_developer_token')) {
+    return 'Google Ads API ist nicht vollständig konfiguriert: GOOGLE_ADS_DEVELOPER_TOKEN fehlt.'
+  }
+
+  if (normalized.includes('developer token')) {
+    return 'Google Ads Developer Token wurde von der API nicht akzeptiert. Bitte API Center prüfen.'
+  }
+
+  if (normalized.includes('access-denied') || normalized.includes('permission_denied')) {
+    return 'Das verbundene Google-Konto hat keinen ausreichenden Zugriff auf Google Ads.'
+  }
+
+  if (normalized.includes('customer id') || normalized.includes('listaccessiblecustomers')) {
+    return 'Google Ads Konten konnten nicht gelesen werden. Bitte API-Version und Kontozugriff prüfen.'
+  }
+
+  if (normalized.includes('404') || normalized.includes('<!doctype html>')) {
+    return 'Google Ads API-Endpunkt wurde nicht gefunden. Bitte API-Version prüfen.'
+  }
+
+  return fallback
 }
 
 export function parseGoogleAdsCredentials(encrypted: string | null): GoogleAdsCredentials | null {
@@ -366,15 +401,106 @@ async function getCustomerDetails(
   }
 }
 
-export async function listGoogleAdsAccounts(accessToken: string): Promise<GoogleAdsAccount[]> {
-  const customerIds = await getAccessibleCustomerIds(accessToken)
-  const accounts = await Promise.all(
-    customerIds.map((customerId) => getCustomerDetails(accessToken, customerId))
+async function getManagerChildAccounts(
+  accessToken: string,
+  managerCustomerId: string
+): Promise<GoogleAdsAccount[]> {
+  const normalizedManagerCustomerId = normalizeCustomerId(managerCustomerId)
+  if (!normalizedManagerCustomerId) return []
+
+  const batches = await fetchGoogleAdsJson<GoogleAdsSearchStreamBatch[]>(
+    `${GOOGLE_ADS_API_BASE}/customers/${normalizedManagerCustomerId}/googleAds:searchStream`,
+    {
+      method: 'POST',
+      headers: buildGoogleAdsHeaders(accessToken, normalizedManagerCustomerId),
+      body: JSON.stringify({
+        query: `
+          SELECT
+            customer_client.id,
+            customer_client.descriptive_name,
+            customer_client.currency_code,
+            customer_client.manager,
+            customer_client.level
+          FROM customer_client
+          WHERE customer_client.level >= 1
+        `,
+      }),
+    },
+    { tokenErrorMessage: 'Google-Ads-Token ist abgelaufen oder wurde widerrufen.' }
   )
 
+  const accounts: GoogleAdsAccount[] = []
+
+  for (const row of batches.flatMap((batch) => batch.results ?? [])) {
+    const customerClient = row.customerClient
+    if (!customerClient?.id) continue
+
+    const account: GoogleAdsAccount = {
+      id: normalizeCustomerId(String(customerClient.id)),
+      name:
+        customerClient.descriptiveName || normalizeCustomerId(String(customerClient.id)),
+      currency: customerClient.currencyCode,
+      managerCustomerId: normalizedManagerCustomerId,
+      isManager: Boolean(customerClient.manager),
+    }
+
+    if (!account.isManager) {
+      accounts.push(account)
+    }
+  }
+
   return accounts
-    .filter((account): account is GoogleAdsAccount => Boolean(account))
-    .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+export async function listGoogleAdsAccounts(accessToken: string): Promise<GoogleAdsAccount[]> {
+  try {
+    const customerIds = await getAccessibleCustomerIds(accessToken)
+    const directAccountResults = await Promise.allSettled(
+      customerIds.map((customerId) => getCustomerDetails(accessToken, customerId))
+    )
+
+    const directAccounts: GoogleAdsAccount[] = []
+    for (const result of directAccountResults) {
+      if (result.status === 'fulfilled') {
+        if (result.value) directAccounts.push(result.value)
+        continue
+      }
+
+      console.error('[google-ads] Direktes Konto konnte nicht geladen werden:', result.reason)
+    }
+
+    const managerChildResults = await Promise.allSettled(
+      directAccounts
+        .filter((account) => account.isManager)
+        .map((account) => getManagerChildAccounts(accessToken, account.id))
+    )
+
+    const managerChildAccounts: GoogleAdsAccount[] = []
+    for (const result of managerChildResults) {
+      if (result.status === 'fulfilled') {
+        managerChildAccounts.push(...result.value)
+        continue
+      }
+
+      console.error('[google-ads] MCC-Unterkonten konnten nicht geladen werden:', result.reason)
+    }
+
+    const combined = [...directAccounts, ...managerChildAccounts]
+    const deduped = new Map<string, GoogleAdsAccount>()
+
+    for (const account of combined) {
+      if (!account.id) continue
+      if (!deduped.has(account.id) || (!account.isManager && deduped.get(account.id)?.isManager)) {
+        deduped.set(account.id, account)
+      }
+    }
+
+    return Array.from(deduped.values()).sort((a, b) => a.name.localeCompare(b.name))
+  } catch (error) {
+    throw new Error(
+      toSafeGoogleAdsErrorMessage(error, 'Google-Ads-Accounts konnten nicht geladen werden.')
+    )
+  }
 }
 
 async function fetchGoogleAdsCampaignSnapshot(options: {
