@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
 import { Search, Plus, Trash2, Users, Pencil, Globe } from 'lucide-react'
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
@@ -375,21 +375,27 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
               {editingCustomer ? 'Kunde bearbeiten' : 'Neuen Kunden anlegen'}
             </DialogTitle>
+            <DialogDescription>
+              {editingCustomer
+                ? 'Ändere die Kundendaten und speichere die Änderungen.'
+                : 'Füge einen neuen Kunden zu deiner Datenbank hinzu.'}
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="name">Name *</Label>
+              <Label htmlFor="name">Name <span className="text-destructive">*</span></Label>
               <Input
                 id="name"
                 value={form.name}
                 onChange={(e) => setForm({ ...form, name: e.target.value })}
                 placeholder="Kundenname"
                 disabled={saving}
+                autoFocus
               />
             </div>
             <div className="space-y-2">
@@ -425,11 +431,11 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               </Select>
             </div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="pt-2 gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Abbrechen
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
+            <Button onClick={handleSave} disabled={saving || !form.name.trim()}>
               {saving ? 'Speichern...' : 'Speichern'}
             </Button>
           </DialogFooter>
