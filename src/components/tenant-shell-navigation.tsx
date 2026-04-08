@@ -426,15 +426,29 @@ function NavigationContent({
 
           {sections.administration.length > 0 && (
             <div>
-              <button
-                type="button"
-                onClick={() => toggleSection('Verwaltung')}
-                className="flex w-full items-center justify-between mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
-                aria-expanded={isSectionOpen('Verwaltung')}
-              >
-                Verwaltung
-                <ChevronRight className={cn('h-3 w-3 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
-              </button>
+              <div className="flex items-center justify-between mb-2 px-3">
+                <Link
+                  href="/verwaltung"
+                  onClick={() => handleNavigate('/verwaltung')}
+                  className={cn(
+                    'text-[10px] font-semibold uppercase tracking-[0.24em] transition-colors',
+                    isNavActive(pathname, '/verwaltung') && pathname === '/verwaltung'
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400'
+                  )}
+                >
+                  Verwaltung
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => toggleSection('Verwaltung')}
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                  aria-expanded={isSectionOpen('Verwaltung')}
+                  aria-label="Verwaltung ein-/ausblenden"
+                >
+                  <ChevronRight className={cn('h-3 w-3 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
+                </button>
+              </div>
               {isSectionOpen('Verwaltung') && <ul className="space-y-1">
                 {sections.administration.map((item) => {
                   const active = isNavActive(pathname, item.href)
