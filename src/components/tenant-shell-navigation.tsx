@@ -76,7 +76,7 @@ const TOOL_GROUPS: { label: string; items: ToolNavItem[] }[] = [
       { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
       { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
       { label: 'Ads Bibliothek', href: '/tools/ads-library', icon: FileImage, moduleCode: 'ad_generator' },
-      { label: 'Kanban Board', href: '/tools/kanban', icon: LayoutGrid, moduleCode: 'kanban' },
+      { label: 'Content Workflow', href: '/tools/kanban', icon: LayoutGrid, moduleCode: 'kanban' },
     ],
   },
 ]
