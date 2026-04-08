@@ -1,5 +1,4 @@
-import { ChevronRight, Lock } from 'lucide-react'
-import Link from 'next/link'
+import { Lock } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -51,19 +50,6 @@ export default async function KeywordRankingsDetailPage({
 
   return (
     <div className="space-y-4">
-      <nav className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
-        <Link href="/tools" className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-          Tools
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-        <Link href="/tools/keywords" className="hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-          Keywords
-        </Link>
-        <ChevronRight className="h-3.5 w-3.5 shrink-0" />
-        <span className="text-slate-900 dark:text-slate-100 font-medium">
-          {initialProject?.name ?? 'Projekt'}
-        </span>
-      </nav>
       <KeywordProjectsWorkspace
         role={context.membership.role}
         initialProjectId={id}
