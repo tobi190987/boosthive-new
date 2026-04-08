@@ -1440,18 +1440,20 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              <Button onClick={handleConnectMetaAds} disabled={connectingMetaAds} className="rounded-xl">
-                {connectingMetaAds ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                )}
-                {metaAdsIntegration
-                  ? metaAdsNeedsReconnect
-                    ? 'Erneut verbinden'
-                    : 'Meta-Konto wechseln'
-                  : 'Mit Meta verbinden'}
-              </Button>
+              {(!metaAdsAccountId || metaAdsNeedsReconnect) && (
+                <Button onClick={handleConnectMetaAds} disabled={connectingMetaAds} className="rounded-xl">
+                  {connectingMetaAds ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  {metaAdsIntegration
+                    ? metaAdsNeedsReconnect
+                      ? 'Erneut verbinden'
+                      : 'Meta-Konto wechseln'
+                    : 'Mit Meta verbinden'}
+                </Button>
+              )}
               {metaAdsIntegration && (
                 <Button
                   type="button"
