@@ -1,9 +1,13 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Download, FileText, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { LegalImprintContent } from '@/components/legal-imprint-content'
+import { SUBPROCESSOR_LAST_AUDIT_LABEL, type SubprocessorEntry } from '@/lib/legal'
 
 interface AuditItem {
   id: string
@@ -14,6 +18,10 @@ interface AuditItem {
   resource_id: string | null
   context: Record<string, unknown>
   created_at: string
+}
+
+interface LegalPrivacyWorkspaceProps {
+  subprocessorEntries: SubprocessorEntry[]
 }
 
 async function downloadFromEndpoint(url: string, fileName: string) {
@@ -32,7 +40,7 @@ async function downloadFromEndpoint(url: string, fileName: string) {
   URL.revokeObjectURL(objectUrl)
 }
 
-export function LegalPrivacyWorkspace() {
+export function LegalPrivacyWorkspace({ subprocessorEntries }: LegalPrivacyWorkspaceProps) {
   const [auditItems, setAuditItems] = useState<AuditItem[]>([])
   const [auditLoading, setAuditLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -204,6 +212,94 @@ export function LegalPrivacyWorkspace() {
               </table>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
+        <CardHeader>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="space-y-2">
+              <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
+                <ShieldCheck className="h-5 w-5 text-blue-600" />
+                Liste der Unterauftragsverarbeiter (Sub-Processors)
+              </CardTitle>
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                Rechtlich gepflegte Übersicht der eingesetzten Dienstleister für Dokumentation,
+                Datenschutzabstimmung und Agentur-Compliance.
+              </p>
+            </div>
+            <Badge className="rounded-full bg-blue-50 px-3 py-1 text-blue-700 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300 dark:hover:bg-blue-950/50">
+              Letzte rechtliche Prüfung: {SUBPROCESSOR_LAST_AUDIT_LABEL}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-border">
+            <table className="w-full min-w-[820px] text-sm">
+              <thead className="bg-slate-50 dark:bg-secondary">
+                <tr>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">
+                    Dienstleister
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">
+                    Zweck der Verarbeitung
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">
+                    Standort (Server)
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">
+                    Garantie / Rechtsgrundlage
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {subprocessorEntries.map((entry) => (
+                  <tr key={entry.slug} className="border-t border-slate-100 align-top dark:border-border">
+                    <td className="px-4 py-4 text-slate-900 dark:text-slate-100">
+                      <div className="space-y-1">
+                        <p className="font-medium">{entry.name}</p>
+                        <a
+                          href={entry.website}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-blue-600 underline decoration-blue-300 underline-offset-4"
+                        >
+                          Website
+                        </a>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.purpose}</td>
+                    <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.serverLocation}</td>
+                    <td className="px-4 py-4 text-slate-700 dark:text-slate-300">{entry.guarantee}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
+            <FileText className="h-5 w-5 text-blue-600" />
+            Impressum
+          </CardTitle>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Interne Referenz für rechtliche Pflichtangaben, damit Admins die Informationen direkt
+            aus der Verwaltung heraus nutzen können.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <LegalImprintContent />
+          <div className="border-t border-slate-100 pt-4 text-sm dark:border-border">
+            <Link
+              href="/impressum"
+              className="font-medium text-blue-600 underline decoration-blue-300 underline-offset-4"
+            >
+              Öffentliche Version öffnen
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>
