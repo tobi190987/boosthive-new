@@ -23,9 +23,11 @@ function getClientSecret(): string {
 }
 
 function getStateSecret(): string {
-  const value = process.env.GOOGLE_ADS_STATE_SECRET
+  const value = process.env.GOOGLE_ADS_STATE_SECRET ?? process.env.GSC_STATE_SECRET
   if (!value || value.length < 16) {
-    throw new Error('GOOGLE_ADS_STATE_SECRET muss als Umgebungsvariable gesetzt sein.')
+    throw new Error(
+      'GOOGLE_ADS_STATE_SECRET oder GSC_STATE_SECRET muss als Umgebungsvariable gesetzt sein.'
+    )
   }
   return value
 }

@@ -239,6 +239,10 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname.startsWith('/api/access') ||
     pathname.startsWith('/api/public/approval/') ||
     pathname.startsWith('/api/gsc/') ||
+    pathname === '/api/tenant/integrations/google-ads/oauth/callback' ||
+    pathname === '/api/tenant/integrations/gsc/oauth/callback' ||
+    pathname === '/api/tenant/integrations/meta-ads/oauth/callback' ||
+    pathname === '/api/tenant/integrations/tiktok-ads/oauth/callback' ||
     pathname.startsWith('/api/cron/') ||
     pathname.startsWith('/_next/') ||
     pathname === '/favicon.ico' ||
