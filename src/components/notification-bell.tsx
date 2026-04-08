@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Bell, Check, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover'
 import { cn } from '@/lib/utils'
+import { useRealtimeSubscription } from '@/hooks/use-realtime-subscription'
 
 interface Notification {
   id: string
@@ -40,7 +41,6 @@ export function NotificationBell({ initialNotifications = [] }: { initialNotific
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
   const [open, setOpen] = useState(false)
-  const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const unreadCount = notifications.filter((n) => !n.read_at).length
 
@@ -51,19 +51,17 @@ export function NotificationBell({ initialNotifications = [] }: { initialNotific
       const data = (await res.json()) as TenantShellSummaryResponse
       setNotifications(data.notifications ?? [])
     } catch {
-      // silent fail for polling
+      // silent
     }
   }, [])
 
   useEffect(() => {
     if (initialNotifications.length === 0) {
-      fetchNotifications()
-    }
-    pollingRef.current = setInterval(fetchNotifications, 60_000)
-    return () => {
-      if (pollingRef.current) clearInterval(pollingRef.current)
+      void fetchNotifications()
     }
   }, [fetchNotifications, initialNotifications.length])
+
+  useRealtimeSubscription('notifications', fetchNotifications)
 
   const handleMarkRead = async (id: string) => {
     try {

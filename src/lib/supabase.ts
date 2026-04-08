@@ -1,17 +1,5 @@
-import { createBrowserClient as createBrowserSupabaseClient } from '@supabase/ssr'
 import { createServerClient as createServerSupabaseClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-
-/**
- * Supabase Client for Client Components (Browser)
- * Use this in 'use client' components only.
- */
-export function createBrowserClient() {
-  return createBrowserSupabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
 
 /**
  * Supabase Client for Server Components and Route Handlers

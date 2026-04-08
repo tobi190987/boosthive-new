@@ -46,7 +46,8 @@
 | PROJ-32 | GSC Alle Rankings (Discovery View) | In Review | [PROJ-32-gsc-alle-rankings.md](PROJ-32-gsc-alle-rankings.md) | 2026-04-02 |
 | PROJ-33 | Ad Text Generator | In Progress | [PROJ-33-ad-text-generator.md](PROJ-33-ad-text-generator.md) | 2026-04-04 |
 | PROJ-34 | Client Approval Hub (Freigabe-Workflow) | In Progress | [PROJ-34-client-approval-hub.md](PROJ-34-client-approval-hub.md) | 2026-04-04 |
+| PROJ-35 | Realtime Notifications | Deployed | [PROJ-35-realtime-notifications.md](PROJ-35-realtime-notifications.md) | 2026-04-08 |
 
 <!-- Add features above this line -->
 
-## Next Available ID: PROJ-35
+## Next Available ID: PROJ-36

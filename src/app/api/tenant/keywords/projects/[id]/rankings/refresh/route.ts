@@ -10,6 +10,8 @@ import {
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, GSC_WRITE } from '@/lib/rate-limit'
 
+export const maxDuration = 300
+
 const paramsSchema = z.object({
   id: z.string().uuid('Ungültige Projekt-ID.'),
 })

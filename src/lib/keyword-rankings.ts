@@ -378,6 +378,20 @@ export async function createRankingRun(input: CreateRankingRunInput) {
 export async function assertManualRefreshAllowed(projectId: string, tenantId: string) {
   const admin = getAdmin()
 
+  // Reset stuck runs for this project (older than 30 min in queued/running)
+  const stuckCutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString()
+  await admin
+    .from('keyword_ranking_runs')
+    .update({
+      status: 'failed',
+      completed_at: new Date().toISOString(),
+      error_message: 'Timeout: Run wurde automatisch zurückgesetzt.',
+    })
+    .eq('project_id', projectId)
+    .eq('tenant_id', tenantId)
+    .in('status', ['queued', 'running'])
+    .lt('created_at', stuckCutoff)
+
   const { data: runningRun, error: runningError } = await admin
     .from('keyword_ranking_runs')
     .select('id')
