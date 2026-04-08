@@ -3,8 +3,10 @@ import {
   CustomerGscTokenRevokedError,
   refreshCustomerGscAccessToken,
 } from '@/lib/gsc-customer-oauth'
-import { listGscProperties } from '@/lib/gsc-oauth'
+import { listGscProperties, querySearchAnalytics } from '@/lib/gsc-oauth'
 import { createAdminClient } from '@/lib/supabase-admin'
+
+const CACHE_TTL_MS = 15 * 60 * 1000
 
 export interface CustomerGscCredentials {
   access_token: string
@@ -12,6 +14,8 @@ export interface CustomerGscCredentials {
   token_expiry: string
   google_email: string
   selected_property?: string
+  cached_data?: CustomerGscDashboardData
+  cached_at?: string
 }
 
 export interface CustomerGscIntegrationRecord {
@@ -20,6 +24,69 @@ export interface CustomerGscIntegrationRecord {
   integration_type: string
   status: string
   credentials_encrypted: string | null
+}
+
+export type CustomerGscDateRangeKey = 'today' | '7d' | '30d' | '90d'
+
+export interface CustomerGscKeyword {
+  keyword: string
+  clicks: number
+  impressions: number
+  ctr: number
+  position: number
+}
+
+export interface CustomerGscDashboardData {
+  impressions: number
+  clicks: number
+  avgCtr: number
+  avgPosition: number
+  topKeywords: CustomerGscKeyword[]
+  isCached?: boolean
+  cacheAgeMinutes?: number
+  googleEmail?: string
+  property?: string
+}
+
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0]
+}
+
+function getDateRange(range: CustomerGscDateRangeKey) {
+  const now = new Date()
+  const endDate = formatDate(now)
+
+  let daysBack = 29
+  if (range === 'today') daysBack = 0
+  if (range === '7d') daysBack = 6
+  if (range === '90d') daysBack = 89
+
+  const startDateObj = new Date(now)
+  startDateObj.setDate(startDateObj.getDate() - daysBack)
+  const startDate = formatDate(startDateObj)
+
+  const compareEndObj = new Date(startDateObj)
+  compareEndObj.setDate(compareEndObj.getDate() - 1)
+
+  const compareStartObj = new Date(compareEndObj)
+  compareStartObj.setDate(compareStartObj.getDate() - daysBack)
+
+  return {
+    startDate,
+    endDate,
+    compareStartDate: formatDate(compareStartObj),
+    compareEndDate: formatDate(compareEndObj),
+  }
+}
+
+function getCacheAgeMinutes(cachedAt: string | undefined): number | undefined {
+  if (!cachedAt) return undefined
+  return Math.max(0, Math.round((Date.now() - new Date(cachedAt).getTime()) / 60_000))
+}
+
+function isCacheValid(cachedAt: string | undefined): boolean {
+  if (!cachedAt) return false
+  return Date.now() - new Date(cachedAt).getTime() < CACHE_TTL_MS
 }
 
 export function parseCustomerGscCredentials(encrypted: string | null): CustomerGscCredentials | null {
@@ -79,6 +146,8 @@ export async function upsertCustomerGscConnection(options: {
     token_expiry: options.tokenExpiry,
     google_email: options.googleEmail,
     selected_property: existingCredentials?.selected_property,
+    cached_data: existingCredentials?.cached_data,
+    cached_at: existingCredentials?.cached_at,
   }
 
   const { data, error } = await admin
@@ -157,3 +226,141 @@ export async function getValidCustomerGscToken(
 }
 
 export { listGscProperties }
+
+async function fetchCustomerGscSnapshot(options: {
+  accessToken: string
+  property: string
+  startDate: string
+  endDate: string
+  googleEmail?: string
+}): Promise<CustomerGscDashboardData> {
+  const [summaryRows, keywordRows] = await Promise.all([
+    querySearchAnalytics(options.accessToken, {
+      siteUrl: options.property,
+      startDate: options.startDate,
+      endDate: options.endDate,
+      dimensions: ['date'],
+      rowLimit: 250,
+    }),
+    querySearchAnalytics(options.accessToken, {
+      siteUrl: options.property,
+      startDate: options.startDate,
+      endDate: options.endDate,
+      dimensions: ['query'],
+      rowLimit: 10,
+    }),
+  ])
+
+  const clicks = summaryRows.reduce((sum, row) => sum + (row.clicks ?? 0), 0)
+  const impressions = summaryRows.reduce((sum, row) => sum + (row.impressions ?? 0), 0)
+  const avgCtr = impressions > 0 ? (clicks / impressions) * 100 : 0
+  const avgPosition =
+    summaryRows.length > 0
+      ? summaryRows.reduce((sum, row) => sum + (row.position ?? 0), 0) / summaryRows.length
+      : 0
+
+  return {
+    impressions,
+    clicks,
+    avgCtr,
+    avgPosition,
+    topKeywords: keywordRows.map((row) => ({
+      keyword: row.keys?.[0] ?? 'Unbekannt',
+      clicks: row.clicks ?? 0,
+      impressions: row.impressions ?? 0,
+      ctr: (row.ctr ?? 0) * 100,
+      position: row.position ?? 0,
+    })),
+    googleEmail: options.googleEmail,
+    property: options.property,
+  }
+}
+
+export async function getCustomerGscDashboardSnapshot(
+  integration: CustomerGscIntegrationRecord,
+  credentials: CustomerGscCredentials,
+  range: CustomerGscDateRangeKey
+): Promise<{ data: CustomerGscDashboardData; trend: number | null }> {
+  if (!credentials.selected_property) {
+    return {
+      data: {
+        impressions: 0,
+        clicks: 0,
+        avgCtr: 0,
+        avgPosition: 0,
+        topKeywords: [],
+        googleEmail: credentials.google_email,
+      },
+      trend: null,
+    }
+  }
+
+  const { startDate, endDate, compareStartDate, compareEndDate } = getDateRange(range)
+
+  try {
+    const { accessToken, credentials: refreshedCredentials } = await getValidCustomerGscToken(
+      integration.id,
+      credentials
+    )
+
+    const property = refreshedCredentials.selected_property ?? credentials.selected_property
+    if (!property) {
+      return {
+        data: {
+          impressions: 0,
+          clicks: 0,
+          avgCtr: 0,
+          avgPosition: 0,
+          topKeywords: [],
+          googleEmail: refreshedCredentials.google_email,
+        },
+        trend: null,
+      }
+    }
+
+    const [current, previous] = await Promise.all([
+      fetchCustomerGscSnapshot({
+        accessToken,
+        property,
+        startDate,
+        endDate,
+        googleEmail: refreshedCredentials.google_email,
+      }),
+      fetchCustomerGscSnapshot({
+        accessToken,
+        property,
+        startDate: compareStartDate,
+        endDate: compareEndDate,
+        googleEmail: refreshedCredentials.google_email,
+      }),
+    ])
+
+    await saveCustomerGscIntegrationCredentials({
+      integrationId: integration.id,
+      status: 'connected',
+      credentials: {
+        ...refreshedCredentials,
+        cached_data: current,
+        cached_at: new Date().toISOString(),
+      },
+    })
+
+    const trend =
+      previous.clicks > 0 ? ((current.clicks - previous.clicks) / previous.clicks) * 100 : null
+
+    return { data: current, trend }
+  } catch (error) {
+    if (credentials.cached_data && isCacheValid(credentials.cached_at)) {
+      return {
+        data: {
+          ...credentials.cached_data,
+          isCached: true,
+          cacheAgeMinutes: getCacheAgeMinutes(credentials.cached_at),
+        },
+        trend: null,
+      }
+    }
+
+    throw error
+  }
+}

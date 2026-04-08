@@ -102,6 +102,18 @@ interface TikTokAdvertiser {
   currency?: string
 }
 
+interface GoogleAdsAccount {
+  id: string
+  name: string
+  currency?: string
+  isManager?: boolean
+}
+
+interface GscProperty {
+  siteUrl: string
+  permissionLevel?: string
+}
+
 interface DocumentLink {
   id: string
   title: string
@@ -175,6 +187,18 @@ export function CustomerDetailWorkspace({
   const [disconnectingTikTok, setDisconnectingTikTok] = useState(false)
   const [savingTikTokAdvertiser, setSavingTikTokAdvertiser] = useState(false)
   const [tikTokDisconnectOpen, setTikTokDisconnectOpen] = useState(false)
+  const [googleAdsAccounts, setGoogleAdsAccounts] = useState<GoogleAdsAccount[]>([])
+  const [loadingGoogleAdsAccounts, setLoadingGoogleAdsAccounts] = useState(false)
+  const [connectingGoogleAds, setConnectingGoogleAds] = useState(false)
+  const [disconnectingGoogleAds, setDisconnectingGoogleAds] = useState(false)
+  const [savingGoogleAdsAccount, setSavingGoogleAdsAccount] = useState(false)
+  const [googleAdsDisconnectOpen, setGoogleAdsDisconnectOpen] = useState(false)
+  const [gscProperties, setGscProperties] = useState<GscProperty[]>([])
+  const [loadingGscProperties, setLoadingGscProperties] = useState(false)
+  const [connectingGsc, setConnectingGsc] = useState(false)
+  const [disconnectingGsc, setDisconnectingGsc] = useState(false)
+  const [savingGscProperty, setSavingGscProperty] = useState(false)
+  const [gscDisconnectOpen, setGscDisconnectOpen] = useState(false)
   const [documentForm, setDocumentForm] = useState({ title: '', url: '', description: '' })
   const [editingDocument, setEditingDocument] = useState<DocumentLink | null>(null)
   const [docInputMode, setDocInputMode] = useState<'link' | 'file'>('link')
@@ -199,6 +223,22 @@ export function CustomerDetailWorkspace({
     if (!open) return
     setActiveTab(initialTab)
   }, [initialTab, open])
+
+  useEffect(() => {
+    setIntegrations([])
+    setDocuments([])
+    setIntegrationForm({})
+    setShowCredentials({})
+    setGa4Properties([])
+    setMetaAdsAccounts([])
+    setTikTokAdvertisers([])
+    setGoogleAdsAccounts([])
+    setGscProperties([])
+    setEditingDocument(null)
+    setDocumentForm({ title: '', url: '', description: '' })
+    setPendingFile(null)
+    setDocInputMode('link')
+  }, [customer.id])
 
   const handleTabChange = (value: string) => {
     setActiveTab(value as CustomerDetailTab)
@@ -317,9 +357,29 @@ export function CustomerDetailWorkspace({
   const googleAdsIntegration = integrations.find(
     (integration) => integration.integration_type === 'google_ads'
   )
-  const googleAdsValue = integrationForm.google_ads ?? ''
+  const googleAdsCredentials = (googleAdsIntegration?.credentials ?? {}) as Record<string, unknown>
+  const googleAdsAccountId =
+    typeof googleAdsCredentials.google_ads_customer_id === 'string'
+      ? googleAdsCredentials.google_ads_customer_id
+      : ''
+  const googleAdsAccountName =
+    typeof googleAdsCredentials.google_ads_customer_name === 'string'
+      ? googleAdsCredentials.google_ads_customer_name
+      : ''
+  const googleAdsGoogleEmail =
+    typeof googleAdsCredentials.google_email === 'string' ? googleAdsCredentials.google_email : ''
+  const googleAdsCurrency =
+    typeof googleAdsCredentials.currency_code === 'string' ? googleAdsCredentials.currency_code : ''
+  const googleAdsNeedsReconnect = googleAdsIntegration?.status === 'token_expired'
+  const googleAdsIsConnected = Boolean(googleAdsIntegration && !googleAdsNeedsReconnect)
   const gscIntegration = integrations.find((integration) => integration.integration_type === 'gsc')
-  const gscValue = integrationForm.gsc ?? ''
+  const gscCredentials = (gscIntegration?.credentials ?? {}) as Record<string, unknown>
+  const gscSelectedProperty =
+    typeof gscCredentials.selected_property === 'string' ? gscCredentials.selected_property : ''
+  const gscGoogleEmail =
+    typeof gscCredentials.google_email === 'string' ? gscCredentials.google_email : ''
+  const gscNeedsReconnect = gscIntegration?.status === 'token_expired'
+  const gscIsConnected = Boolean(gscIntegration && !gscNeedsReconnect)
 
   const loadGa4Properties = useCallback(async () => {
     if (!ga4Integration || !open) return
@@ -417,6 +477,74 @@ export function CustomerDetailWorkspace({
     void loadTikTokAdvertisers()
   }, [activeTab, isAdmin, loadTikTokAdvertisers, open, tikTokIsConnected])
 
+  const loadGoogleAdsAccounts = useCallback(async () => {
+    if (!googleAdsIntegration || !open) return
+
+    setLoadingGoogleAdsAccounts(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/google-ads/${customer.id}/accounts`)
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 405) {
+          setGoogleAdsAccounts([])
+          return
+        }
+
+        throw new Error(
+          await getResponseErrorMessage(res, 'Google-Ads-Accounts konnten nicht geladen werden.')
+        )
+      }
+
+      const data = await res.json()
+      setGoogleAdsAccounts(data.accounts ?? [])
+    } catch (err) {
+      setGoogleAdsAccounts([])
+      toast.error(
+        err instanceof Error ? err.message : 'Google-Ads-Accounts konnten nicht geladen werden.'
+      )
+    } finally {
+      setLoadingGoogleAdsAccounts(false)
+    }
+  }, [customer.id, googleAdsIntegration, open])
+
+  useEffect(() => {
+    if (!open || activeTab !== 'integrations' || !googleAdsIsConnected || !isAdmin) return
+    void loadGoogleAdsAccounts()
+  }, [activeTab, googleAdsIsConnected, isAdmin, loadGoogleAdsAccounts, open])
+
+  const loadGscProperties = useCallback(async () => {
+    if (!gscIntegration || !open) return
+
+    setLoadingGscProperties(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/gsc/${customer.id}/properties`)
+
+      if (!res.ok) {
+        if (res.status === 404 || res.status === 405) {
+          setGscProperties([])
+          return
+        }
+
+        throw new Error(
+          await getResponseErrorMessage(res, 'GSC-Properties konnten nicht geladen werden.')
+        )
+      }
+
+      const data = await res.json()
+      setGscProperties(data.properties ?? [])
+    } catch (err) {
+      setGscProperties([])
+      toast.error(err instanceof Error ? err.message : 'GSC-Properties konnten nicht geladen werden.')
+    } finally {
+      setLoadingGscProperties(false)
+    }
+  }, [customer.id, gscIntegration, open])
+
+  useEffect(() => {
+    if (!open || activeTab !== 'integrations' || !gscIsConnected || !isAdmin) return
+    void loadGscProperties()
+  }, [activeTab, gscIsConnected, isAdmin, loadGscProperties, open])
+
   useEffect(() => {
     if (open && activeTab === 'documents' && documents.length === 0) {
       loadDocuments()
@@ -511,27 +639,6 @@ export function CustomerDetailWorkspace({
     } finally {
       setUploadingLogo(false)
       e.target.value = ''
-    }
-  }
-
-  const handleSaveIntegrations = async () => {
-    setSaving(true)
-    try {
-      const res = await fetch(`/api/tenant/customers/${customer.id}/integrations`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ integrations: integrationForm }),
-      })
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}))
-        throw new Error(err.error || 'Fehler beim Speichern')
-      }
-      toast.success('Integrationen gespeichert.')
-      await loadIntegrations()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Unbekannter Fehler')
-    } finally {
-      setSaving(false)
     }
   }
 
@@ -771,6 +878,164 @@ export function CustomerDetailWorkspace({
     }
   }
 
+  const handleConnectGoogleAds = async () => {
+    setConnectingGoogleAds(true)
+    try {
+      const res = await fetch(
+        `/api/tenant/integrations/google-ads/oauth/start?customerId=${customer.id}`,
+        {
+          credentials: 'include',
+        }
+      )
+
+      if (res.redirected) {
+        window.location.href = res.url
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      const redirectUrl = typeof data.url === 'string' ? data.url : null
+
+      if (!res.ok || !redirectUrl) {
+        throw new Error(data.error || 'Google-Ads-Verbindung konnte nicht gestartet werden.')
+      }
+
+      window.location.href = redirectUrl
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Google-Ads-Verbindung konnte nicht gestartet werden.'
+      )
+      setConnectingGoogleAds(false)
+    }
+  }
+
+  const handleSelectGoogleAdsAccount = async (accountId: string) => {
+    setSavingGoogleAdsAccount(true)
+    try {
+      const selected = googleAdsAccounts.find((account) => account.id === accountId)
+      const res = await fetch(`/api/tenant/integrations/google-ads/${customer.id}/select-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          accountId,
+          accountName: selected?.name ?? accountId,
+          currency: selected?.currency,
+        }),
+      })
+
+      if (!res.ok) {
+        throw new Error(
+          await getResponseErrorMessage(res, 'Google-Ads-Account konnte nicht gespeichert werden.')
+        )
+      }
+
+      toast.success('Google-Ads-Account gespeichert.')
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Google-Ads-Account konnte nicht gespeichert werden.'
+      )
+    } finally {
+      setSavingGoogleAdsAccount(false)
+    }
+  }
+
+  const handleDisconnectGoogleAds = async () => {
+    setDisconnectingGoogleAds(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/google-ads/${customer.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error(
+          await getResponseErrorMessage(res, 'Google-Ads-Verbindung konnte nicht getrennt werden.')
+        )
+      }
+
+      toast.success('Google-Ads-Verbindung getrennt.')
+      setGoogleAdsDisconnectOpen(false)
+      setGoogleAdsAccounts([])
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : 'Google-Ads-Verbindung konnte nicht getrennt werden.'
+      )
+    } finally {
+      setDisconnectingGoogleAds(false)
+    }
+  }
+
+  const handleConnectGsc = async () => {
+    setConnectingGsc(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/gsc/oauth/start?customerId=${customer.id}`, {
+        credentials: 'include',
+      })
+
+      if (res.redirected) {
+        window.location.href = res.url
+        return
+      }
+
+      const data = await res.json().catch(() => ({}))
+      const redirectUrl = typeof data.url === 'string' ? data.url : null
+
+      if (!res.ok || !redirectUrl) {
+        throw new Error(data.error || 'GSC-Verbindung konnte nicht gestartet werden.')
+      }
+
+      window.location.href = redirectUrl
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'GSC-Verbindung konnte nicht gestartet werden.')
+      setConnectingGsc(false)
+    }
+  }
+
+  const handleSelectGscProperty = async (property: string) => {
+    setSavingGscProperty(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/gsc/${customer.id}/select-property`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ property }),
+      })
+
+      if (!res.ok) {
+        throw new Error(await getResponseErrorMessage(res, 'GSC-Property konnte nicht gespeichert werden.'))
+      }
+
+      toast.success('GSC-Property gespeichert.')
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'GSC-Property konnte nicht gespeichert werden.')
+    } finally {
+      setSavingGscProperty(false)
+    }
+  }
+
+  const handleDisconnectGsc = async () => {
+    setDisconnectingGsc(true)
+    try {
+      const res = await fetch(`/api/tenant/integrations/gsc/${customer.id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error(await getResponseErrorMessage(res, 'GSC-Verbindung konnte nicht getrennt werden.'))
+      }
+
+      toast.success('GSC-Verbindung getrennt.')
+      setGscDisconnectOpen(false)
+      setGscProperties([])
+      await loadIntegrations()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'GSC-Verbindung konnte nicht getrennt werden.')
+    } finally {
+      setDisconnectingGsc(false)
+    }
+  }
+
   const handleDisconnectTikTok = async () => {
     setDisconnectingTikTok(true)
     try {
@@ -980,6 +1245,12 @@ export function CustomerDetailWorkspace({
                         </SelectContent>
                       </Select>
                     )}
+                    {!loadingGa4Properties && ga4Properties.length > 0 && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <AlertCircle className="h-3 w-3" />
+                        Die Auswahl wird direkt gespeichert.
+                      </p>
+                    )}
                     {savingGa4Property && (
                       <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
                         <Loader2 className="h-3 w-3 animate-spin" />
@@ -1007,14 +1278,16 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              <Button onClick={handleConnectGa4} disabled={connectingGa4} className="rounded-xl">
-                {connectingGa4 ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="mr-2 h-4 w-4" />
-                )}
-                {ga4Integration ? (ga4NeedsReconnect ? 'Erneut verbinden' : 'Google-Konto wechseln') : 'Mit Google verbinden'}
-              </Button>
+              {(!ga4Integration || ga4NeedsReconnect) && (
+                <Button onClick={handleConnectGa4} disabled={connectingGa4} className="rounded-xl">
+                  {connectingGa4 ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <ExternalLink className="mr-2 h-4 w-4" />
+                  )}
+                  {ga4NeedsReconnect ? 'Erneut verbinden' : 'Mit Google verbinden'}
+                </Button>
+              )}
               {ga4Integration && (
                 <Button
                   type="button"
@@ -1331,64 +1604,126 @@ export function CustomerDetailWorkspace({
                 {getStatusBadge(googleAdsIntegration?.status ?? 'disconnected')}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Customer ID fuer Kampagnen-, Kosten- und Conversion-Daten dieses Kunden hinterlegen.
+                Kampagnen-, Kosten- und Conversion-Daten werden per Google OAuth angebunden.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="google-ads-id">Google Ads Customer ID</Label>
-            {isAdmin ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="google-ads-id"
-                    type={showCredentials.google_ads ? 'text' : 'password'}
-                    placeholder="1234567890"
-                    value={googleAdsValue}
-                    onChange={(e) =>
-                      setIntegrationForm({ ...integrationForm, google_ads: e.target.value })
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      setShowCredentials({
-                        ...showCredentials,
-                        google_ads: !showCredentials.google_ads,
-                      })
-                    }
-                  >
-                    {showCredentials.google_ads ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
+          {!googleAdsIntegration && (
+            <div className="space-y-2">
+              <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Verbinde ein Google-Konto und waehle danach den passenden Google-Ads-Account fuer diesen Kunden aus.
+              </p>
+              {!isAdmin && (
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Die Customer ID findest du in Google Ads oben rechts im Format 123-456-7890. Du kannst sie mit oder ohne Trennzeichen speichern.
+                  Nur Admins koennen die Verbindung einrichten.
                 </p>
-              </>
-            ) : (
-              <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                <p className="font-medium text-slate-700 dark:text-slate-200">
-                  {googleAdsValue ? 'Customer ID hinterlegt' : 'Noch keine Customer ID hinterlegt'}
-                </p>
+              )}
+            </div>
+          )}
+
+          {googleAdsIntegration && (
+            <div className="space-y-3">
+              {googleAdsGoogleEmail && (
+                <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Google-Konto</p>
+                  <p className="truncate font-medium text-slate-700 dark:text-slate-200">{googleAdsGoogleEmail}</p>
+                </div>
+              )}
+
+              {googleAdsNeedsReconnect && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Die gespeicherte Google-Ads-Verbindung ist nicht mehr gueltig. Bitte verbinde das Konto erneut, damit das Dashboard wieder Daten laden kann.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="google-ads-account-select">Google Ads Account</Label>
+                {googleAdsIsConnected && isAdmin ? (
+                  <>
+                    {loadingGoogleAdsAccounts ? (
+                      <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Google-Ads-Accounts werden geladen...
+                      </div>
+                    ) : googleAdsAccounts.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        Fuer dieses Konto wurden noch keine Google-Ads-Accounts gefunden.
+                      </div>
+                    ) : (
+                      <Select
+                        value={googleAdsAccountId}
+                        onValueChange={handleSelectGoogleAdsAccount}
+                        disabled={savingGoogleAdsAccount}
+                      >
+                        <SelectTrigger id="google-ads-account-select" className="w-full sm:w-[26rem]">
+                          <SelectValue placeholder="Google-Ads-Account auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {googleAdsAccounts.map((account) => (
+                            <SelectItem key={account.id} value={account.id}>
+                              {account.name} ({account.id})
+                              {account.isManager ? ' · MCC' : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {savingGoogleAdsAccount && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Google-Ads-Account wird gespeichert...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      {googleAdsAccountName || 'Noch kein Google-Ads-Account ausgewaehlt'}
+                    </p>
+                    <div className="mt-1 space-y-1 text-xs text-slate-500 dark:text-slate-400">
+                      {googleAdsAccountId && <p>Customer ID: {googleAdsAccountId}</p>}
+                      {googleAdsCurrency && <p>Waehrung: {googleAdsCurrency}</p>}
+                    </div>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <Badge
-            variant="outline"
-            className="justify-center rounded-xl border-emerald-200 bg-white/70 px-3 py-2 text-emerald-700 dark:border-emerald-900/40 dark:bg-slate-900/60 dark:text-emerald-300"
-          >
-            Vault-Eintrag
-          </Badge>
+          {isAdmin ? (
+            <>
+              <Button onClick={handleConnectGoogleAds} disabled={connectingGoogleAds} className="rounded-xl">
+                {connectingGoogleAds ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                )}
+                {googleAdsIntegration
+                  ? googleAdsNeedsReconnect
+                    ? 'Erneut verbinden'
+                    : 'Google-Konto wechseln'
+                  : 'Mit Google verbinden'}
+              </Button>
+              {googleAdsIntegration && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setGoogleAdsDisconnectOpen(true)}
+                  className="rounded-xl text-red-600 hover:text-red-700"
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Verbindung trennen
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href="/dashboard">Zum Dashboard</Link>
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -1408,64 +1743,121 @@ export function CustomerDetailWorkspace({
                 {getStatusBadge(gscIntegration?.status ?? 'disconnected')}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Property-URL oder Domain-Property fuer diesen Kunden im selben Stil wie die neuen Integrationskarten pflegen.
+                Search-Console-Properties werden pro Kunde per Google OAuth angebunden.
               </p>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="gsc-property">Search Console Property</Label>
-            {isAdmin ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="gsc-property"
-                    type={showCredentials.gsc ? 'text' : 'password'}
-                    placeholder="https://example.com/ oder sc-domain:example.com"
-                    value={gscValue}
-                    onChange={(e) =>
-                      setIntegrationForm({ ...integrationForm, gsc: e.target.value })
-                    }
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    onClick={() =>
-                      setShowCredentials({
-                        ...showCredentials,
-                        gsc: !showCredentials.gsc,
-                      })
-                    }
-                  >
-                    {showCredentials.gsc ? (
-                      <EyeOff className="w-4 h-4" />
-                    ) : (
-                      <Eye className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
+          {!gscIntegration && (
+            <div className="space-y-2">
+              <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">
+                Verbinde ein Google-Konto und waehle danach die passende Search-Console-Property fuer diesen Kunden aus.
+              </p>
+              {!isAdmin && (
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Beispiel: `https://example.com/` oder `sc-domain:example.com`.
+                  Nur Admins koennen die Verbindung einrichten.
                 </p>
-              </>
-            ) : (
-              <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
-                <p className="font-medium text-slate-700 dark:text-slate-200">
-                  {gscValue ? 'Property hinterlegt' : 'Noch keine Property hinterlegt'}
-                </p>
+              )}
+            </div>
+          )}
+
+          {gscIntegration && (
+            <div className="space-y-3">
+              {gscGoogleEmail && (
+                <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                  <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Google-Konto</p>
+                  <p className="truncate font-medium text-slate-700 dark:text-slate-200">{gscGoogleEmail}</p>
+                </div>
+              )}
+
+              {gscNeedsReconnect && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/40 dark:bg-amber-950/30 dark:text-amber-200">
+                  Die gespeicherte GSC-Verbindung ist nicht mehr gueltig. Bitte verbinde das Konto erneut, damit das Dashboard wieder Daten laden kann.
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="gsc-property-select">Search Console Property</Label>
+                {gscIsConnected && isAdmin ? (
+                  <>
+                    {loadingGscProperties ? (
+                      <div className="flex items-center gap-2 py-2 text-sm text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Properties werden geladen...
+                      </div>
+                    ) : gscProperties.length === 0 ? (
+                      <div className="rounded-lg border border-slate-200 bg-white/80 px-3 py-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-300">
+                        Fuer dieses Konto wurden noch keine Search-Console-Properties gefunden.
+                      </div>
+                    ) : (
+                      <Select
+                        value={gscSelectedProperty}
+                        onValueChange={handleSelectGscProperty}
+                        disabled={savingGscProperty}
+                      >
+                        <SelectTrigger id="gsc-property-select" className="w-full sm:w-[26rem]">
+                          <SelectValue placeholder="Property auswaehlen..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {gscProperties.map((property) => (
+                            <SelectItem key={property.siteUrl} value={property.siteUrl}>
+                              {property.siteUrl}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    {savingGscProperty && (
+                      <p className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Property wird gespeichert...
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-3 text-sm dark:border-slate-800 dark:bg-slate-900/60">
+                    <p className="font-medium text-slate-700 dark:text-slate-200">
+                      {gscSelectedProperty || 'Noch keine Property ausgewaehlt'}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="flex shrink-0 flex-col gap-2">
-          <Badge
-            variant="outline"
-            className="justify-center rounded-xl border-sky-200 bg-white/70 px-3 py-2 text-sky-700 dark:border-sky-900/40 dark:bg-slate-900/60 dark:text-sky-300"
-          >
-            Vault-Eintrag
-          </Badge>
+          {isAdmin ? (
+            <>
+              <Button onClick={handleConnectGsc} disabled={connectingGsc} className="rounded-xl">
+                {connectingGsc ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                )}
+                {gscIntegration
+                  ? gscNeedsReconnect
+                    ? 'Erneut verbinden'
+                    : 'Google-Konto wechseln'
+                  : 'Mit Google verbinden'}
+              </Button>
+              {gscIntegration && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setGscDisconnectOpen(true)}
+                  className="rounded-xl text-red-600 hover:text-red-700"
+                >
+                  <Unlink className="mr-2 h-4 w-4" />
+                  Verbindung trennen
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button asChild variant="outline" className="rounded-xl">
+              <Link href="/dashboard">Zum Dashboard</Link>
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -1658,17 +2050,6 @@ export function CustomerDetailWorkspace({
                       <Skeleton className="h-20 w-full" />
                     </div>
                   ) : null}
-
-                  {isAdmin && (
-                    <>
-                      <Separator />
-                      <div className="flex justify-end">
-                        <Button onClick={handleSaveIntegrations} disabled={saving}>
-                          {saving ? 'Speichern...' : 'Integrationen speichern'}
-                        </Button>
-                      </div>
-                    </>
-                  )}
                 </CardContent>
               </Card>
             </TabsContent>
@@ -1931,6 +2312,29 @@ export function CustomerDetailWorkspace({
         </DialogContent>
       </Dialog>
 
+      <Dialog open={googleAdsDisconnectOpen} onOpenChange={setGoogleAdsDisconnectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Google Ads trennen?</DialogTitle>
+            <DialogDescription>
+              Die gespeicherten Tokens und die ausgewaehlte Customer ID werden fuer diesen Kunden entfernt.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGoogleAdsDisconnectOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDisconnectGoogleAds}
+              disabled={disconnectingGoogleAds}
+            >
+              {disconnectingGoogleAds ? 'Trenne...' : 'Verbindung trennen'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={metaAdsDisconnectOpen} onOpenChange={setMetaAdsDisconnectOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -1982,6 +2386,25 @@ export function CustomerDetailWorkspace({
             >
               {disconnectingTikTok && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Verbindung trennen
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={gscDisconnectOpen} onOpenChange={setGscDisconnectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Google Search Console trennen?</DialogTitle>
+            <DialogDescription>
+              Die gespeicherten Tokens und die ausgewaehlte Property werden fuer diesen Kunden entfernt.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setGscDisconnectOpen(false)}>
+              Abbrechen
+            </Button>
+            <Button variant="destructive" onClick={handleDisconnectGsc} disabled={disconnectingGsc}>
+              {disconnectingGsc ? 'Trenne...' : 'Verbindung trennen'}
             </Button>
           </DialogFooter>
         </DialogContent>

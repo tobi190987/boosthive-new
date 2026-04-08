@@ -6,6 +6,7 @@ import {
 import { createAdminClient } from '@/lib/supabase-admin'
 
 const GOOGLE_ADS_API_BASE = 'https://googleads.googleapis.com/v18'
+const CACHE_TTL_MS = 15 * 60 * 1000
 
 export interface GoogleAdsAccount {
   id: string
@@ -24,6 +25,8 @@ export interface GoogleAdsCredentials {
   google_ads_customer_name?: string
   google_ads_manager_customer_id?: string
   currency_code?: string
+  cached_snapshots?: Partial<Record<GoogleAdsDateRangeKey, GoogleAdsDashboardData>>
+  cached_at_by_range?: Partial<Record<GoogleAdsDateRangeKey, string>>
 }
 
 export interface GoogleAdsIntegrationRecord {
@@ -32,6 +35,28 @@ export interface GoogleAdsIntegrationRecord {
   integration_type: string
   status: string
   credentials_encrypted: string | null
+}
+
+export type GoogleAdsDateRangeKey = 'today' | '7d' | '30d' | '90d'
+
+export interface GoogleAdsCampaign {
+  name: string
+  status: string
+  budget: number
+  clicks: number
+  cost: number
+  conversions: number
+}
+
+export interface GoogleAdsDashboardData {
+  campaigns: GoogleAdsCampaign[]
+  totalCost: number
+  avgCpc: number
+  totalConversions: number
+  currency?: string
+  isCached?: boolean
+  cacheAgeMinutes?: number
+  message?: string
 }
 
 interface AccessibleCustomersResponse {
@@ -44,6 +69,18 @@ interface GoogleAdsSearchStreamRow {
     descriptiveName?: string
     currencyCode?: string
     manager?: boolean
+  }
+  campaign?: {
+    name?: string
+    status?: string
+  }
+  campaignBudget?: {
+    amountMicros?: string | number
+  }
+  metrics?: {
+    clicks?: string | number
+    costMicros?: string | number
+    conversions?: string | number
   }
 }
 
@@ -59,6 +96,46 @@ function getDeveloperToken(): string {
 
 function normalizeCustomerId(customerId: string): string {
   return customerId.replace(/\D/g, '')
+}
+
+function formatDate(date: Date): string {
+  return date.toISOString().split('T')[0]
+}
+
+function getDateRange(range: GoogleAdsDateRangeKey) {
+  const now = new Date()
+  const endDate = formatDate(now)
+
+  let daysBack = 29
+  if (range === 'today') daysBack = 0
+  if (range === '7d') daysBack = 6
+  if (range === '90d') daysBack = 89
+
+  const startDateObj = new Date(now)
+  startDateObj.setDate(startDateObj.getDate() - daysBack)
+  const startDate = formatDate(startDateObj)
+
+  const compareEndObj = new Date(startDateObj)
+  compareEndObj.setDate(compareEndObj.getDate() - 1)
+
+  const compareStartObj = new Date(compareEndObj)
+  compareStartObj.setDate(compareStartObj.getDate() - daysBack)
+
+  return {
+    startDate,
+    endDate,
+    compareStartDate: formatDate(compareStartObj),
+    compareEndDate: formatDate(compareEndObj),
+  }
+}
+
+function parseNumber(value: string | number | undefined): number {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value)
+    return Number.isFinite(parsed) ? parsed : 0
+  }
+  return 0
 }
 
 function buildGoogleAdsHeaders(accessToken: string, loginCustomerId?: string): HeadersInit {
@@ -155,6 +232,8 @@ export async function upsertGoogleAdsConnection(options: {
     google_ads_customer_name: existingCredentials?.google_ads_customer_name,
     google_ads_manager_customer_id: existingCredentials?.google_ads_manager_customer_id,
     currency_code: existingCredentials?.currency_code,
+    cached_snapshots: existingCredentials?.cached_snapshots,
+    cached_at_by_range: existingCredentials?.cached_at_by_range,
   }
 
   const { data, error } = await admin
@@ -296,4 +375,201 @@ export async function listGoogleAdsAccounts(accessToken: string): Promise<Google
   return accounts
     .filter((account): account is GoogleAdsAccount => Boolean(account))
     .sort((a, b) => a.name.localeCompare(b.name))
+}
+
+async function fetchGoogleAdsCampaignSnapshot(options: {
+  accessToken: string
+  customerId: string
+  managerCustomerId?: string
+  startDate: string
+  endDate: string
+  currency?: string
+}): Promise<GoogleAdsDashboardData> {
+  const customerId = normalizeCustomerId(options.customerId)
+  const managerCustomerId = normalizeCustomerId(options.managerCustomerId ?? '')
+  const batches = await fetchGoogleAdsJson<GoogleAdsSearchStreamBatch[]>(
+    `${GOOGLE_ADS_API_BASE}/customers/${customerId}/googleAds:searchStream`,
+    {
+      method: 'POST',
+      headers: buildGoogleAdsHeaders(options.accessToken, managerCustomerId || customerId),
+      body: JSON.stringify({
+        query: `
+          SELECT
+            campaign.name,
+            campaign.status,
+            campaign_budget.amount_micros,
+            metrics.clicks,
+            metrics.cost_micros,
+            metrics.conversions
+          FROM campaign
+          WHERE segments.date BETWEEN '${options.startDate}' AND '${options.endDate}'
+        `,
+      }),
+    },
+    { tokenErrorMessage: 'Google-Ads-Token ist abgelaufen oder wurde widerrufen.' }
+  )
+
+  const campaigns = batches
+    .flatMap((batch) => batch.results ?? [])
+    .map((row) => {
+      const clicks = parseNumber(row.metrics?.clicks)
+      const cost = parseNumber(row.metrics?.costMicros) / 1_000_000
+      const conversions = parseNumber(row.metrics?.conversions)
+      const budget = parseNumber(row.campaignBudget?.amountMicros) / 1_000_000
+
+      return {
+        name: row.campaign?.name || 'Unbenannte Kampagne',
+        status: row.campaign?.status || 'UNKNOWN',
+        budget,
+        clicks,
+        cost,
+        conversions,
+      }
+    })
+    .sort((a, b) => b.cost - a.cost)
+
+  const totalCost = campaigns.reduce((sum, campaign) => sum + campaign.cost, 0)
+  const totalClicks = campaigns.reduce((sum, campaign) => sum + campaign.clicks, 0)
+  const totalConversions = campaigns.reduce((sum, campaign) => sum + campaign.conversions, 0)
+
+  return {
+    campaigns,
+    totalCost,
+    avgCpc: totalClicks > 0 ? totalCost / totalClicks : 0,
+    totalConversions,
+    currency: options.currency,
+  }
+}
+
+function getCachedSnapshot(
+  credentials: GoogleAdsCredentials,
+  range: GoogleAdsDateRangeKey
+): GoogleAdsDashboardData | null {
+  return credentials.cached_snapshots?.[range] ?? null
+}
+
+function getCacheAgeMinutes(
+  credentials: GoogleAdsCredentials,
+  range: GoogleAdsDateRangeKey
+): number | undefined {
+  const cachedAt = credentials.cached_at_by_range?.[range]
+  if (!cachedAt) return undefined
+  return Math.max(0, Math.round((Date.now() - new Date(cachedAt).getTime()) / 60_000))
+}
+
+function isCacheValid(credentials: GoogleAdsCredentials, range: GoogleAdsDateRangeKey): boolean {
+  const cachedAt = credentials.cached_at_by_range?.[range]
+  if (!cachedAt) return false
+  return Date.now() - new Date(cachedAt).getTime() < CACHE_TTL_MS
+}
+
+async function storeCachedSnapshot(
+  integrationId: string,
+  credentials: GoogleAdsCredentials,
+  range: GoogleAdsDateRangeKey,
+  data: GoogleAdsDashboardData
+) {
+  const nextCredentials: GoogleAdsCredentials = {
+    ...credentials,
+    cached_snapshots: {
+      ...(credentials.cached_snapshots ?? {}),
+      [range]: data,
+    },
+    cached_at_by_range: {
+      ...(credentials.cached_at_by_range ?? {}),
+      [range]: new Date().toISOString(),
+    },
+  }
+
+  await saveGoogleAdsIntegrationCredentials({
+    integrationId,
+    credentials: nextCredentials,
+    status: 'connected',
+  })
+}
+
+export async function getGoogleAdsDashboardSnapshot(
+  integration: GoogleAdsIntegrationRecord,
+  credentials: GoogleAdsCredentials,
+  range: GoogleAdsDateRangeKey
+): Promise<{ data: GoogleAdsDashboardData; trend: number | null }> {
+  if (!credentials.google_ads_customer_id) {
+    return {
+      data: {
+        campaigns: [],
+        totalCost: 0,
+        avgCpc: 0,
+        totalConversions: 0,
+        currency: credentials.currency_code,
+        message: 'Es wurde noch kein Google-Ads-Account fuer diesen Kunden ausgewaehlt.',
+      },
+      trend: null,
+    }
+  }
+
+  const { startDate, endDate, compareStartDate, compareEndDate } = getDateRange(range)
+
+  try {
+    const { accessToken, credentials: refreshedCredentials } = await getValidGoogleAdsToken(
+      integration.id,
+      credentials
+    )
+
+    const activeCustomerId =
+      refreshedCredentials.google_ads_customer_id ?? credentials.google_ads_customer_id
+
+    if (!activeCustomerId) {
+      return {
+        data: {
+          campaigns: [],
+          totalCost: 0,
+          avgCpc: 0,
+          totalConversions: 0,
+          currency: refreshedCredentials.currency_code,
+          message: 'Es wurde noch kein Google-Ads-Account fuer diesen Kunden ausgewaehlt.',
+        },
+        trend: null,
+      }
+    }
+
+    const [current, previous] = await Promise.all([
+      fetchGoogleAdsCampaignSnapshot({
+        accessToken,
+        customerId: activeCustomerId,
+        managerCustomerId: refreshedCredentials.google_ads_manager_customer_id,
+        startDate,
+        endDate,
+        currency: refreshedCredentials.currency_code,
+      }),
+      fetchGoogleAdsCampaignSnapshot({
+        accessToken,
+        customerId: activeCustomerId,
+        managerCustomerId: refreshedCredentials.google_ads_manager_customer_id,
+        startDate: compareStartDate,
+        endDate: compareEndDate,
+        currency: refreshedCredentials.currency_code,
+      }),
+    ])
+
+    await storeCachedSnapshot(integration.id, refreshedCredentials, range, current)
+
+    const trend =
+      previous.totalCost > 0 ? ((current.totalCost - previous.totalCost) / previous.totalCost) * 100 : null
+
+    return { data: current, trend }
+  } catch (error) {
+    const cached = getCachedSnapshot(credentials, range)
+    if (cached && isCacheValid(credentials, range)) {
+      return {
+        data: {
+          ...cached,
+          isCached: true,
+          cacheAgeMinutes: getCacheAgeMinutes(credentials, range),
+        },
+        trend: null,
+      }
+    }
+
+    throw error
+  }
 }
