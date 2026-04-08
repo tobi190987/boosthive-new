@@ -69,6 +69,8 @@ export function GlobalCommandPalette() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
   const abortRef = useRef<AbortController | null>(null)
+  const chordRef = useRef<string | null>(null)
+  const chordTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -80,14 +82,39 @@ export function GlobalCommandPalette() {
         setOpen((prev) => !prev)
         return
       }
-      if (e.key === '?' && !isInput && !e.metaKey && !e.ctrlKey) {
+      if (isInput || e.metaKey || e.ctrlKey) return
+
+      if (e.key === '?') {
         e.preventDefault()
         setShortcutsOpen((prev) => !prev)
+        return
+      }
+
+      // Chord shortcuts: G → D / C
+      if (e.key.toUpperCase() === 'G' && !chordRef.current) {
+        chordRef.current = 'G'
+        if (chordTimerRef.current) clearTimeout(chordTimerRef.current)
+        chordTimerRef.current = setTimeout(() => { chordRef.current = null }, 1000)
+        return
+      }
+      if (chordRef.current === 'G') {
+        if (chordTimerRef.current) clearTimeout(chordTimerRef.current)
+        chordRef.current = null
+        if (e.key.toUpperCase() === 'D') {
+          e.preventDefault()
+          router.push('/dashboard')
+        } else if (e.key.toUpperCase() === 'C') {
+          e.preventDefault()
+          router.push('/tools/customers')
+        }
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      if (chordTimerRef.current) clearTimeout(chordTimerRef.current)
+    }
+  }, [router])
 
   const search = useCallback(async (rawQuery: string) => {
     if (rawQuery.length < 2) {
