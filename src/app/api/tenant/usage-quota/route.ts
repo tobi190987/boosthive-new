@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { checkQuota, PLAN_LIMITS, type QuotaMetric } from '@/lib/usage-limits'
+import { checkRateLimit, getClientIp, rateLimitResponse, QUOTA_READ } from '@/lib/rate-limit'
 
 /**
  * GET /api/tenant/usage-quota?metric=ai_performance_analyses
@@ -9,6 +10,9 @@ import { checkQuota, PLAN_LIMITS, type QuotaMetric } from '@/lib/usage-limits'
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`usage-quota:${tenantId}:${getClientIp(request)}`, QUOTA_READ)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error

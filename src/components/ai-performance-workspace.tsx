@@ -768,7 +768,17 @@ function AnalyseTab() {
       if (selectedCustomerId !== 'none') fd.append('customer_id', selectedCustomerId)
       const res = await fetch('/api/tenant/performance/analyze', { method: 'POST', body: fd })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Analyse fehlgeschlagen')
+      if (!res.ok) {
+        if (res.status === 429 && data.error === 'quota_exceeded') {
+          const resetDate = data.reset_at
+            ? new Date(data.reset_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+            : null
+          throw new Error(
+            `Monatliches Limit erreicht (${data.current}/${data.limit} Analysen).${resetDate ? ` Reset am ${resetDate}.` : ''}`
+          )
+        }
+        throw new Error(data.error ?? 'Analyse fehlgeschlagen')
+      }
       setResult(data)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Unbekannter Fehler')

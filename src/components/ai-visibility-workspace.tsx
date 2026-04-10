@@ -1149,6 +1149,14 @@ function ProjectDetailView({
       })
       if (!res.ok) {
         const body = await res.json().catch(() => ({}))
+        if (res.status === 429 && body.error === 'quota_exceeded') {
+          const resetDate = body.reset_at
+            ? new Date(body.reset_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+            : null
+          throw new Error(
+            `Monatliches Limit erreicht (${body.current}/${body.limit} Analysen).${resetDate ? ` Reset am ${resetDate}.` : ''}`
+          )
+        }
         const firstDetail =
           body?.details && typeof body.details === 'object'
             ? Object.values(body.details as Record<string, unknown[]>)

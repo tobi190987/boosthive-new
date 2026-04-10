@@ -17,6 +17,8 @@ export interface QuotaResult {
   current: number
   limit: number
   reset_at: string
+  /** ISO-Datum des Periodenanfangs – für Post-Insert-Verifikation benötigt */
+  period_start: string
 }
 
 /**
@@ -72,5 +74,6 @@ export async function checkQuota(
     current,
     limit,
     reset_at: periodEnd.toISOString(),
+    period_start: periodStart.toISOString(),
   }
 }

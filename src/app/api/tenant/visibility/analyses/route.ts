@@ -159,6 +159,22 @@ export async function POST(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Post-Insert-Verifikation (TOCTOU-Schutz):
+  // Zähle nach dem INSERT erneut und rollback, wenn das Limit überschritten wurde.
+  const { count: countAfter } = await admin
+    .from('visibility_analyses')
+    .select('id', { count: 'exact', head: true })
+    .eq('tenant_id', tenantId)
+    .gte('created_at', quota.period_start)
+
+  if ((countAfter ?? 0) > quota.limit) {
+    await admin.from('visibility_analyses').delete().eq('id', analysis.id)
+    return NextResponse.json(
+      { error: 'quota_exceeded', metric: 'ai_visibility_analyses', current: countAfter ?? quota.limit, limit: quota.limit, reset_at: quota.reset_at },
+      { status: 429 }
+    )
+  }
+
   // Fire-and-forget: trigger background worker
   // Only trigger if status is 'pending' (not queued)
   if (status === 'pending') {

@@ -68,6 +68,6 @@
 
 <!-- Add features above this line -->
 
-| PROJ-54 | Usage Limits & Quotas | Deployed | [PROJ-54-usage-limits.md](PROJ-54-usage-limits.md) | 2026-04-10 |
+| PROJ-54 | Usage Limits & Quotas | In Review | [PROJ-54-usage-limits.md](PROJ-54-usage-limits.md) | 2026-04-10 |
 
 ## Next Available ID: PROJ-55

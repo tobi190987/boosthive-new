@@ -3,10 +3,15 @@ import { z } from 'zod'
 import { requireOwner } from '@/lib/owner-auth'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkQuota, PLAN_LIMITS, type QuotaMetric, type QuotaOverrideEntry } from '@/lib/usage-limits'
+import { checkRateLimit, getClientIp, rateLimitResponse, OWNER_READ, OWNER_WRITE } from '@/lib/rate-limit'
 
 const patchSchema = z.object({
   metric: z.enum(['ai_performance_analyses', 'ai_visibility_analyses']),
-  limit: z.number().int().min(1).max(9999),
+  /**
+   * Neues Limit als positive Ganzzahl.
+   * Sende `null` um einen bestehenden Override zu entfernen und auf den Standardwert zurückzusetzen.
+   */
+  limit: z.number().int().min(1).max(9999).nullable(),
 })
 
 /**
@@ -14,11 +19,14 @@ const patchSchema = z.object({
  * Returns current usage + limit for all metrics of a tenant.
  */
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const auth = await requireOwner()
   if ('error' in auth) return auth.error
+
+  const rl = checkRateLimit(`owner-quota-read:${getClientIp(request)}`, OWNER_READ)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const { id: tenantId } = await params
   const admin = createAdminClient()
@@ -44,9 +52,9 @@ export async function GET(
 
 /**
  * PATCH /api/owner/tenants/[id]/quota
- * Sets an override limit for a metric for the current billing period.
- * Body: { metric: QuotaMetric, limit: number }
- * Pass limit: null to remove the override.
+ * Sets or removes an override limit for a metric for the current billing period.
+ * Body: { metric: QuotaMetric, limit: number | null }
+ * Pass limit: null to remove the override and revert to the default plan limit.
  */
 export async function PATCH(
   request: NextRequest,
@@ -54,6 +62,9 @@ export async function PATCH(
 ) {
   const auth = await requireOwner()
   if ('error' in auth) return auth.error
+
+  const rl = checkRateLimit(`owner-quota-write:${getClientIp(request)}`, OWNER_WRITE)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const { id: tenantId } = await params
 
@@ -86,12 +97,21 @@ export async function PATCH(
     : (() => { const d = new Date(); d.setMonth(d.getMonth() + 1); return d })()
 
   const existing = (tenant.quota_overrides ?? {}) as Record<string, QuotaOverrideEntry>
-  const updated: Record<string, QuotaOverrideEntry> = {
-    ...existing,
-    [metric as QuotaMetric]: {
-      limit: newLimit,
-      period_end: periodEnd.toISOString(),
-    },
+
+  let updated: Record<string, QuotaOverrideEntry>
+  if (newLimit === null) {
+    // Entferne den Override für dieses Metric
+    const { [metric as QuotaMetric]: _removed, ...rest } = existing
+    updated = rest
+  } else {
+    // Setze oder überschreibe den Override
+    updated = {
+      ...existing,
+      [metric as QuotaMetric]: {
+        limit: newLimit,
+        period_end: periodEnd.toISOString(),
+      },
+    }
   }
 
   const { error } = await admin

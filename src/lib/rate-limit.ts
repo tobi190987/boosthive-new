@@ -110,6 +110,12 @@ export const AD_GENERATOR_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1
 /** Ad generator writes (generate): 20 requests / min / tenant+IP */
 export const AD_GENERATOR_WRITE: RateLimitOptions = { limit: 20, windowMs: 60 * 1000 }
 
+/** AI Performance analysis start: 5 requests / 15 min / tenant+IP */
+export const PERFORMANCE_ANALYSIS_START: RateLimitOptions = { limit: 5, windowMs: 15 * 60 * 1000 }
+
+/** Quota read: 60 requests / min / tenant+IP */
+export const QUOTA_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------

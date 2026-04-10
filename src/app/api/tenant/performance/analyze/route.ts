@@ -5,6 +5,12 @@ import { parseCSV, applyFilters, buildLLMContext, anonymizePiiText } from '@/lib
 import { SYSTEM_PROMPT, CONTENT_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/performance/prompts'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkQuota } from '@/lib/usage-limits'
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  PERFORMANCE_ANALYSIS_START,
+} from '@/lib/rate-limit'
 import type { Filters } from '@/lib/performance/types'
 
 export const maxDuration = 60
@@ -29,6 +35,9 @@ async function validateCustomerId(
 export async function POST(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`performance-analyze:${tenantId}:${getClientIp(request)}`, PERFORMANCE_ANALYSIS_START)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
@@ -149,6 +158,24 @@ export async function POST(request: NextRequest) {
       })
       .select('id')
       .single()
+
+    // Post-Insert-Verifikation (TOCTOU-Schutz):
+    // Zähle nach dem INSERT erneut und rollback, wenn das Limit überschritten wurde.
+    if (saved?.id) {
+      const { count: countAfter } = await admin
+        .from('performance_analyses')
+        .select('id', { count: 'exact', head: true })
+        .eq('tenant_id', tenantId)
+        .gte('created_at', quota.period_start)
+
+      if ((countAfter ?? 0) > quota.limit) {
+        await admin.from('performance_analyses').delete().eq('id', saved.id)
+        return NextResponse.json(
+          { error: 'quota_exceeded', metric: 'ai_performance_analyses', current: countAfter ?? quota.limit, limit: quota.limit, reset_at: quota.reset_at },
+          { status: 429 }
+        )
+      }
+    }
 
     return NextResponse.json({
       id: saved?.id ?? null,
