@@ -24,18 +24,22 @@ export interface QuotaResult {
  * periodStart is calculated as subscription_period_end - 1 month (mirrors Stripe's billing period).
  * If subscription_period_end is null (no active subscription), uses 1 month from now as fallback.
  */
+export interface QuotaOverrideEntry {
+  limit: number
+  period_end: string
+}
+
 export async function checkQuota(
   tenantId: string,
   metric: QuotaMetric
 ): Promise<QuotaResult> {
-  const limit = PLAN_LIMITS[metric]
   const table = METRIC_TABLE[metric]
   const admin = createAdminClient()
 
-  // Load subscription_period_end from tenant
+  // Load subscription_period_end + quota_overrides from tenant
   const { data: tenant } = await admin
     .from('tenants')
-    .select('subscription_period_end')
+    .select('subscription_period_end, quota_overrides')
     .eq('id', tenantId)
     .maybeSingle()
 
@@ -45,6 +49,15 @@ export async function checkQuota(
 
   const periodStart = new Date(periodEnd)
   periodStart.setMonth(periodStart.getMonth() - 1)
+
+  // Check for owner override: valid only if stored period_end matches current period_end
+  const overrides = (tenant?.quota_overrides ?? {}) as Record<string, QuotaOverrideEntry>
+  const override = overrides[metric]
+  const overrideValid =
+    override &&
+    typeof override.limit === 'number' &&
+    override.period_end === periodEnd.toISOString()
+  const limit = overrideValid ? override.limit : PLAN_LIMITS[metric]
 
   const { count } = await admin
     .from(table)

@@ -1,12 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Archive,
   CirclePlay,
   CirclePause,
   ExternalLink,
+  Gauge,
   Loader2,
   MoreHorizontal,
   RotateCcw,
@@ -16,6 +17,8 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -27,6 +30,14 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -49,6 +60,174 @@ import {
   tenantStatusBadgeClass,
   tenantStatusLabel,
 } from '@/lib/tenant-status'
+import { toast } from '@/hooks/use-toast'
+import { PLAN_LIMITS, type QuotaMetric } from '@/lib/usage-limits'
+
+// ─── Quota types & helpers ────────────────────────────────────────────────────
+
+interface QuotaEntry {
+  current: number
+  limit: number
+  reset_at: string
+  allowed: boolean
+  default_limit: number
+}
+
+interface TenantQuota {
+  ai_performance_analyses: QuotaEntry
+  ai_visibility_analyses: QuotaEntry
+}
+
+function formatResetDate(iso: string) {
+  return new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })
+}
+
+function QuotaBar({ entry, label }: { entry: QuotaEntry; label: string }) {
+  const pct = Math.min(100, entry.limit > 0 ? (entry.current / entry.limit) * 100 : 0)
+  const isExhausted = entry.current >= entry.limit
+  const isNear = entry.current >= entry.limit * 0.9
+  const barColor = isExhausted ? 'bg-red-500' : isNear ? 'bg-amber-400' : 'bg-emerald-500'
+  const textColor = isExhausted ? 'text-red-600' : isNear ? 'text-amber-600' : 'text-slate-500'
+  const isOverridden = entry.limit !== entry.default_limit
+
+  return (
+    <div className="space-y-0.5">
+      <div className={`flex items-center justify-between text-[11px] ${textColor}`}>
+        <span>
+          {label}{isOverridden && <span className="ml-1 text-blue-500 font-medium">(+)</span>}
+        </span>
+        <span className="tabular-nums">{entry.current} / {entry.limit}</span>
+      </div>
+      <div className="h-1 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+        <div className={`h-1 rounded-full transition-all ${barColor}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  )
+}
+
+function TenantQuotaInfo({ tenantId }: { tenantId: string }) {
+  const [quota, setQuota] = useState<TenantQuota | null>(null)
+
+  useEffect(() => {
+    fetch(`/api/owner/tenants/${tenantId}/quota`, { credentials: 'include' })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data?.ai_performance_analyses) setQuota(data as TenantQuota)
+      })
+      .catch(() => {/* silent */})
+  }, [tenantId])
+
+  if (!quota) return <div className="h-8 w-32 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+
+  return (
+    <div className="mt-1.5 w-40 space-y-1.5">
+      <QuotaBar entry={quota.ai_performance_analyses} label="Performance" />
+      <QuotaBar entry={quota.ai_visibility_analyses} label="Visibility" />
+      <p className="text-[10px] text-slate-400">Reset: {formatResetDate(quota.ai_performance_analyses.reset_at)}</p>
+    </div>
+  )
+}
+
+// ─── Override dialog ──────────────────────────────────────────────────────────
+
+interface QuotaOverrideDialogProps {
+  tenant: OwnerTenantRecord
+  open: boolean
+  onClose: () => void
+  onSaved: () => void
+}
+
+function QuotaOverrideDialog({ tenant, open, onClose, onSaved }: QuotaOverrideDialogProps) {
+  const [metric, setMetric] = useState<QuotaMetric>('ai_performance_analyses')
+  const [limitValue, setLimitValue] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const defaultLimit = PLAN_LIMITS[metric]
+
+  async function handleSave() {
+    const parsed = parseInt(limitValue, 10)
+    if (!parsed || parsed < 1) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/owner/tenants/${tenant.id}/quota`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ metric, limit: parsed }),
+      })
+      if (!res.ok) throw new Error('Fehler beim Speichern.')
+      toast({ title: 'Quota gespeichert', description: `${metric === 'ai_performance_analyses' ? 'Performance' : 'Visibility'}: ${parsed} Analysen für diese Periode.` })
+      onSaved()
+      onClose()
+    } catch {
+      toast({ title: 'Fehler', description: 'Quota konnte nicht gespeichert werden.', variant: 'destructive' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) onClose() }}>
+      <DialogContent className="rounded-2xl border-slate-100 dark:border-border sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Quota aufstocken — {tenant.name}</DialogTitle>
+          <DialogDescription>
+            Setzt ein höheres Limit für die aktuelle Billing-Periode. Gilt nur bis zum nächsten Reset.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          <div className="space-y-1.5">
+            <Label>Metric</Label>
+            <div className="flex gap-2">
+              {(['ai_performance_analyses', 'ai_visibility_analyses'] as QuotaMetric[]).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => { setMetric(m); setLimitValue('') }}
+                  className={[
+                    'flex-1 rounded-xl border px-3 py-2 text-sm transition-colors',
+                    metric === m
+                      ? 'border-slate-900 bg-slate-900 text-white dark:border-slate-100 dark:bg-slate-100 dark:text-slate-900'
+                      : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-border dark:bg-card dark:text-slate-300',
+                  ].join(' ')}
+                >
+                  {m === 'ai_performance_analyses' ? 'Performance' : 'Visibility'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="quota-limit">Neues Limit <span className="text-slate-400">(Standard: {defaultLimit})</span></Label>
+            <Input
+              id="quota-limit"
+              type="number"
+              min={1}
+              max={9999}
+              placeholder={String(defaultLimit)}
+              value={limitValue}
+              onChange={(e) => setLimitValue(e.target.value)}
+              className="rounded-xl"
+            />
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} className="rounded-full">Abbrechen</Button>
+          <Button
+            onClick={() => void handleSave()}
+            disabled={saving || !limitValue || parseInt(limitValue, 10) < 1}
+            className="rounded-full bg-slate-900 hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900"
+          >
+            {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Speichern
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
 
 export interface OwnerTenantRecord {
   id: string
@@ -117,6 +296,8 @@ export function OwnerTenantTable({
   const [archiveTenant, setArchiveTenant] = useState<OwnerTenantRecord | null>(null)
   const [restoreTenant, setRestoreTenant] = useState<OwnerTenantRecord | null>(null)
   const [deleteTenant, setDeleteTenant] = useState<OwnerTenantRecord | null>(null)
+  const [quotaTenant, setQuotaTenant] = useState<OwnerTenantRecord | null>(null)
+  const [quotaRefreshKey, setQuotaRefreshKey] = useState(0)
   const selectedCount = selectedTenantIds.length
   const allVisibleSelected = tenants.length > 0 && tenants.every((tenant) => selectedTenantIds.includes(tenant.id))
   const selectedArchivedCount = tenants.filter(
@@ -248,6 +429,7 @@ export function OwnerTenantTable({
               <TableHead>Subdomain</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>User</TableHead>
+              <TableHead>Quota (Periode)</TableHead>
               <TableHead>Erstellt</TableHead>
               <TableHead className="pr-6 text-right">Aktionen</TableHead>
             </TableRow>
@@ -285,6 +467,9 @@ export function OwnerTenantTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-slate-500 dark:text-slate-400">{tenant.memberCount}</TableCell>
+                  <TableCell>
+                    <TenantQuotaInfo key={`${tenant.id}-${quotaRefreshKey}`} tenantId={tenant.id} />
+                  </TableCell>
                   <TableCell className="text-slate-500 dark:text-slate-400">{formatDate(tenant.created_at)}</TableCell>
                   <TableCell className="pr-6">
                     <div className="flex justify-end">
@@ -310,6 +495,14 @@ export function OwnerTenantTable({
                               <ExternalLink className="mr-2 h-4 w-4" />
                               Details öffnen
                             </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="cursor-pointer"
+                            onClick={() => setQuotaTenant(tenant)}
+                            disabled={isPending}
+                          >
+                            <Gauge className="mr-2 h-4 w-4" />
+                            Quota aufstocken
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             className="cursor-pointer"
@@ -506,6 +699,15 @@ export function OwnerTenantTable({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {quotaTenant && (
+        <QuotaOverrideDialog
+          tenant={quotaTenant}
+          open={Boolean(quotaTenant)}
+          onClose={() => setQuotaTenant(null)}
+          onSaved={() => setQuotaRefreshKey((k) => k + 1)}
+        />
+      )}
     </>
   )
 }
