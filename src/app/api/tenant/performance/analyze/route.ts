@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { requireTenantModuleAccess } from '@/lib/module-access'
 import { parseCSV, applyFilters, buildLLMContext, anonymizePiiText } from '@/lib/performance/csv-parser'
@@ -70,16 +69,39 @@ export async function POST(request: NextRequest) {
       dateRange: meta.date_range,
     })
 
-    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 1500,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userPrompt }],
+    const apiKey = process.env.OPENROUTER_API_KEY
+    if (!apiKey) return NextResponse.json({ error: 'OPENROUTER_API_KEY nicht konfiguriert.' }, { status: 500 })
+
+    const model = process.env.AI_PERFORMANCE_MODEL ?? 'anthropic/claude-sonnet-4-5'
+    const orResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://boost-hive.de',
+        'X-Title': 'BoostHive',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1500,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+      }),
     })
 
+    if (!orResponse.ok) {
+      const err = await orResponse.text().catch(() => '')
+      throw new Error(`OpenRouter API Fehler ${orResponse.status}: ${err.slice(0, 200)}`)
+    }
+
+    const orData = (await orResponse.json()) as { choices?: Array<{ message?: { content?: string } }> }
+    const rawText = orData.choices?.[0]?.message?.content ?? ''
+    if (!rawText) throw new Error('Leere Antwort von OpenRouter.')
+
     const analysis = anonymizePiiText(
-      (response.content[0] as { text: string }).text
+      rawText
         .replace(/\[Entfällt\]/g, '')
         .replace(/\[entfällt\]/g, '')
     )
