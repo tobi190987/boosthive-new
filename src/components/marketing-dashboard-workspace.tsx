@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
+  Activity,
   AlertCircle,
   ArrowDownRight,
   ArrowUpRight,
@@ -17,6 +18,7 @@ import {
   RefreshCw,
   Search,
   TrendingUp,
+  UserCheck,
   Users2,
   Wallet,
   Zap,
@@ -174,6 +176,13 @@ const DATE_RANGE_LABELS: Record<DateRange, string> = {
   '7d': 'Letzte 7 Tage',
   '30d': 'Letzte 30 Tage',
   '90d': 'Letzte 90 Tage',
+}
+
+const DATE_RANGE_TAB_LABELS: Record<DateRange, string> = {
+  today: 'Heute',
+  '7d': '7 Tage',
+  '30d': '30 Tage',
+  '90d': '90 Tage',
 }
 
 function formatNumber(n: number): string {
@@ -450,18 +459,9 @@ function GA4Section({
   return (
     <div className="space-y-5 py-2">
       {(d.googleEmail || d.propertyName) && (
-        <div className="grid gap-3 md:grid-cols-2">
-          {d.googleEmail && (
-            <PlatformInfoBanner>
-              <span className="font-medium">Google-Konto:</span> {d.googleEmail}
-            </PlatformInfoBanner>
-          )}
-          {d.propertyName && (
-            <PlatformInfoBanner>
-              <span className="font-medium">Property:</span> {d.propertyName}
-              {d.propertyId ? ` (${d.propertyId})` : ''}
-            </PlatformInfoBanner>
-          )}
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
+          {d.googleEmail && <span><span className="font-medium">Konto:</span> {d.googleEmail}</span>}
+          {d.propertyName && <span><span className="font-medium">Property:</span> {d.propertyName}{d.propertyId ? ` (${d.propertyId})` : ''}</span>}
         </div>
       )}
       {d.isCached && (
@@ -473,13 +473,6 @@ function GA4Section({
       {d.message && !d.isCached && (
         <PlatformInfoBanner>{d.message}</PlatformInfoBanner>
       )}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
-        <MetricItem label="Sessions" value={formatNumber(d.sessions)} />
-        <MetricItem label="Nutzer" value={formatNumber(d.users)} />
-        <MetricItem label="Seitenaufrufe" value={formatNumber(d.pageviews)} />
-        <MetricItem label="Absprungrate" value={formatPercent(d.bounceRate)} />
-        <MetricItem label="Verweildauer" value={formatDuration(d.avgSessionDuration)} />
-      </div>
       {d.timeseries.length > 0 ? (
         <TrendAreaChart
           title="Besucher im Zeitverlauf"
@@ -527,12 +520,6 @@ function GSCSection({
   const d = state.data
   return (
     <div className="space-y-5 py-2">
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <MetricItem label="Impressions" value={formatNumber(d.impressions)} />
-        <MetricItem label="Klicks" value={formatNumber(d.clicks)} />
-        <MetricItem label="CTR" value={formatPercent(d.avgCtr)} />
-        <MetricItem label="Position" value={d.avgPosition.toFixed(1)} />
-      </div>
       {d.topKeywords.length > 0 && (
         <div>
           <p className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-200">Top Keywords</p>
@@ -791,13 +778,6 @@ function TikTokSection({
           {typeof d.cacheAgeMinutes === 'number' ? ` (${d.cacheAgeMinutes} Min. alt)` : ''}.
         </PlatformInfoBanner>
       )}
-
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <MetricItem label="Aktive Kampagnen" value={formatNumber(activeCampaigns)} />
-        <MetricItem label="Video Views" value={formatNumber(totalVideoViews)} />
-        <MetricItem label="Klicks" value={formatNumber(totalClicks)} />
-        <MetricItem label="Avg. CPC" value={formatCurrency(averageCpc)} />
-      </div>
 
       {d.campaigns.length === 0 ? (
         <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center dark:border-slate-800">
@@ -1064,10 +1044,18 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
 
   // Computed KPIs
   const kpis = useMemo(() => {
-    const visitors: TrendValue = {
-      value: ga4.data?.sessions ?? 0,
-      trend: ga4.trend,
-    }
+    // GA4
+    const visitors: TrendValue = { value: ga4.data?.sessions ?? 0, trend: ga4.trend }
+    const users: TrendValue = { value: ga4.data?.users ?? 0, trend: null }
+    const pageviews: TrendValue = { value: ga4.data?.pageviews ?? 0, trend: null }
+    const bounceRate: TrendValue = { value: ga4.data?.bounceRate ?? 0, trend: null }
+    const avgSessionDuration: TrendValue = { value: ga4.data?.avgSessionDuration ?? 0, trend: null }
+    // GSC
+    const gscImpressions: TrendValue = { value: gsc.data?.impressions ?? 0, trend: null }
+    const gscClicks: TrendValue = { value: gsc.data?.clicks ?? 0, trend: null }
+    const gscCtr: TrendValue = { value: gsc.data?.avgCtr ?? 0, trend: null }
+    const gscPosition: TrendValue = { value: gsc.data?.avgPosition ?? 0, trend: null }
+    // Ads
     const activeCampaigns = {
       value:
         (googleAds.data?.campaigns.filter((c) => c.status === 'ENABLED').length ?? 0) +
@@ -1075,18 +1063,9 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         (tiktok.data?.activeCampaigns ?? tiktok.data?.campaigns.length ?? 0),
       trend: null,
     }
-    const avgCpc: TrendValue = {
-      value: googleAds.data?.avgCpc ?? 0,
-      trend: null,
-    }
-    const avgCpm: TrendValue = {
-      value: metaAds.data?.avgCpm ?? 0,
-      trend: null,
-    }
-    const conversions: TrendValue = {
-      value: (googleAds.data?.totalConversions ?? 0),
-      trend: null,
-    }
+    const avgCpc: TrendValue = { value: googleAds.data?.avgCpc ?? 0, trend: null }
+    const avgCpm: TrendValue = { value: metaAds.data?.avgCpm ?? 0, trend: null }
+    const conversions: TrendValue = { value: googleAds.data?.totalConversions ?? 0, trend: null }
     const totalSpend: TrendValue = {
       value:
         (googleAds.data?.totalCost ?? 0) +
@@ -1094,8 +1073,13 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         (tiktok.data?.totalCost ?? 0),
       trend: null,
     }
-    return { visitors, activeCampaigns, avgCpc, avgCpm, conversions, totalSpend }
-  }, [ga4, googleAds, metaAds, tiktok])
+    const tikTokViews: TrendValue = { value: tiktok.data?.totalVideoViews ?? 0, trend: null }
+    return {
+      visitors, users, pageviews, bounceRate, avgSessionDuration,
+      gscImpressions, gscClicks, gscCtr, gscPosition,
+      activeCampaigns, avgCpc, avgCpm, conversions, totalSpend, tikTokViews,
+    }
+  }, [ga4, gsc, googleAds, metaAds, tiktok])
 
   const anyLoading = ga4.loading || gsc.loading || googleAds.loading || metaAds.loading || tiktok.loading
   const allNotConnected = !ga4.connected && !gsc.connected && !googleAds.connected && !metaAds.connected && !tiktok.connected
@@ -1168,14 +1152,14 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       </div>
 
       {/* Header */}
-      <div className="flex flex-col gap-4 print:hidden sm:flex-row sm:items-center sm:justify-between">
-        <div>
+      <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Marketing Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-            Performance-Übersicht für <span className="font-medium text-slate-700 dark:text-slate-200">{activeCustomer.name}</span>
+          <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">
+            Performance-Übersicht · <span className="font-medium text-slate-700 dark:text-slate-200">{activeCustomer.name}</span>
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex shrink-0 items-center gap-2">
           <div className="hidden min-w-[280px] lg:block">
             <CustomerSelectorDropdown
               className="mx-0 my-0 w-full"
@@ -1185,7 +1169,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
           </div>
           <Tabs value={range} onValueChange={handleRangeChange}>
             <TabsList className="h-9 rounded-xl">
-              {(Object.entries(DATE_RANGE_LABELS) as [DateRange, string][]).map(([key, label]) => (
+              {(Object.entries(DATE_RANGE_TAB_LABELS) as [DateRange, string][]).map(([key, label]) => (
                 <TabsTrigger key={key} value={key} className="rounded-lg px-3 text-xs">
                   {label}
                 </TabsTrigger>
@@ -1202,11 +1186,11 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                 disabled={exporting || anyLoading}
               >
                 {exporting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-4 w-4 animate-spin lg:mr-2" />
                 ) : (
-                  <Download className="mr-2 h-4 w-4" />
+                  <Download className="h-4 w-4 lg:mr-2" />
                 )}
-                Bericht exportieren
+                <span className="hidden lg:inline">Bericht exportieren</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>PDF-Bericht via Browser-Druck erstellen</TooltipContent>
@@ -1252,56 +1236,199 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         </Card>
       )}
 
-      {/* Global KPI Grid */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6 print:grid-cols-3">
-        <KPICard
-          label="Besucher"
-          value={anyLoading ? null : formatNumber(kpis.visitors.value)}
-          trend={kpis.visitors.trend}
-          icon={<Users2 className="h-5 w-5 text-orange-500" />}
-          loading={ga4.loading}
-          color="#f97316"
-        />
-        <KPICard
-          label="Aktive Kampagnen"
-          value={anyLoading ? null : formatNumber(kpis.activeCampaigns.value)}
-          trend={kpis.activeCampaigns.trend}
-          icon={<Zap className="h-5 w-5 text-blue-500" />}
-          loading={googleAds.loading || metaAds.loading || tiktok.loading}
-          color="#3b82f6"
-        />
-        <KPICard
-          label="Avg. CPC"
-          value={anyLoading ? null : formatCurrency(kpis.avgCpc.value)}
-          trend={kpis.avgCpc.trend}
-          icon={<MousePointerClick className="h-5 w-5 text-emerald-500" />}
-          loading={googleAds.loading}
-          color="#22c55e"
-        />
-        <KPICard
-          label="Avg. CPM"
-          value={anyLoading ? null : formatCurrency(kpis.avgCpm.value)}
-          trend={kpis.avgCpm.trend}
-          icon={<Eye className="h-5 w-5 text-violet-500" />}
-          loading={metaAds.loading}
-          color="#8b5cf6"
-        />
-        <KPICard
-          label="Conversions"
-          value={anyLoading ? null : formatNumber(kpis.conversions.value)}
-          trend={kpis.conversions.trend}
-          icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
-          loading={googleAds.loading || ga4.loading}
-          color="#16a34a"
-        />
-        <KPICard
-          label="Gesamtausgaben"
-          value={anyLoading ? null : formatCurrency(kpis.totalSpend.value)}
-          trend={kpis.totalSpend.trend}
-          icon={<Wallet className="h-5 w-5 text-red-500" />}
-          loading={googleAds.loading || metaAds.loading || tiktok.loading}
-          color="#ef4444"
-        />
+      {/* KPI Sections */}
+      <div className="space-y-4 print:space-y-3">
+        {/* Website Performance (GA4) */}
+        {(ga4.loading || ga4.connected) && (
+          <div>
+            <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <TrendingUp className="h-3.5 w-3.5 text-orange-400" />
+              Website · Google Analytics 4
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 print:grid-cols-5">
+              <KPICard
+                label="Sessions"
+                value={ga4.loading ? null : formatNumber(kpis.visitors.value)}
+                trend={kpis.visitors.trend}
+                icon={<Users2 className="h-5 w-5 text-orange-500" />}
+                loading={ga4.loading}
+                color="#f97316"
+              />
+              <KPICard
+                label="Nutzer"
+                value={ga4.loading ? null : formatNumber(kpis.users.value)}
+                trend={null}
+                icon={<UserCheck className="h-5 w-5 text-orange-400" />}
+                loading={ga4.loading}
+                color="#fb923c"
+              />
+              <KPICard
+                label="Seitenaufrufe"
+                value={ga4.loading ? null : formatNumber(kpis.pageviews.value)}
+                trend={null}
+                icon={<Eye className="h-5 w-5 text-amber-500" />}
+                loading={ga4.loading}
+                color="#f59e0b"
+              />
+              <KPICard
+                label="Absprungrate"
+                value={ga4.loading ? null : formatPercent(kpis.bounceRate.value)}
+                trend={null}
+                icon={<Activity className="h-5 w-5 text-orange-400" />}
+                loading={ga4.loading}
+                color="#f97316"
+              />
+              <KPICard
+                label="Verweildauer"
+                value={ga4.loading ? null : formatDuration(kpis.avgSessionDuration.value)}
+                trend={null}
+                icon={<TrendingUp className="h-5 w-5 text-orange-500" />}
+                loading={ga4.loading}
+                color="#ea580c"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Search Performance (GSC) */}
+        {(gsc.loading || gsc.connected) && (
+          <div>
+            <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <Search className="h-3.5 w-3.5 text-blue-400" />
+              Suche · Google Search Console
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:grid-cols-4">
+              <KPICard
+                label="Impressions"
+                value={gsc.loading ? null : formatNumber(kpis.gscImpressions.value)}
+                trend={null}
+                icon={<Eye className="h-5 w-5 text-blue-500" />}
+                loading={gsc.loading}
+                color="#3b82f6"
+              />
+              <KPICard
+                label="Klicks"
+                value={gsc.loading ? null : formatNumber(kpis.gscClicks.value)}
+                trend={null}
+                icon={<MousePointerClick className="h-5 w-5 text-blue-500" />}
+                loading={gsc.loading}
+                color="#2563eb"
+              />
+              <KPICard
+                label="CTR"
+                value={gsc.loading ? null : formatPercent(kpis.gscCtr.value)}
+                trend={null}
+                icon={<TrendingUp className="h-5 w-5 text-blue-400" />}
+                loading={gsc.loading}
+                color="#60a5fa"
+              />
+              <KPICard
+                label="Ø Position"
+                value={gsc.loading ? null : kpis.gscPosition.value.toFixed(1)}
+                trend={null}
+                icon={<Search className="h-5 w-5 text-blue-500" />}
+                loading={gsc.loading}
+                color="#3b82f6"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Paid Ads */}
+        {(googleAds.loading || googleAds.connected || metaAds.loading || metaAds.connected || tiktok.loading || tiktok.connected) && (
+        <div>
+          <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            <Zap className="h-3.5 w-3.5 text-emerald-400" />
+            Kampagnen
+          </p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 print:grid-cols-5">
+            <KPICard
+              label="Aktive Kampagnen"
+              value={anyLoading ? null : formatNumber(kpis.activeCampaigns.value)}
+              trend={null}
+              icon={<Zap className="h-5 w-5 text-blue-500" />}
+              loading={googleAds.loading || metaAds.loading || tiktok.loading}
+              color="#3b82f6"
+            />
+            <KPICard
+              label="Gesamtausgaben"
+              value={anyLoading ? null : formatCurrency(kpis.totalSpend.value)}
+              trend={null}
+              icon={<Wallet className="h-5 w-5 text-red-500" />}
+              loading={googleAds.loading || metaAds.loading || tiktok.loading}
+              color="#ef4444"
+            />
+            <KPICard
+              label="Conversions"
+              value={anyLoading ? null : formatNumber(kpis.conversions.value)}
+              trend={null}
+              icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
+              loading={googleAds.loading}
+              color="#16a34a"
+            />
+            <KPICard
+              label="Avg. CPC"
+              value={anyLoading ? null : formatCurrency(kpis.avgCpc.value)}
+              trend={null}
+              icon={<MousePointerClick className="h-5 w-5 text-emerald-500" />}
+              loading={googleAds.loading}
+              color="#22c55e"
+            />
+            <KPICard
+              label="Avg. CPM"
+              value={anyLoading ? null : formatCurrency(kpis.avgCpm.value)}
+              trend={null}
+              icon={<Eye className="h-5 w-5 text-violet-500" />}
+              loading={metaAds.loading}
+              color="#8b5cf6"
+            />
+          </div>
+        </div>
+        )}
+
+        {/* TikTok summary (only if connected) */}
+        {(tiktok.loading || tiktok.connected) && tiktok.data && tiktok.data.totalVideoViews && tiktok.data.totalVideoViews > 0 && (
+          <div>
+            <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <Zap className="h-3.5 w-3.5 text-pink-400" />
+              TikTok Ads
+            </p>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:grid-cols-4">
+              <KPICard
+                label="Video Views"
+                value={tiktok.loading ? null : formatNumber(kpis.tikTokViews.value)}
+                trend={null}
+                icon={<Eye className="h-5 w-5 text-pink-500" />}
+                loading={tiktok.loading}
+                color="#ec4899"
+              />
+              <KPICard
+                label="Klicks"
+                value={tiktok.loading ? null : formatNumber(tiktok.data?.totalClicks ?? 0)}
+                trend={null}
+                icon={<MousePointerClick className="h-5 w-5 text-pink-500" />}
+                loading={tiktok.loading}
+                color="#ec4899"
+              />
+              <KPICard
+                label="Avg. CPC"
+                value={tiktok.loading ? null : formatCurrency(tiktok.data?.averageCpc ?? 0)}
+                trend={null}
+                icon={<Wallet className="h-5 w-5 text-pink-400" />}
+                loading={tiktok.loading}
+                color="#ec4899"
+              />
+              <KPICard
+                label="Gesamtkosten"
+                value={tiktok.loading ? null : formatCurrency(tiktok.data?.totalCost ?? 0)}
+                trend={null}
+                icon={<Zap className="h-5 w-5 text-pink-500" />}
+                loading={tiktok.loading}
+                color="#ec4899"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Platform Sections */}
