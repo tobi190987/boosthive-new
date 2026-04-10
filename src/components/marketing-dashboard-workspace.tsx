@@ -261,6 +261,23 @@ function formatTimeseriesTooltipDateLabel(value: unknown): string {
   return raw
 }
 
+function formatTimeseriesTooltipValue(label: string, value: unknown): string {
+  const numericValue = Number(value)
+
+  if (!Number.isFinite(numericValue)) {
+    return String(value ?? '')
+  }
+
+  if (label === 'Gesamtausgaben') {
+    return `${new Intl.NumberFormat('de-DE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(numericValue)} €`
+  }
+
+  return new Intl.NumberFormat('de-DE').format(numericValue)
+}
+
 function KPICard({ label, value, trend, icon, loading, color, size = 'default', className, timeseries }: KPICardProps) {
   const hasChart = !loading && timeseries && timeseries.length > 1
 
@@ -299,7 +316,7 @@ function KPICard({ label, value, trend, icon, loading, color, size = 'default', 
                       boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
                       padding: '8px 12px',
                     }}
-                    formatter={(v) => [new Intl.NumberFormat('de-DE').format(Number(v)), label]}
+                    formatter={(v) => [formatTimeseriesTooltipValue(label, v), label]}
                     labelFormatter={(lbl, payload) => {
                       const seriesLabel = payload?.[0]?.payload?.label
                       return formatTimeseriesTooltipDateLabel(seriesLabel ?? lbl)
