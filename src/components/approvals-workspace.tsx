@@ -155,7 +155,11 @@ function SummaryCard({ label, count, icon, colorClass, onClick, active }: Summar
 
 const PAGE_SIZE = 20
 
-export function ApprovalsWorkspace() {
+interface ApprovalsWorkspaceProps {
+  selectedCustomerId?: string | null
+}
+
+export function ApprovalsWorkspace({ selectedCustomerId }: ApprovalsWorkspaceProps) {
   const router = useRouter()
   const pathname = usePathname()
   const { toast } = useToast()
@@ -165,16 +169,9 @@ export function ApprovalsWorkspace() {
   const [error, setError] = useState<string | null>(null)
   const [statusFilter, setStatusFilter] = useState<'all' | 'open' | ApprovalStatus>('open')
   const [typeFilter, setTypeFilter] = useState<string>('all')
-  const [customerFilter, setCustomerFilter] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-
-  useEffect(() => {
-    if (activeCustomer) {
-      setCustomerFilter(activeCustomer.id)
-    }
-  }, [activeCustomer])
 
   const fetchApprovals = useCallback(async () => {
     setLoading(true)
@@ -183,7 +180,8 @@ export function ApprovalsWorkspace() {
       const params = new URLSearchParams()
       if (statusFilter !== 'all' && statusFilter !== 'open') params.set('status', statusFilter)
       if (typeFilter !== 'all') params.set('content_type', typeFilter)
-      const effectiveCustomerId = activeCustomer?.id ?? (customerFilter !== 'all' ? customerFilter : null)
+      const effectiveCustomerId =
+        selectedCustomerId === undefined ? activeCustomer?.id ?? null : selectedCustomerId
       if (effectiveCustomerId) params.set('customer_id', effectiveCustomerId)
       const url = `/api/tenant/approvals${params.toString() ? `?${params}` : ''}`
       const res = await fetch(url)
@@ -196,7 +194,7 @@ export function ApprovalsWorkspace() {
     } finally {
       setLoading(false)
     }
-  }, [activeCustomer?.id, customerFilter, statusFilter, typeFilter])
+  }, [activeCustomer?.id, selectedCustomerId, statusFilter, typeFilter])
 
   useEffect(() => {
     fetchApprovals()
@@ -244,7 +242,6 @@ export function ApprovalsWorkspace() {
   const hasActiveFilters =
     statusFilter !== 'open' ||
     typeFilter !== 'all' ||
-    (!activeCustomer && customerFilter !== 'all') ||
     searchQuery.trim() !== ''
 
   const totalPages = Math.ceil(filteredApprovals.length / PAGE_SIZE)
@@ -254,9 +251,14 @@ export function ApprovalsWorkspace() {
     setStatusFilter('open')
     setCurrentPage(1)
     setTypeFilter('all')
-    if (!activeCustomer) setCustomerFilter('all')
     setSearchQuery('')
   }
+
+  const effectiveCustomerId =
+    selectedCustomerId === undefined ? activeCustomer?.id ?? null : selectedCustomerId
+  const effectiveCustomerName = effectiveCustomerId
+    ? customers.find((customer) => customer.id === effectiveCustomerId)?.name ?? null
+    : null
 
   const handleRowClick = (item: ApprovalItem) => {
     if (item.content_type === 'content_brief') {
@@ -295,9 +297,9 @@ export function ApprovalsWorkspace() {
             <p className="text-sm text-slate-500 dark:text-slate-400">
               Offene Freigaben, Kundenentscheidungen und abgeschlossene Abnahmen in einem Workflow.
             </p>
-            {activeCustomer && (
+            {effectiveCustomerName && (
               <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-                Gefiltert nach Kunde: {activeCustomer.name}
+                Gefiltert nach Kunde: {effectiveCustomerName}
               </p>
             )}
           </div>
@@ -364,21 +366,6 @@ export function ApprovalsWorkspace() {
               <SelectItem value="ad_library_asset">Ad-Creative</SelectItem>
             </SelectContent>
           </Select>
-          {!activeCustomer && (
-            <Select value={customerFilter} onValueChange={setCustomerFilter}>
-              <SelectTrigger className="w-full rounded-xl sm:w-[220px]">
-                <SelectValue placeholder="Kunde filtern" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Alle Kunden</SelectItem>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
           <Input
             placeholder="Titel oder Kunde suchen..."
             value={searchQuery}

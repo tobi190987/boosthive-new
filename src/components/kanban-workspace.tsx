@@ -18,13 +18,6 @@ import { KANBAN_WORKFLOW_STATUSES, kanbanStatusLabel, type KanbanWorkflowStatus 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -132,25 +125,22 @@ function formatDate(value: string) {
   })
 }
 
-export function KanbanWorkspace() {
+interface KanbanWorkspaceProps {
+  selectedCustomerId?: string | null
+}
+
+export function KanbanWorkspace({ selectedCustomerId }: KanbanWorkspaceProps) {
   const router = useRouter()
   const { toast } = useToast()
-  const { activeCustomer, customers } = useActiveCustomer()
+  const { activeCustomer } = useActiveCustomer()
   const [items, setItems] = useState<KanbanItem[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | ContentType>('all')
-  const [customerFilter, setCustomerFilter] = useState<string>('all')
   const [draggedItemId, setDraggedItemId] = useState<string | null>(null)
   const [dropStatus, setDropStatus] = useState<KanbanWorkflowStatus | null>(null)
   const [movingItemId, setMovingItemId] = useState<string | null>(null)
-
-  useEffect(() => {
-    if (activeCustomer?.id) {
-      setCustomerFilter(activeCustomer.id)
-    }
-  }, [activeCustomer?.id])
 
   const fetchItems = useCallback(async () => {
     setLoading(true)
@@ -178,7 +168,9 @@ export function KanbanWorkspace() {
     const normalizedQuery = searchQuery.trim().toLowerCase()
     return items.filter((item) => {
       if (typeFilter !== 'all' && item.content_type !== typeFilter) return false
-      if (customerFilter !== 'all' && item.customer_id !== customerFilter) return false
+      const effectiveCustomerId =
+        selectedCustomerId === undefined ? activeCustomer?.id ?? null : selectedCustomerId
+      if (effectiveCustomerId && item.customer_id !== effectiveCustomerId) return false
       if (!normalizedQuery) return true
 
       return (
@@ -186,7 +178,7 @@ export function KanbanWorkspace() {
         (item.customer_name?.toLowerCase().includes(normalizedQuery) ?? false)
       )
     })
-  }, [customerFilter, items, searchQuery, typeFilter])
+  }, [activeCustomer?.id, items, searchQuery, selectedCustomerId, typeFilter])
 
   const itemsByStatus = useMemo(() => {
     return COLUMN_ORDER.reduce<Record<KanbanWorkflowStatus, KanbanItem[]>>((acc, status) => {
@@ -299,7 +291,7 @@ export function KanbanWorkspace() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px_240px]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_200px]">
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <Input
@@ -321,20 +313,6 @@ export function KanbanWorkspace() {
           onClear={() => setTypeFilter('all')}
           className="items-center"
         />
-
-        <Select value={customerFilter} onValueChange={setCustomerFilter}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Kunde" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Alle Kunden</SelectItem>
-            {customers.map((customer) => (
-              <SelectItem key={customer.id} value={customer.id}>
-                {customer.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
       </div>
 
       {error ? (

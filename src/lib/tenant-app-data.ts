@@ -27,6 +27,7 @@ export interface ShellCustomer {
   name: string
   domain: string | null
   status: 'active' | 'paused'
+  openApprovalsCount?: number
 }
 
 export interface ShellNotification {
@@ -272,7 +273,7 @@ export async function getTenantShellSummary(
     async () => {
       const admin = createAdminClient()
 
-      const [customersResult, notificationsResult, approvalsResult] = await Promise.all([
+      const [customersResult, notificationsResult, approvalsResult, approvalsByCustomerResult] = await Promise.all([
         admin
           .from('customers')
           .select('id, name, domain, status')
@@ -292,10 +293,28 @@ export async function getTenantShellSummary(
           .select('id', { count: 'exact', head: true })
           .eq('tenant_id', tenantId)
           .in('status', ['pending_approval', 'changes_requested']),
+        admin
+          .from('approval_requests')
+          .select('customer_id')
+          .eq('tenant_id', tenantId)
+          .in('status', ['pending_approval', 'changes_requested'])
+          .not('customer_id', 'is', null),
       ])
 
+      const openApprovalsByCustomer = new Map<string, number>()
+      for (const row of approvalsByCustomerResult.data ?? []) {
+        if (!row.customer_id) continue
+        openApprovalsByCustomer.set(
+          row.customer_id,
+          (openApprovalsByCustomer.get(row.customer_id) ?? 0) + 1
+        )
+      }
+
       return {
-        customers: (customersResult.data ?? []) as ShellCustomer[],
+        customers: ((customersResult.data ?? []) as ShellCustomer[]).map((customer) => ({
+          ...customer,
+          openApprovalsCount: openApprovalsByCustomer.get(customer.id) ?? 0,
+        })),
         notifications: (notificationsResult.data ?? []) as ShellNotification[],
         openApprovalsCount: approvalsResult.count ?? 0,
       }

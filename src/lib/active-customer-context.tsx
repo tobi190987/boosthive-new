@@ -15,6 +15,7 @@ export interface Customer {
   name: string
   domain: string | null
   status: 'active' | 'paused'
+  openApprovalsCount?: number
 }
 
 interface ActiveCustomerContextValue {
@@ -61,7 +62,9 @@ function readCachedCustomers(tenantSlug: string): Customer[] {
         typeof candidate.id === 'string' &&
         typeof candidate.name === 'string' &&
         (candidate.domain === null || typeof candidate.domain === 'string') &&
-        (candidate.status === 'active' || candidate.status === 'paused')
+        (candidate.status === 'active' || candidate.status === 'paused') &&
+        (candidate.openApprovalsCount === undefined ||
+          typeof candidate.openApprovalsCount === 'number')
       )
     })
 

@@ -29,28 +29,56 @@ export async function GET(request: NextRequest) {
   if ('error' in authResult) return authResult.error
 
   const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('customers')
-    .select(`
-      id,
-      name,
-      domain,
-      industry,
-      contact_email,
-      logo_url,
-      internal_notes,
-      status,
-      created_at,
-      updated_at
-    `)
-    .eq('tenant_id', tenantId)
-    .is('deleted_at', null)
-    .order('name', { ascending: true })
-    .limit(500)
+  const [customersResult, approvalsResult] = await Promise.all([
+    admin
+      .from('customers')
+      .select(`
+        id,
+        name,
+        domain,
+        industry,
+        contact_email,
+        logo_url,
+        internal_notes,
+        status,
+        created_at,
+        updated_at
+      `)
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null)
+      .order('name', { ascending: true })
+      .limit(500),
+    admin
+      .from('approval_requests')
+      .select('customer_id')
+      .eq('tenant_id', tenantId)
+      .in('status', ['pending_approval', 'changes_requested'])
+      .not('customer_id', 'is', null),
+  ])
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  if (customersResult.error) {
+    return NextResponse.json({ error: customersResult.error.message }, { status: 500 })
+  }
 
-  return NextResponse.json({ customers: data ?? [] })
+  if (approvalsResult.error) {
+    return NextResponse.json({ error: approvalsResult.error.message }, { status: 500 })
+  }
+
+  const openApprovalsByCustomer = new Map<string, number>()
+  for (const row of approvalsResult.data ?? []) {
+    if (!row.customer_id) continue
+    openApprovalsByCustomer.set(
+      row.customer_id,
+      (openApprovalsByCustomer.get(row.customer_id) ?? 0) + 1
+    )
+  }
+
+  return NextResponse.json({
+    customers: (customersResult.data ?? []).map((customer) => ({
+      ...customer,
+      openApprovalsCount: openApprovalsByCustomer.get(customer.id) ?? 0,
+    })),
+  })
 }
 
 export async function POST(request: NextRequest) {
