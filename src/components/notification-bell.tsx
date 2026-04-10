@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useId, useState } from 'react'
 import { Bell, Check, ExternalLink } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -46,6 +46,7 @@ export function NotificationBell({ initialNotifications = [] }: { initialNotific
   const router = useRouter()
   const [notifications, setNotifications] = useState<Notification[]>(initialNotifications)
   const [open, setOpen] = useState(false)
+  const contentId = useId()
 
   const unreadCount = notifications.filter((n) => !n.read_at).length
 
@@ -120,7 +121,7 @@ export function NotificationBell({ initialNotifications = [] }: { initialNotific
         </TooltipTrigger>
         <TooltipContent side="bottom">Benachrichtigungen</TooltipContent>
       </Tooltip>
-      <PopoverContent align="end" className="w-80 p-0 rounded-2xl">
+      <PopoverContent id={contentId} align="end" className="w-80 p-0 rounded-2xl">
         <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-border">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Benachrichtigungen</p>
           {unreadCount > 0 && (

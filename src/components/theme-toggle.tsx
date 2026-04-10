@@ -1,5 +1,6 @@
 'use client'
 
+import { useId } from 'react'
 import { useTheme } from 'next-themes'
 import { Monitor, Moon, Sun } from 'lucide-react'
 import {
@@ -23,6 +24,8 @@ const options = [
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme()
+  const triggerId = useId()
+  const contentId = useId()
 
   const active = options.find((o) => o.value === theme) ?? options[1]
   const ActiveIcon = active.icon
@@ -33,6 +36,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         <TooltipTrigger asChild>
           <DropdownMenuTrigger asChild>
             <button
+              id={triggerId}
               type="button"
               className={cn(
                 'flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300',
@@ -46,7 +50,7 @@ export function ThemeToggle({ className }: { className?: string }) {
         </TooltipTrigger>
         <TooltipContent side="top">Theme wechseln</TooltipContent>
       </Tooltip>
-      <DropdownMenuContent align="end" side="top" className="w-36">
+      <DropdownMenuContent id={contentId} aria-labelledby={triggerId} align="end" side="top" className="w-36">
         {options.map(({ value, icon: Icon, label }) => (
           <DropdownMenuItem
             key={value}
@@ -64,4 +68,3 @@ export function ThemeToggle({ className }: { className?: string }) {
     </DropdownMenu>
   )
 }
-

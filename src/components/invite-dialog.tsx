@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useId, useState } from 'react'
 import { Loader2, MailPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,6 +39,7 @@ export function InviteDialog({
   triggerClassName,
 }: InviteDialogProps) {
   const [open, setOpen] = useState(false)
+  const contentId = useId()
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<'admin' | 'member'>('member')
   const [loading, setLoading] = useState(false)
@@ -83,7 +84,7 @@ export function InviteDialog({
           {triggerLabel}
         </Button>
       </DialogTrigger>
-      <DialogContent className="rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card p-0 sm:max-w-[560px]">
+      <DialogContent id={contentId} className="rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card p-0 sm:max-w-[560px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader className="space-y-3 border-b border-slate-100 dark:border-border px-6 py-6 text-left">
             <DialogTitle className="text-2xl font-semibold text-slate-950 dark:text-slate-50">

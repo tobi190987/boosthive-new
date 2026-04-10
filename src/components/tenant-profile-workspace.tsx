@@ -66,6 +66,7 @@ interface BillingModule {
 }
 
 interface BillingResponse {
+  subscription_status?: 'none' | 'active' | 'past_due' | 'canceled' | 'canceling'
   payment_method: {
     brand: string
     last4: string
@@ -335,6 +336,8 @@ export function TenantProfileWorkspace({
   const autoSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const autoSaveHydratedRef = useRef(false)
   const lastSavedProfileSnapshotRef = useRef(JSON.stringify(profileValues))
+  const hasExistingSubscription =
+    billing?.subscription_status === 'active' || billing?.subscription_status === 'canceling'
 
   const emailForm = useForm<EmailChangeInput>({
     resolver: zodResolver(EmailChangeSchema),
@@ -612,7 +615,7 @@ export function TenantProfileWorkspace({
           : 'Profil konnte nicht gespeichert werden.'
 
       // Validate module selection for admin onboarding
-      if (isAdminOnboarding && selectedModuleIds.length === 0) {
+      if (isAdminOnboarding && !hasExistingSubscription && selectedModuleIds.length === 0) {
         setError('Bitte wähle mindestens ein Modul aus.')
         return
       }
@@ -633,7 +636,7 @@ export function TenantProfileWorkspace({
       }
 
       // For admin onboarding: create Stripe subscription with selected modules
-      if (isAdminOnboarding) {
+      if (isAdminOnboarding && !hasExistingSubscription) {
         const subscribeResponse = await fetch('/api/tenant/billing/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -641,7 +644,10 @@ export function TenantProfileWorkspace({
           body: JSON.stringify({ module_ids: selectedModuleIds }),
         })
         const subscribePayload = await subscribeResponse.json().catch(() => ({}))
-        if (!subscribeResponse.ok) {
+        if (subscribeResponse.status === 409) {
+          // Another admin may already have completed the tenant subscription.
+          void refreshBillingStatus()
+        } else if (!subscribeResponse.ok) {
           throw new Error(subscribePayload.error ?? 'Abo konnte nicht erstellt werden.')
         }
       }
@@ -683,7 +689,7 @@ export function TenantProfileWorkspace({
     } finally {
       setIsSaving(false)
     }
-  }, [getValues, initialData.role, mode, reset, selectedModuleIds, setFieldError])
+  }, [getValues, hasExistingSubscription, initialData.role, mode, refreshBillingStatus, reset, selectedModuleIds, setFieldError])
 
   const handleNotifyOnApprovalDecisionChange = useCallback(
     (checked: boolean) => {
@@ -1603,7 +1609,14 @@ export function TenantProfileWorkspace({
                 )}
 
                 {/* Module selection — only during onboarding */}
-                {mode === 'onboarding' && (billing?.modules ?? []).length > 0 && (
+                {mode === 'onboarding' && hasExistingSubscription && (
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50/80 px-4 py-3 text-sm text-blue-900">
+                    Für diesen Workspace besteht bereits ein aktives Abo. Du kannst dein Onboarding ohne neue
+                    Modulauswahl abschließen.
+                  </div>
+                )}
+
+                {mode === 'onboarding' && !hasExistingSubscription && (billing?.modules ?? []).length > 0 && (
                   <div className="space-y-3 border-t border-slate-100 dark:border-border pt-4">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">Module auswählen</span>
@@ -1686,7 +1699,7 @@ export function TenantProfileWorkspace({
                   type="submit"
                   form="tenant-profile-form"
                   className="h-[48px] rounded-xl bg-blue-600 px-6 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
-                  disabled={isSaving}
+                  disabled={isSaving || (isAdmin && billingLoading)}
                 >
                   {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   {submitLabel}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useId, useState } from 'react'
 import { Check, ChevronsUpDown, Users2 } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
@@ -39,6 +39,7 @@ export function CustomerSelectorDropdown({
 }: CustomerSelectorDropdownProps) {
   const { activeCustomer, customers, loading, setActiveCustomer } = useActiveCustomer()
   const [open, setOpen] = useState(false)
+  const contentId = useId()
 
   const handleSelect = useCallback(
     (customerId: string) => {
@@ -110,7 +111,7 @@ export function CustomerSelectorDropdown({
         </button>
       </PopoverTrigger>
 
-      <PopoverContent className="w-[252px] p-0" align="start" sideOffset={4}>
+      <PopoverContent id={contentId} className="w-[252px] p-0" align="start" sideOffset={4}>
         <Command>
           <CommandInput placeholder="Kunde suchen..." />
           <CommandList>
