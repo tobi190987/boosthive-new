@@ -14,16 +14,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { CustomerAssignmentField } from '@/components/customer-assignment-field'
+import type { Customer } from '@/lib/active-customer-context'
 import {
   AD_PLATFORMS,
   getAdTypesForPlatforms,
@@ -57,7 +51,7 @@ export interface WizardViewProps {
   setBriefing: (b: BriefingData) => void
   wizardCustomerId: string
   setWizardCustomerId: (id: string) => void
-  customers: { id: string; name: string }[]
+  customers: Customer[]
   customersLoading: boolean
   onGenerate: () => void
 }
@@ -87,8 +81,6 @@ export function WizardView({
         return selectedAdTypes.length > 0
       case 3:
         return briefing.product.trim().length > 0
-      case 4:
-        return true
       default:
         return false
     }
@@ -100,16 +92,15 @@ export function WizardView({
         {/* Progress */}
         <div className="mb-8">
           <div className="flex items-center justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-3">
-            <span>Schritt {step} von 4</span>
+            <span>Schritt {step} von 3</span>
             <span>
               {step === 1 && 'Plattformen'}
               {step === 2 && 'Anzeigentypen'}
               {step === 3 && 'Briefing'}
-              {step === 4 && 'Kundenzuordnung'}
             </span>
           </div>
           <div className="flex gap-1.5">
-            {[1, 2, 3, 4].map((s) => (
+            {[1, 2, 3].map((s) => (
               <div
                 key={s}
                 className={cn(
@@ -145,14 +136,20 @@ export function WizardView({
             setBriefing={setBriefing}
           />
         )}
-        {step === 4 && (
-          <Step4Customer
-            customerId={wizardCustomerId}
-            setCustomerId={setWizardCustomerId}
+
+        <div className="mt-6">
+          <CustomerAssignmentField
+            value={wizardCustomerId}
+            onChange={setWizardCustomerId}
             customers={customers}
             loading={customersLoading}
+            label="Kundenzuordnung"
+            description="Ordne die Generierung schon im Erstellprozess optional einem Kunden zu, damit Verlauf und Freigaben sauber zugeordnet bleiben."
+            placeholder="Kunde wählen"
+            noneLabel="Kein Kunde (tenant-weit)"
+            triggerClassName="rounded-xl"
           />
-        )}
+        </div>
 
         {/* Navigation */}
         <Separator className="my-6 bg-slate-100 dark:bg-slate-800" />
@@ -167,7 +164,7 @@ export function WizardView({
             Zurück
           </Button>
 
-          {step < 4 ? (
+          {step < 3 ? (
             <Button
               variant="dark"
               onClick={() => setStep(step + 1)}
@@ -490,49 +487,6 @@ function Step3Briefing({
           </RadioGroup>
         </div>
       </div>
-    </div>
-  )
-}
-
-// ─── Step 4: Customer ────────────────────────────────────────────────────────
-
-function Step4Customer({
-  customerId,
-  setCustomerId,
-  customers,
-  loading,
-}: {
-  customerId: string
-  setCustomerId: (id: string) => void
-  customers: { id: string; name: string }[]
-  loading: boolean
-}) {
-  return (
-    <div>
-      <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50 mb-2">
-        Kundenzuordnung
-      </h2>
-      <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
-        Ordne die Generierung optional einem Kunden zu, um sie später einfach wiederzufinden.
-      </p>
-
-      {loading ? (
-        <Skeleton className="h-10 w-full rounded-xl" />
-      ) : (
-        <Select value={customerId} onValueChange={setCustomerId}>
-          <SelectTrigger className="rounded-xl">
-            <SelectValue placeholder="Kunde wählen" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Kein Kunde (tenant-weit)</SelectItem>
-            {customers.map((c) => (
-              <SelectItem key={c.id} value={c.id}>
-                {c.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      )}
     </div>
   )
 }

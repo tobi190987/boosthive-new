@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils'
 import type { PreviewResult, AnalyzeResult, CompareResult, KPIs, PerformanceAnalysis } from '@/lib/performance/types'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
+import { CustomerAssignmentField } from '@/components/customer-assignment-field'
 
 // ─── Markdown renderer ────────────────────────────────────────────────────────
 
@@ -726,6 +727,10 @@ function AnalyseTab() {
   const [result, setResult] = useState<AnalyzeResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
+  useEffect(() => {
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
+  }, [activeCustomer])
+
   const handleFile = useCallback(async (f: File) => {
     setFile(f)
     setPreview(null)
@@ -796,6 +801,16 @@ function AnalyseTab() {
 
   return (
     <div className="space-y-4">
+      <CustomerAssignmentField
+        value={selectedCustomerId}
+        onChange={setSelectedCustomerId}
+        customers={customers}
+        label="Kundenzuordnung"
+        description="Ordne die Analyse schon vor dem Upload optional einem Kunden zu, damit Verlauf und Auswertungen sauber zugeordnet bleiben."
+        placeholder="Ohne Kunde analysieren"
+        noneLabel="Ohne Kunde"
+      />
+
       <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
           <CardTitle className="text-sm text-slate-800 dark:text-slate-200">CSV-Datei hochladen</CardTitle>
@@ -828,26 +843,6 @@ function AnalyseTab() {
             selected={selectedCampaigns}
             onSelected={setSelectedCampaigns}
           />
-
-          <div className="space-y-2">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              Kunde <span className="font-normal">(optional)</span>
-            </p>
-            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-              <SelectTrigger>
-                <SelectValue placeholder="Ohne Kunde analysieren" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Ohne Kunde</SelectItem>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           <ClientLabelInput value={clientLabel} onChange={setClientLabel} />
 
           <Button
@@ -888,6 +883,10 @@ function VergleichTab() {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<CompareResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
+  }, [activeCustomer])
 
   const loadPreview = useCallback(async (f: File, side: 'a' | 'b') => {
     const fd = new FormData()
@@ -943,6 +942,16 @@ function VergleichTab() {
 
   return (
     <div className="space-y-4">
+      <CustomerAssignmentField
+        value={selectedCustomerId}
+        onChange={setSelectedCustomerId}
+        customers={customers}
+        label="Kundenzuordnung"
+        description="Ordne den Vergleich optional einem Kunden zu, damit beide Zeiträume im Verlauf dem richtigen Kontext zugeordnet bleiben."
+        placeholder="Ohne Kunde vergleichen"
+        noneLabel="Ohne Kunde"
+      />
+
       <div className="grid gap-4 sm:grid-cols-2">
         <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <CardHeader className="pb-3">
@@ -1030,26 +1039,6 @@ function VergleichTab() {
           </CardContent>
         </Card>
       )}
-
-      <div className="space-y-2">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
-          Kunde <span className="font-normal">(optional)</span>
-        </p>
-        <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-          <SelectTrigger>
-            <SelectValue placeholder="Ohne Kunde vergleichen" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="none">Ohne Kunde</SelectItem>
-            {customers.map((customer) => (
-              <SelectItem key={customer.id} value={customer.id}>
-                {customer.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       <ClientLabelInput value={clientLabel} onChange={setClientLabel} />
 
       {error && (

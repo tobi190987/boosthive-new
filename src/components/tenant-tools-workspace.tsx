@@ -47,6 +47,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { SeoCompareWorkspace } from '@/components/seo-compare-workspace'
+import { CustomerAssignmentField } from '@/components/customer-assignment-field'
 import type { SeoAnalysisStatusPayload } from '@/lib/tenant-app-data'
 
 type WorkspaceRole = 'admin' | 'member'
@@ -1604,6 +1605,10 @@ function SeoAnalysisWorkspace({
     setCustomerFilter(activeCustomer?.id ?? 'all')
   }, [activeCustomer])
 
+  useEffect(() => {
+    setSelectedCustomerId(activeCustomer?.id ?? 'none')
+  }, [activeCustomer])
+
   const loadAnalyses = useCallback(async () => {
     try {
       const url = customerFilter !== 'all'
@@ -2063,25 +2068,16 @@ function SeoAnalysisWorkspace({
             </Alert>
           )}
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Kunde</label>
-            <Select value={selectedCustomerId} onValueChange={setSelectedCustomerId}>
-              <SelectTrigger className="h-12 rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card text-slate-900 dark:text-slate-100">
-                <SelectValue placeholder="Ohne Kunde analysieren" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Ohne Kunde</SelectItem>
-                {customers.map((customer) => (
-                  <SelectItem key={customer.id} value={customer.id}>
-                    {customer.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-              Optional. Die Analyse kann auch ohne Kundenzuordnung gestartet werden.
-            </p>
-          </div>
+          <CustomerAssignmentField
+            value={selectedCustomerId}
+            onChange={setSelectedCustomerId}
+            customers={customers}
+            label="Kundenzuordnung"
+            description="Ordne die SEO-Analyse schon beim Start optional einem Kunden zu, damit Verlauf und Reports sauber im richtigen Kontext landen."
+            placeholder="Ohne Kunde analysieren"
+            noneLabel="Ohne Kunde"
+            triggerClassName="h-12 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 dark:border-border dark:bg-card dark:text-slate-100"
+          />
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Crawl-Modus</label>
