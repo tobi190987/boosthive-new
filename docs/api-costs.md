@@ -1,6 +1,6 @@
 # API-Kosten Übersicht
 
-> Letzte Aktualisierung: 2026-04-10
+> Letzte Aktualisierung: 2026-04-10 (AI Performance auf OpenRouter migriert)
 
 ## Kostenlose APIs
 
@@ -24,15 +24,17 @@ Alle KI-Features laufen über **einen einzigen API-Key**: `OPENROUTER_API_KEY`
 
 ### Verwendete Module
 
-| Modul | Feature | Calls pro Aufruf | Standard-Modell |
-|-------|---------|-----------------|-----------------|
-| PROJ-10 | SEO "Mit KI verbessern" | 1 | `anthropic/claude-haiku-4-5` |
-| PROJ-12 | AI Visibility Query Engine | Keywords × Modelle × Iterationen × Subjekte | Konfigurierbar (GPT-4o, Claude, Gemini, Perplexity) |
-| PROJ-23 | AI Visibility Analytics (Sentiment) | 1 pro Rohantwort | `anthropic/claude-haiku-4-5` |
-| PROJ-23 | AI Visibility GEO-Empfehlungen | 1 pro Analyse | `anthropic/claude-haiku-4-5` |
-| PROJ-25 | Keyword-Vorschläge | 1 | `anthropic/claude-haiku-4-5` |
-| PROJ-31 | Content Brief Generator | 1 | `anthropic/claude-sonnet-4-5` |
-| PROJ-33 | Ad Text Generator | 1 pro Anzeigentyp × 3 Varianten | `anthropic/claude-haiku-4-5` |
+| Modul | Feature | Calls pro Aufruf | Standard-Modell | Env-Override |
+|-------|---------|-----------------|-----------------|-------------|
+| PROJ-10 | SEO "Mit KI verbessern" | 1 | `anthropic/claude-haiku-4-5` | `ANTHROPIC_SEO_MODEL` |
+| PROJ-11 | AI Performance (Analyse) | 1 | `anthropic/claude-sonnet-4-5` | `AI_PERFORMANCE_MODEL` |
+| PROJ-11 | AI Performance (Vergleich) | 1 | `anthropic/claude-sonnet-4-5` | `AI_PERFORMANCE_MODEL` |
+| PROJ-12 | AI Visibility Query Engine | Keywords × Modelle × Iterationen × Subjekte | Konfigurierbar (GPT-4o, Claude, Gemini, Perplexity) | — |
+| PROJ-23 | AI Visibility Analytics (Sentiment) | 1 pro Rohantwort | `anthropic/claude-haiku-4-5` | — |
+| PROJ-23 | AI Visibility GEO-Empfehlungen | 1 pro Analyse | `anthropic/claude-haiku-4-5` | — |
+| PROJ-25 | Keyword-Vorschläge | 1 | `anthropic/claude-haiku-4-5` | `ANTHROPIC_SEO_MODEL` |
+| PROJ-31 | Content Brief Generator | 1 | `anthropic/claude-3.5-sonnet` | `CONTENT_BRIEF_MODEL` |
+| PROJ-33 | Ad Text Generator | 1–2 pro Generierung (Retry bei Limit-Verletzung) | `openai/gpt-4o` | `AD_GENERATOR_MODEL` |
 
 ### Modellpreise (ca.)
 
@@ -75,13 +77,20 @@ Formel: `Keywords × Modelle × Iterationen × Subjekte`
 - ~$0,001 pro Klick (Haiku)
 - Kostenloser Fallback: Wenn `OPENROUTER_API_KEY` fehlt, regex-basierte Extraktion ohne API
 
+### PROJ-11: AI Performance Analyse
+- **1 Call** pro Analyse (CSV-Upload → KI-Auswertung), max_tokens 1.500
+- **1 Call** pro Zeitraum-Vergleich (zwei CSVs → KI-Gegenüberstellung), max_tokens 2.000
+- ~$0,008–$0,012 pro Aufruf (Sonnet)
+
 ### PROJ-31: Content Brief Generator
-- **1 Call** pro Generierung (Sonnet als Default)
-- ~$0,008 pro Brief
+- **1 Call** pro Generierung (Sonnet als Default), max_tokens 3.000
+- Optional: URL-Crawling der Wettbewerber-Seite (kein API-Call, serverseitig)
+- ~$0,015 pro Brief
 
 ### PROJ-33: Ad Text Generator
-- **3 Calls** pro Anzeigentyp (3 Varianten), ggf. +1 Nachgenerierung bei Zeichenlimit-Überschreitung
-- ~$0,003–$0,004 pro Anzeigentyp
+- **1 Call** pro Generierung, max_tokens 5.000 (GPT-4o als Default)
+- **+1 Retry-Call** wenn Zeichenlimits verletzt oder Varianten zu ähnlich — insgesamt max. 2 Calls
+- ~$0,015–$0,030 pro Generierung (abhängig von Anzahl der Anzeigentypen)
 
 ---
 
@@ -100,11 +109,16 @@ Formel: `Keywords × Modelle × Iterationen × Subjekte`
 
 | Variable | Zweck | Pflicht |
 |----------|-------|---------|
-| `OPENROUTER_API_KEY` | Alle KI-Features (PROJ-10, 12, 23, 25, 31, 33) | Ja (für KI-Features) |
+| `OPENROUTER_API_KEY` | Alle KI-Features (PROJ-10, 11, 12, 23, 25, 31, 33) | Ja (für KI-Features) |
 | `VISIBILITY_WORKER_SECRET` | Interner Worker-Auth für AI Visibility | Ja |
+| `CONTENT_WORKER_SECRET` | Interner Worker-Auth für Content Briefs | Ja |
 | `GOOGLE_PAGESPEED_API_KEY` | Lighthouse-Scores in SEO-Analyse | Nein (optional) |
+| `AI_PERFORMANCE_MODEL` | Modell-Override für AI Performance | Nein (Default: `anthropic/claude-sonnet-4-5`) |
+| `ANTHROPIC_SEO_MODEL` | Modell-Override für SEO & Keyword-Features | Nein (Default: `anthropic/claude-haiku-4-5`) |
+| `CONTENT_BRIEF_MODEL` | Modell-Override für Content Brief Generator | Nein (Default: `anthropic/claude-3.5-sonnet`) |
+| `AD_GENERATOR_MODEL` | Modell-Override für Ad Text Generator | Nein (Default: `openai/gpt-4o`) |
 
-> `ANTHROPIC_API_KEY` wird im Projekt nicht mehr benötigt — alle Anthropic-Modelle laufen über OpenRouter.
+> `ANTHROPIC_API_KEY` und `@anthropic-ai/sdk` werden im Projekt nicht mehr verwendet — alle Modelle laufen über OpenRouter.
 
 ---
 
