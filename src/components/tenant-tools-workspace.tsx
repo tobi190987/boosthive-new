@@ -96,24 +96,27 @@ function formatDate(value: string) {
 function scoreTone(score: number) {
   if (score >= 80) {
     return {
-      text: 'text-emerald-700',
-      bg: 'bg-emerald-50 border-emerald-200',
-      badge: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-50',
+      text: 'text-emerald-700 dark:text-emerald-300',
+      bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:border-emerald-900/60',
+      badge:
+        'bg-emerald-50 text-emerald-700 hover:bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-300 dark:hover:bg-emerald-950/40',
     }
   }
 
   if (score >= 60) {
     return {
-      text: 'text-amber-700',
-      bg: 'bg-amber-50 border-amber-200',
-      badge: 'bg-amber-50 text-amber-700 hover:bg-amber-50',
+      text: 'text-amber-700 dark:text-amber-300',
+      bg: 'bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:border-amber-900/60',
+      badge:
+        'bg-amber-50 text-amber-700 hover:bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 dark:hover:bg-amber-950/40',
     }
   }
 
   return {
-    text: 'text-red-700',
-    bg: 'bg-red-50 border-red-200',
-    badge: 'bg-red-50 text-red-700 hover:bg-red-50',
+    text: 'text-red-700 dark:text-red-300',
+    bg: 'bg-red-50 border-red-200 dark:bg-red-950/30 dark:border-red-900/60',
+    badge:
+      'bg-red-50 text-red-700 hover:bg-red-50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/40',
   }
 }
 
@@ -125,8 +128,8 @@ function scoreLabel(score: number) {
 
 function technicalBadge(ok: boolean) {
   return ok
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-    : 'border-red-200 bg-red-50 text-red-700'
+    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300'
+    : 'border-red-200 bg-red-50 text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300'
 }
 
 function formatCrawlModeLabel(crawlMode: SeoCrawlMode) {
@@ -353,7 +356,7 @@ function extractInsightSection(text: string, heading: string) {
 function IssueList({ issues }: { issues: string[] }) {
   if (issues.length === 0) {
     return (
-      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/30 dark:text-emerald-300">
         Keine kritischen Probleme auf dieser Seite erkannt.
       </div>
     )
@@ -364,7 +367,7 @@ function IssueList({ issues }: { issues: string[] }) {
       {issues.map((issue) => (
         <div
           key={issue}
-          className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+          className="flex items-start gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
         >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{issue}</span>
@@ -544,7 +547,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
                 variant="outline"
                 onClick={() => void generateActions()}
                 disabled={actionsLoading}
-                className="rounded-full border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-50"
+                className="rounded-full border-blue-100 bg-blue-50 text-blue-600 hover:bg-blue-50 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/40"
               >
                 {actionsLoading ? (
                   <>
@@ -573,7 +576,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
           <IssueList issues={page.issues} />
 
           {actions ? (
-            <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
+            <div className="space-y-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/30">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-blue-600" />
                 <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">KI-Verbesserungsvorschläge</p>
@@ -581,7 +584,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
                   className={cn(
                     'rounded-full',
                     actions.source === 'anthropic'
-                      ? 'bg-blue-50 text-blue-600 hover:bg-blue-50'
+                      ? 'bg-blue-50 text-blue-600 hover:bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/40'
                       : 'bg-slate-100 dark:bg-secondary text-slate-400 dark:text-slate-500 hover:bg-slate-100 dark:hover:bg-[#252d3a]'
                   )}
                 >
@@ -590,7 +593,7 @@ function PageResultCard({ page }: { page: SeoPageResult }) {
               </div>
               <p className="text-sm leading-6 text-slate-600 dark:text-slate-300">{actions.summary}</p>
               {actions.debug ? (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800">
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
                   Debug: {actions.debug}
                 </div>
               ) : null}
@@ -910,7 +913,7 @@ function SeoResultsView({
               <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">{result.totalPages}</p>
               <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">Analysierte URLs im Lauf</p>
             </div>
-            <div className="rounded-2xl bg-blue-50 p-4">
+            <div className="rounded-2xl bg-blue-50 dark:bg-blue-950/30 p-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
                 Erreichbar
               </p>
@@ -1037,8 +1040,8 @@ function SeoResultsView({
                     className={cn(
                       'rounded-2xl border px-4 py-3 text-sm',
                       check.ok
-                        ? 'border-blue-100 bg-blue-50 text-blue-600'
-                        : 'border-amber-200 bg-amber-50 text-amber-800'
+                        ? 'border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300'
+                        : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200'
                     )}
                   >
                     <div className="flex items-center gap-2 font-medium">
@@ -1084,15 +1087,15 @@ function SeoResultsView({
                 : 'Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.'}
             </p>
           </div>
-          <Badge className="rounded-full bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+          <Badge className="rounded-full bg-slate-50 dark:bg-secondary/80 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-secondary">
             {matchingPages.length === 0 ? 0 : 1}-{visiblePages.length} von {matchingPages.length}
           </Badge>
         </div>
         {activeProblemFilter ? (
-          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-600">
+          <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-600 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300">
             <span>{activeProblemFilter.label}</span>
             {hiddenPagesCount > 0 ? (
-              <span className="text-blue-600">
+              <span className="text-blue-600 dark:text-blue-300">
                 {hiddenPagesCount} weitere Seiten sind aktuell ausgeblendet.
               </span>
             ) : null}
@@ -1211,7 +1214,7 @@ function SeoReportContent({
         </div>
 
         <div className="mt-6 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-white/90 p-4 dark:bg-card/90">
+          <div className="rounded-2xl bg-white/90 p-4 dark:bg-secondary/70">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Domain
             </p>
@@ -1219,7 +1222,7 @@ function SeoReportContent({
               {extractHostname(sourceUrl) ?? 'Nicht verfügbar'}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 dark:bg-card/90">
+          <div className="rounded-2xl bg-white/90 p-4 dark:bg-secondary/70">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Crawl-Modus
             </p>
@@ -1227,7 +1230,7 @@ function SeoReportContent({
               {crawlMode ? formatCrawlModeLabel(crawlMode) : 'Nicht verfügbar'}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 dark:bg-card/90">
+          <div className="rounded-2xl bg-white/90 p-4 dark:bg-secondary/70">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Erstellt am
             </p>
@@ -1259,7 +1262,7 @@ function SeoReportContent({
             </p>
             <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">{result.totalPages}</p>
           </div>
-          <div className="print-avoid-break rounded-2xl bg-blue-50 p-4">
+          <div className="print-avoid-break rounded-2xl bg-blue-50 dark:bg-blue-950/30 p-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
               Erreichbar
             </p>
@@ -1329,8 +1332,8 @@ function SeoReportContent({
                       className={cn(
                         'print-avoid-break rounded-2xl border px-4 py-3 text-sm',
                         check.ok
-                          ? 'border-blue-100 bg-blue-50 text-blue-600'
-                          : 'border-amber-200 bg-amber-50 text-amber-800'
+                          ? 'border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300'
+                          : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200'
                       )}
                     >
                       <div className="flex items-center gap-2 font-medium">
@@ -1446,7 +1449,7 @@ function AnalysisHistoryRow({
               'flex h-12 w-12 items-center justify-center rounded-2xl border text-base font-bold',
               analysis.status === 'done'
                 ? `${tone.bg} ${tone.text}`
-                : 'border-slate-100 dark:border-border bg-blue-50 text-blue-600'
+                : 'border-slate-100 dark:border-blue-900/60 bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-300'
             )}
           >
             {analysis.status === 'running' ? (
@@ -1462,11 +1465,11 @@ function AnalysisHistoryRow({
               <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
                 {analysis.config.urls[0] ?? 'SEO Analyse'}
               </p>
-              <Badge className="rounded-full bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635]">
+              <Badge className="rounded-full bg-slate-50 dark:bg-secondary/80 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-secondary">
                 {formatCrawlModeLabel(analysis.config.crawlMode)}
               </Badge>
               {analysis.status === 'running' && (
-                <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
+                <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/40">
                   Läuft
                 </Badge>
               )}
