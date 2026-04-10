@@ -51,6 +51,7 @@ import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdow
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
 import { TrendAreaChart } from '@/components/trend-area-chart'
+import { Area, AreaChart, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts'
 import {
   MARKETING_DASHBOARD_REFRESH_EVENT,
   MARKETING_DASHBOARD_REFRESH_STORAGE_KEY,
@@ -75,6 +76,7 @@ interface GA4Data {
   pageviews: number
   bounceRate: number
   avgSessionDuration: number
+  conversions: number
   timeseries: { label: string; value: number }[]
   isCached?: boolean
   cacheAgeMinutes?: number
@@ -90,6 +92,7 @@ interface GSCData {
   avgCtr: number
   avgPosition: number
   topKeywords: { keyword: string; clicks: number; impressions: number; ctr: number; position: number }[]
+  timeseries?: { label: string; value: number }[]
 }
 
 interface AdsCampaign {
@@ -217,12 +220,114 @@ interface KPICardProps {
   icon: React.ReactNode
   loading: boolean
   color: string
+  size?: 'default' | 'featured'
+  className?: string
+  timeseries?: { label: string; value: number }[]
 }
 
-function KPICard({ label, value, trend, icon, loading, color }: KPICardProps) {
+function formatTimeseriesTooltipDateLabel(value: unknown): string {
+  const raw = String(value ?? '').trim()
+  if (!raw) return ''
+
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw)
+  if (isoMatch) return `${isoMatch[3]}.${isoMatch[2]}`
+
+  const compactMatch = /^(\d{4})(\d{2})(\d{2})$/.exec(raw)
+  if (compactMatch) return `${compactMatch[3]}.${compactMatch[2]}`
+
+  const dottedMatch = /^(\d{1,2})\.(\d{1,2})\.?$/.exec(raw)
+  if (dottedMatch) return `${dottedMatch[1].padStart(2, '0')}.${dottedMatch[2].padStart(2, '0')}`
+
+  return raw
+}
+
+function KPICard({ label, value, trend, icon, loading, color, size = 'default', className, timeseries }: KPICardProps) {
+  const hasChart = !loading && timeseries && timeseries.length > 1
+
+  if (size === 'featured') {
+    return (
+      <Card className={`rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card h-full ${className ?? ''}`}>
+        <CardContent className="flex h-full flex-col p-6">
+          <div
+            className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl"
+            style={{ backgroundColor: `${color}18` }}
+          >
+            {icon}
+          </div>
+
+          {/* Sparkline */}
+          <div className="flex-1 min-h-0 my-3">
+            {loading ? (
+              <Skeleton className="h-full w-full rounded-xl" />
+            ) : hasChart ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={timeseries} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id={`spark-${label}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={color} stopOpacity={0.2} />
+                      <stop offset="100%" stopColor={color} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <RechartsTooltip
+                    cursor={{ stroke: color, strokeWidth: 1, strokeDasharray: '4 4' }}
+                    contentStyle={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      color: '#0f172a',
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.08)',
+                      padding: '8px 12px',
+                    }}
+                    formatter={(v) => [new Intl.NumberFormat('de-DE').format(Number(v)), label]}
+                    labelFormatter={(lbl, payload) => {
+                      const seriesLabel = payload?.[0]?.payload?.label
+                      return formatTimeseriesTooltipDateLabel(seriesLabel ?? lbl)
+                    }}
+                    labelStyle={{ color: '#64748b', marginBottom: '2px', fontWeight: 500 }}
+                  />
+                  <Area
+                    type="monotoneX"
+                    dataKey="value"
+                    stroke={color}
+                    strokeWidth={2}
+                    fill={`url(#spark-${label})`}
+                    dot={false}
+                    activeDot={{ r: 4, fill: '#ffffff', stroke: color, strokeWidth: 2 }}
+                    isAnimationActive={false}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            ) : null}
+          </div>
+
+          <div>
+            {loading ? (
+              <>
+                <Skeleton className="mb-2 h-10 w-28" />
+                <Skeleton className="h-4 w-20" />
+              </>
+            ) : (
+              <>
+                <p className="text-4xl font-bold tabular-nums text-slate-900 dark:text-slate-50">
+                  {value ?? '--'}
+                </p>
+                <div className="mt-1.5 flex items-center gap-1.5">
+                  <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+                  {trend !== null && <TrendBadge value={trend} />}
+                </div>
+              </>
+            )}
+          </div>
+          <div className="mt-4 h-1 w-10 rounded-full opacity-60" style={{ backgroundColor: color }} />
+        </CardContent>
+      </Card>
+    )
+  }
+
   return (
-    <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
-      <CardContent className="flex items-start gap-4 p-5">
+    <Card className={`rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card h-full ${className ?? ''}`}>
+      <CardContent className="flex h-full items-start gap-4 p-5">
         <div
           className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
           style={{ backgroundColor: `${color}15` }}
@@ -1081,6 +1186,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
     const pageviews: TrendValue = { value: ga4.data?.pageviews ?? 0, trend: null }
     const bounceRate: TrendValue = { value: ga4.data?.bounceRate ?? 0, trend: null }
     const avgSessionDuration: TrendValue = { value: ga4.data?.avgSessionDuration ?? 0, trend: null }
+    const ga4Conversions: TrendValue = { value: ga4.data?.conversions ?? 0, trend: null }
     // GSC
     const gscImpressions: TrendValue = { value: gsc.data?.impressions ?? 0, trend: null }
     const gscClicks: TrendValue = { value: gsc.data?.clicks ?? 0, trend: null }
@@ -1106,7 +1212,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
     }
     const tikTokViews: TrendValue = { value: tiktok.data?.totalVideoViews ?? 0, trend: null }
     return {
-      visitors, users, pageviews, bounceRate, avgSessionDuration,
+      visitors, users, pageviews, bounceRate, avgSessionDuration, ga4Conversions,
       gscImpressions, gscClicks, gscCtr, gscPosition,
       activeCampaigns, avgCpc, avgCpm, conversions, totalSpend, tikTokViews,
     }
@@ -1214,7 +1320,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Marketing Dashboard</h1>
-          <p className="mt-0.5 truncate text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             Performance-Übersicht · <span className="font-medium text-slate-700 dark:text-slate-200">{activeCustomer.name}</span>
           </p>
         </div>
@@ -1327,14 +1433,17 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               <TrendingUp className="h-3.5 w-3.5 text-orange-400" />
               Website · Google Analytics 4
             </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 print:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-5">
               <KPICard
-                label="Sessions"
-                value={ga4.loading ? null : formatNumber(kpis.visitors.value)}
-                trend={kpis.visitors.trend}
-                icon={<Users2 className="h-5 w-5 text-orange-500" />}
+                label="Seitenaufrufe"
+                value={ga4.loading ? null : formatNumber(kpis.pageviews.value)}
+                trend={null}
+                icon={<Eye className="h-6 w-6 text-orange-500" />}
                 loading={ga4.loading}
                 color="#f97316"
+                size="featured"
+                className="col-span-2 sm:row-span-2"
+                timeseries={range !== 'today' ? (ga4.data?.timeseries ?? undefined) : undefined}
               />
               <KPICard
                 label="Nutzer"
@@ -1345,10 +1454,10 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                 color="#fb923c"
               />
               <KPICard
-                label="Seitenaufrufe"
-                value={ga4.loading ? null : formatNumber(kpis.pageviews.value)}
+                label="Conversions"
+                value={ga4.loading ? null : formatNumber(kpis.ga4Conversions.value)}
                 trend={null}
-                icon={<Eye className="h-5 w-5 text-amber-500" />}
+                icon={<TrendingUp className="h-5 w-5 text-amber-500" />}
                 loading={ga4.loading}
                 color="#f59e0b"
               />
@@ -1379,14 +1488,17 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               <Search className="h-3.5 w-3.5 text-blue-400" />
               Suche · Google Search Console
             </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-4">
               <KPICard
                 label="Impressions"
                 value={gsc.loading ? null : formatNumber(kpis.gscImpressions.value)}
                 trend={null}
-                icon={<Eye className="h-5 w-5 text-blue-500" />}
+                icon={<Eye className="h-6 w-6 text-blue-500" />}
                 loading={gsc.loading}
                 color="#3b82f6"
+                size="featured"
+                className="col-span-2 sm:row-span-2"
+                timeseries={range !== 'today' ? (gsc.data?.timeseries ?? undefined) : undefined}
               />
               <KPICard
                 label="Klicks"
@@ -1411,6 +1523,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                 icon={<Search className="h-5 w-5 text-blue-500" />}
                 loading={gsc.loading}
                 color="#3b82f6"
+                className="col-span-2"
               />
             </div>
           </div>
@@ -1423,7 +1536,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             <Zap className="h-3.5 w-3.5 text-emerald-400" />
             Kampagnen
           </p>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5 print:grid-cols-5">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-5">
             <KPICard
               label="Aktive Kampagnen"
               value={anyLoading ? null : formatNumber(kpis.activeCampaigns.value)}
@@ -1436,9 +1549,11 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               label="Gesamtausgaben"
               value={anyLoading ? null : formatCurrency(kpis.totalSpend.value)}
               trend={null}
-              icon={<Wallet className="h-5 w-5 text-red-500" />}
+              icon={<Wallet className="h-6 w-6 text-red-500" />}
               loading={googleAds.loading || metaAds.loading || tiktok.loading}
               color="#ef4444"
+              size="featured"
+              className="col-span-2 sm:row-span-2"
             />
             <KPICard
               label="Conversions"
@@ -1463,6 +1578,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               icon={<Eye className="h-5 w-5 text-violet-500" />}
               loading={metaAds.loading}
               color="#8b5cf6"
+              className="col-span-2"
             />
           </div>
         </div>
@@ -1475,14 +1591,16 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               <Zap className="h-3.5 w-3.5 text-pink-400" />
               TikTok Ads
             </p>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 print:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-4">
               <KPICard
                 label="Video Views"
                 value={tiktok.loading ? null : formatNumber(kpis.tikTokViews.value)}
                 trend={null}
-                icon={<Eye className="h-5 w-5 text-pink-500" />}
+                icon={<Eye className="h-6 w-6 text-pink-500" />}
                 loading={tiktok.loading}
                 color="#ec4899"
+                size="featured"
+                className="col-span-2 sm:row-span-2"
               />
               <KPICard
                 label="Klicks"
@@ -1507,6 +1625,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                 icon={<Zap className="h-5 w-5 text-pink-500" />}
                 loading={tiktok.loading}
                 color="#ec4899"
+                className="col-span-2"
               />
             </div>
           </div>
