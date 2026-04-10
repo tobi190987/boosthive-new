@@ -52,6 +52,9 @@ export function LoginForm({
       password: '',
     },
   })
+  const submitLogin = handleSubmit(onSubmit)
+  const emailField = register('email')
+  const passwordField = register('password')
 
   async function onSubmit(data: LoginInput) {
     setError(null)
@@ -76,7 +79,7 @@ export function LoginForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={submitLogin} className="space-y-5">
       {title && (
         <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{title}</p>
@@ -109,7 +112,7 @@ export function LoginForm({
           disabled={isSubmitting}
           aria-invalid={!!errors.email}
           className={fieldClassName}
-          {...register('email')}
+          {...emailField}
         />
         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
       </div>
@@ -135,7 +138,15 @@ export function LoginForm({
             disabled={isSubmitting}
             aria-invalid={!!errors.password}
             className={`${fieldClassName} pr-12`}
-            {...register('password')}
+            {...passwordField}
+            onKeyDown={(event) => {
+              if (event.key !== 'Enter' || event.nativeEvent.isComposing || isSubmitting) {
+                return
+              }
+
+              event.preventDefault()
+              void submitLogin()
+            }}
           />
           <button
             type="button"
