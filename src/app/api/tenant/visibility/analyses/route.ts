@@ -16,6 +16,7 @@ import {
   MIN_AI_VISIBILITY_ITERATIONS,
   normalizeAiModelId,
 } from '@/lib/ai-visibility'
+import { checkQuota } from '@/lib/usage-limits'
 import { runVisibilityWorker } from '@/lib/visibility-worker'
 
 const MAX_CONCURRENT_ANALYSES = 2
@@ -79,6 +80,14 @@ export async function POST(request: NextRequest) {
 
   const moduleAccess = await requireTenantModuleAccess(tenantId, 'ai_visibility')
   if ('error' in moduleAccess) return moduleAccess.error
+
+  const quota = await checkQuota(tenantId, 'ai_visibility_analyses')
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: 'quota_exceeded', metric: 'ai_visibility_analyses', current: quota.current, limit: quota.limit, reset_at: quota.reset_at },
+      { status: 429 }
+    )
+  }
 
   let body: unknown
   try {

@@ -4,6 +4,7 @@ import { requireTenantModuleAccess } from '@/lib/module-access'
 import { parseCSV, applyFilters, buildLLMContext, anonymizePiiText } from '@/lib/performance/csv-parser'
 import { SYSTEM_PROMPT, CONTENT_SYSTEM_PROMPT, buildUserPrompt } from '@/lib/performance/prompts'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { checkQuota } from '@/lib/usage-limits'
 import type { Filters } from '@/lib/performance/types'
 
 export const maxDuration = 60
@@ -34,6 +35,14 @@ export async function POST(request: NextRequest) {
 
   const moduleAccess = await requireTenantModuleAccess(tenantId, 'ai_performance')
   if ('error' in moduleAccess) return moduleAccess.error
+
+  const quota = await checkQuota(tenantId, 'ai_performance_analyses')
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: 'quota_exceeded', metric: 'ai_performance_analyses', current: quota.current, limit: quota.limit, reset_at: quota.reset_at },
+      { status: 429 }
+    )
+  }
 
   try {
     const formData = await request.formData()
