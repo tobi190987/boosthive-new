@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
   AlertTriangle,
-  CheckCircle2,
   CreditCard,
   Download,
   FileText,
@@ -132,15 +131,13 @@ function formatAmount(amount: number, currency: string) {
 /*  Component                                                                  */
 /* -------------------------------------------------------------------------- */
 
-export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
+export function BillingWorkspace({ tenantSlug: _tenantSlug }: BillingWorkspaceProps) {
   const [billing, setBilling] = useState<BillingData | null>(null)
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [actionLoading, setActionLoading] = useState<string | null>(null)
   const [showCardForm, setShowCardForm] = useState(false)
-  const [agbAccepted, setAgbAccepted] = useState(false)
-  const [activity, setActivity] = useState('Lade Billing-Daten...')
 
   const loadBilling = useCallback(async () => {
     try {
@@ -157,7 +154,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
       }
 
       setBilling(payload)
-      setActivity('Billing-Daten erfolgreich geladen.')
 
       // Load invoices in parallel (non-blocking)
       fetch('/api/tenant/billing/invoices', { credentials: 'include' })
@@ -196,7 +192,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         throw new Error(payload.error ?? 'Abo konnte nicht gestartet werden.')
       }
 
-      setActivity('Basis-Plan erfolgreich abonniert.')
       await loadBilling()
     } catch (actionError) {
       setError(
@@ -224,7 +219,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         throw new Error(payload.error ?? 'Kündigung konnte nicht durchgeführt werden.')
       }
 
-      setActivity('Abo wird zum Periodenende gekuendigt.')
       await loadBilling()
     } catch (actionError) {
       setError(
@@ -252,7 +246,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         throw new Error(payload.error ?? 'Reaktivierung fehlgeschlagen.')
       }
 
-      setActivity('Kündigung erfolgreich zurückgenommen.')
       await loadBilling()
     } catch (actionError) {
       setError(
@@ -280,7 +273,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         throw new Error(payload.error ?? 'Modul konnte nicht gebucht werden.')
       }
 
-      setActivity('Modul erfolgreich gebucht.')
       await loadBilling()
     } catch (actionError) {
       setError(
@@ -308,7 +300,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         throw new Error(payload.error ?? 'Modul-Kündigung fehlgeschlagen.')
       }
 
-      setActivity('Modul wird zum Periodenende abbestellt.')
       await loadBilling()
     } catch (actionError) {
       setError(
@@ -336,7 +327,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         throw new Error(payload.error ?? 'Modul-Reaktivierung fehlgeschlagen.')
       }
 
-      setActivity('Modul-Kündigung erfolgreich zurückgenommen.')
       await loadBilling()
     } catch (actionError) {
       setError(
@@ -351,7 +341,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
   function handleCardSaved() {
     setShowCardForm(false)
-    setActivity('Zahlungsmethode erfolgreich hinterlegt.')
     void loadBilling()
   }
 
@@ -359,7 +348,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <BillingHero tenantSlug={tenantSlug} />
         <div className="flex min-h-48 items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
           <div className="flex items-center gap-3 text-slate-600 dark:text-slate-300">
             <Loader2 className="h-5 w-5 animate-spin text-blue-600" />
@@ -374,7 +362,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
   if (!billing) {
     return (
       <div className="space-y-6">
-        <BillingHero tenantSlug={tenantSlug} />
         {error && (
           <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
             {error}
@@ -407,20 +394,11 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
 
   return (
     <div className="space-y-6">
-      <BillingHero tenantSlug={tenantSlug} />
-
       {error && (
         <div className="rounded-2xl border border-orange-200 bg-orange-50 px-5 py-4 text-sm text-orange-800 shadow-sm dark:border-orange-900/70 dark:bg-orange-950/30 dark:text-orange-300">
           {error}
         </div>
       )}
-
-      <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
-          <p>{activity}</p>
-        </div>
-      </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* ----- Subscription Status Card ----- */}
@@ -555,6 +533,87 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
         </Card>
       </div>
 
+      {/* ----- Module Catalog Section (only when subscription is active) ----- */}
+      {(status === 'active' || status === 'canceling') && (
+        <ModuleSection
+          modules={billing.modules ?? []}
+          subscriptionStatus={status}
+          actionLoading={actionLoading}
+          onSubscribe={handleModuleSubscribe}
+          onCancel={handleModuleCancel}
+          onReactivate={handleModuleReactivate}
+        />
+      )}
+
+      {/* ----- Invoices Section ----- */}
+      {invoices.length > 0 && (
+        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
+              <FileText className="h-5 w-5 text-blue-600" />
+              Rechnungen
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-slate-100">
+              {invoices.map((inv) => {
+                const isPaid = inv.status === 'paid'
+                const displayAmount = isPaid ? inv.amount_paid : inv.amount_due
+                const dateLabel = isPaid
+                  ? new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date(inv.created * 1000))
+                  : inv.due_date
+                    ? `Fällig am ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date(inv.due_date * 1000))}`
+                    : 'Ausstehend'
+
+                return (
+                  <div key={inv.id} className="flex items-center justify-between py-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {inv.number ?? 'Ausstehende Rechnung'}
+                        </p>
+                        {!isPaid && (
+                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600">
+                            Offen
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">{dateLabel}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {formatAmount(displayAmount, inv.currency)}
+                      </span>
+                      {inv.invoice_pdf ? (
+                        <a
+                          href={inv.invoice_pdf}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-border px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          PDF
+                        </a>
+                      ) : inv.hosted_invoice_url ? (
+                        <a
+                          href={inv.hosted_invoice_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-border px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Ansehen
+                        </a>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ----- Subscription Actions ----- */}
       <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
         <CardHeader>
@@ -677,87 +736,6 @@ export function BillingWorkspace({ tenantSlug }: BillingWorkspaceProps) {
           )}
         </CardContent>
       </Card>
-
-      {/* ----- Module Catalog Section (only when subscription is active) ----- */}
-      {(status === 'active' || status === 'canceling') && (
-        <ModuleSection
-          modules={billing.modules ?? []}
-          subscriptionStatus={status}
-          actionLoading={actionLoading}
-          onSubscribe={handleModuleSubscribe}
-          onCancel={handleModuleCancel}
-          onReactivate={handleModuleReactivate}
-        />
-      )}
-
-      {/* ----- Invoices Section ----- */}
-      {invoices.length > 0 && (
-        <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-lg text-slate-950 dark:text-slate-50">
-              <FileText className="h-5 w-5 text-blue-600" />
-              Rechnungen
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="divide-y divide-slate-100">
-              {invoices.map((inv) => {
-                const isPaid = inv.status === 'paid'
-                const displayAmount = isPaid ? inv.amount_paid : inv.amount_due
-                const dateLabel = isPaid
-                  ? new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date(inv.created * 1000))
-                  : inv.due_date
-                    ? `Fällig am ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'long' }).format(new Date(inv.due_date * 1000))}`
-                    : 'Ausstehend'
-
-                return (
-                  <div key={inv.id} className="flex items-center justify-between py-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                          {inv.number ?? 'Ausstehende Rechnung'}
-                        </p>
-                        {!isPaid && (
-                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-600">
-                            Offen
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{dateLabel}</p>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {formatAmount(displayAmount, inv.currency)}
-                      </span>
-                      {inv.invoice_pdf ? (
-                        <a
-                          href={inv.invoice_pdf}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-border px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          PDF
-                        </a>
-                      ) : inv.hosted_invoice_url ? (
-                        <a
-                          href={inv.hosted_invoice_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 rounded-full border border-slate-200 dark:border-border px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-[#1e2635] transition-colors"
-                        >
-                          <Download className="h-3.5 w-3.5" />
-                          Ansehen
-                        </a>
-                      ) : null}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }
@@ -1208,60 +1186,5 @@ function ModuleCatalogCard({
         </p>
       )}
     </div>
-  )
-}
-
-/* -------------------------------------------------------------------------- */
-/*  Hero Section                                                               */
-/* -------------------------------------------------------------------------- */
-
-function BillingHero({ tenantSlug }: { tenantSlug: string }) {
-  return (
-    <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
-      <div className="absolute right-[-3rem] top-[-3rem] h-40 w-40 rounded-full bg-blue-500/10 blur-3xl" />
-      <div className="absolute bottom-[-4rem] left-[-2rem] h-44 w-44 rounded-full bg-blue-500/10 blur-3xl" />
-
-      <div className="relative max-w-3xl space-y-4">
-        <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
-          Billing
-        </Badge>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
-            Abrechnung
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 sm:text-4xl">
-            Abo für {tenantSlug} verwalten
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300 sm:text-base">
-            Verwalte deinen Basis-Plan, hinterlege eine Zahlungsmethode und behalte den
-            Abo-Status im Blick. Alle Zahlungen laufen sicher über Stripe.
-          </p>
-        </div>
-      </div>
-
-      <div className="relative mt-8 grid gap-4 lg:grid-cols-3">
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-border dark:bg-card/85">
-          <CreditCard className="h-5 w-5 text-blue-600" />
-          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Sichere Karteneingabe</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Zahlungsdaten werden direkt bei Stripe gespeichert und nie auf unseren Servern.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-border dark:bg-card/85">
-          <Zap className="h-5 w-5 text-blue-600" />
-          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">4-Wochen-Zyklen</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Der Basis-Plan wird alle 4 Wochen automatisch verlaengert und abgerechnet.
-          </p>
-        </div>
-        <div className="rounded-2xl border border-white/70 bg-white/75 p-5 backdrop-blur-sm dark:border-border dark:bg-card/85">
-          <Shield className="h-5 w-5 text-[#1f2937]" />
-          <p className="mt-3 text-sm font-semibold text-slate-900 dark:text-slate-100">Jederzeit kuendbar</p>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Kündige zum Periodenende oder nimm die Kündigung jederzeit zurück.
-          </p>
-        </div>
-      </div>
-    </section>
   )
 }
