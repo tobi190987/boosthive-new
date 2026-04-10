@@ -9,6 +9,7 @@ import {
   nextOwnerToggleTenantStatus,
 } from "@/lib/tenant-status"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { toast } from "@/hooks/use-toast"
@@ -291,54 +292,64 @@ export default function TenantsPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="space-y-3">
-          <h1 className="text-2xl font-bold text-gray-900">Agenturen</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Verwalte Status, Archivierung, Wiederherstellung und endgültige Löschungen für alle registrierten Agenturen.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant={archivedFilter === "exclude" ? "default" : "outline"}
-              className={archivedFilter === "exclude" ? "bg-slate-900 hover:bg-slate-800" : "border-slate-100 dark:border-border"}
-              onClick={() => setArchivedFilter("exclude")}
-            >
-              Nicht archiviert
-            </Button>
-            <Button
-              type="button"
-              variant={archivedFilter === "include" ? "default" : "outline"}
-              className={archivedFilter === "include" ? "bg-slate-900 hover:bg-slate-800" : "border-slate-100 dark:border-border"}
-              onClick={() => setArchivedFilter("include")}
-            >
-              Alle
-            </Button>
-            <Button
-              type="button"
-              variant={archivedFilter === "only" ? "default" : "outline"}
-              className={archivedFilter === "only" ? "bg-slate-900 hover:bg-slate-800" : "border-slate-100 dark:border-border"}
-              onClick={() => setArchivedFilter("only")}
-            >
-              Nur archiviert
-            </Button>
+      <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-transparent to-transparent dark:from-blue-950/20 dark:via-transparent dark:to-transparent" />
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="max-w-3xl space-y-4">
+            <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
+              Platform
+            </Badge>
+            <div>
+              <h1 className="font-headline text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
+                Agenturen
+              </h1>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400 sm:text-base">
+                Verwalte Status, Archivierung, Wiederherstellung und endgültige Löschungen für alle registrierten Agenturen.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                type="button"
+                variant={archivedFilter === "exclude" ? "default" : "outline"}
+                className={archivedFilter === "exclude" ? "bg-slate-900 hover:bg-slate-800" : "border-slate-100 dark:border-border"}
+                onClick={() => setArchivedFilter("exclude")}
+              >
+                Nicht archiviert
+              </Button>
+              <Button
+                type="button"
+                variant={archivedFilter === "include" ? "default" : "outline"}
+                className={archivedFilter === "include" ? "bg-slate-900 hover:bg-slate-800" : "border-slate-100 dark:border-border"}
+                onClick={() => setArchivedFilter("include")}
+              >
+                Alle
+              </Button>
+              <Button
+                type="button"
+                variant={archivedFilter === "only" ? "default" : "outline"}
+                className={archivedFilter === "only" ? "bg-slate-900 hover:bg-slate-800" : "border-slate-100 dark:border-border"}
+                onClick={() => setArchivedFilter("only")}
+              >
+                Nur archiviert
+              </Button>
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              {archivedFilter === "exclude"
+                ? "Zeigt nur aktive und blockierte Agenturen. Archivierte Einträge sind ausgeblendet."
+                : archivedFilter === "include"
+                  ? "Zeigt aktive, blockierte und archivierte Agenturen zusammen."
+                  : "Zeigt nur Agenturen, die bereits im Archiv liegen."}
+            </p>
           </div>
-          <p className="text-sm text-gray-500">
-            {archivedFilter === "exclude"
-              ? "Zeigt nur aktive und blockierte Agenturen. Archivierte Einträge sind ausgeblendet."
-              : archivedFilter === "include"
-                ? "Zeigt aktive, blockierte und archivierte Agenturen zusammen."
-                : "Zeigt nur Agenturen, die bereits im Archiv liegen."}
-          </p>
-        </div>
 
-        <Button asChild className="bg-teal-500 hover:bg-teal-600">
-          <Link href="/owner/tenants/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Neue Agentur
-          </Link>
-        </Button>
-      </div>
+          <Button asChild variant="dark" className="self-start gap-2">
+            <Link href="/owner/tenants/new">
+              <Plus className="h-4 w-4" />
+              Neue Agentur
+            </Link>
+          </Button>
+        </div>
+      </section>
 
       {error && (
         <Alert variant="destructive">
@@ -347,18 +358,18 @@ export default function TenantsPage() {
       )}
 
       {loading ? (
-        <div className="space-y-4 rounded-xl border bg-white dark:bg-card p-5 shadow-sm">
+        <div className="space-y-4 rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-5 shadow-soft">
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className="h-14 rounded-xl" />
           ))}
         </div>
       ) : tenants.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border bg-white dark:bg-card px-6 py-16 text-center shadow-sm">
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-teal-50">
-            <Building2 className="h-6 w-6 text-teal-500" />
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card px-6 py-16 text-center shadow-soft">
+          <div className="mb-4 rounded-full bg-blue-50 p-4 text-blue-600">
+            <Building2 className="h-6 w-6" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">Noch keine Agenturen</h3>
-          <p className="mt-1 text-sm text-gray-500">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Noch keine Agenturen</h3>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
             {archivedFilter === "exclude"
               ? "Erstelle deine erste Agentur, um loszulegen."
               : archivedFilter === "include"
@@ -367,10 +378,11 @@ export default function TenantsPage() {
           </p>
           <Button
             asChild
-            className="mt-6 bg-teal-500 hover:bg-teal-600"
+            variant="dark"
+            className="mt-6 gap-2"
           >
             <Link href="/owner/tenants/new">
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="h-4 w-4" />
               Neue Agentur
             </Link>
           </Button>
