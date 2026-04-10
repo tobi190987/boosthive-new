@@ -17,6 +17,7 @@ interface AuthShellProps {
   footer?: ReactNode
   brandLogoUrl?: string
   brandAlt?: string
+  brandLogoClassName?: string
   children: ReactNode
 }
 
@@ -33,6 +34,7 @@ export function AuthShell({
   footer,
   brandLogoUrl,
   brandAlt = 'BoostHive',
+  brandLogoClassName,
   children,
 }: AuthShellProps) {
   const isOwner = variant === 'owner'
@@ -88,7 +90,7 @@ export function AuthShell({
                       width={240}
                       height={80}
                       priority
-                      className="h-12 w-auto max-w-[220px] object-contain sm:h-14"
+                      className={brandLogoClassName ?? 'h-12 w-auto max-w-[220px] object-contain sm:h-14'}
                     />
                   ) : (
                     <Image
