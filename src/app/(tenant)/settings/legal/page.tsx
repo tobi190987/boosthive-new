@@ -2,6 +2,7 @@ import { forbidden, redirect } from 'next/navigation'
 import { LegalPrivacyWorkspace } from '@/components/legal-privacy-workspace'
 import { getSubprocessorEntries } from '@/lib/legal'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
+import { createAdminClient } from '@/lib/supabase-admin'
 
 export default async function LegalSettingsPage() {
   const context = await requireTenantShellContext()
@@ -15,6 +16,15 @@ export default async function LegalSettingsPage() {
     forbidden()
   }
 
+  const admin = createAdminClient()
+  const { data: tenantRow } = await admin
+    .from('tenants')
+    .select('avv_accepted_at')
+    .eq('id', context.tenant.id)
+    .single()
+
+  const avvAcceptedAt = (tenantRow as { avv_accepted_at?: string | null } | null)?.avv_accepted_at ?? null
+
   return (
     <>
       <div className="mb-5">
@@ -24,7 +34,7 @@ export default async function LegalSettingsPage() {
         </p>
       </div>
       <div className="mb-6 h-px bg-slate-100 dark:bg-slate-800" />
-      <LegalPrivacyWorkspace subprocessorEntries={subprocessorEntries} />
+      <LegalPrivacyWorkspace subprocessorEntries={subprocessorEntries} avvAcceptedAt={avvAcceptedAt} />
     </>
   )
 }

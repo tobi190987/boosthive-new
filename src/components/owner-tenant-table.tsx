@@ -4,8 +4,10 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import {
   Archive,
+  CheckCircle2,
   CirclePlay,
   CirclePause,
+  Clock,
   ExternalLink,
   Gauge,
   Loader2,
@@ -239,6 +241,7 @@ export interface OwnerTenantRecord {
   is_archived: boolean
   archived_at?: string | null
   archive_reason?: string | null
+  avv_accepted_at?: string | null
 }
 
 interface OwnerTenantTableProps {
@@ -428,6 +431,7 @@ export function OwnerTenantTable({
               <TableHead className="pl-6">Tenant</TableHead>
               <TableHead>Subdomain</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>AVV</TableHead>
               <TableHead>User</TableHead>
               <TableHead>Quota (Periode)</TableHead>
               <TableHead>Erstellt</TableHead>
@@ -465,6 +469,19 @@ export function OwnerTenantTable({
                     <Badge className={tenantStatusBadgeClass(tenant.status)}>
                       {tenantStatusLabel(tenant.status)}
                     </Badge>
+                  </TableCell>
+                  <TableCell>
+                    {tenant.avv_accepted_at ? (
+                      <div className="flex items-center gap-1.5 text-emerald-600" title={`Bestätigt am ${new Date(tenant.avv_accepted_at).toLocaleDateString('de-DE')}`}>
+                        <CheckCircle2 className="h-4 w-4 shrink-0" />
+                        <span className="text-xs tabular-nums">{new Date(tenant.avv_accepted_at).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' })}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-amber-500">
+                        <Clock className="h-4 w-4 shrink-0" />
+                        <span className="text-xs text-slate-400">Offen</span>
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell className="text-slate-500 dark:text-slate-400">{tenant.memberCount}</TableCell>
                   <TableCell>

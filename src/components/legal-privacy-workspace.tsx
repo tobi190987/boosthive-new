@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { Download, FileText, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { CheckCircle2, Clock, Download, FileText, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,7 @@ interface AuditItem {
 
 interface LegalPrivacyWorkspaceProps {
   subprocessorEntries: SubprocessorEntry[]
+  avvAcceptedAt: string | null
 }
 
 async function downloadFromEndpoint(url: string, fileName: string) {
@@ -40,13 +41,15 @@ async function downloadFromEndpoint(url: string, fileName: string) {
   URL.revokeObjectURL(objectUrl)
 }
 
-export function LegalPrivacyWorkspace({ subprocessorEntries }: LegalPrivacyWorkspaceProps) {
+export function LegalPrivacyWorkspace({ subprocessorEntries, avvAcceptedAt: initialAvvAcceptedAt }: LegalPrivacyWorkspaceProps) {
   const [auditItems, setAuditItems] = useState<AuditItem[]>([])
   const [auditLoading, setAuditLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [downloadingAv, setDownloadingAv] = useState(false)
   const [downloadingExport, setDownloadingExport] = useState(false)
   const [deletingData, setDeletingData] = useState(false)
+  const [avvAcceptedAt, setAvvAcceptedAt] = useState<string | null>(initialAvvAcceptedAt)
+  const [confirmingAvv, setConfirmingAvv] = useState(false)
 
   async function loadAuditLog() {
     setAuditLoading(true)
@@ -66,6 +69,22 @@ export function LegalPrivacyWorkspace({ subprocessorEntries }: LegalPrivacyWorks
   useEffect(() => {
     void loadAuditLog()
   }, [])
+
+  async function handleConfirmAvv() {
+    setConfirmingAvv(true)
+    setError(null)
+    try {
+      const res = await fetch('/api/tenant/legal/avv-accept', { method: 'POST' })
+      const payload = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error((payload as { error?: string }).error ?? 'AVV-Bestätigung fehlgeschlagen.')
+      setAvvAcceptedAt(new Date().toISOString())
+      await loadAuditLog()
+    } catch (confirmError) {
+      setError(confirmError instanceof Error ? confirmError.message : 'AVV-Bestätigung fehlgeschlagen.')
+    } finally {
+      setConfirmingAvv(false)
+    }
+  }
 
   async function handleDownloadAvContract() {
     setDownloadingAv(true)
@@ -117,6 +136,70 @@ export function LegalPrivacyWorkspace({ subprocessorEntries }: LegalPrivacyWorks
 
   return (
     <div className="space-y-6">
+      {/* AVV-Status */}
+      <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
+            {avvAcceptedAt ? (
+              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+            ) : (
+              <Clock className="h-5 w-5 text-amber-500" />
+            )}
+            AV-Vertrag (AVV)
+          </CardTitle>
+          <p className="text-sm text-slate-600 dark:text-slate-300">
+            Der Auftragsverarbeitungsvertrag regelt die datenschutzkonforme Zusammenarbeit zwischen deiner Agentur und BoostHive.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {avvAcceptedAt ? (
+            <div className="flex items-center gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-3 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+              <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+              <div>
+                <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">AVV bestätigt</p>
+                <p className="text-xs text-emerald-600 dark:text-emerald-400">
+                  Unterzeichnung bestätigt am {new Date(avvAcceptedAt).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+              <Clock className="h-5 w-5 shrink-0 text-amber-500" />
+              <div>
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-300">AVV noch nicht bestätigt</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Bitte lade den AV-Vertrag herunter, unterzeichne ihn und bestätige die Unterzeichnung.
+                </p>
+              </div>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="dark"
+              className="gap-2"
+              onClick={() => void handleDownloadAvContract()}
+              disabled={downloadingAv}
+            >
+              {downloadingAv ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
+              AV-Vertrag als PDF
+            </Button>
+            {!avvAcceptedAt && (
+              <Button
+                type="button"
+                variant="outline"
+                className="gap-2 border-emerald-200 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-800 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                onClick={() => void handleConfirmAvv()}
+                disabled={confirmingAvv}
+              >
+                {confirmingAvv ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                Unterzeichnung bestätigen
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-xl text-slate-900 dark:text-slate-100">
@@ -129,16 +212,6 @@ export function LegalPrivacyWorkspace({ subprocessorEntries }: LegalPrivacyWorks
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="dark"
-              className="gap-2"
-              onClick={() => void handleDownloadAvContract()}
-              disabled={downloadingAv}
-            >
-              {downloadingAv ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}
-              AV-Vertrag als PDF
-            </Button>
             <Button
               type="button"
               variant="outline"

@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
   let dataQuery = supabaseAdmin
     .from('tenants')
     .select(
-      'id, name, slug, status, created_at, subscription_status, billing_onboarding_completed_at, archived_at, archive_reason'
+      'id, name, slug, status, created_at, subscription_status, billing_onboarding_completed_at, archived_at, archive_reason, avv_accepted_at'
     )
     .order('created_at', { ascending: false })
 
@@ -137,6 +137,7 @@ export async function GET(request: NextRequest) {
       archived_at: 'archived_at' in tenant ? tenant.archived_at : null,
       is_archived: resolution.effectiveStatus === 'archived',
       archive_reason: 'archive_reason' in tenant ? tenant.archive_reason : null,
+      avv_accepted_at: 'avv_accepted_at' in tenant ? (tenant.avv_accepted_at as string | null) : null,
     }
   })
 
