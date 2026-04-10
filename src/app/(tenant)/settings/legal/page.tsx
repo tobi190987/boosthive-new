@@ -1,6 +1,5 @@
 import { forbidden, redirect } from 'next/navigation'
 import { LegalPrivacyWorkspace } from '@/components/legal-privacy-workspace'
-import { SettingsProfileTabs } from '@/components/settings-profile-tabs'
 import { getSubprocessorEntries } from '@/lib/legal'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 
@@ -25,7 +24,6 @@ export default async function LegalSettingsPage() {
         </p>
       </div>
       <div className="mb-6 h-px bg-slate-100 dark:bg-slate-800" />
-      <SettingsProfileTabs isAdmin={true} />
       <LegalPrivacyWorkspace subprocessorEntries={subprocessorEntries} />
     </>
   )

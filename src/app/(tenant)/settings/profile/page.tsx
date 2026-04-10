@@ -1,5 +1,4 @@
 import { SettingsProfileWorkspace } from '@/components/settings-profile-workspace'
-import { SettingsProfileTabs } from '@/components/settings-profile-tabs'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 
 export default async function ProfileSettingsPage() {
@@ -14,7 +13,6 @@ export default async function ProfileSettingsPage() {
         </p>
       </div>
       <div className="mb-6 h-px bg-slate-100 dark:bg-slate-800" />
-      <SettingsProfileTabs isAdmin={context.membership.role === 'admin'} />
       <SettingsProfileWorkspace
         mode="settings"
         initialData={{
