@@ -358,11 +358,11 @@ function NavigationContent({
               <button
                 type="button"
                 onClick={() => toggleSection(group.label)}
-                className="flex w-full items-center justify-between mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
                 aria-expanded={isSectionOpen(group.label)}
               >
                 {group.label}
-                <ChevronRight className={cn('h-3 w-3 transition-transform', isSectionOpen(group.label) ? 'rotate-90' : 'rotate-0')} />
+                <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isSectionOpen(group.label) ? 'rotate-90' : 'rotate-0')} />
               </button>
               {isSectionOpen(group.label) && <ul className="space-y-1">
                 {group.items.map((tool) => {
@@ -395,7 +395,10 @@ function NavigationContent({
                           {hasAccess ? (
                             <tool.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                           ) : (
-                            <Lock className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                            <div className="relative">
+                              <tool.icon className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                              <Lock className="absolute -right-1 -top-1 h-2.5 w-2.5 text-slate-300 dark:text-slate-600" />
+                            </div>
                           )}
                           {tool.label}
                         </span>
@@ -431,10 +434,10 @@ function NavigationContent({
                   href="/verwaltung"
                   onClick={() => handleNavigate('/verwaltung')}
                   className={cn(
-                    'text-[10px] font-semibold uppercase tracking-[0.24em] transition-colors',
+                    'text-[11px] font-medium uppercase tracking-[0.24em] transition-colors',
                     isNavActive(pathname, '/verwaltung') && pathname === '/verwaltung'
                       ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400'
+                      : 'text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400'
                   )}
                 >
                   Verwaltung
@@ -446,7 +449,7 @@ function NavigationContent({
                   aria-expanded={isSectionOpen('Verwaltung')}
                   aria-label="Verwaltung ein-/ausblenden"
                 >
-                  <ChevronRight className={cn('h-3 w-3 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
+                  <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
                 </button>
               </div>
               {isSectionOpen('Verwaltung') && <ul className="space-y-1">

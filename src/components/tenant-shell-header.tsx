@@ -16,8 +16,7 @@ export function TenantShellHeader({
 }: TenantShellHeaderProps) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
-      <div className="absolute -right-16 -top-16 h-48 w-48 rounded-full bg-blue-500/5 blur-3xl" />
-      <div className="absolute -bottom-10 left-8 h-32 w-32 rounded-full bg-primary/5 blur-2xl" />
+      <div className="absolute inset-0 bg-gradient-to-r from-blue-50/50 via-transparent to-transparent dark:from-blue-950/20 dark:via-transparent dark:to-transparent" />
 
       <div className="relative">
         <div className="max-w-3xl space-y-4">

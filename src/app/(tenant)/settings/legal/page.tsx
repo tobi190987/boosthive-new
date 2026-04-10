@@ -18,6 +18,13 @@ export default async function LegalSettingsPage() {
 
   return (
     <>
+      <div className="mb-5">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Einstellungen</h1>
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          Profil, Team und rechtliche Angaben verwalten.
+        </p>
+      </div>
+      <div className="mb-6 h-px bg-slate-100 dark:bg-slate-800" />
       <SettingsProfileTabs isAdmin={true} />
       <LegalPrivacyWorkspace subprocessorEntries={subprocessorEntries} />
     </>

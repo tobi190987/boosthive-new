@@ -15,5 +15,15 @@ export default async function ContentBriefsPage() {
 
   const initialBriefs = await getContentBriefsList(context.tenant.id)
 
-  return <ContentBriefsWorkspace initialBriefs={initialBriefs} />
+  return (
+    <>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Content Briefs</h1>
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          Erstelle strukturierte Inhaltsanweisungen für SEO-optimierten Content.
+        </p>
+      </div>
+      <ContentBriefsWorkspace initialBriefs={initialBriefs} />
+    </>
+  )
 }

@@ -14,5 +14,15 @@ export default async function AiPerformancePage() {
 
   const initialAnalyses = await getPerformanceHistoryList(context.tenant.id)
 
-  return <AiPerformanceWorkspace initialAnalyses={initialAnalyses} />
+  return (
+    <>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">AI Performance</h1>
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          Optimiere Inhalte und Kampagnen mit KI-gestützten Analysen.
+        </p>
+      </div>
+      <AiPerformanceWorkspace initialAnalyses={initialAnalyses} />
+    </>
+  )
 }

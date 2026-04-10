@@ -1,4 +1,3 @@
-import { TenantShellHeader } from '@/components/tenant-shell-header'
 import { NotificationsHistoryWorkspace } from '@/components/notifications-history-workspace'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -22,12 +21,12 @@ export default async function NotificationsPage() {
 
   return (
     <>
-      <TenantShellHeader
-        context={context}
-        eyebrow="Übersicht"
-        title="Benachrichtigungen"
-        description="Alle Aktivitäten und Hinweise auf einen Blick."
-      />
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Benachrichtigungen</h1>
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          Alle Aktivitäten und Hinweise auf einen Blick.
+        </p>
+      </div>
       <NotificationsHistoryWorkspace notifications={data ?? []} />
     </>
   )

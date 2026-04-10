@@ -15,9 +15,17 @@ export default async function AiVisibilityPage() {
   const initialProjects = await getVisibilityProjectsList(context.tenant.id)
 
   return (
-    <AiVisibilityWorkspace
-      role={context.membership.role}
-      initialProjects={initialProjects}
-    />
+    <>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">AI Visibility</h1>
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+          Analysiere deine Sichtbarkeit in KI-Suchantworten und LLMs.
+        </p>
+      </div>
+      <AiVisibilityWorkspace
+        role={context.membership.role}
+        initialProjects={initialProjects}
+      />
+    </>
   )
 }

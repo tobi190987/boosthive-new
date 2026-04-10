@@ -1,5 +1,6 @@
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import Link from 'next/link'
+import { Badge } from '@/components/ui/badge'
 import {
   ArrowRight,
   BarChart3,
@@ -13,8 +14,6 @@ import {
   Megaphone,
   Search,
 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
-
 type ColorKey = 'blue' | 'indigo' | 'violet' | 'purple' | 'emerald' | 'orange' | 'amber'
 
 interface ToolCard {
@@ -128,13 +127,8 @@ export default async function ToolsPage() {
   return (
     <div className="space-y-10">
       <div>
-        <Badge className="mb-3 w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
-          Tools
-        </Badge>
-        <h1 className="font-headline text-3xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl">
-          Alle Tools
-        </h1>
-        <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-500 dark:text-slate-400">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Alle Tools</h1>
+        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
           Wähle ein Tool, um loszulegen. Gesperrte Module lassen sich unter Abrechnung aktivieren.
         </p>
       </div>
@@ -144,7 +138,7 @@ export default async function ToolsPage() {
           <h2 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
             {group.label}
           </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {group.items.map((tool) => {
               const hasAccess =
                 activeCodes.includes('all') ||
