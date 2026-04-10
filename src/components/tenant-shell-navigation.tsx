@@ -25,7 +25,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { getUserDisplayName, getUserInitials } from '@/lib/profile'
 import { TOOL_GROUPS } from '@/lib/tool-groups'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
 import { GlobalCommandPalette } from '@/components/global-command-palette'
@@ -286,11 +285,6 @@ function NavigationContent({
           </Tooltip>
         ) : null}
       </div>
-
-      <div data-tour="customer-selector">
-        <CustomerSelectorDropdown />
-      </div>
-
       <Separator className="bg-slate-100 dark:bg-slate-800" />
 
       <nav className="flex-1 px-3 py-3" aria-label="Tenant Navigation" data-tour="sidebar-nav">
@@ -543,11 +537,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{props.context.tenant.name}</p>
           <div className="mt-1 flex items-center gap-2">
-            {activeCustomer ? (
-              <p className="truncate text-xs text-slate-500 dark:text-slate-400">
-                {`Kunde: ${activeCustomer.name}`}
-              </p>
-            ) : null}
+            <p className="truncate text-xs text-slate-500 dark:text-slate-400">Alle Kunden</p>
             <Badge className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950/50">
               {roleLabel(props.context.membership.role)}
             </Badge>
@@ -566,13 +556,6 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
           <CircleHelp className="h-4 w-4" />
         </Link>
       </div>
-
-      <CustomerSelectorDropdown
-        compact
-        className="mx-0 my-0 basis-full"
-        triggerClassName="w-full max-w-none rounded-xl border-slate-200 bg-slate-50 dark:border-border dark:bg-card"
-      />
-
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0">
           <SheetHeader className="sr-only">

@@ -1,5 +1,6 @@
 'use client'
 
+import { usePathname } from 'next/navigation'
 import {
   createContext,
   useCallback,
@@ -34,8 +35,30 @@ interface ActiveCustomerContextValue {
 const ActiveCustomerContext = createContext<ActiveCustomerContextValue | null>(null)
 const customerCache = new Map<string, Customer[]>()
 
-function getStorageKey(tenantSlug: string) {
+function getLegacyStorageKey(tenantSlug: string) {
   return `boosthive_active_customer_${tenantSlug}`
+}
+
+function getCustomerScope(pathname: string | null): string {
+  if (!pathname) return 'global'
+
+  if (pathname === '/dashboard' || pathname.startsWith('/dashboard/')) {
+    return '/dashboard'
+  }
+
+  if (pathname === '/tools' || pathname.startsWith('/tools/')) {
+    const segments = pathname.split('/').filter(Boolean)
+    if (segments.length >= 2) {
+      return `/${segments.slice(0, 2).join('/')}`
+    }
+    return '/tools'
+  }
+
+  return pathname
+}
+
+function getScopedStorageKey(tenantSlug: string, scope: string) {
+  return `boosthive_active_customer_${tenantSlug}_${scope}`
 }
 
 function getCustomerCacheKey(tenantSlug: string) {
@@ -101,6 +124,8 @@ export function ActiveCustomerProvider({
   initialCustomers = [],
   children,
 }: ActiveCustomerProviderProps) {
+  const pathname = usePathname()
+  const activeScope = getCustomerScope(pathname)
   const [customers, setCustomers] = useState<Customer[]>(initialCustomers)
   const [activeCustomer, setActiveCustomerState] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(initialCustomers.length === 0)
@@ -125,20 +150,20 @@ export function ActiveCustomerProvider({
     // If active customer was deleted, reset
     if (activeCustomer && !list.find((c) => c.id === activeCustomer.id)) {
       setActiveCustomerState(null)
-      localStorage.removeItem(getStorageKey(tenantSlug))
+      localStorage.removeItem(getScopedStorageKey(tenantSlug, activeScope))
     }
-  }, [fetchCustomers, activeCustomer, tenantSlug])
+  }, [fetchCustomers, activeCustomer, activeScope, tenantSlug])
 
   const setActiveCustomer = useCallback(
     (customer: Customer | null) => {
       setActiveCustomerState(customer)
       if (customer) {
-        localStorage.setItem(getStorageKey(tenantSlug), customer.id)
+        localStorage.setItem(getScopedStorageKey(tenantSlug, activeScope), customer.id)
       } else {
-        localStorage.removeItem(getStorageKey(tenantSlug))
+        localStorage.removeItem(getScopedStorageKey(tenantSlug, activeScope))
       }
     },
-    [tenantSlug]
+    [activeScope, tenantSlug]
   )
 
   // Initial load: fetch customers + restore from localStorage
@@ -153,27 +178,15 @@ export function ActiveCustomerProvider({
 
     async function init() {
       const cachedCustomers = readCachedCustomers(tenantSlug)
-      const savedId = localStorage.getItem(getStorageKey(tenantSlug))
-
-      const restoreActiveCustomer = (list: Customer[]) => {
-        if (!savedId) return false
-        const match = list.find((customer) => customer.id === savedId)
-        if (match) {
-          setActiveCustomerState(match)
-          return true
-        }
-        return false
-      }
+      localStorage.removeItem(getLegacyStorageKey(tenantSlug))
 
       if (initialCustomers.length > 0) {
-        restoreActiveCustomer(initialCustomers)
         setLoading(false)
         return
       }
 
       if (cachedCustomers.length > 0) {
         setCustomers(cachedCustomers)
-        restoreActiveCustomer(cachedCustomers)
         setLoading(false)
         return
       }
@@ -182,12 +195,6 @@ export function ActiveCustomerProvider({
       if (cancelled) return
 
       setCustomers(list)
-
-      if (savedId && !restoreActiveCustomer(list)) {
-        // Saved customer no longer exists
-        localStorage.removeItem(getStorageKey(tenantSlug))
-      }
-
       setLoading(false)
     }
 
@@ -197,6 +204,26 @@ export function ActiveCustomerProvider({
       cancelled = true
     }
   }, [fetchCustomers, initialCustomers, tenantSlug])
+
+  useEffect(() => {
+    const storageKey = getScopedStorageKey(tenantSlug, activeScope)
+    const savedId = localStorage.getItem(storageKey)
+
+    if (!savedId) {
+      setActiveCustomerState(null)
+      return
+    }
+
+    const match = customers.find((customer) => customer.id === savedId) ?? null
+
+    if (!match) {
+      localStorage.removeItem(storageKey)
+      setActiveCustomerState(null)
+      return
+    }
+
+    setActiveCustomerState((current) => (current?.id === match.id ? current : match))
+  }, [activeScope, customers, tenantSlug])
 
   const value = useMemo<ActiveCustomerContextValue>(
     () => ({

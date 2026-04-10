@@ -35,6 +35,13 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import {
@@ -1589,6 +1596,8 @@ function SeoAnalysisWorkspace({
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [detailLoading, setDetailLoading] = useState(Boolean(initialAnalysisId))
+  const [wizardOpen, setWizardOpen] = useState(false)
+  const [wizardStep, setWizardStep] = useState(1)
   const [urlInput, setUrlInput] = useState('')
   const [crawlMode, setCrawlMode] = useState<SeoCrawlMode>('single')
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'none')
@@ -1600,6 +1609,18 @@ function SeoAnalysisWorkspace({
     urlInput,
     crawlMode !== 'multiple'
   )
+  const wizardUrlEntries = useMemo(
+    () =>
+      urlInput
+        .split(/[\n,]+/)
+        .map((value) => value.trim())
+        .filter(Boolean),
+    [urlInput]
+  )
+  const canGoToWizardStep2 =
+    selectedCustomerId === 'none' || customers.some((customer) => customer.id === selectedCustomerId)
+  const canStartWizardAnalysis =
+    crawlMode === 'multiple' ? wizardUrlEntries.length > 0 : urlInput.trim().length > 0
 
   useEffect(() => {
     setCustomerFilter(activeCustomer?.id ?? 'all')
@@ -1918,7 +1939,7 @@ function SeoAnalysisWorkspace({
       setError(submitError instanceof Error ? submitError.message : 'Analyse fehlgeschlagen.')
       void loadAnalyses()
     }
-  }, [crawlMode, loadAnalyses, router, startPolling, stopPolling, urlInput])
+  }, [crawlMode, loadAnalyses, router, selectedCustomerId, startPolling, stopPolling, urlInput])
 
   if (view.type === 'results') {
     const analysisSummary = analyses.find((analysis) => analysis.id === view.analysisId) ?? null
@@ -2021,187 +2042,57 @@ function SeoAnalysisWorkspace({
   return (
     <div className="space-y-6">
       {/* Tab switcher */}
-      <div className="flex gap-1 rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary p-1 w-fit">
-        <button
-          type="button"
-          onClick={() => setActiveTab('analyse')}
-          className={cn(
-            'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
-            activeTab === 'analyse'
-              ? 'bg-white dark:bg-card text-slate-900 dark:text-slate-100 shadow-sm'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-          )}
-        >
-          Analyse
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('compare')}
-          className={cn(
-            'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
-            activeTab === 'compare'
-              ? 'bg-white dark:bg-card text-slate-900 dark:text-slate-100 shadow-sm'
-              : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
-          )}
-        >
-          Vergleich
-        </button>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex gap-1 rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary p-1 w-fit">
+          <button
+            type="button"
+            onClick={() => setActiveTab('analyse')}
+            className={cn(
+              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+              activeTab === 'analyse'
+                ? 'bg-white dark:bg-card text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            )}
+          >
+            Analyse
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('compare')}
+            className={cn(
+              'rounded-xl px-4 py-2 text-sm font-medium transition-colors',
+              activeTab === 'compare'
+                ? 'bg-white dark:bg-card text-slate-900 dark:text-slate-100 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+            )}
+          >
+            Vergleich
+          </button>
+        </div>
+
+        {activeTab === 'analyse' && (
+          <Button
+            type="button"
+            variant="dark"
+            className="sm:self-start"
+            onClick={() => {
+              setError(null)
+              setWizardStep(1)
+              setWizardOpen(true)
+            }}
+          >
+            <Sparkles className="h-4 w-4" />
+            Neue SEO-Analyse starten
+          </Button>
+        )}
       </div>
 
       {activeTab === 'compare' && <SeoCompareWorkspace />}
 
       {activeTab === 'analyse' && (
       <>
-      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
-            <Search className="h-5 w-5 text-blue-600" />
-            Neue SEO-Analyse starten
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-5">
-          {error && (
-            <Alert className="rounded-2xl border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-800">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Analyse konnte nicht gestartet werden</AlertTitle>
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          <CustomerAssignmentField
-            value={selectedCustomerId}
-            onChange={setSelectedCustomerId}
-            customers={customers}
-            label="Kundenzuordnung"
-            description="Ordne die SEO-Analyse schon beim Start optional einem Kunden zu, damit Verlauf und Reports sauber im richtigen Kontext landen."
-            placeholder="Ohne Kunde analysieren"
-            noneLabel="Ohne Kunde"
-            triggerClassName="h-12 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 dark:border-border dark:bg-card dark:text-slate-100"
-          />
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">Crawl-Modus</label>
-            <div className="grid gap-3 md:grid-cols-3">
-              {[
-                {
-                  value: 'single',
-                  label: 'Einzelne Seite',
-                  description: 'Für Landingpages oder einzelne URLs.',
-                },
-                {
-                  value: 'multiple',
-                  label: 'Mehrere Seiten',
-                  description: 'Eine Liste mehrerer URLs analysieren.',
-                },
-                {
-                  value: 'full-domain',
-                  label: 'Gesamte Domain',
-                  description: 'Versucht die Sitemap der Domain zu crawlen.',
-                },
-              ].map((mode) => (
-                <button
-                  key={mode.value}
-                  type="button"
-                  onClick={() => setCrawlMode(mode.value as SeoCrawlMode)}
-                  className={cn(
-                    'rounded-2xl border px-4 py-4 text-left transition',
-                    crawlMode === mode.value
-                      ? 'border-blue-600 bg-blue-50 dark:bg-blue-950'
-                      : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card hover:border-slate-200'
-                  )}
-                >
-                  <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mode.label}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{mode.description}</p>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800 dark:text-slate-200">
-              {crawlMode === 'multiple' ? 'URLs (eine pro Zeile)' : 'URL'}
-            </label>
-            {crawlMode === 'multiple' ? (
-              <Textarea
-                value={urlInput}
-                onChange={(event) => setUrlInput(event.target.value)}
-                placeholder={'https://example.com/\nhttps://example.com/kontakt'}
-                className="min-h-[150px] rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-              />
-            ) : (
-              <Input
-                value={urlInput}
-                onChange={(event) => setUrlInput(event.target.value)}
-                placeholder="https://example.com"
-                className="h-12 rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
-              />
-            )}
-
-            {crawlMode !== 'multiple' && urlInput.trim() ? (
-              <div
-                className={cn(
-                  'rounded-2xl border px-4 py-3 text-sm',
-                  estimateLoading
-                    ? 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card text-slate-500 dark:text-slate-400'
-                    : hasSitemap
-                      ? 'border-blue-100 bg-blue-50 text-blue-600'
-                      : 'border-amber-200 bg-amber-50 text-amber-800'
-                )}
-              >
-                {estimateLoading ? (
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Sitemap wird gesucht...
-                  </div>
-                ) : hasSitemap ? (
-                  <div className="flex items-start gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
-                      Sitemap gefunden. Es werden voraussichtlich etwa <strong>{estimate}</strong>{' '}
-                      Seite{estimate === 1 ? '' : 'n'} gecrawlt.
-                    </span>
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-2">
-                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <span>
-                      Keine Sitemap erkannt. In diesem Fall wird nur die angegebene URL analysiert.
-                    </span>
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              onClick={() => void handleSubmit()}
-              disabled={submitting}
-              variant="dark"
-            >
-              {submitting ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Analyse startet
-                </>
-              ) : (
-                <>
-                  <Search className="h-4 w-4" />
-                  Analyse starten
-                </>
-              )}
-            </Button>
-            <p className="text-xs leading-6 text-slate-500 dark:text-slate-400">
-              Unterstützt Title, Meta-Description, Heading-Struktur, Links, Alt-Texte,
-              Canonical, Open Graph und technische Checks.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="space-y-4">
-        <div className="flex items-end justify-between gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Analysen-Verlauf</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -2268,6 +2159,252 @@ function SeoAnalysisWorkspace({
           ))
         )}
       </div>
+
+      <Dialog
+        open={wizardOpen}
+        onOpenChange={(open) => {
+          setWizardOpen(open)
+          if (!open) {
+            setWizardStep(1)
+          }
+        }}
+      >
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-3xl border-slate-100 dark:border-border sm:max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Neue SEO-Analyse starten</DialogTitle>
+            <DialogDescription>
+              Richte die Analyse Schritt für Schritt ein und starte sie direkt aus dem Wizard.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-xs font-medium uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                <span>Schritt {wizardStep} von 3</span>
+                <span>
+                  {wizardStep === 1 && 'Kunde'}
+                  {wizardStep === 2 && 'Modus'}
+                  {wizardStep === 3 && 'URLs'}
+                </span>
+              </div>
+              <div className="flex gap-2">
+                {[1, 2, 3].map((step) => (
+                  <div
+                    key={step}
+                    className={cn(
+                      'h-2 flex-1 rounded-full transition-colors',
+                      step <= wizardStep ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-100 dark:bg-secondary'
+                    )}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {error && (
+              <Alert className="rounded-2xl border-amber-200 bg-amber-50 text-amber-800 [&>svg]:text-amber-800">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Analyse konnte nicht gestartet werden</AlertTitle>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            {wizardStep === 1 && (
+              <div className="space-y-5">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+                    Kundenzuordnung wählen
+                  </h3>
+                  <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Ordne die Analyse direkt einem Kunden zu, damit Verlauf und Reports im
+                    richtigen Kontext landen.
+                  </p>
+                </div>
+
+                <CustomerAssignmentField
+                  value={selectedCustomerId}
+                  onChange={setSelectedCustomerId}
+                  customers={customers}
+                  label="Kundenzuordnung"
+                  description="Du kannst die Analyse auch tenant-weit ohne feste Kundenzuordnung speichern."
+                  placeholder="Ohne Kunde analysieren"
+                  noneLabel="Ohne Kunde"
+                  triggerClassName="h-12 rounded-2xl border-slate-200 bg-slate-50 text-slate-900 dark:border-border dark:bg-card dark:text-slate-100"
+                />
+              </div>
+            )}
+
+            {wizardStep === 2 && (
+              <div className="space-y-5">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+                    Crawl-Modus festlegen
+                  </h3>
+                  <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    Entscheide, ob du eine einzelne URL, mehrere Seiten oder eine ganze Domain
+                    über die Sitemap prüfen möchtest.
+                  </p>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {[
+                    {
+                      value: 'single',
+                      label: 'Einzelne Seite',
+                      description: 'Für Landingpages oder punktuelle URL-Checks.',
+                    },
+                    {
+                      value: 'multiple',
+                      label: 'Mehrere Seiten',
+                      description: 'Eine Liste mehrerer URLs in einem Lauf analysieren.',
+                    },
+                    {
+                      value: 'full-domain',
+                      label: 'Gesamte Domain',
+                      description: 'Versucht die Domain über die Sitemap breit zu crawlen.',
+                    },
+                  ].map((mode) => (
+                    <button
+                      key={mode.value}
+                      type="button"
+                      onClick={() => setCrawlMode(mode.value as SeoCrawlMode)}
+                      className={cn(
+                        'rounded-2xl border px-4 py-4 text-left transition',
+                        crawlMode === mode.value
+                          ? 'border-blue-600 bg-blue-50 dark:bg-blue-950'
+                          : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card hover:border-slate-200'
+                      )}
+                    >
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mode.label}</p>
+                      <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">{mode.description}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {wizardStep === 3 && (
+              <div className="space-y-5">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-semibold text-slate-950 dark:text-slate-50">
+                    URL-Ziele eingeben
+                  </h3>
+                  <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    {crawlMode === 'multiple'
+                      ? 'Füge pro Zeile eine URL hinzu. So kann die Analyse mehrere definierte Seiten vergleichen.'
+                      : 'Lege die Start-URL fest. Bei Domain-Analysen wird zusätzlich nach einer Sitemap gesucht.'}
+                  </p>
+                </div>
+
+                {crawlMode === 'multiple' ? (
+                  <Textarea
+                    value={urlInput}
+                    onChange={(event) => setUrlInput(event.target.value)}
+                    placeholder={'https://example.com/\nhttps://example.com/kontakt'}
+                    className="min-h-[180px] rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                  />
+                ) : (
+                  <Input
+                    value={urlInput}
+                    onChange={(event) => setUrlInput(event.target.value)}
+                    placeholder="https://example.com"
+                    className="h-12 rounded-2xl border-slate-200 dark:border-border bg-slate-50 dark:bg-card text-slate-900 dark:text-slate-100 placeholder:text-slate-400"
+                  />
+                )}
+
+                {crawlMode !== 'multiple' && urlInput.trim() ? (
+                  <div
+                    className={cn(
+                      'rounded-2xl border px-4 py-3 text-sm',
+                      estimateLoading
+                        ? 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card text-slate-500 dark:text-slate-400'
+                        : hasSitemap
+                          ? 'border-blue-100 bg-blue-50 text-blue-600'
+                          : 'border-amber-200 bg-amber-50 text-amber-800'
+                    )}
+                  >
+                    {estimateLoading ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Sitemap wird gesucht...
+                      </div>
+                    ) : hasSitemap ? (
+                      <div className="flex items-start gap-2">
+                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          Sitemap gefunden. Es werden voraussichtlich etwa <strong>{estimate}</strong>{' '}
+                          Seite{estimate === 1 ? '' : 'n'} gecrawlt.
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span>
+                          Keine Sitemap erkannt. In diesem Fall wird nur die angegebene URL analysiert.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+
+                <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary px-4 py-3 text-sm text-slate-600 dark:text-slate-300">
+                  {crawlMode === 'multiple'
+                    ? `${wizardUrlEntries.length} URL${wizardUrlEntries.length === 1 ? '' : 's'} vorbereitet`
+                    : 'Die Analyse prüft die eingegebene Start-URL und ergänzt technische Checks automatisch.'}
+                </div>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4 dark:border-border">
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-full"
+                onClick={() => {
+                  if (wizardStep === 1) {
+                    setWizardOpen(false)
+                    return
+                  }
+                  setWizardStep((current) => current - 1)
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                {wizardStep === 1 ? 'Abbrechen' : 'Zurück'}
+              </Button>
+
+              {wizardStep < 3 ? (
+                <Button
+                  type="button"
+                  variant="dark"
+                  onClick={() => setWizardStep((current) => current + 1)}
+                  disabled={wizardStep === 1 && !canGoToWizardStep2}
+                >
+                  Weiter
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="dark"
+                  onClick={() => void handleSubmit()}
+                  disabled={submitting || !canStartWizardAnalysis}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Analyse startet
+                    </>
+                  ) : (
+                    <>
+                      <Search className="h-4 w-4" />
+                      Analyse starten
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       </>
       )}
     </div>

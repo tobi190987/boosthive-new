@@ -43,7 +43,7 @@ export function CustomerSelectorDropdown({
 
   const handleSelect = useCallback(
     (customerId: string) => {
-      if (activeCustomer?.id === customerId) {
+      if (customerId === 'all' || activeCustomer?.id === customerId) {
         setActiveCustomer(null)
       } else {
         const customer = customers.find((c) => c.id === customerId) ?? null
@@ -119,6 +119,21 @@ export function CustomerSelectorDropdown({
               {customers.length === 0 ? 'Noch keine Kunden angelegt.' : 'Kein Kunde gefunden.'}
             </CommandEmpty>
             <CommandGroup>
+              <CommandItem
+                value="Alle Kunden"
+                onSelect={() => handleSelect('all')}
+                className="flex items-center gap-2.5"
+              >
+                <Users2 className="h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium text-slate-900 dark:text-slate-100">
+                    Alle Kunden
+                  </p>
+                </div>
+                {!activeCustomer ? (
+                  <Check className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
+                ) : null}
+              </CommandItem>
               {customers.map((customer) => (
                 <CommandItem
                   key={customer.id}
