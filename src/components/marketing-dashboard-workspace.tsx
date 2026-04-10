@@ -1192,7 +1192,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
   }
 
   return (
-    <div className="space-y-6 print:space-y-4">
+    <div className="print-area space-y-6 print:space-y-4">
       {/* Print-only header */}
       <div className="hidden print:block">
         <div className="mb-4 border-b pb-4">
