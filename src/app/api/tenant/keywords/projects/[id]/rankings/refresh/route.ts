@@ -9,6 +9,10 @@ import {
 } from '@/lib/keyword-rankings'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, GSC_WRITE } from '@/lib/rate-limit'
+import {
+  getCustomerGscIntegration,
+  parseCustomerGscCredentials,
+} from '@/lib/gsc-customer-api'
 
 export const maxDuration = 300
 
@@ -42,7 +46,7 @@ export async function POST(
 
   const { data: project, error: projectError } = await admin
     .from('keyword_projects')
-    .select('id')
+    .select('id, customer_id')
     .eq('id', projectId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
@@ -61,10 +65,23 @@ export async function POST(
     return NextResponse.json({ error: connectionError.message }, { status: 500 })
   }
   if (!connection || connection.status !== 'connected' || !connection.selected_property) {
-    return NextResponse.json(
-      { error: 'Fuer dieses Projekt ist keine aktive GSC-Property konfiguriert.' },
-      { status: 422 }
-    )
+    // Check customer GSC fallback
+    if (project.customer_id) {
+      const customerIntegration = await getCustomerGscIntegration(tenantId, project.customer_id)
+      const creds = parseCustomerGscCredentials(customerIntegration?.credentials_encrypted ?? null)
+      if (!creds?.selected_property) {
+        return NextResponse.json(
+          { error: 'Fuer dieses Projekt ist keine aktive GSC-Property konfiguriert.' },
+          { status: 422 }
+        )
+      }
+      // Customer GSC is available - processRankingRun will use it
+    } else {
+      return NextResponse.json(
+        { error: 'Fuer dieses Projekt ist keine aktive GSC-Property konfiguriert.' },
+        { status: 422 }
+      )
+    }
   }
 
   try {

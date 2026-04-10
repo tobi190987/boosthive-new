@@ -5,6 +5,12 @@ import {
   refreshAccessToken,
   TokenRevokedError,
 } from '@/lib/gsc-oauth'
+import {
+  getCustomerGscIntegration,
+  parseCustomerGscCredentials,
+  saveCustomerGscIntegrationCredentials,
+} from '@/lib/gsc-customer-api'
+import { refreshCustomerGscAccessToken } from '@/lib/gsc-customer-oauth'
 
 type TriggerType = 'manual' | 'cron' | 'internal'
 type RunStatus = 'queued' | 'running' | 'success' | 'failed' | 'skipped'
@@ -17,6 +23,7 @@ interface ProjectRecord {
   country_code: string
   tracking_interval: 'daily' | 'weekly'
   last_tracking_run: string | null
+  customer_id: string | null
 }
 
 interface ConnectionRecord {
@@ -188,7 +195,7 @@ async function loadProject(projectId: string, tenantId: string) {
   const { data, error } = await admin
     .from('keyword_projects')
     .select(
-      'id, tenant_id, status, country_code, tracking_interval, last_tracking_run, last_tracking_status, last_tracking_error'
+      'id, tenant_id, status, country_code, tracking_interval, last_tracking_run, last_tracking_status, last_tracking_error, customer_id'
     )
     .eq('id', projectId)
     .eq('tenant_id', tenantId)
@@ -491,7 +498,39 @@ export async function processRankingRun(runId: string): Promise<RankingRunResult
     }
 
     const connection = await loadConnection(project.id, project.tenant_id)
-    if (!connection || !connection.selected_property || connection.status !== 'connected') {
+
+    // Resolve GSC access token and property (project-level or customer fallback)
+    let resolvedAccessToken: string | null = null
+    let resolvedProperty: string | null = null
+
+    if (connection && connection.selected_property && connection.status === 'connected') {
+      resolvedAccessToken = await ensureAccessToken(connection)
+      resolvedProperty = connection.selected_property
+    } else if (project.customer_id) {
+      // Try customer GSC fallback
+      const customerIntegration = await getCustomerGscIntegration(project.tenant_id, project.customer_id)
+      const creds = parseCustomerGscCredentials(customerIntegration?.credentials_encrypted ?? null)
+      if (creds?.selected_property) {
+        const expiry = new Date(creds.token_expiry).getTime()
+        let accessToken = creds.access_token
+        if (Date.now() > expiry - GSC_REFRESH_BUFFER_MS) {
+          const refreshed = await refreshCustomerGscAccessToken(creds.refresh_token)
+          accessToken = refreshed.access_token
+          await saveCustomerGscIntegrationCredentials({
+            integrationId: customerIntegration!.id,
+            credentials: {
+              ...creds,
+              access_token: refreshed.access_token,
+              token_expiry: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+            },
+          })
+        }
+        resolvedAccessToken = accessToken
+        resolvedProperty = creds.selected_property
+      }
+    }
+
+    if (!resolvedAccessToken || !resolvedProperty) {
       const message = 'Keine aktive GSC-Property für dieses Projekt konfiguriert.'
       await updateRun(runId, {
         status: 'failed',
@@ -533,15 +572,14 @@ export async function processRankingRun(runId: string): Promise<RankingRunResult
       }
     }
 
-    const accessToken = await ensureAccessToken(connection)
     const trackedAt = new Date().toISOString()
     const snapshots: RankingSnapshotInsert[] = []
 
     for (const keyword of keywords) {
       const snapshot = await queryKeywordSnapshot(
-        accessToken,
+        resolvedAccessToken,
         project,
-        connection.selected_property,
+        resolvedProperty,
         keyword,
         trackedAt,
         runId

@@ -42,6 +42,7 @@ export interface CustomerGscDashboardData {
   avgCtr: number
   avgPosition: number
   topKeywords: CustomerGscKeyword[]
+  timeseries?: { label: string; value: number }[]
   isCached?: boolean
   cacheAgeMinutes?: number
   googleEmail?: string
@@ -259,11 +260,25 @@ async function fetchCustomerGscSnapshot(options: {
       ? summaryRows.reduce((sum, row) => sum + (row.position ?? 0), 0) / summaryRows.length
       : 0
 
+  const timeseries = summaryRows
+    .filter((row) => row.keys?.[0])
+    .sort((a, b) => (a.keys?.[0] ?? '').localeCompare(b.keys?.[0] ?? ''))
+    .map((row) => {
+      const dateStr = row.keys?.[0] ?? ''
+      // YYYY-MM-DD → DD.MM.
+      const label =
+        dateStr.length === 10
+          ? `${dateStr.slice(8, 10)}.${dateStr.slice(5, 7)}.`
+          : dateStr
+      return { label, value: row.impressions ?? 0 }
+    })
+
   return {
     impressions,
     clicks,
     avgCtr,
     avgPosition,
+    timeseries,
     topKeywords: keywordRows.map((row) => ({
       keyword: row.keys?.[0] ?? 'Unbekannt',
       clicks: row.clicks ?? 0,

@@ -85,6 +85,7 @@ interface KeywordProject {
   keyword_count: number
   competitor_count: number
   last_tracking_run: string | null
+  customer_id?: string | null
 }
 
 interface Keyword {
@@ -979,6 +980,7 @@ function ProjectDetail({
       initialGscStatus.connection?.selected_property
     )
   })
+  const [customerHasGsc, setCustomerHasGsc] = useState<boolean | null>(null)
   const detailCacheKey = `${PROJECT_DETAIL_CACHE_PREFIX}${projectId}`
   const [activeTab, setActiveTab] = useState(() => {
     if (initialTab) return initialTab
@@ -1015,11 +1017,16 @@ function ProjectDetail({
 
   const loadGscStatus = useCallback(async () => {
     try {
-      const data = await apiFetch<{ connection: { status: string; selected_property: string | null } | null }>(
-        `${API_BASE}/${projectId}/gsc/status`
-      )
+      const data = await apiFetch<{
+        connection: { status: string; selected_property: string | null } | null
+        customer_id?: string | null
+        customer_has_gsc?: boolean
+      }>(`${API_BASE}/${projectId}/gsc/status`)
       const ready = !!(data.connection?.status === 'connected' && data.connection?.selected_property)
       setGscReady(ready)
+      if (data.customer_id) {
+        setCustomerHasGsc(data.customer_has_gsc ?? false)
+      }
     } catch {
       setGscReady(false)
     }
@@ -1058,6 +1065,12 @@ function ProjectDetail({
       setActiveTab('rankings')
     }
   }, [gscReady, activeTab])
+
+  useEffect(() => {
+    if (project?.customer_id && activeTab === 'integrations') {
+      setActiveTab('rankings')
+    }
+  }, [project?.customer_id, activeTab])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -1157,10 +1170,12 @@ function ProjectDetail({
             <Settings className="mr-1.5 h-3.5 w-3.5" />
             Einstellungen
           </TabsTrigger>
-          <TabsTrigger value="integrations" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
-            <Link2 className="mr-1.5 h-3.5 w-3.5" />
-            Integrationen
-          </TabsTrigger>
+          {!project.customer_id && (
+            <TabsTrigger value="integrations" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
+              <Link2 className="mr-1.5 h-3.5 w-3.5" />
+              Integrationen
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent
@@ -1173,6 +1188,8 @@ function ProjectDetail({
             projectId={projectId}
             role={role}
             isActive={activeTab === 'rankings'}
+            customerId={project.customer_id ?? null}
+            customerHasGsc={customerHasGsc}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
         </TabsContent>
@@ -1201,6 +1218,8 @@ function ProjectDetail({
           <AllRankingsTab
             projectId={projectId}
             isActive={activeTab === 'all-rankings'}
+            customerId={project.customer_id ?? null}
+            customerHasGsc={customerHasGsc}
             onOpenIntegrations={() => setActiveTab('integrations')}
           />
         </TabsContent>
@@ -1218,17 +1237,19 @@ function ProjectDetail({
           />
         </TabsContent>
 
-        <TabsContent
-          value="integrations"
-          {...(mountedTabs.includes('integrations') ? { forceMount: true as const } : {})}
-          className="mt-4 data-[state=inactive]:hidden"
-        >
-          <IntegrationsTab
-            projectId={projectId}
-            role={role}
-            isActive={activeTab === 'integrations'}
-          />
-        </TabsContent>
+        {!project.customer_id && (
+          <TabsContent
+            value="integrations"
+            {...(mountedTabs.includes('integrations') ? { forceMount: true as const } : {})}
+            className="mt-4 data-[state=inactive]:hidden"
+          >
+            <IntegrationsTab
+              projectId={projectId}
+              role={role}
+              isActive={activeTab === 'integrations'}
+            />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   )
@@ -1243,10 +1264,12 @@ interface RankingsTabProps {
   projectId: string
   role: WorkspaceRole
   isActive: boolean
+  customerId: string | null
+  customerHasGsc: boolean | null
   onOpenIntegrations: () => void
 }
 
-function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }: RankingsTabProps) {
+function RankingsTab({ project, projectId, role, isActive, customerId, customerHasGsc, onOpenIntegrations }: RankingsTabProps) {
   const { toast } = useToast()
   const isAdmin = role === 'admin'
   const [rows, setRows] = useState<RankingRow[]>([])
@@ -1425,16 +1448,24 @@ function RankingsTab({ project, projectId, role, isActive, onOpenIntegrations }:
             <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
               Search Console noch nicht eingerichtet
             </h2>
-            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Bevor Rankings geladen werden können, braucht dieses Projekt eine verbundene Google-Search-Console-Property.
-            </p>
+            {customerId ? (
+              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Dieses Projekt ist einem Kunden zugeordnet. Die Google Search Console kann im Kundenbereich unter <strong>Kunden → Integrationen</strong> hinterlegt werden.
+              </p>
+            ) : (
+              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Bevor Rankings geladen werden können, braucht dieses Projekt eine verbundene Google-Search-Console-Property.
+              </p>
+            )}
           </div>
-          <Button
-            onClick={onOpenIntegrations}
-            variant="dark"
-          >
-            Zu den Integrationen
-          </Button>
+          {!customerId && (
+            <Button
+              onClick={onOpenIntegrations}
+              variant="dark"
+            >
+              Zu den Integrationen
+            </Button>
+          )}
         </CardContent>
       </Card>
     )
@@ -3001,12 +3032,14 @@ type SortDir = 'asc' | 'desc'
 interface AllRankingsTabProps {
   projectId: string
   isActive: boolean
+  customerId: string | null
+  customerHasGsc: boolean | null
   onOpenIntegrations: () => void
 }
 
 const ROWS_PER_PAGE = 50
 
-function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankingsTabProps) {
+function AllRankingsTab({ projectId, isActive, customerId, customerHasGsc, onOpenIntegrations }: AllRankingsTabProps) {
   const { toast } = useToast()
   const [rows, setRows] = useState<AllRankingsRow[]>([])
   const [loading, setLoading] = useState(true)
@@ -3166,16 +3199,24 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
             <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
               Search Console nicht verbunden
             </h2>
-            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Um alle Rankings zu sehen, muss eine Google Search Console Property verbunden und ausgewählt sein.
-            </p>
+            {customerId ? (
+              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Dieses Projekt ist einem Kunden zugeordnet. Die Google Search Console kann im Kundenbereich unter <strong>Kunden → Integrationen</strong> hinterlegt werden.
+              </p>
+            ) : (
+              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Um alle Rankings zu sehen, muss eine Google Search Console Property verbunden und ausgewählt sein.
+              </p>
+            )}
           </div>
-          <Button
-            onClick={onOpenIntegrations}
-            variant="dark"
-          >
-            Zu den Integrationen
-          </Button>
+          {!customerId && (
+            <Button
+              onClick={onOpenIntegrations}
+              variant="dark"
+            >
+              Zu den Integrationen
+            </Button>
+          )}
         </CardContent>
       </Card>
     )
@@ -3193,16 +3234,24 @@ function AllRankingsTab({ projectId, isActive, onOpenIntegrations }: AllRankings
             <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">
               Verbindung widerrufen
             </h2>
-            <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-              Die Google Search Console Verbindung wurde widerrufen. Bitte erneut verbinden.
-            </p>
+            {customerId ? (
+              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Die Google Search Console Verbindung des Kunden wurde widerrufen. Bitte unter <strong>Kunden → Integrationen</strong> erneut verbinden.
+              </p>
+            ) : (
+              <p className="max-w-xl text-sm leading-7 text-slate-600 dark:text-slate-300">
+                Die Google Search Console Verbindung wurde widerrufen. Bitte erneut verbinden.
+              </p>
+            )}
           </div>
-          <Button
-            onClick={onOpenIntegrations}
-            variant="dark"
-          >
-            Zu den Integrationen
-          </Button>
+          {!customerId && (
+            <Button
+              onClick={onOpenIntegrations}
+              variant="dark"
+            >
+              Zu den Integrationen
+            </Button>
+          )}
         </CardContent>
       </Card>
     )

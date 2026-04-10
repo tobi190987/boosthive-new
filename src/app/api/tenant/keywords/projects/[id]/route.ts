@@ -78,6 +78,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       status,
       last_tracking_run,
       created_at,
+      customer_id,
       keywords(count),
       competitor_domains(count)
     `)
@@ -98,6 +99,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       status: data.status,
       last_tracking_run: data.last_tracking_run,
       created_at: data.created_at,
+      customer_id: data.customer_id,
       keyword_count: (data.keywords as unknown as { count: number }[])?.[0]?.count ?? 0,
       competitor_count: (data.competitor_domains as unknown as { count: number }[])?.[0]?.count ?? 0,
     },

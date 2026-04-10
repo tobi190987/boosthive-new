@@ -18,6 +18,12 @@ import {
 } from '@/lib/gsc-oauth'
 import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
 import type { RateLimitOptions } from '@/lib/rate-limit'
+import {
+  getCustomerGscIntegration,
+  parseCustomerGscCredentials,
+  saveCustomerGscIntegrationCredentials,
+} from '@/lib/gsc-customer-api'
+import { refreshCustomerGscAccessToken } from '@/lib/gsc-customer-oauth'
 
 /** GSC Discovery: 10 requests / hour / tenant+IP */
 const GSC_DISCOVERY: RateLimitOptions = { limit: 10, windowMs: 60 * 60 * 1000 }
@@ -97,7 +103,7 @@ export async function GET(
   // Verify project belongs to tenant
   const { data: project, error: projectError } = await admin
     .from('keyword_projects')
-    .select('id, country_code')
+    .select('id, country_code, customer_id')
     .eq('id', projectId)
     .eq('tenant_id', tenantId)
     .maybeSingle()
@@ -115,52 +121,90 @@ export async function GET(
 
   if (connError) return NextResponse.json({ error: connError.message }, { status: 500 })
 
-  if (!connection || connection.status !== 'connected' || !connection.selected_property) {
+  // Resolve GSC access token and property (project-level or customer fallback)
+  let accessToken: string
+  let selectedProperty: string
+
+  if (connection && connection.status === 'connected' && connection.selected_property) {
+    // Use project-level GSC
+    try {
+      accessToken = decryptToken(connection.encrypted_access_token)
+      const expiresAt = new Date(connection.token_expires_at).getTime()
+
+      if (Date.now() > expiresAt - GSC_REFRESH_BUFFER_MS) {
+        const refreshToken = decryptToken(connection.encrypted_refresh_token)
+        const refreshed = await refreshAccessToken(refreshToken)
+        accessToken = refreshed.access_token
+
+        await admin
+          .from('gsc_connections')
+          .update({
+            encrypted_access_token: encryptToken(refreshed.access_token),
+            token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+            status: 'connected',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', connection.id)
+      }
+    } catch (error) {
+      if (error instanceof TokenRevokedError) {
+        await admin
+          .from('gsc_connections')
+          .update({
+            status: 'revoked',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', connection.id)
+
+        return NextResponse.json(
+          { error: 'GSC-Verbindung wurde widerrufen. Bitte erneut verbinden.' },
+          { status: 403 }
+        )
+      }
+      return NextResponse.json(
+        { error: 'Token-Refresh fehlgeschlagen.' },
+        { status: 500 }
+      )
+    }
+    selectedProperty = connection.selected_property
+  } else if (project.customer_id) {
+    // Try customer GSC fallback
+    try {
+      const customerIntegration = await getCustomerGscIntegration(tenantId, project.customer_id)
+      const creds = parseCustomerGscCredentials(customerIntegration?.credentials_encrypted ?? null)
+
+      if (!creds?.selected_property) {
+        return NextResponse.json(
+          { error: 'Keine aktive GSC-Verbindung für dieses Projekt.' },
+          { status: 422 }
+        )
+      }
+
+      const expiry = new Date(creds.token_expiry).getTime()
+      accessToken = creds.access_token
+      if (Date.now() > expiry - GSC_REFRESH_BUFFER_MS) {
+        const refreshed = await refreshCustomerGscAccessToken(creds.refresh_token)
+        accessToken = refreshed.access_token
+        await saveCustomerGscIntegrationCredentials({
+          integrationId: customerIntegration!.id,
+          credentials: {
+            ...creds,
+            access_token: refreshed.access_token,
+            token_expiry: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
+          },
+        })
+      }
+      selectedProperty = creds.selected_property
+    } catch (error) {
+      return NextResponse.json(
+        { error: error instanceof Error ? error.message : 'Customer GSC Token-Refresh fehlgeschlagen.' },
+        { status: 500 }
+      )
+    }
+  } else {
     return NextResponse.json(
       { error: 'Keine aktive GSC-Verbindung für dieses Projekt.' },
       { status: 422 }
-    )
-  }
-
-  // Ensure valid access token (refresh if needed)
-  let accessToken: string
-  try {
-    accessToken = decryptToken(connection.encrypted_access_token)
-    const expiresAt = new Date(connection.token_expires_at).getTime()
-
-    if (Date.now() > expiresAt - GSC_REFRESH_BUFFER_MS) {
-      const refreshToken = decryptToken(connection.encrypted_refresh_token)
-      const refreshed = await refreshAccessToken(refreshToken)
-      accessToken = refreshed.access_token
-
-      await admin
-        .from('gsc_connections')
-        .update({
-          encrypted_access_token: encryptToken(refreshed.access_token),
-          token_expires_at: new Date(Date.now() + refreshed.expires_in * 1000).toISOString(),
-          status: 'connected',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', connection.id)
-    }
-  } catch (error) {
-    if (error instanceof TokenRevokedError) {
-      await admin
-        .from('gsc_connections')
-        .update({
-          status: 'revoked',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', connection.id)
-
-      return NextResponse.json(
-        { error: 'GSC-Verbindung wurde widerrufen. Bitte erneut verbinden.' },
-        { status: 403 }
-      )
-    }
-    return NextResponse.json(
-      { error: 'Token-Refresh fehlgeschlagen.' },
-      { status: 500 }
     )
   }
 
@@ -171,7 +215,7 @@ export async function GET(
   let gscRows
   try {
     gscRows = await querySearchAnalytics(accessToken, {
-      siteUrl: connection.selected_property,
+      siteUrl: selectedProperty,
       startDate: dateRange.startDate,
       endDate: dateRange.endDate,
       dimensions: ['query'],
@@ -179,7 +223,7 @@ export async function GET(
       country: countryFilter,
     })
   } catch (error) {
-    if (error instanceof TokenRevokedError) {
+    if (error instanceof TokenRevokedError && connection?.id) {
       await admin
         .from('gsc_connections')
         .update({ status: 'revoked', updated_at: new Date().toISOString() })
