@@ -1,7 +1,10 @@
+import Link from 'next/link'
+import { Plus } from 'lucide-react'
 import { getContentBriefsList } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { ContentBriefsWorkspace } from '@/components/content-briefs-workspace'
 import { ModuleLockedCard } from '@/components/module-locked-card'
+import { Button } from '@/components/ui/button'
 
 export default async function ContentBriefsPage() {
   const context = await requireTenantShellContext()
@@ -17,11 +20,19 @@ export default async function ContentBriefsPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Content Briefs</h1>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Erstelle strukturierte Inhaltsanweisungen für SEO-optimierten Content.
-        </p>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Content Briefs</h1>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
+            Erstelle strukturierte Inhaltsanweisungen für SEO-optimierten Content.
+          </p>
+        </div>
+        <Button asChild variant="dark" className="gap-2 self-start">
+          <Link href="/tools/content-briefs?action=create">
+            <Plus className="h-4 w-4" />
+            Neues Briefing
+          </Link>
+        </Button>
       </div>
       <ContentBriefsWorkspace initialBriefs={initialBriefs} />
     </>

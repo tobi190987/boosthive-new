@@ -794,23 +794,6 @@ export function ContentBriefsWorkspace({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">Content Briefs</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            KI-generierte Content-Briefings für SEO-optimierte Inhalte
-          </p>
-        </div>
-        <Button
-          onClick={handleCreateOpen}
-          variant="dark" className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          Neues Briefing
-        </Button>
-      </div>
-
       {/* Error state */}
       {error && (
         <Alert variant="destructive" className="rounded-2xl">
