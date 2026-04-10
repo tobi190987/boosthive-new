@@ -56,7 +56,6 @@ function tenantNav(context: TenantShellContext) {
   const administration: NavItem[] =
     context.membership.role === 'admin'
       ? [
-          { label: 'Übersicht', href: '/verwaltung', icon: LayoutDashboard },
           { label: 'Kunden', href: '/tools/customers', icon: UserRound },
           { label: 'User-Management', href: '/settings/team', icon: Users2 },
           { label: 'Rechtliches & Datenschutz', href: '/settings/legal', icon: ShieldCheck },
