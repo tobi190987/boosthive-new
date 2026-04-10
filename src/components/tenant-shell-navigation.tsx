@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
   ChevronRight,
   CircleHelp,
@@ -80,6 +80,7 @@ function NavigationContent({
 }: TenantShellNavigationProps & { onNavigate?: () => void; inMobileSheet?: boolean }) {
   const pathname = usePathname()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { activeCustomer } = useActiveCustomer()
   const activeCustomerId = activeCustomer?.id ?? null
   const sections = tenantNav(context)
@@ -126,6 +127,10 @@ function NavigationContent({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname])
+
+  useEffect(() => {
+    setPendingHref(null)
+  }, [pathname, searchParams])
 
   const prefetchJson = useCallback(async (url: string, cacheKey?: string, select?: (data: unknown) => unknown) => {
     const res = await fetch(url, { credentials: 'include' })
