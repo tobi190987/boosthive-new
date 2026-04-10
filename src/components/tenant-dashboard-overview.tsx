@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   CheckSquare,
+  CircleHelp,
   Clock,
   FileText,
   Loader2,
@@ -18,6 +19,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { TenantDashboardData } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
@@ -105,13 +107,14 @@ function activityIconBg(type: ActivityItem['type']) {
 
 interface StatCardProps {
   label: string
+  description: string
   value: number | null
   icon: React.ReactNode
   href: string
   loading: boolean
 }
 
-function StatCard({ label, value, icon, href, loading }: StatCardProps) {
+function StatCard({ label, description, value, icon, href, loading }: StatCardProps) {
   return (
     <Link
       href={href}
@@ -126,7 +129,34 @@ function StatCard({ label, value, icon, href, loading }: StatCardProps) {
         ) : (
           <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{value ?? '—'}</p>
         )}
-        <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                role="button"
+                tabIndex={0}
+                aria-label={`${label} erklärt`}
+                className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                onClick={(event) => {
+                  event.preventDefault()
+                  event.stopPropagation()
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                  }
+                }}
+              >
+                <CircleHelp className="h-3.5 w-3.5" />
+              </span>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-56 text-xs leading-5">
+              {description}
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </Link>
   )
@@ -243,6 +273,7 @@ export function TenantDashboardOverview({
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <StatCard
           label="Offene Freigaben"
+          description="Anzahl aller Freigaben, die noch geprüft werden müssen oder mit Änderungswunsch offen sind."
           value={stats?.pendingApprovals ?? null}
           icon={<Clock className="h-5 w-5 text-amber-500" />}
           href="/tools/approvals"
@@ -250,6 +281,7 @@ export function TenantDashboardOverview({
         />
         <StatCard
           label="Content Briefs"
+          description="Gesamtzahl der im Workspace angelegten Content Briefs für Planung und Content-Erstellung."
           value={stats?.briefs ?? null}
           icon={<FileText className="h-5 w-5 text-emerald-500" />}
           href="/tools/content-briefs"
@@ -257,6 +289,7 @@ export function TenantDashboardOverview({
         />
         <StatCard
           label="Kunden"
+          description="Alle aktuell im Workspace hinterlegten Kundenprofile, mit denen du arbeitest."
           value={stats?.customers ?? null}
           icon={<Users2 className="h-5 w-5 text-blue-500" />}
           href="/tools/customers"
@@ -264,6 +297,7 @@ export function TenantDashboardOverview({
         />
         <StatCard
           label="Ad-Texte"
+          description="Anzahl der bereits generierten Werbetexte beziehungsweise Anzeigenvarianten im Ad-Generator."
           value={stats?.ads ?? null}
           icon={<Megaphone className="h-5 w-5 text-purple-500" />}
           href="/tools/ad-generator"
