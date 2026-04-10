@@ -361,7 +361,7 @@ export function TeamMemberTable({
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                           <AlertDialogAction
-                            className="rounded-full bg-blue-600 hover:bg-blue-700"
+                            className="rounded-full bg-slate-900 hover:bg-slate-800"
                             onClick={async () => {
                               await onDelete(entry)
                               setEntryToDelete(null)

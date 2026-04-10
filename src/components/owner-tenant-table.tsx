@@ -387,7 +387,7 @@ export function OwnerTenantTable({
               </Button>
               <Button
                 type="button"
-                className="bg-blue-600 hover:bg-blue-700"
+                className="bg-slate-900 hover:bg-slate-800"
                 onClick={() => void onArchiveSelected()}
                 disabled={bulkAction !== null || selectedNotArchivedCount === 0}
               >
@@ -632,7 +632,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-blue-600 hover:bg-blue-700"
+              className="rounded-full bg-slate-900 hover:bg-slate-800"
               onClick={async () => {
                 if (!archiveTenant) return
                 await onArchiveTenant(archiveTenant)
@@ -664,7 +664,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-blue-600 hover:bg-blue-700"
+              className="rounded-full bg-slate-900 hover:bg-slate-800"
               onClick={async () => {
                 if (!restoreTenant) return
                 await onRestoreTenant(restoreTenant)
@@ -700,7 +700,7 @@ export function OwnerTenantTable({
           <AlertDialogFooter>
             <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
             <AlertDialogAction
-              className="rounded-full bg-blue-600 hover:bg-blue-700"
+              className="rounded-full bg-slate-900 hover:bg-slate-800"
               onClick={async () => {
                 if (!deleteTenant) return
                 if (deleteTenant.is_archived) {

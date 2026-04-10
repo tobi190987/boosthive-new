@@ -1272,7 +1272,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       <AlertDialogTrigger asChild>
                         <Button
                           type="button"
-                          className="rounded-full bg-blue-600 px-5 hover:bg-blue-700"
+                          className="rounded-full bg-slate-900 px-5 text-white hover:bg-slate-800"
                           disabled={lifecycleAction !== null}
                         >
                           {lifecycleAction === "restore" ? (
@@ -1293,7 +1293,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                           <AlertDialogAction
-                            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                            className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
                             onClick={() => void runLifecycleAction("restore")}
                           >
                             Wiederherstellen
@@ -1328,7 +1328,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                         <AlertDialogFooter>
                           <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                           <AlertDialogAction
-                            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                            className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
                             onClick={() => void runLifecycleAction("hard-delete")}
                           >
                             Endgültig löschen
@@ -1364,7 +1364,7 @@ export function OwnerTenantDetailWorkspace({ tenantId }: { tenantId: string }) {
                       <AlertDialogFooter>
                         <AlertDialogCancel className="rounded-full">Abbrechen</AlertDialogCancel>
                         <AlertDialogAction
-                          className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                          className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
                           onClick={() => void runLifecycleAction("archive")}
                         >
                           Archivieren
@@ -2229,8 +2229,8 @@ function OwnerTenantSubscriptionTab({ tenantId }: { tenantId: string }) {
                     className={cn(
                       "rounded-full",
                       isLocked
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "bg-blue-600 text-white hover:bg-blue-700"
+                        ? "bg-slate-900 text-white hover:bg-slate-800"
+                        : "bg-slate-900 text-white hover:bg-slate-800"
                     )}
                     onClick={() => void (isLocked ? handleUnlock() : handleLock())}
                   >

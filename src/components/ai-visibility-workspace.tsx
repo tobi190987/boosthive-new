@@ -1023,7 +1023,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
               <Button
                 onClick={handleSubmit}
                 disabled={submitting || Boolean(estimateLimitError)}
-                className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
               >
                 {submitting && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
                 Analyse starten
@@ -1260,7 +1260,7 @@ function ProjectDetailView({
           </Button>
           <Button
             onClick={() => setNewAnalysisOpen(true)}
-            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+            className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
             size="sm"
           >
             <Plus className="mr-1.5 h-3.5 w-3.5" />
@@ -1451,7 +1451,7 @@ function ProjectDetailView({
                   newAnalysisModels.length === 0 ||
                   Boolean(newAnalysisLimitError)
                 }
-                className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
               >
               {startingAnalysis && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
               Analyse starten
@@ -1805,7 +1805,7 @@ function AnalysisProgressView({ analysisId, onOpenProgress, onOpenReport, onBack
         <div className="flex justify-end">
           <Button
             onClick={() => onOpenReport?.(analysisId)}
-            className="rounded-full bg-blue-600 text-white hover:bg-blue-700"
+            className="rounded-full bg-slate-900 text-white hover:bg-slate-800"
           >
             Zur Auswertung
           </Button>

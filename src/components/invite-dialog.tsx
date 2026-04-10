@@ -152,7 +152,7 @@ export function InviteDialog({
             <Button
               type="submit"
               disabled={loading}
-              className="rounded-full bg-blue-600 px-5 text-white hover:bg-blue-600"
+              className="rounded-full bg-slate-900 px-5 text-white hover:bg-slate-800"
             >
               {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Einladung versenden

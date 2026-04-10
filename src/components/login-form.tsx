@@ -120,7 +120,7 @@ export function LoginForm({
             Passwort
           </Label>
           {showForgotPasswordLink && (
-            <Link href="/forgot-password" className="text-sm font-medium text-blue-600 underline-offset-4 hover:underline">
+            <Link href="/forgot-password" tabIndex={-1} className="text-sm font-medium text-blue-600 underline-offset-4 hover:underline">
               Passwort vergessen?
             </Link>
           )}
@@ -152,7 +152,7 @@ export function LoginForm({
 
       <Button
         type="submit"
-        className="h-[48px] w-full rounded-xl bg-blue-600 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
+        className="h-[48px] w-full rounded-xl bg-slate-900 text-white shadow-[0_4px_14px_rgba(0,0,0,0.15)] transition hover:bg-slate-800 disabled:opacity-60"
         disabled={isSubmitting}
       >
         {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

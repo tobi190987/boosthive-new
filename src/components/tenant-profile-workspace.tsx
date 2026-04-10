@@ -1397,7 +1397,7 @@ export function TenantProfileWorkspace({
                         </p>
                         <Button
                           type="submit"
-                          className="rounded-full bg-blue-600 px-5 hover:bg-blue-700"
+                          className="rounded-full bg-slate-900 px-5 text-white hover:bg-slate-800"
                           disabled={emailForm.formState.isSubmitting}
                         >
                           {emailForm.formState.isSubmitting ? (
@@ -1532,7 +1532,7 @@ export function TenantProfileWorkspace({
                         </p>
                         <Button
                           type="submit"
-                          className="rounded-full bg-blue-600 px-5 hover:bg-blue-700"
+                          className="rounded-full bg-slate-900 px-5 text-white hover:bg-slate-800"
                           disabled={passwordForm.formState.isSubmitting}
                         >
                           {passwordForm.formState.isSubmitting ? (
@@ -1698,7 +1698,7 @@ export function TenantProfileWorkspace({
                 <Button
                   type="submit"
                   form="tenant-profile-form"
-                  className="h-[48px] rounded-xl bg-blue-600 px-6 text-white shadow-[0_4px_14px_rgba(37,99,235,0.25)] transition hover:bg-blue-700 disabled:opacity-60"
+                  className="h-[48px] rounded-xl bg-slate-900 px-6 text-white shadow-[0_4px_14px_rgba(0,0,0,0.15)] transition hover:bg-slate-800 disabled:opacity-60"
                   disabled={isSaving || (isAdmin && billingLoading)}
                 >
                   {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
