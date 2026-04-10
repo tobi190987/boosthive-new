@@ -12,6 +12,7 @@ import {
   BarChart2,
   ChevronsDownUp,
   ChevronsUpDown,
+  CircleHelp,
   Download,
   ExternalLink,
   Eye,
@@ -235,6 +236,7 @@ function mergeTimeseries(
 
 interface KPICardProps {
   label: string
+  description?: string
   value: string | null
   trend: number | null
   icon: React.ReactNode
@@ -278,7 +280,56 @@ function formatTimeseriesTooltipValue(label: string, value: unknown): string {
   return new Intl.NumberFormat('de-DE').format(numericValue)
 }
 
-function KPICard({ label, value, trend, icon, loading, color, size = 'default', className, timeseries }: KPICardProps) {
+function MetricLabel({
+  label,
+  description,
+  size = 'default',
+}: {
+  label: string
+  description?: string
+  size?: 'default' | 'compact'
+}) {
+  const textClass = size === 'compact'
+    ? 'text-xs text-slate-500 dark:text-slate-400'
+    : 'text-sm text-slate-500 dark:text-slate-400'
+
+  if (!description) {
+    return <span className={textClass}>{label}</span>
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <span className={textClass}>{label}</span>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            aria-label={`${label} erklärt`}
+            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 dark:text-slate-500 dark:hover:text-slate-300 dark:focus-visible:ring-slate-700"
+          >
+            <CircleHelp className="h-3.5 w-3.5" />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-64 text-xs leading-5">
+          {description}
+        </TooltipContent>
+      </Tooltip>
+    </div>
+  )
+}
+
+function KPICard({
+  label,
+  description,
+  value,
+  trend,
+  icon,
+  loading,
+  color,
+  size = 'default',
+  className,
+  timeseries,
+}: KPICardProps) {
   const hasChart = !loading && timeseries && timeseries.length > 1
 
   if (size === 'featured') {
@@ -350,7 +401,7 @@ function KPICard({ label, value, trend, icon, loading, color, size = 'default', 
                   {value ?? '--'}
                 </p>
                 <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="text-sm text-slate-500 dark:text-slate-400">{label}</span>
+                  <MetricLabel label={label} description={description} size="default" />
                   {trend !== null && <TrendBadge value={trend} />}
                 </div>
               </>
@@ -383,7 +434,7 @@ function KPICard({ label, value, trend, icon, loading, color, size = 'default', 
                 {value ?? '--'}
               </p>
               <div className="mt-0.5 flex items-center gap-1.5">
-                <span className="text-xs text-slate-500 dark:text-slate-400">{label}</span>
+                <MetricLabel label={label} description={description} size="compact" />
                 {trend !== null && (
                   <TrendBadge value={trend} />
                 )}
@@ -1478,6 +1529,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-5">
               <KPICard
                 label="Seitenaufrufe"
+                description="Wie oft Seiten deiner Website im gewählten Zeitraum angesehen wurden. Mehrfachaufrufe durch dieselbe Person zählen mit."
                 value={ga4.loading ? null : formatNumber(kpis.pageviews.value)}
                 trend={null}
                 icon={<Eye className="h-6 w-6 text-orange-500" />}
@@ -1489,6 +1541,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Nutzer"
+                description="Anzahl eindeutiger Personen, die deine Website im gewählten Zeitraum besucht haben."
                 value={ga4.loading ? null : formatNumber(kpis.users.value)}
                 trend={null}
                 icon={<UserCheck className="h-5 w-5 text-orange-400" />}
@@ -1497,6 +1550,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Conversions"
+                description="Wie viele definierte Zielaktionen auf der Website erfasst wurden, zum Beispiel Formulare, Käufe oder andere wichtige Events."
                 value={ga4.loading ? null : formatNumber(kpis.ga4Conversions.value)}
                 trend={null}
                 icon={<TrendingUp className="h-5 w-5 text-amber-500" />}
@@ -1505,6 +1559,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Absprungrate"
+                description="Anteil der Sitzungen, in denen Besucher ohne weitere relevante Interaktion wieder abgesprungen sind. Niedriger ist meist besser."
                 value={ga4.loading ? null : formatPercent(kpis.bounceRate.value)}
                 trend={null}
                 icon={<Activity className="h-5 w-5 text-orange-400" />}
@@ -1513,6 +1568,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Verweildauer"
+                description="Durchschnittliche Zeit, die Besucher pro Sitzung auf deiner Website verbracht haben."
                 value={ga4.loading ? null : formatDuration(kpis.avgSessionDuration.value)}
                 trend={null}
                 icon={<TrendingUp className="h-5 w-5 text-orange-500" />}
@@ -1533,6 +1589,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-4">
               <KPICard
                 label="Impressions"
+                description="Wie oft deine Website in den Google-Suchergebnissen eingeblendet wurde, unabhängig davon, ob jemand geklickt hat."
                 value={gsc.loading ? null : formatNumber(kpis.gscImpressions.value)}
                 trend={null}
                 icon={<Eye className="h-6 w-6 text-blue-500" />}
@@ -1544,6 +1601,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Klicks"
+                description="Wie oft Nutzer in der Google-Suche auf deine Website geklickt haben."
                 value={gsc.loading ? null : formatNumber(kpis.gscClicks.value)}
                 trend={null}
                 icon={<MousePointerClick className="h-5 w-5 text-blue-500" />}
@@ -1552,6 +1610,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="CTR"
+                description="Click-Through-Rate: Anteil der Impressionen, die zu einem Klick geführt haben."
                 value={gsc.loading ? null : formatPercent(kpis.gscCtr.value)}
                 trend={null}
                 icon={<TrendingUp className="h-5 w-5 text-blue-400" />}
@@ -1560,6 +1619,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Ø Position"
+                description="Durchschnittliche Position deiner Website in den Google-Suchergebnissen. Kleinere Werte bedeuten bessere Rankings."
                 value={gsc.loading ? null : kpis.gscPosition.value.toFixed(1)}
                 trend={null}
                 icon={<Search className="h-5 w-5 text-blue-500" />}
@@ -1581,6 +1641,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-5">
             <KPICard
               label="Aktive Kampagnen"
+              description="Anzahl der derzeit laufenden Werbekampagnen über die verbundenen Ads-Plattformen."
               value={anyLoading ? null : formatNumber(kpis.activeCampaigns.value)}
               trend={null}
               icon={<Zap className="h-5 w-5 text-blue-500" />}
@@ -1589,6 +1650,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             />
             <KPICard
               label="Gesamtausgaben"
+              description="Summe der Werbekosten im gewählten Zeitraum über die verbundenen Kampagnenplattformen."
               value={anyLoading ? null : formatCurrency(kpis.totalSpend.value)}
               trend={null}
               icon={<Wallet className="h-6 w-6 text-red-500" />}
@@ -1600,6 +1662,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             />
             <KPICard
               label="Conversions"
+              description="Anzahl gemessener Zielaktionen aus deinen Google-Ads-Kampagnen, zum Beispiel Leads, Käufe oder andere Conversion-Events."
               value={anyLoading ? null : formatNumber(kpis.conversions.value)}
               trend={null}
               icon={<TrendingUp className="h-5 w-5 text-emerald-600" />}
@@ -1608,6 +1671,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             />
             <KPICard
               label="Avg. CPC"
+              description="Average Cost per Click: durchschnittlicher Preis, den du pro Klick auf deine Anzeige bezahlt hast."
               value={anyLoading ? null : formatCurrency(kpis.avgCpc.value)}
               trend={null}
               icon={<MousePointerClick className="h-5 w-5 text-emerald-500" />}
@@ -1616,6 +1680,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             />
             <KPICard
               label="Avg. CPM"
+              description="Average Cost per Mille: durchschnittliche Kosten pro 1.000 Impressionen deiner Meta-Anzeigen."
               value={anyLoading ? null : formatCurrency(kpis.avgCpm.value)}
               trend={null}
               icon={<Eye className="h-5 w-5 text-violet-500" />}
@@ -1637,6 +1702,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:auto-rows-[160px] print:grid-cols-4">
               <KPICard
                 label="Video Views"
+                description="Wie oft deine TikTok-Videos beziehungsweise Videoanzeigen angesehen wurden."
                 value={tiktok.loading ? null : formatNumber(kpis.tikTokViews.value)}
                 trend={null}
                 icon={<Eye className="h-6 w-6 text-pink-500" />}
@@ -1647,6 +1713,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Klicks"
+                description="Wie oft Nutzer auf deine TikTok-Anzeigen geklickt haben."
                 value={tiktok.loading ? null : formatNumber(tiktok.data?.totalClicks ?? 0)}
                 trend={null}
                 icon={<MousePointerClick className="h-5 w-5 text-pink-500" />}
@@ -1655,6 +1722,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Avg. CPC"
+                description="Average Cost per Click: durchschnittlicher Preis pro Klick bei deinen TikTok-Anzeigen."
                 value={tiktok.loading ? null : formatCurrency(tiktok.data?.averageCpc ?? 0)}
                 trend={null}
                 icon={<Wallet className="h-5 w-5 text-pink-400" />}
@@ -1663,6 +1731,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               />
               <KPICard
                 label="Gesamtkosten"
+                description="Summe der Ausgaben fuer TikTok-Anzeigen im gewählten Zeitraum."
                 value={tiktok.loading ? null : formatCurrency(tiktok.data?.totalCost ?? 0)}
                 trend={null}
                 icon={<Zap className="h-5 w-5 text-pink-500" />}
