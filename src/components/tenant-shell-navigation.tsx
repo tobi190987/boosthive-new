@@ -5,21 +5,13 @@ import { useCallback, useEffect, useRef, useState, type ComponentType } from 're
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import {
-  BarChart3,
-  Bot,
   ChevronRight,
   CircleHelp,
   CreditCard,
-  Eye,
-  FileImage,
-  FileText,
-  LayoutGrid,
   LayoutDashboard,
   Loader2,
   Lock,
-  Megaphone,
   Menu,
-  Search,
   ShieldCheck,
   UserRound,
   Users2,
@@ -31,6 +23,7 @@ import { Separator } from '@/components/ui/separator'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { getUserDisplayName, getUserInitials } from '@/lib/profile'
+import { TOOL_GROUPS } from '@/lib/tool-groups'
 import { ThemeToggle } from '@/components/theme-toggle'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { NotificationBell } from '@/components/notification-bell'
@@ -54,33 +47,6 @@ interface NavItem {
   comingSoon?: boolean
 }
 
-interface ToolNavItem {
-  label: string
-  href: string
-  icon: ComponentType<{ className?: string }>
-  moduleCode: string
-}
-
-const TOOL_GROUPS: { label: string; items: ToolNavItem[] }[] = [
-  {
-    label: 'Analyse & SEO',
-    items: [
-      { label: 'SEO Analyse', href: '/tools/seo-analyse', icon: BarChart3, moduleCode: 'seo_analyse' },
-      { label: 'Keywordranking', href: '/tools/keywords', icon: Search, moduleCode: 'seo_analyse' },
-      { label: 'AI Performance', href: '/tools/ai-performance', icon: Bot, moduleCode: 'ai_performance' },
-      { label: 'AI Visibility', href: '/tools/ai-visibility', icon: Eye, moduleCode: 'ai_visibility' },
-    ],
-  },
-  {
-    label: 'Content & Kampagnen',
-    items: [
-      { label: 'Content Briefs', href: '/tools/content-briefs', icon: FileText, moduleCode: 'content_briefs' },
-      { label: 'Ad Generator', href: '/tools/ad-generator', icon: Megaphone, moduleCode: 'ad_generator' },
-      { label: 'Ads Bibliothek', href: '/tools/ads-library', icon: FileImage, moduleCode: 'ad_generator' },
-      { label: 'Content Workflow', href: '/tools/kanban', icon: LayoutGrid, moduleCode: 'kanban' },
-    ],
-  },
-]
 
 function roleLabel(role: TenantShellContext['membership']['role']) {
   return role === 'admin' ? 'Admin' : 'Member'
@@ -90,6 +56,7 @@ function tenantNav(context: TenantShellContext) {
   const administration: NavItem[] =
     context.membership.role === 'admin'
       ? [
+          { label: 'Übersicht', href: '/verwaltung', icon: LayoutDashboard },
           { label: 'Kunden', href: '/tools/customers', icon: UserRound },
           { label: 'User-Management', href: '/settings/team', icon: Users2 },
           { label: 'Rechtliches & Datenschutz', href: '/settings/legal', icon: ShieldCheck },
@@ -374,7 +341,7 @@ function NavigationContent({
                 <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isSectionOpen(group.label) ? 'rotate-90' : 'rotate-0')} />
               </button>
               {isSectionOpen(group.label) && <ul className="space-y-1">
-                {group.items.map((tool) => {
+                {group.items.filter((tool) => tool.showInNav !== false).map((tool) => {
                   const hasAccess =
                     context.activeModuleCodes.includes('all') ||
                     context.activeModuleCodes.includes(tool.moduleCode) ||
@@ -438,30 +405,16 @@ function NavigationContent({
 
           {sections.administration.length > 0 && (
             <div>
-              <div className="flex items-center justify-between mb-2 px-3">
-                <Link
-                  href="/verwaltung"
-                  onClick={() => handleNavigate('/verwaltung')}
-                  data-tour="nav-admin-group"
-                  className={cn(
-                    'text-[11px] font-medium uppercase tracking-[0.24em] transition-colors',
-                    isNavActive(pathname, '/verwaltung') && pathname === '/verwaltung'
-                      ? 'text-blue-600 dark:text-blue-400'
-                      : 'text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400'
-                  )}
-                >
-                  Verwaltung
-                </Link>
-                <button
-                  type="button"
-                  onClick={() => toggleSection('Verwaltung')}
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
-                  aria-expanded={isSectionOpen('Verwaltung')}
-                  aria-label="Verwaltung ein-/ausblenden"
-                >
-                  <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => toggleSection('Verwaltung')}
+                data-tour="nav-admin-group"
+                className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                aria-expanded={isSectionOpen('Verwaltung')}
+              >
+                Verwaltung
+                <ChevronRight className={cn('h-3.5 w-3.5 transition-transform', isSectionOpen('Verwaltung') ? 'rotate-90' : 'rotate-0')} />
+              </button>
               {isSectionOpen('Verwaltung') && <ul className="space-y-1">
                 {sections.administration.map((item) => {
                   const active = isNavActive(pathname, item.href)

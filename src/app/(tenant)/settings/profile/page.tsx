@@ -6,7 +6,7 @@ export default async function ProfileSettingsPage() {
 
   return (
     <>
-      <div className="mb-5">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Einstellungen</h1>
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
           Profil, Team und rechtliche Angaben verwalten.
