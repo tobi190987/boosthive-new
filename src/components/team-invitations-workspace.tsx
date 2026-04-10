@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Loader2, RefreshCw } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
 import { InviteDialog, type InvitationDraft } from '@/components/invite-dialog'
 import { TeamMemberTable, type TeamMemberRecord } from '@/components/team-member-table'
 import { Button } from '@/components/ui/button'
@@ -38,7 +38,6 @@ function normalizeEntry(entry: TeamMemberRecord): TeamMemberRecord {
 export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspaceProps) {
   const [entries, setEntries] = useState<TeamMemberRecord[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [activity, setActivity] = useState('Lade Teammitglieder und offene Einladungen direkt aus der API.')
   const [error, setError] = useState<string | null>(null)
   const [pendingAction, setPendingAction] = useState<{
     id: string
@@ -65,7 +64,6 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
           ? payload.entries.map(normalizeEntry)
           : []
       )
-      setActivity('Teamstatus aktualisiert.')
     } catch (loadError) {
       setError(
         loadError instanceof Error
@@ -133,9 +131,6 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       })
     }
 
-    setActivity(
-      `Einladung an ${draft.email} als ${draft.role === 'admin' ? 'Admin' : 'User'} wurde versendet.`
-    )
   }
 
   async function handleResend(id: string) {
@@ -170,7 +165,6 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         setEntries((current) =>
           current.map((entry) => (entry.id === id ? nextEntry : entry))
         )
-        setActivity(`Einladung an ${payload.invitation.email} wurde erneut versendet.`)
       }
     } finally {
       setPendingAction(null)
@@ -204,11 +198,6 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
       }
 
       setEntries((current) => current.filter((currentEntry) => currentEntry.id !== entry.id))
-      setActivity(
-        entry.kind === 'invitation'
-          ? `Einladung an ${entry.email ?? 'den User'} wurde gelöscht.`
-          : `${entry.email ?? entry.name ?? 'Der User'} wurde aus dem Team entfernt.`
-      )
     } finally {
       setPendingAction(null)
     }
@@ -221,13 +210,6 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
           {error}
         </div>
       )}
-
-      <div className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-5 py-4 text-sm text-slate-600 dark:text-slate-300 shadow-sm">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-400" />
-          <p>{activity}</p>
-        </div>
-      </div>
 
       {isLoading ? (
         <div className="flex min-h-48 items-center justify-center rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
