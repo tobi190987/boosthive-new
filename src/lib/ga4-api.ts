@@ -22,6 +22,7 @@ export interface GA4MetricsResult {
   pageviews: number
   bounceRate: number
   avgSessionDuration: number
+  conversions: number
   timeseries: { label: string; value: number }[]
   trend: number | null
 }
@@ -422,6 +423,7 @@ export async function fetchGA4Metrics(
       { name: 'screenPageViews' },
       { name: 'bounceRate' },
       { name: 'averageSessionDuration' },
+      { name: 'conversions' },
     ],
   }
 
@@ -457,6 +459,7 @@ export async function fetchGA4Metrics(
   const pageviews = parseFloat(currentRow[2]?.value ?? '0')
   const bounceRate = parseFloat(currentRow[3]?.value ?? '0') * 100
   const avgSessionDuration = parseFloat(currentRow[4]?.value ?? '0')
+  const conversions = parseFloat(currentRow[5]?.value ?? '0')
   const previousSessions = parseFloat(previousRow[0]?.value ?? '0')
   const trend = previousSessions > 0 ? ((sessions - previousSessions) / previousSessions) * 100 : null
 
@@ -469,7 +472,7 @@ export async function fetchGA4Metrics(
     body: JSON.stringify({
       dateRanges: [{ startDate, endDate }],
       dimensions: [{ name: 'date' }],
-      metrics: [{ name: 'sessions' }],
+      metrics: [{ name: 'screenPageViews' }],
       orderBys: [{ dimension: { dimensionName: 'date' }, desc: false }],
     }),
   })
@@ -499,6 +502,7 @@ export async function fetchGA4Metrics(
     pageviews,
     bounceRate,
     avgSessionDuration,
+    conversions,
     timeseries,
     trend,
   }
@@ -558,6 +562,7 @@ export function createEmptyGA4DashboardData(
     pageviews: 0,
     bounceRate: 0,
     avgSessionDuration: 0,
+    conversions: 0,
     timeseries: [],
     trend: null,
     googleEmail: credentials.google_email,

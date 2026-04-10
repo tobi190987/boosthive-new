@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { TenantMobileHeader, TenantSidebar } from '@/components/tenant-shell-navigation'
 import { TenantShellHeader } from '@/components/tenant-shell-header'
 import { AppBreadcrumb } from '@/components/app-breadcrumb'
+import { OnboardingTour } from '@/components/onboarding-tour'
 import { ActiveCustomerProvider } from '@/lib/active-customer-context'
 import type { TenantShellSummary } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
@@ -31,6 +32,11 @@ export function TenantAppShell({
       initialCustomers={shellSummary.customers}
     >
       <div className="min-h-screen bg-background text-foreground">
+        <OnboardingTour
+          tenantId={context.tenant.id}
+          userId={context.user.id}
+          enabled={context.onboarding.isComplete}
+        />
         <div className="flex min-h-screen">
           <TenantSidebar
             context={context}

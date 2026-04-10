@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { OnboardingTourTrigger } from '@/components/onboarding-tour'
 import { TenantAppShell } from '@/components/tenant-app-shell'
 import { TenantProfileWorkspace } from '@/components/tenant-profile-workspace'
 import { getTenantShellSummary } from '@/lib/tenant-app-data'
@@ -20,6 +21,7 @@ export default async function OnboardingPage() {
       title="Richte dein Profil und euren Workspace ein"
       description="Beim ersten Login sammeln wir die Pflichtdaten für dein Profil. Admins hinterlegen zusätzlich die verpflichtenden Rechnungsdaten und Stripe."
     >
+      <OnboardingTourTrigger tenantId={context.tenant.id} userId={context.user.id} />
       <TenantProfileWorkspace
         mode="onboarding"
         initialData={{

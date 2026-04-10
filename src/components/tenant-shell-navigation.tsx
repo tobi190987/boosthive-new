@@ -304,6 +304,7 @@ function NavigationContent({
                 onClick={() => handleNavigate('/help')}
                 onMouseEnter={() => router.prefetch('/help')}
                 onFocus={() => router.prefetch('/help')}
+                data-tour="help-link"
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
                 aria-label="Hilfe öffnen"
               >
@@ -331,6 +332,7 @@ function NavigationContent({
                 onClick={() => handleNavigate('/dashboard')}
                 onMouseEnter={() => router.prefetch('/dashboard')}
                 onFocus={() => router.prefetch('/dashboard')}
+                data-tour="nav-dashboard"
                 className={cn(
                   'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
                   isNavActive(pathname, '/dashboard')
@@ -358,6 +360,13 @@ function NavigationContent({
               <button
                 type="button"
                 onClick={() => toggleSection(group.label)}
+                data-tour={
+                  group.label === 'Analyse & SEO'
+                    ? 'nav-analysis-group'
+                    : group.label === 'Content & Kampagnen'
+                      ? 'nav-content-group'
+                      : undefined
+                }
                 className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
                 aria-expanded={isSectionOpen(group.label)}
               >
@@ -433,6 +442,7 @@ function NavigationContent({
                 <Link
                   href="/verwaltung"
                   onClick={() => handleNavigate('/verwaltung')}
+                  data-tour="nav-admin-group"
                   className={cn(
                     'text-[11px] font-medium uppercase tracking-[0.24em] transition-colors',
                     isNavActive(pathname, '/verwaltung') && pathname === '/verwaltung'

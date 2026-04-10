@@ -14,7 +14,9 @@ import {
   Settings2,
   Users2,
 } from 'lucide-react'
+import { restartOnboardingTour } from '@/components/onboarding-tour'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
@@ -732,14 +734,12 @@ export function HelpCenterPage() {
 
   const [selectedArticleId, setSelectedArticleId] = useState(articles[0]?.id ?? '')
 
-  useEffect(() => {
-    if (!filteredArticles.some((article) => article.id === selectedArticleId)) {
-      setSelectedArticleId(filteredArticles[0]?.id ?? '')
-    }
-  }, [filteredArticles, selectedArticleId])
+  const resolvedSelectedArticleId = filteredArticles.some((article) => article.id === selectedArticleId)
+    ? selectedArticleId
+    : (filteredArticles[0]?.id ?? '')
 
   const selectedArticle =
-    filteredArticles.find((article) => article.id === selectedArticleId) ??
+    filteredArticles.find((article) => article.id === resolvedSelectedArticleId) ??
     filteredArticles[0] ??
     null
 
@@ -753,9 +753,9 @@ export function HelpCenterPage() {
     }))
   }, [selectedArticle])
 
-  useEffect(() => {
-    setActiveSectionId(selectedSectionLinks[0]?.id ?? null)
-  }, [selectedSectionLinks])
+  const resolvedActiveSectionId = selectedSectionLinks.some((section) => section.id === activeSectionId)
+    ? activeSectionId
+    : (selectedSectionLinks[0]?.id ?? null)
 
   function handleSectionJump(sectionId: string) {
     setActiveSectionId(sectionId)
@@ -792,6 +792,20 @@ export function HelpCenterPage() {
               className="h-11 rounded-2xl border-slate-200 bg-slate-50 pl-11 dark:border-border dark:bg-secondary"
             />
           </div>
+        </div>
+
+        <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-slate-200 pt-5 dark:border-border">
+          <Button
+            type="button"
+            variant="outline"
+            className="rounded-2xl border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100 dark:border-border dark:bg-secondary dark:text-slate-200 dark:hover:bg-secondary/80"
+            onClick={() => restartOnboardingTour()}
+          >
+            Einführung erneut starten
+          </Button>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Startet die geführte Produkttour mit Sidebar, Funktionen und wichtigen Navigationselementen erneut.
+          </p>
         </div>
       </section>
 
@@ -848,7 +862,7 @@ export function HelpCenterPage() {
                                       onClick={() => handleSectionJump(section.id)}
                                       className={cn(
                                         'flex w-full items-start gap-2 rounded-xl px-2 py-2 text-left text-xs leading-5 transition',
-                                        activeSectionId === section.id
+                                        resolvedActiveSectionId === section.id
                                           ? 'bg-white text-slate-900 dark:bg-secondary dark:text-slate-100'
                                           : 'text-slate-500 hover:bg-white hover:text-slate-900 dark:text-slate-400 dark:hover:bg-card dark:hover:text-slate-100'
                                       )}
