@@ -217,14 +217,13 @@ async function generateWithClaude(input: {
   existingCompetitors: string[]
   targetDomain: string
 }): Promise<KeywordProjectSuggestionsResult | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_API_KEY
+  const apiKey = process.env.OPENROUTER_API_KEY
   if (!apiKey) return null
 
   const modelCandidates = [
     process.env.ANTHROPIC_SEO_MODEL,
-    process.env.CLAUDE_MODEL,
-    'claude-haiku-4-5-20251001',
-    'claude-sonnet-4-6',
+    'anthropic/claude-haiku-4-5',
+    'anthropic/claude-sonnet-4-5',
   ].filter(Boolean) as string[]
 
   const prompt = [
@@ -265,20 +264,25 @@ async function generateWithClaude(input: {
   const errors: string[] = []
 
   for (const model of modelCandidates) {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://boost-hive.de',
+        'X-Title': 'BoostHive',
       },
       body: JSON.stringify({
         model,
-        system:
-          'Du bist ein präziser deutscher SEO-Research-Assistent. Antworte ausschließlich mit validem JSON ohne Markdown und ohne Zusatztext.',
         max_tokens: 900,
         temperature: 0.2,
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          {
+            role: 'system',
+            content: 'Du bist ein präziser deutscher SEO-Research-Assistent. Antworte ausschließlich mit validem JSON ohne Markdown und ohne Zusatztext.',
+          },
+          { role: 'user', content: prompt },
+        ],
       }),
     })
 
@@ -289,10 +293,10 @@ async function generateWithClaude(input: {
     }
 
     const data = (await response.json()) as {
-      content?: Array<{ type: string; text?: string }>
+      choices?: Array<{ message?: { content?: string } }>
     }
 
-    const text = data.content?.find((item) => item.type === 'text' && item.text)?.text
+    const text = data.choices?.[0]?.message?.content
     if (!text) {
       errors.push(`${model}: Leere KI-Antwort erhalten.`)
       continue
