@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
@@ -9,6 +9,9 @@ import {
   AlertCircle,
   ArrowDownRight,
   ArrowUpRight,
+  BarChart2,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Download,
   ExternalLink,
   Eye,
@@ -394,6 +397,39 @@ function PlatformInfoBanner({
   )
 }
 
+function getPlatformPreview(key: string, state: PlatformState<unknown> | undefined): React.ReactNode {
+  if (!state?.connected) return null
+  if (state.loading) return <Skeleton className="h-3 w-20" />
+  if (!state.data) return null
+  const data = state.data
+  switch (key) {
+    case 'ga4': {
+      const d = data as GA4Data
+      return <>{formatNumber(d.sessions)} Sessions</>
+    }
+    case 'gsc': {
+      const d = data as GSCData
+      return <>{formatNumber(d.clicks)} Klicks</>
+    }
+    case 'googleAds': {
+      const d = data as GoogleAdsData
+      return <>{d.campaigns.filter((c) => c.status === 'ENABLED').length} Kampagnen · {formatCurrency(d.totalCost)}</>
+    }
+    case 'metaAds': {
+      const d = data as MetaAdsData
+      const reach = d.totalReach ?? d.campaigns.reduce((sum, c) => sum + c.reach, 0)
+      return <>{formatNumber(reach)} Reach</>
+    }
+    case 'tiktok': {
+      const d = data as TikTokData
+      const views = d.totalVideoViews ?? d.campaigns.reduce((sum, c) => sum + (c.videoViews ?? c.views ?? 0), 0)
+      return <>{formatNumber(views)} Views</>
+    }
+    default:
+      return null
+  }
+}
+
 function DashboardCustomerPickerCard({
   activeCustomerName,
   hasCustomers,
@@ -458,12 +494,6 @@ function GA4Section({
   const d = state.data
   return (
     <div className="space-y-5 py-2">
-      {(d.googleEmail || d.propertyName) && (
-        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500 dark:text-slate-400">
-          {d.googleEmail && <span><span className="font-medium">Konto:</span> {d.googleEmail}</span>}
-          {d.propertyName && <span><span className="font-medium">Property:</span> {d.propertyName}{d.propertyId ? ` (${d.propertyId})` : ''}</span>}
-        </div>
-      )}
       {d.isCached && (
         <PlatformInfoBanner tone="warning">
           Daten aus dem Cache
@@ -582,41 +612,54 @@ function GoogleAdsSection({
   if (!state.data) return <PlatformSkeleton />
 
   const d = state.data
+  const [showAll, setShowAll] = useState(false)
+  const visibleCampaigns = showAll ? d.campaigns : d.campaigns.slice(0, 5)
+
   return (
     <div className="space-y-5 py-2">
       {d.campaigns.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Keine aktiven Kampagnen</p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Kampagne</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
-                <TableHead className="text-right text-xs">Budget</TableHead>
-                <TableHead className="text-right text-xs">Klicks</TableHead>
-                <TableHead className="text-right text-xs">Kosten</TableHead>
-                <TableHead className="text-right text-xs">Conversions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {d.campaigns.map((c) => (
-                <TableRow key={c.name}>
-                  <TableCell className="text-sm font-medium">{c.name}</TableCell>
-                  <TableCell>
-                    <Badge variant={c.status === 'ENABLED' ? 'default' : 'outline'} className="rounded-full text-[11px]">
-                      {c.status === 'ENABLED' ? 'Aktiv' : c.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatCurrency(c.budget)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.clicks)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatCurrency(c.cost)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.conversions)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <BarChart2 className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+          <p className="text-sm text-slate-400 dark:text-slate-500">Keine Kampagnen im Zeitraum</p>
         </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Kampagne</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-right text-xs">Budget</TableHead>
+                  <TableHead className="text-right text-xs">Klicks</TableHead>
+                  <TableHead className="text-right text-xs">Kosten</TableHead>
+                  <TableHead className="text-right text-xs">Conversions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visibleCampaigns.map((c) => (
+                  <TableRow key={c.name}>
+                    <TableCell className="text-sm font-medium">{c.name}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.status === 'ENABLED' ? 'default' : 'outline'} className="rounded-full text-[11px]">
+                        {c.status === 'ENABLED' ? 'Aktiv' : c.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(c.budget)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatNumber(c.clicks)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(c.cost)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatNumber(c.conversions)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {d.campaigns.length > 5 && (
+            <Button variant="ghost" size="sm" className="w-full rounded-xl text-xs" onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Weniger anzeigen' : `Alle ${d.campaigns.length} Kampagnen anzeigen`}
+            </Button>
+          )}
+        </>
       )}
     </div>
   )
@@ -651,72 +694,50 @@ function MetaAdsSection({
   if (!state.data) return <PlatformSkeleton />
 
   const d = state.data
-  const totalReach = d.totalReach ?? d.campaigns.reduce((sum, campaign) => sum + campaign.reach, 0)
-  const totalImpressions =
-    d.totalImpressions ?? d.campaigns.reduce((sum, campaign) => sum + campaign.impressions, 0)
   const totalConversions =
     d.totalConversions ?? d.campaigns.reduce((sum, campaign) => sum + campaign.conversions, 0)
-  const currencyLabel = d.currency ?? 'EUR'
+  const [showAll, setShowAll] = useState(false)
+  const visibleCampaigns = showAll ? d.campaigns : d.campaigns.slice(0, 5)
 
   return (
     <div className="space-y-5 py-2">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
-          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Gesamt-Reichweite</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {formatNumber(totalReach)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
-          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Impressions</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {formatNumber(totalImpressions)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
-          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Durchschnittlicher CPM</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {formatCurrency(d.avgCpm)}
-          </p>
-        </div>
-        <div className="rounded-xl border border-slate-100 bg-slate-50/70 px-4 py-3 dark:border-border dark:bg-slate-900/40">
-          <p className="text-xs uppercase tracking-wide text-slate-400 dark:text-slate-500">Gesamtausgaben</p>
-          <p className="mt-1 text-lg font-semibold tabular-nums text-slate-900 dark:text-slate-100">
-            {formatCurrency(d.totalCost)}
-          </p>
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-            Waehrung: {currencyLabel}
-          </p>
-        </div>
-      </div>
-
       {d.campaigns.length === 0 ? (
-        <p className="py-8 text-center text-sm text-slate-400 dark:text-slate-500">Keine aktiven Kampagnen</p>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Kampagne</TableHead>
-                <TableHead className="text-right text-xs">Reichweite</TableHead>
-                <TableHead className="text-right text-xs">Impressions</TableHead>
-                <TableHead className="text-right text-xs">CPM</TableHead>
-                <TableHead className="text-right text-xs">Conversions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {d.campaigns.map((c) => (
-                <TableRow key={c.name}>
-                  <TableCell className="text-sm font-medium">{c.name}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.reach)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.impressions)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatCurrency(c.cpm)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.conversions)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <BarChart2 className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+          <p className="text-sm text-slate-400 dark:text-slate-500">Keine Kampagnen im Zeitraum</p>
         </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Kampagne</TableHead>
+                  <TableHead className="text-right text-xs">Reichweite</TableHead>
+                  <TableHead className="text-right text-xs">Impressions</TableHead>
+                  <TableHead className="text-right text-xs">CPM</TableHead>
+                  <TableHead className="text-right text-xs">Conversions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {visibleCampaigns.map((c) => (
+                  <TableRow key={c.name}>
+                    <TableCell className="text-sm font-medium">{c.name}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatNumber(c.reach)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatNumber(c.impressions)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(c.cpm)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatNumber(c.conversions)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {d.campaigns.length > 5 && (
+            <Button variant="ghost" size="sm" className="w-full rounded-xl text-xs" onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Weniger anzeigen' : `Alle ${d.campaigns.length} Kampagnen anzeigen`}
+            </Button>
+          )}
+        </>
       )}
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -769,6 +790,9 @@ function TikTokSection({
       return !status || status === 'active' || status === 'enabled'
     }).length
 
+  const [showAll, setShowAll] = useState(false)
+  const visibleCampaigns = showAll ? d.campaigns : d.campaigns.slice(0, 5)
+
   return (
     <div className="space-y-5 py-2">
       {d.message && <PlatformInfoBanner>{d.message}</PlatformInfoBanner>}
@@ -780,45 +804,48 @@ function TikTokSection({
       )}
 
       {d.campaigns.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 px-4 py-10 text-center dark:border-slate-800">
-          <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-            Keine TikTok-Kampagnen im gewaehlten Zeitraum
-          </p>
-          <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
-            Sobald ein Advertiser verbunden ist und Daten liefert, erscheinen hier Kampagnen, Views und Kosten.
-          </p>
+        <div className="flex flex-col items-center gap-2 py-10 text-center">
+          <BarChart2 className="h-8 w-8 text-slate-200 dark:text-slate-700" />
+          <p className="text-sm text-slate-400 dark:text-slate-500">Keine Kampagnen im Zeitraum</p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="text-xs">Kampagne</TableHead>
-                <TableHead className="text-xs">Status</TableHead>
-                <TableHead className="text-right text-xs">Views</TableHead>
-                <TableHead className="text-right text-xs">Klicks</TableHead>
-                <TableHead className="text-right text-xs">CPC</TableHead>
-                <TableHead className="text-right text-xs">Kosten</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {d.campaigns.map((c) => (
-                <TableRow key={c.name}>
-                  <TableCell className="text-sm font-medium">{c.name}</TableCell>
-                  <TableCell className="text-sm text-slate-500 dark:text-slate-400">
-                    {c.status ?? 'Aktiv'}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">
-                    {formatNumber(c.videoViews ?? c.views ?? 0)}
-                  </TableCell>
-                  <TableCell className="text-right tabular-nums">{formatNumber(c.clicks)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatCurrency(c.cpc)}</TableCell>
-                  <TableCell className="text-right tabular-nums">{formatCurrency(c.cost)}</TableCell>
+        <>
+          <div className="overflow-x-auto rounded-xl border border-slate-100 dark:border-border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="text-xs">Kampagne</TableHead>
+                  <TableHead className="text-xs">Status</TableHead>
+                  <TableHead className="text-right text-xs">Views</TableHead>
+                  <TableHead className="text-right text-xs">Klicks</TableHead>
+                  <TableHead className="text-right text-xs">CPC</TableHead>
+                  <TableHead className="text-right text-xs">Kosten</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+              </TableHeader>
+              <TableBody>
+                {visibleCampaigns.map((c) => (
+                  <TableRow key={c.name}>
+                    <TableCell className="text-sm font-medium">{c.name}</TableCell>
+                    <TableCell className="text-sm text-slate-500 dark:text-slate-400">
+                      {c.status ?? 'Aktiv'}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {formatNumber(c.videoViews ?? c.views ?? 0)}
+                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{formatNumber(c.clicks)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(c.cpc)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatCurrency(c.cost)}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+          {d.campaigns.length > 5 && (
+            <Button variant="ghost" size="sm" className="w-full rounded-xl text-xs" onClick={() => setShowAll(!showAll)}>
+              {showAll ? 'Weniger anzeigen' : `Alle ${d.campaigns.length} Kampagnen anzeigen`}
+            </Button>
+          )}
+        </>
       )}
 
       <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -884,6 +911,10 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
   const [detailCustomer, setDetailCustomer] = useState<CustomerDetailData | null>(null)
   const [detailDialogOpen, setDetailDialogOpen] = useState(false)
   const [openingIntegrations, setOpeningIntegrations] = useState(false)
+  const [openPlatforms, setOpenPlatforms] = useState<string[]>([])
+  const [initializedFor, setInitializedFor] = useState<string | null>(null)
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null)
+  const prevAnyLoadingRef = useRef(false)
 
   const platformStates: Record<string, PlatformState<unknown>> = {
     ga4, gsc, googleAds, metaAds, tiktok,
@@ -1088,6 +1119,34 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
   // Determine connected platforms for accordion default open
   const connectedKeys = PLATFORMS.filter((p) => platformStates[p.key]?.connected).map((p) => p.key)
 
+  // Auto-open connected platforms on first load per customer
+  useEffect(() => {
+    if (!anyLoading && activeCustomer && initializedFor !== activeCustomer.id && connectedKeys.length > 0) {
+      setOpenPlatforms(connectedKeys)
+      setInitializedFor(activeCustomer.id)
+    }
+  }, [anyLoading, activeCustomer, connectedKeys, initializedFor])
+
+  // Reset accordion when customer changes
+  useEffect(() => {
+    if (activeCustomer && initializedFor && initializedFor !== activeCustomer.id) {
+      setOpenPlatforms([])
+    }
+  }, [activeCustomer, initializedFor])
+
+  // Track last refresh time: set when loading goes from true → false
+  useEffect(() => {
+    if (prevAnyLoadingRef.current && !anyLoading) {
+      setLastRefreshed(new Date())
+    }
+    prevAnyLoadingRef.current = anyLoading
+  }, [anyLoading])
+
+  const handleManualRefresh = useCallback(() => {
+    if (!activeCustomer) return
+    fetchAll(activeCustomer.id, range)
+  }, [activeCustomer, fetchAll, range])
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -1176,6 +1235,29 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               ))}
             </TabsList>
           </Tabs>
+          {lastRefreshed && (
+            <span className="hidden text-xs text-slate-400 dark:text-slate-500 lg:inline">
+              {lastRefreshed.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
+            </span>
+          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-xl"
+                onClick={handleManualRefresh}
+                disabled={anyLoading}
+              >
+                {anyLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Daten aktualisieren</TooltipContent>
+          </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -1432,28 +1514,58 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       </div>
 
       {/* Platform Sections */}
+      {hasAnyData && (
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 rounded-lg px-2 text-xs text-slate-500"
+            onClick={() => setOpenPlatforms(PLATFORMS.map((p) => p.key))}
+          >
+            <ChevronsUpDown className="mr-1 h-3.5 w-3.5" />
+            Alle aufklappen
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 rounded-lg px-2 text-xs text-slate-500"
+            onClick={() => setOpenPlatforms([])}
+          >
+            <ChevronsDownUp className="mr-1 h-3.5 w-3.5" />
+            Alle einklappen
+          </Button>
+        </div>
+      )}
       <Accordion
         type="multiple"
-        defaultValue={connectedKeys}
+        value={openPlatforms}
+        onValueChange={setOpenPlatforms}
         className="space-y-3"
       >
         {PLATFORMS.map((platform) => {
           const state = platformStates[platform.key]
+          const isConnected = state?.connected ?? false
+          const preview = getPlatformPreview(platform.key, state as PlatformState<unknown>)
           return (
             <AccordionItem
               key={platform.key}
               value={platform.key}
-              className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card print:break-inside-avoid"
+              className={`rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card print:break-inside-avoid transition-opacity ${!isConnected ? 'opacity-60' : ''}`}
             >
               <AccordionTrigger className="px-5 py-4 hover:no-underline [&[data-state=open]>div>.chevron]:rotate-180">
-                <div className="flex w-full items-center gap-3">
-                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${platform.iconBgClass}`}>
+                <div className="flex w-full min-w-0 items-center gap-3">
+                  <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${platform.iconBgClass} ${!isConnected ? 'grayscale' : ''}`}>
                     {PLATFORM_ICONS[platform.key]}
                   </div>
                   <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">
                     {platform.label}
                   </span>
-                  <PlatformBadge connected={state?.connected ?? false} />
+                  <PlatformBadge connected={isConnected} />
+                  {preview && (
+                    <span className="ml-auto shrink-0 pr-2 text-xs tabular-nums text-slate-400 dark:text-slate-500">
+                      {preview}
+                    </span>
+                  )}
                 </div>
               </AccordionTrigger>
               <AccordionContent className="px-5 pb-5">
