@@ -33,6 +33,7 @@ export interface MetaAdsDashboardData {
   totalReach: number
   totalImpressions: number
   totalConversions: number
+  timeseries?: { label: string; value: number }[]
   currency?: string
   isCached?: boolean
   cacheAgeMinutes?: number
@@ -61,6 +62,7 @@ export interface MetaAdsIntegrationRecord {
 }
 
 interface MetaAdsInsightRow {
+  date_start?: string
   campaign_name?: string
   reach?: string
   impressions?: string
@@ -378,6 +380,34 @@ async function fetchMetaAdsInsights(options: {
   return mapInsightRowsToDashboard(data.data ?? [], options.currency)
 }
 
+async function fetchMetaAdsCostTimeseries(options: {
+  accessToken: string
+  adAccountId: string
+  startDate: string
+  endDate: string
+}): Promise<{ label: string; value: number }[]> {
+  const url = new URL(`${META_GRAPH_API}/${normalizeAdAccountId(options.adAccountId)}/insights`)
+  url.searchParams.set('fields', 'date_start,spend')
+  url.searchParams.set('level', 'account')
+  url.searchParams.set('time_increment', '1')
+  url.searchParams.set('limit', '500')
+  url.searchParams.set(
+    'time_range',
+    JSON.stringify({ since: options.startDate, until: options.endDate })
+  )
+  url.searchParams.set('access_token', options.accessToken)
+
+  const data = await fetchMetaJson<{ data?: MetaAdsInsightRow[] }>(url)
+
+  return (data.data ?? [])
+    .map((row) => ({
+      label: row.date_start ?? '',
+      value: parseNumber(row.spend),
+    }))
+    .filter((point) => point.label)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
 function getCachedSnapshot(
   credentials: MetaAdsCredentials,
   range: MetaAdsDateRangeKey
@@ -475,7 +505,7 @@ export async function getMetaAdsDashboardSnapshot(
       }
     }
 
-    const [current, previous] = await Promise.all([
+    const [current, previous, timeseries] = await Promise.all([
       fetchMetaAdsInsights({
         accessToken,
         adAccountId: activeAdAccountId,
@@ -490,7 +520,15 @@ export async function getMetaAdsDashboardSnapshot(
         endDate: compareEndDate,
         currency: refreshedCredentials.currency,
       }),
+      fetchMetaAdsCostTimeseries({
+        accessToken,
+        adAccountId: activeAdAccountId,
+        startDate,
+        endDate,
+      }),
     ])
+
+    current.timeseries = timeseries
 
     await storeCachedSnapshot(integration.id, refreshedCredentials, range, current)
 

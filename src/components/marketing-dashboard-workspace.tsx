@@ -109,6 +109,7 @@ interface GoogleAdsData {
   totalCost: number
   avgCpc: number
   totalConversions: number
+  timeseries?: { label: string; value: number }[]
 }
 
 interface MetaCampaign {
@@ -126,6 +127,7 @@ interface MetaAdsData {
   totalReach?: number
   totalImpressions?: number
   totalConversions?: number
+  timeseries?: { label: string; value: number }[]
   currency?: string
 }
 
@@ -146,6 +148,7 @@ interface TikTokData {
   totalVideoViews?: number
   averageCpc?: number
   activeCampaigns?: number
+  timeseries?: { label: string; value: number }[]
   currency?: string
   isCached?: boolean
   cacheAgeMinutes?: number
@@ -207,6 +210,23 @@ function formatDuration(seconds: number): string {
   const m = Math.floor(seconds / 60)
   const s = Math.round(seconds % 60)
   return `${m}:${s.toString().padStart(2, '0')} Min.`
+}
+
+function mergeTimeseries(
+  ...seriesList: Array<{ label: string; value: number }[] | undefined>
+): { label: string; value: number }[] {
+  const totalsByLabel = new Map<string, number>()
+
+  for (const series of seriesList) {
+    for (const point of series ?? []) {
+      if (!point.label) continue
+      totalsByLabel.set(point.label, (totalsByLabel.get(point.label) ?? 0) + point.value)
+    }
+  }
+
+  return Array.from(totalsByLabel.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([label, value]) => ({ label, value }))
 }
 
 // ---------------------------------------------------------------------------
@@ -1210,11 +1230,16 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         (tiktok.data?.totalCost ?? 0),
       trend: null,
     }
+    const totalSpendTimeseries = mergeTimeseries(
+      googleAds.data?.timeseries,
+      metaAds.data?.timeseries,
+      tiktok.data?.timeseries
+    )
     const tikTokViews: TrendValue = { value: tiktok.data?.totalVideoViews ?? 0, trend: null }
     return {
       visitors, users, pageviews, bounceRate, avgSessionDuration, ga4Conversions,
       gscImpressions, gscClicks, gscCtr, gscPosition,
-      activeCampaigns, avgCpc, avgCpm, conversions, totalSpend, tikTokViews,
+      activeCampaigns, avgCpc, avgCpm, conversions, totalSpend, totalSpendTimeseries, tikTokViews,
     }
   }, [ga4, gsc, googleAds, metaAds, tiktok])
 
@@ -1554,6 +1579,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               color="#ef4444"
               size="featured"
               className="col-span-2 sm:row-span-2"
+              timeseries={range !== 'today' ? kpis.totalSpendTimeseries : undefined}
             />
             <KPICard
               label="Conversions"

@@ -34,6 +34,7 @@ export interface TikTokAdsDashboardData {
   totalVideoViews: number
   averageCpc: number
   activeCampaigns: number
+  timeseries?: { label: string; value: number }[]
   currency?: string
   isCached?: boolean
   cacheAgeMinutes?: number
@@ -445,6 +446,44 @@ async function fetchTikTokCampaignReport(options: {
   return rows
 }
 
+async function fetchTikTokCostTimeseries(options: {
+  accessToken: string
+  advertiserId: string
+  startDate: string
+  endDate: string
+}): Promise<{ label: string; value: number }[]> {
+  const url = new URL(`${TIKTOK_API_BASE}/report/integrated/get/`)
+
+  const body = {
+    advertiser_id: options.advertiserId,
+    report_type: 'BASIC',
+    data_level: 'AUCTION_ADVERTISER',
+    dimensions: ['stat_time_day'],
+    metrics: ['spend'],
+    start_date: options.startDate,
+    end_date: options.endDate,
+    page: 1,
+    page_size: 1000,
+  }
+
+  const data = await fetchTikTokJson<TikTokListResponse<TikTokReportRow>>(url, {
+    method: 'POST',
+    headers: {
+      'Access-Token': options.accessToken,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  return extractTikTokList(data, 'report/integrated/get')
+    .map((row) => ({
+      label: String(row.dimensions?.stat_time_day ?? ''),
+      value: getReportCost(row),
+    }))
+    .filter((point) => point.label)
+    .sort((a, b) => a.label.localeCompare(b.label))
+}
+
 function getReportCampaignId(row: TikTokReportRow): string {
   return normalizeId(row.campaign_id || row.dimensions?.campaign_id)
 }
@@ -622,7 +661,7 @@ export async function getTikTokAdsDashboardSnapshot(
       }
     }
 
-    const [currentCampaigns, currentReport, previousReport] = await Promise.all([
+    const [currentCampaigns, currentReport, previousReport, timeseries] = await Promise.all([
       fetchTikTokCampaigns({ accessToken, advertiserId }),
       fetchTikTokCampaignReport({ accessToken, advertiserId, startDate, endDate }),
       fetchTikTokCampaignReport({
@@ -631,6 +670,12 @@ export async function getTikTokAdsDashboardSnapshot(
         startDate: compareStartDate,
         endDate: compareEndDate,
       }),
+      fetchTikTokCostTimeseries({
+        accessToken,
+        advertiserId,
+        startDate,
+        endDate,
+      }),
     ])
 
     const current = mapTikTokRowsToDashboard({
@@ -638,6 +683,7 @@ export async function getTikTokAdsDashboardSnapshot(
       reportRows: currentReport,
       currency: refreshedCredentials.currency,
     })
+    current.timeseries = timeseries
     const previous = mapTikTokRowsToDashboard({
       campaignRows: currentCampaigns,
       reportRows: previousReport,

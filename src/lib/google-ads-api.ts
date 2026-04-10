@@ -54,6 +54,7 @@ export interface GoogleAdsDashboardData {
   totalCost: number
   avgCpc: number
   totalConversions: number
+  timeseries?: { label: string; value: number }[]
   currency?: string
   isCached?: boolean
   cacheAgeMinutes?: number
@@ -65,6 +66,9 @@ interface AccessibleCustomersResponse {
 }
 
 interface GoogleAdsSearchStreamRow {
+  segments?: {
+    date?: string
+  }
   customer?: {
     id?: string | number
     descriptiveName?: string
@@ -567,6 +571,47 @@ async function fetchGoogleAdsCampaignSnapshot(options: {
   }
 }
 
+async function fetchGoogleAdsCostTimeseries(options: {
+  accessToken: string
+  customerId: string
+  managerCustomerId?: string
+  startDate: string
+  endDate: string
+}): Promise<{ label: string; value: number }[]> {
+  const customerId = normalizeCustomerId(options.customerId)
+  const managerCustomerId = normalizeCustomerId(options.managerCustomerId ?? '')
+  const batches = await fetchGoogleAdsJson<GoogleAdsSearchStreamBatch[]>(
+    `${GOOGLE_ADS_API_BASE}/customers/${customerId}/googleAds:searchStream`,
+    {
+      method: 'POST',
+      headers: buildGoogleAdsHeaders(options.accessToken, managerCustomerId || customerId),
+      body: JSON.stringify({
+        query: `
+          SELECT
+            segments.date,
+            metrics.cost_micros
+          FROM campaign
+          WHERE segments.date BETWEEN '${options.startDate}' AND '${options.endDate}'
+        `,
+      }),
+    },
+    { tokenErrorMessage: 'Google-Ads-Token ist abgelaufen oder wurde widerrufen.' }
+  )
+
+  const totalsByDate = new Map<string, number>()
+
+  for (const row of batches.flatMap((batch) => batch.results ?? [])) {
+    const date = String(row.segments?.date ?? '').trim()
+    if (!date) continue
+    const cost = parseNumber(row.metrics?.costMicros) / 1_000_000
+    totalsByDate.set(date, (totalsByDate.get(date) ?? 0) + cost)
+  }
+
+  return Array.from(totalsByDate.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([label, value]) => ({ label, value }))
+}
+
 function getCachedSnapshot(
   credentials: GoogleAdsCredentials,
   range: GoogleAdsDateRangeKey
@@ -658,7 +703,7 @@ export async function getGoogleAdsDashboardSnapshot(
       }
     }
 
-    const [current, previous] = await Promise.all([
+    const [current, previous, timeseries] = await Promise.all([
       fetchGoogleAdsCampaignSnapshot({
         accessToken,
         customerId: activeCustomerId,
@@ -675,7 +720,16 @@ export async function getGoogleAdsDashboardSnapshot(
         endDate: compareEndDate,
         currency: refreshedCredentials.currency_code,
       }),
+      fetchGoogleAdsCostTimeseries({
+        accessToken,
+        customerId: activeCustomerId,
+        managerCustomerId: refreshedCredentials.google_ads_manager_customer_id,
+        startDate,
+        endDate,
+      }),
     ])
+
+    current.timeseries = timeseries
 
     await storeCachedSnapshot(integration.id, refreshedCredentials, range, current)
 
