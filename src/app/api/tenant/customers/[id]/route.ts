@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { requireTenantUser, requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { recordTenantDataAuditLog } from '@/lib/tenant-data-audit'
+import { CUSTOMER_INDUSTRIES, CUSTOMER_INDUSTRY_ERROR_MESSAGE } from '@/lib/customer-industries'
 import {
   checkRateLimit,
   getClientIp,
@@ -14,7 +15,9 @@ import {
 const updateCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Name ist erforderlich.').max(200).optional(),
   domain: z.string().trim().max(500).nullable().optional(),
-  industry: z.string().trim().max(200).nullable().optional(),
+  industry: z.enum(CUSTOMER_INDUSTRIES, {
+    error: () => ({ message: CUSTOMER_INDUSTRY_ERROR_MESSAGE }),
+  }).optional(),
   contact_email: z.string().trim().email('Ungültige E-Mail-Adresse.').nullable().optional(),
   internal_notes: z.string().trim().max(5000).nullable().optional(),
   status: z.enum(['active', 'paused']).optional(),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { requireTenantUser, requireTenantAdmin } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { CUSTOMER_INDUSTRIES, CUSTOMER_INDUSTRY_ERROR_MESSAGE } from '@/lib/customer-industries'
 import {
   checkRateLimit,
   getClientIp,
@@ -13,7 +14,9 @@ import {
 const createCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Name ist erforderlich.').max(200),
   domain: z.string().trim().max(500).nullable().optional(),
-  industry: z.string().trim().max(200).nullable().optional(),
+  industry: z.enum(CUSTOMER_INDUSTRIES, {
+    error: () => ({ message: CUSTOMER_INDUSTRY_ERROR_MESSAGE }),
+  }),
   contact_email: z.string().trim().email('Ungültige E-Mail-Adresse.').nullable().optional(),
   status: z.enum(['active', 'paused']).default('active'),
 })

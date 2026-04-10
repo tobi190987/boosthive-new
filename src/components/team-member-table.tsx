@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { type ReactNode, useMemo, useState } from 'react'
 import { CalendarDays, Loader2, Mail, RotateCcw, Search, ShieldAlert, Trash2, UserRound } from 'lucide-react'
 import {
   AlertDialog,
@@ -48,6 +48,13 @@ export interface TeamMemberRecord {
 
 interface TeamMemberTableProps {
   entries: TeamMemberRecord[]
+  summary?: {
+    members: number
+    pendingInvites: number
+    admins: number
+  }
+  tenantSlug?: string
+  headerActions?: ReactNode
   pendingAction?: {
     id: string
     type: 'delete' | 'resend'
@@ -102,6 +109,9 @@ function initialsForEntry(entry: TeamMemberRecord) {
 
 export function TeamMemberTable({
   entries,
+  summary,
+  tenantSlug,
+  headerActions,
   pendingAction,
   onResend,
   onDelete,
@@ -150,16 +160,20 @@ export function TeamMemberTable({
           <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">
             Mitglieder und Einladungen
           </h2>
+          {tenantSlug ? (
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Team: {tenantSlug}</p>
+          ) : null}
         </div>
-        <div className="flex flex-wrap gap-3">
-          <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
-            {activeCount} aktiv
+        <div className="flex flex-wrap items-center gap-3 sm:justify-end">
+          {headerActions}
+          <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+            {summary?.members ?? activeCount} Mitglieder
           </div>
-          <div className="rounded-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
-            {pendingCount} Einladung offen
+          <div className="rounded-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary/80 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
+            {summary?.pendingInvites ?? pendingCount} Einladung offen
           </div>
-          <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
-            {adminCount} Admin
+          <div className="rounded-full border border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+            {summary?.admins ?? adminCount} Admin
           </div>
         </div>
       </div>
@@ -171,12 +185,12 @@ export function TeamMemberTable({
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
             placeholder="Nach Name oder E-Mail suchen"
-            className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 dark:border-border dark:bg-card"
+            className="h-11 rounded-xl border-slate-200 bg-slate-50 pl-10 text-slate-900 dark:border-border dark:bg-secondary/70 dark:text-slate-100"
           />
         </div>
         <div className="flex flex-col gap-3 sm:flex-row">
           <Select value={kindFilter} onValueChange={(value) => setKindFilter(value as 'all' | TeamMemberRecord['kind'])}>
-            <SelectTrigger className="w-full rounded-xl sm:w-[180px]">
+            <SelectTrigger className="w-full rounded-xl bg-white dark:bg-secondary/70 sm:w-[180px]">
               <SelectValue placeholder="Typ" />
             </SelectTrigger>
             <SelectContent>
@@ -186,7 +200,7 @@ export function TeamMemberTable({
             </SelectContent>
           </Select>
           <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as 'all' | TeamMemberRecord['status'])}>
-            <SelectTrigger className="w-full rounded-xl sm:w-[180px]">
+            <SelectTrigger className="w-full rounded-xl bg-white dark:bg-secondary/70 sm:w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -249,7 +263,7 @@ export function TeamMemberTable({
                 <TableCell className="pl-6">
                   <div className="flex items-center gap-3">
                     <Avatar className="h-11 w-11 border border-slate-100 dark:border-border bg-slate-100 dark:bg-secondary">
-                      <AvatarFallback className="bg-blue-50 text-sm font-semibold text-blue-600">
+                      <AvatarFallback className="bg-blue-50 text-sm font-semibold text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
                         {initialsForEntry(entry)}
                       </AvatarFallback>
                     </Avatar>
@@ -271,10 +285,10 @@ export function TeamMemberTable({
                 <TableCell>
                   <Badge
                     variant="outline"
-                    className={cn(
-                      'rounded-full border px-3 py-1 text-xs font-semibold',
+                      className={cn(
+                        'rounded-full border px-3 py-1 text-xs font-semibold',
                       entry.role === 'admin'
-                        ? 'border-amber-200 bg-amber-50 text-blue-600 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300'
+                        ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300'
                         : 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                     )}
                   >
@@ -290,7 +304,7 @@ export function TeamMemberTable({
                         ? 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                         : entry.status === 'inactive'
                           ? 'border-[#e8d7d7] bg-[#fbefef] text-[#991b1b] dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300'
-                          : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300'
+                          : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary/80 text-slate-600 dark:text-slate-300'
                     )}
                   >
                     {statusCopy(entry.status)}
@@ -333,7 +347,7 @@ export function TeamMemberTable({
                         <Button
                           type="button"
                           variant="outline"
-                          className="rounded-full border-amber-200 bg-white dark:bg-card text-blue-600 hover:bg-amber-50"
+                          className="rounded-full border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/70 dark:bg-card dark:text-red-300 dark:hover:bg-red-950/30"
                           disabled={Boolean(pendingAction)}
                           onClick={() => setEntryToDelete(entry)}
                         >

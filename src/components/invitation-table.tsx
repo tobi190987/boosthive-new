@@ -60,10 +60,10 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
           <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-slate-50">Ausstehende und versendete Einladungen</h2>
         </div>
         <div className="flex flex-wrap gap-3">
-          <div className="rounded-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="rounded-full border border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary/80 px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
             {pendingCount} offen
           </div>
-          <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-slate-600 dark:text-slate-300">
+          <div className="rounded-full border border-[#d7eadf] bg-[#eff8f2] px-4 py-2 text-sm text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
             {invitations.filter((invitation) => invitation.status === 'accepted').length} angenommen
           </div>
         </div>
@@ -87,7 +87,7 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
               <TableRow key={invitation.id} className="border-slate-100 dark:border-border hover:bg-slate-50 dark:hover:bg-[#1e2635]">
                 <TableCell className="pl-6">
                   <div className="flex items-start gap-3">
-                    <div className="rounded-2xl bg-blue-50 p-2 text-blue-600">
+                    <div className="rounded-2xl bg-blue-50 p-2 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
                       {invitation.status === 'accepted' ? (
                         <UserRoundPlus className="h-4 w-4" />
                       ) : invitation.status === 'revoked' ? (
@@ -110,7 +110,7 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs font-semibold',
                       invitation.role === 'admin'
-                        ? 'border-amber-200 bg-amber-50 text-blue-600 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300'
+                        ? 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300'
                         : 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                     )}
                   >
@@ -126,7 +126,7 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
                         ? 'border-[#d7eadf] bg-[#eff8f2] text-[#166534] dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300'
                         : invitation.status === 'revoked'
                           ? 'border-[#e8d7d7] bg-[#fbefef] text-[#991b1b] dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300'
-                          : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-card text-slate-600 dark:text-slate-300'
+                          : 'border-slate-100 dark:border-border bg-slate-50 dark:bg-secondary/80 text-slate-600 dark:text-slate-300'
                     )}
                   >
                     {statusCopy(invitation.status)}
@@ -153,7 +153,7 @@ export function InvitationTable({ invitations, onResend, onRevoke }: InvitationT
                     <Button
                       type="button"
                       variant="outline"
-                      className="rounded-full border-amber-200 bg-white dark:bg-card text-blue-600 hover:bg-amber-50"
+                      className="rounded-full border-red-200 bg-white text-red-700 hover:bg-red-50 dark:border-red-900/70 dark:bg-card dark:text-red-300 dark:hover:bg-red-950/30"
                       disabled={!isPending}
                       onClick={() => onRevoke(invitation.id)}
                     >

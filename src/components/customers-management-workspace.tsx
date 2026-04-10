@@ -18,6 +18,7 @@ import { FilterChips } from '@/components/filter-chips'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
+import { CUSTOMER_INDUSTRIES, isCustomerIndustry } from '@/lib/customer-industries'
 
 // Extended customer type for enhanced features
 interface CustomerExtended {
@@ -151,7 +152,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     setForm({
       name: customer.name,
       domain: customer.domain || '',
-      industry: customer.industry || '',
+      industry: isCustomerIndustry(customer.industry) ? customer.industry : '',
       status: customer.status,
     })
     setDialogOpen(true)
@@ -189,6 +190,11 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
   const handleSave = useCallback(async () => {
     if (!form.name.trim()) {
       toast.error('Bitte gib einen Kundennamen ein.')
+      return
+    }
+
+    if (!form.industry) {
+      toast.error('Bitte wähle eine Branche aus.')
       return
     }
 
@@ -550,14 +556,22 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="industry">Branche</Label>
-              <Input
-                id="industry"
+              <Label htmlFor="industry">Branche <span className="text-destructive">*</span></Label>
+              <Select
                 value={form.industry}
-                onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                placeholder="z.B. E-Commerce"
-                disabled={saving}
-              />
+                onValueChange={(value) => setForm({ ...form, industry: value })}
+              >
+                <SelectTrigger id="industry" disabled={saving}>
+                  <SelectValue placeholder="Branche auswählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {CUSTOMER_INDUSTRIES.map((industry) => (
+                    <SelectItem key={industry} value={industry}>
+                      {industry}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -576,7 +590,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
             <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={saving}>
               Abbrechen
             </Button>
-            <Button onClick={handleSave} disabled={saving || !form.name.trim()}>
+            <Button onClick={handleSave} disabled={saving || !form.name.trim() || !form.industry}>
               {saving ? 'Speichern...' : 'Speichern'}
             </Button>
           </DialogFooter>

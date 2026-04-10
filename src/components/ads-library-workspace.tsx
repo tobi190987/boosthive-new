@@ -49,6 +49,7 @@ import {
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
+import { CUSTOMER_INDUSTRIES } from '@/lib/customer-industries'
 
 interface AdAsset {
   id: string
@@ -912,6 +913,11 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
       return
     }
 
+    if (!customerForm.industry) {
+      toast.error('Bitte wähle eine Branche aus.')
+      return
+    }
+
     setSavingCustomer(true)
     try {
       const response = await fetch('/api/tenant/customers', {
@@ -920,7 +926,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
         body: JSON.stringify({
           name: customerForm.name.trim(),
           domain: customerForm.domain.trim() || null,
-          industry: customerForm.industry.trim() || null,
+          industry: customerForm.industry,
           status: customerForm.status,
         }),
       })
@@ -1394,16 +1400,24 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="customer-industry">Branche</Label>
-                  <Input
-                    id="customer-industry"
+                  <Label htmlFor="customer-industry">Branche *</Label>
+                  <Select
                     value={customerForm.industry}
-                    onChange={(event) =>
-                      setCustomerForm((current) => ({ ...current, industry: event.target.value }))
+                    onValueChange={(value) =>
+                      setCustomerForm((current) => ({ ...current, industry: value }))
                     }
-                    placeholder="z.B. E-Commerce"
-                    disabled={savingCustomer}
-                  />
+                  >
+                    <SelectTrigger id="customer-industry" disabled={savingCustomer}>
+                      <SelectValue placeholder="Branche auswählen" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CUSTOMER_INDUSTRIES.map((industry) => (
+                        <SelectItem key={industry} value={industry}>
+                          {industry}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="customer-status">Status</Label>

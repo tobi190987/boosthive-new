@@ -97,7 +97,7 @@ export function InviteDialog({
           </DialogHeader>
 
           {error && (
-            <div className="mx-6 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mx-6 mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/30 dark:text-red-300">
               {error}
             </div>
           )}
@@ -141,7 +141,7 @@ export function InviteDialog({
             <Button
               type="button"
               variant="ghost"
-              className="rounded-full text-slate-500 dark:text-slate-400 hover:bg-blue-50 hover:text-slate-900 dark:hover:text-slate-100"
+              className="rounded-full text-slate-500 dark:text-slate-400 hover:bg-blue-50 hover:text-slate-900 dark:hover:bg-blue-950/30 dark:hover:text-slate-100"
               onClick={() => {
                 resetForm()
                 setOpen(false)

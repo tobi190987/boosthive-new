@@ -53,6 +53,7 @@ import {
   Zap,
 } from 'lucide-react'
 import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
+import { CUSTOMER_INDUSTRIES, isCustomerIndustry } from '@/lib/customer-industries'
 
 interface CustomerExtended {
   id: string
@@ -156,7 +157,7 @@ export function CustomerDetailWorkspace({
   const [form, setForm] = useState<CustomerFormData>({
     name: customer.name,
     domain: customer.domain ?? '',
-    industry: customer.industry ?? '',
+    industry: isCustomerIndustry(customer.industry) ? customer.industry : '',
     contact_email: customer.contact_email ?? '',
     internal_notes: customer.internal_notes ?? '',
     status: customer.status,
@@ -212,7 +213,7 @@ export function CustomerDetailWorkspace({
     setForm({
       name: customer.name,
       domain: customer.domain ?? '',
-      industry: customer.industry ?? '',
+      industry: isCustomerIndustry(customer.industry) ? customer.industry : '',
       contact_email: customer.contact_email ?? '',
       internal_notes: customer.internal_notes ?? '',
       status: customer.status,
@@ -561,6 +562,10 @@ export function CustomerDetailWorkspace({
       toast.error('Bitte gib einen Kundennamen ein.')
       return
     }
+    if (!form.industry) {
+      toast.error('Bitte wähle eine Branche aus.')
+      return
+    }
     setSaving(true)
     try {
       const res = await fetch(`/api/tenant/customers/${customer.id}`, {
@@ -569,7 +574,7 @@ export function CustomerDetailWorkspace({
         body: JSON.stringify({
           name: form.name,
           domain: form.domain || null,
-          industry: form.industry || null,
+          industry: form.industry,
           contact_email: form.contact_email || null,
           status: form.status,
         }),
@@ -1987,13 +1992,22 @@ export function CustomerDetailWorkspace({
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="industry">Branche</Label>
-                      <Input
-                        id="industry"
+                      <Label htmlFor="industry">Branche *</Label>
+                      <Select
                         value={form.industry}
-                        onChange={(e) => setForm({ ...form, industry: e.target.value })}
-                        placeholder="z.B. E-Commerce"
-                      />
+                        onValueChange={(value) => setForm({ ...form, industry: value })}
+                      >
+                        <SelectTrigger id="industry">
+                          <SelectValue placeholder="Branche auswählen" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {CUSTOMER_INDUSTRIES.map((industry) => (
+                            <SelectItem key={industry} value={industry}>
+                              {industry}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="status">Status</Label>
@@ -2054,7 +2068,7 @@ export function CustomerDetailWorkspace({
 
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={onClose}>Abbrechen</Button>
-                    <Button onClick={handleSaveMasterData} disabled={saving}>
+                    <Button onClick={handleSaveMasterData} disabled={saving || !form.industry}>
                       {saving ? 'Speichern...' : 'Speichern'}
                     </Button>
                   </div>
