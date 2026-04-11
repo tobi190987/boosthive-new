@@ -671,6 +671,8 @@ function GA4Section({
   onConnect: () => void
   connecting: boolean
 }) {
+  if (!state.connected && state.loading) return <PlatformSkeleton />
+  if (!state.connected && state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.connected) {
     return (
       <NotConnectedCard
@@ -727,6 +729,8 @@ function GSCSection({
   onConnect: () => void
   connecting: boolean
 }) {
+  if (!state.connected && state.loading) return <PlatformSkeleton />
+  if (!state.connected && state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.connected) {
     return (
       <NotConnectedCard
@@ -791,6 +795,8 @@ function GoogleAdsSection({
   onConnect: () => void
   connecting: boolean
 }) {
+  if (!state.connected && state.loading) return <PlatformSkeleton />
+  if (!state.connected && state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.connected) {
     return (
       <NotConnectedCard
@@ -873,6 +879,8 @@ function MetaAdsSection({
   onConnect: () => void
   connecting: boolean
 }) {
+  if (!state.connected && state.loading) return <PlatformSkeleton />
+  if (!state.connected && state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.connected) {
     return (
       <NotConnectedCard
@@ -955,6 +963,8 @@ function TikTokSection({
   onConnect: () => void
   connecting: boolean
 }) {
+  if (!state.connected && state.loading) return <PlatformSkeleton />
+  if (!state.connected && state.error) return <PlatformErrorState message={state.error} onRetry={onRetry} />
   if (!state.connected) {
     return (
       <NotConnectedCard
