@@ -69,5 +69,16 @@
 <!-- Add features above this line -->
 
 | PROJ-54 | Usage Limits & Quotas | In Review | [PROJ-54-usage-limits.md](PROJ-54-usage-limits.md) | 2026-04-10 |
+| PROJ-55 | Reporting & Export Center | In Review | [PROJ-55-reporting-export.md](PROJ-55-reporting-export.md) | 2026-04-11 |
+| PROJ-56 | Dashboard Portfolio-Übersicht | Planned | [PROJ-56-dashboard-portfolio-uebersicht.md](PROJ-56-dashboard-portfolio-uebersicht.md) | 2026-04-11 |
+| PROJ-57 | Budget & Ad Spend Tracking | Planned | [PROJ-57-budget-ad-spend-tracking.md](PROJ-57-budget-ad-spend-tracking.md) | 2026-04-11 |
+| PROJ-58 | Social Media Kalender | Planned | [PROJ-58-social-media-kalender.md](PROJ-58-social-media-kalender.md) | 2026-04-11 |
+| PROJ-59 | Content Workflow Integration (Brief → Approval → Kanban) | Planned | [PROJ-59-content-workflow-integration.md](PROJ-59-content-workflow-integration.md) | 2026-04-11 |
+| PROJ-60 | Backlink Monitoring | Planned | [PROJ-60-backlink-monitoring.md](PROJ-60-backlink-monitoring.md) | 2026-04-11 |
+| PROJ-61 | CRM-Upgrade (Kontaktstatus, Aktivitäten-Timeline) | Planned | [PROJ-61-crm-upgrade.md](PROJ-61-crm-upgrade.md) | 2026-04-11 |
+| PROJ-62 | Client-Portal (Kunden-Login, Read-Only) | Planned | [PROJ-62-client-portal.md](PROJ-62-client-portal.md) | 2026-04-11 |
+| PROJ-63 | Time Tracking & Client-Invoicing | Planned | [PROJ-63-time-tracking-invoicing.md](PROJ-63-time-tracking-invoicing.md) | 2026-04-11 |
+| PROJ-64 | Competitor Intelligence Automation | Planned | [PROJ-64-competitor-intelligence.md](PROJ-64-competitor-intelligence.md) | 2026-04-11 |
+| PROJ-65 | Globale Suche (Cmd+K) | Planned | [PROJ-65-globale-suche.md](PROJ-65-globale-suche.md) | 2026-04-11 |
 
-## Next Available ID: PROJ-55
+## Next Available ID: PROJ-66

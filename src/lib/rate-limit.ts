@@ -115,6 +115,9 @@ export const PERFORMANCE_ANALYSIS_START: RateLimitOptions = { limit: 5, windowMs
 
 /** Quota read: 60 requests / min / tenant+IP */
 export const QUOTA_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+export const EXPORTS_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+export const EXPORTS_CREATE: RateLimitOptions = { limit: 10, windowMs: 60 * 1000 }
+export const EXPORTS_EMAIL: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
 
 // ---------------------------------------------------------------------------
 // Core

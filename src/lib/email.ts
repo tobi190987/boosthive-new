@@ -1,6 +1,7 @@
 import crypto from 'crypto'
 import { renderApprovalDecisionEmail } from '@/emails/approval-decision'
 import { renderApprovalRequestEmail } from '@/emails/approval-request'
+import { renderExportDeliveryEmail } from '@/emails/export-delivery'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { renderInvitationEmail } from '@/emails/invitation'
 import { renderModuleBookedEmail } from '@/emails/module-booked'
@@ -86,6 +87,13 @@ interface MailtrapConfig {
   inboxId?: string
 }
 
+interface MailtrapAttachment {
+  content: string  // base64-encoded
+  filename: string
+  type: string
+  disposition: 'attachment'
+}
+
 interface SendEmailOptions {
   to: string
   tenantName: string
@@ -95,6 +103,20 @@ interface SendEmailOptions {
   text: string
   category: string
   tokenForLogs?: string
+  attachments?: MailtrapAttachment[]
+}
+
+export interface SendExportDeliveryOptions {
+  to: string
+  tenantName: string
+  tenantSlug: string
+  recipientName?: string
+  exportTypeLabel: string
+  formatLabel: string
+  customMessage?: string | null
+  fileBuffer: Buffer
+  fileName: string
+  mimeType: string
 }
 
 function hashRecipientForLogs(email: string): string {
@@ -161,6 +183,7 @@ async function sendEmail({
   text,
   category,
   tokenForLogs,
+  attachments,
 }: SendEmailOptions): Promise<void> {
   const config = getMailtrapConfig()
 
@@ -178,7 +201,7 @@ async function sendEmail({
       ? `https://sandbox.api.mailtrap.io/api/send/${config.inboxId}`
       : 'https://send.api.mailtrap.io/api/send'
 
-  const payload = {
+  const payload: Record<string, unknown> = {
     from: {
       email: config.fromEmail,
       name: `${tenantName} via BoostHive`,
@@ -191,6 +214,10 @@ async function sendEmail({
     custom_variables: {
       tenant_slug: tenantSlug,
     },
+  }
+
+  if (attachments && attachments.length > 0) {
+    payload.attachments = attachments
   }
 
   const response = await fetch(sendUrl, {
@@ -450,4 +477,43 @@ export async function sendOwnerPastDueNotification(
       console.error('[email] Owner past_due Benachrichtigung fehlgeschlagen:', emailError)
     }
   }
+}
+
+export async function sendExportDelivery({
+  to,
+  tenantName,
+  tenantSlug,
+  recipientName,
+  exportTypeLabel,
+  formatLabel,
+  customMessage,
+  fileBuffer,
+  fileName,
+  mimeType,
+}: SendExportDeliveryOptions): Promise<void> {
+  const { subject, html, text } = renderExportDeliveryEmail({
+    tenantName,
+    recipientName,
+    exportTypeLabel,
+    formatLabel,
+    customMessage,
+  })
+
+  await sendEmail({
+    to,
+    tenantName,
+    tenantSlug,
+    subject,
+    html,
+    text,
+    category: 'export-delivery',
+    attachments: [
+      {
+        content: fileBuffer.toString('base64'),
+        filename: fileName,
+        type: mimeType,
+        disposition: 'attachment',
+      },
+    ],
+  })
 }
