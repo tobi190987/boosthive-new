@@ -132,6 +132,97 @@ CREATE INDEX idx_social_posts_customer ON social_media_posts(customer_id);
 - Kein Bild-Upload / Asset-Management (wird separat behandelt)
 - Kein öffentlicher Kalender-Link für Endkunden (kommt mit Client-Portal PROJ-62)
 
+## Tech Design (Solution Architect)
+
+### Komponentenstruktur
+
+```
+/tools/social-calendar (neue Page)
+└── SocialCalendarWorkspace (Client Component)
+    ├── CalendarToolbar
+    │   ├── Monats-/Wochenansicht-Toggle (Tabs)
+    │   ├── Datumsnavigation (Pfeile + aktueller Monat/Woche)
+    │   ├── FilterBar (Kunde, Plattform, Status) → bestehende FilterChips
+    │   └── "Neuer Post"-Button → öffnet PostSheet
+    ├── MonthView (Custom CSS Grid, 7 Spalten)
+    │   └── DayCell (klickbar → öffnet PostSheet mit Datum vorbelegt)
+    │       └── PostCard[] (kompakt: Plattform-Icon, Titel, Status-Badge)
+    ├── WeekView (7-Tage-Timeline, stündliche Zeilen)
+    │   └── TimeSlot → PostCard[]
+    └── PostSheet (shadcn Sheet/Slide-Over)
+        └── PostForm
+            ├── Titel (Input)
+            ├── Plattform-Auswahl (Multi-Select mit Icons, Popover+Checkbox)
+            ├── Kunde (CustomerAssignmentField — bereits vorhanden)
+            ├── Datum + Uhrzeit (datetime-local Input)
+            ├── Caption (Textarea)
+            ├── Status (Select: Entwurf / In Bearbeitung / Zur Freigabe / Freigegeben / Veröffentlicht)
+            ├── Assignee (Select aus Team-Mitgliedern)
+            └── Notiz (Textarea, optional)
+```
+
+### Datenmodell
+
+**Tabelle `social_media_posts`** — gespeichert in Supabase PostgreSQL, RLS über `tenant_id`:
+
+| Feld | Typ | Beschreibung |
+|------|-----|--------------|
+| id | UUID | Primärschlüssel |
+| tenant_id | UUID | Mandant (RLS-geschützt) |
+| customer_id | UUID | Zugeordneter Kunde (optional) |
+| title | Text | Post-Titel (Pflichtfeld) |
+| caption | Text | Inhalt / Caption |
+| platforms | Text[] | instagram, linkedin, facebook, tiktok |
+| scheduled_at | Timestamp | Geplanter Termin (Pflichtfeld) |
+| status | Text | draft / in_progress / review / approved / published |
+| assignee_id | UUID | Zugewiesenes Team-Mitglied |
+| notes | Text | Interne Notiz |
+| created_by | UUID | Erstellt von |
+| created_at | Timestamp | Angelegt am |
+| updated_at | Timestamp | Zuletzt geändert |
+
+### API-Endpunkte
+
+| Methode | Route | Zweck |
+|---------|-------|-------|
+| GET | `/api/tenant/social-calendar` | Posts abrufen (Range, Kunde, Plattform, Status) |
+| POST | `/api/tenant/social-calendar` | Neuen Post anlegen |
+| GET | `/api/tenant/social-calendar/[id]` | Einzelner Post |
+| PUT | `/api/tenant/social-calendar/[id]` | Post bearbeiten |
+| DELETE | `/api/tenant/social-calendar/[id]` | Post löschen |
+
+### Tech-Entscheidungen
+
+| Entscheidung | Begründung |
+|---|---|
+| Kein externes Kalender-Package | Custom Grid mit Tailwind — leichter, besser ins Design-System integrierbar |
+| shadcn `Sheet` für Post-Details | Bereits installiert; Slide-Over passt für Detail-/Edit-Ansicht |
+| URL-basierte Filter | `useSearchParams` + `useRouter` — shareable Links ohne extra State |
+| `CustomerAssignmentField` wiederverwenden | Vorhanden aus PROJ-29 |
+| `FilterChips` wiederverwenden | Vorhanden aus PROJ-42 |
+| Plattform-MultiSelect via Popover+Checkbox | Kein externes Package nötig |
+
+### Plattform-Farbcodes
+
+| Plattform | Tailwind-Klasse |
+|-----------|----------------|
+| Instagram | `bg-pink-500` |
+| LinkedIn | `bg-blue-600` |
+| Facebook | `bg-indigo-700` |
+| TikTok | `bg-neutral-900` |
+
+### Navigation
+
+Neuer Eintrag in `src/lib/tool-groups.ts`, Gruppe "Content & Kampagnen":
+- Label: `Social Media Kalender`
+- Route: `/tools/social-calendar`
+- Modul-Code: `social_calendar`
+- Farbe: `rose`
+
+### Neue Packages
+
+Keine — alles mit bestehenden shadcn/ui-Komponenten und Tailwind umsetzbar.
+
 ## Status
-- **Status:** Planned
+- **Status:** In Progress
 - **Created:** 2026-04-11

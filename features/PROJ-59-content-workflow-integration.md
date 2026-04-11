@@ -118,6 +118,70 @@ ALTER TABLE approval_requests
 - Keine E-Mail-Notifications (kommt separat mit PROJ-35 Realtime Notifications)
 - Keine automatischen Status-Übergänge (immer manuell ausgelöst)
 
+## Tech Design (Solution Architect)
+
+### Architektur-Erkenntnis
+`workflow_status` und `approval_status` existieren bereits auf `content_briefs` — das Kanban liest diese Spalten bereits. Der Großteil ist **UI-Integration**, keine Neuentwicklung.
+
+### Was bereits existiert (kein Aufwand)
+- `content_briefs.workflow_status` Spalte (vorhanden, von Kanban genutzt)
+- `content_briefs.approval_status` Spalte (vorhanden)
+- Kanban liest Content Briefs über workflow_status (virtuell, kein eigenes Tabellen-Schema)
+- `POST /api/tenant/approvals` unterstützt content_brief Typ bereits
+- `PATCH /api/tenant/kanban` aktualisiert workflow_status bereits
+
+### Komponentenstruktur
+
+```
+content-briefs-workspace.tsx (ERWEITERN)
++-- Brief-Liste (Tabelle)
+|   +-- Neue Spalte: "Workflow-Status" (Inline-Dropdown)
+|   +-- Neue Spalte: "Freigabe" (approval_status Badge)
++-- Brief-Detail-View
+    +-- Action-Bereich (NEU)
+        +-- Button "Zur Freigabe senden"
+        +-- Button "Workflow-Status ändern"
+
+approvals-workspace.tsx (ERWEITERN)
++-- Approval-Detail-View
+    +-- Content Brief Accordion (NEU)
+        +-- Brief-Inhalt inline (H1, Meta, Outline, LSI)
+
+kanban-workspace.tsx (MINIMALE ANPASSUNG)
++-- Kanban-Karte
+    +-- Brief-Icon-Badge wenn content_type = 'content_brief'
+    +-- "Brief öffnen" Link in Karten-Detail
+```
+
+### Datenfluss
+```
+Brief generiert (workflow_status = 'open')
+  → Mitarbeiter: "Zur Freigabe senden"
+  → POST /api/tenant/content/briefs/[id]/send-to-approval
+      → Erstellt approval_requests Eintrag
+      → Setzt workflow_status = 'review'
+  → Approval Hub zeigt Brief-Inhalt (via content_id)
+  → Kunde genehmigt/lehnt ab
+  → approval_status = 'approved'/'changes_requested'
+  → workflow_status = 'done'/'open'
+```
+
+### Neue API-Endpunkte
+| Endpoint | Zweck |
+|---|---|
+| `POST /api/tenant/content/briefs/[id]/send-to-approval` | Freigabe starten + workflow_status auf 'review' |
+| `PATCH /api/tenant/content/briefs/[id]/workflow-status` | Inline-Status-Update aus Brief-Liste |
+| `GET /api/tenant/approvals/[id]` (erweitert) | Approval + eingebetteter Brief-Inhalt |
+
+### Datenbankänderungen
+- `approval_requests.version` (INTEGER, default 1) — Kommentar-Versionierung
+- Keine neuen Tabellen (Kanban ist virtuelle View über workflow_status)
+- `kanban_card_id` / `approval_request_id` aus Spec entfallen — nicht benötigt
+
+### Packages
+Keine neuen — Accordion, Badge, Select, Button, Tooltip bereits installiert.
+
 ## Status
-- **Status:** Planned
+- **Status:** In Progress
 - **Created:** 2026-04-11
+- **Architecture:** 2026-04-11

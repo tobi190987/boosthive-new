@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { z } from 'zod'
-import { requireTenantAdmin } from '@/lib/auth-guards'
+import { requireTenantUser } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import {
   checkRateLimit,
@@ -8,10 +7,6 @@ import {
   rateLimitResponse,
   CUSTOMERS_WRITE,
 } from '@/lib/rate-limit'
-
-const logoUploadSchema = z.object({
-  customer_id: z.string().uuid(),
-})
 
 export async function POST(
   request: NextRequest,
@@ -23,7 +18,7 @@ export async function POST(
   const rl = checkRateLimit(`customers-write:${tenantId}:${getClientIp(request)}`, CUSTOMERS_WRITE)
   if (!rl.allowed) return rateLimitResponse(rl)
 
-  const authResult = await requireTenantAdmin(tenantId)
+  const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
 
   const { id } = await params

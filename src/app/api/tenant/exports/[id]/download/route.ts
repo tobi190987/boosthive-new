@@ -9,6 +9,7 @@ import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { createAdminClient } from '@/lib/supabase-admin'
 import { checkRateLimit, getClientIp, rateLimitResponse, EXPORTS_READ } from '@/lib/rate-limit'
+import { regenerateExportFile } from '@/lib/export-service'
 
 const idSchema = z.string().uuid('Ungültige Export-ID.')
 
@@ -32,9 +33,9 @@ export async function GET(
   }
 
   const admin = createAdminClient()
-  const { data: exportRecord, error } = await admin
+  let { data: exportRecord, error } = await admin
     .from('exports')
-    .select('id, tenant_id, status, storage_path, file_name, format')
+    .select('id, tenant_id, export_type, format, customer_id, branding_source, brand_color, status, storage_path, file_name')
     .eq('id', parsedId.data)
     .eq('tenant_id', tenantId)
     .maybeSingle()
@@ -61,12 +62,38 @@ export async function GET(
     .createSignedUrl(exportRecord.storage_path, 600)
 
   if (signedUrlError || !signedUrlData?.signedUrl) {
-    // File might have been deleted (expired) — client should re-create
-    console.warn('[GET /exports/[id]/download] Signed URL fehlgeschlagen:', signedUrlError)
-    return NextResponse.json(
-      { error: 'Datei nicht mehr verfügbar. Bitte erstelle den Export erneut.' },
-      { status: 410 }
-    )
+    console.warn('[GET /exports/[id]/download] Signed URL fehlgeschlagen, versuche Regeneration:', signedUrlError)
+
+    try {
+      const regenerated = await regenerateExportFile(admin, exportRecord)
+      if (!regenerated?.storage_path) {
+        return NextResponse.json(
+          { error: 'PNG-Exports können nach Ablauf aktuell nicht automatisch regeneriert werden.' },
+          { status: 410 }
+        )
+      }
+
+      exportRecord = {
+        ...exportRecord,
+        ...regenerated,
+      }
+
+      const retry = await admin.storage.from('exports').createSignedUrl(exportRecord.storage_path, 600)
+      if (retry.error || !retry.data?.signedUrl) {
+        return NextResponse.json(
+          { error: 'Datei konnte nicht erneut bereitgestellt werden. Bitte versuche es später erneut.' },
+          { status: 500 }
+        )
+      }
+
+      return NextResponse.json({ url: retry.data.signedUrl, fileName: exportRecord.file_name })
+    } catch (regenerationError) {
+      console.error('[GET /exports/[id]/download] Regeneration fehlgeschlagen:', regenerationError)
+      return NextResponse.json(
+        { error: 'Datei konnte nicht automatisch neu erstellt werden.' },
+        { status: 500 }
+      )
+    }
   }
 
   return NextResponse.json({ url: signedUrlData.signedUrl, fileName: exportRecord.file_name })

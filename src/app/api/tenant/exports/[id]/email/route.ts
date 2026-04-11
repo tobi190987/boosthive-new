@@ -14,8 +14,11 @@ import { checkRateLimit, getClientIp, rateLimitResponse, EXPORTS_EMAIL } from '@
 const idSchema = z.string().uuid('Ungültige Export-ID.')
 
 const emailBodySchema = z.object({
-  to: z.string().email('Ungültige E-Mail-Adresse.'),
+  to: z.string().email('Ungültige E-Mail-Adresse.').optional(),
+  email: z.string().email('Ungültige E-Mail-Adresse.').optional(),
   message: z.string().max(1000, 'Nachricht zu lang.').optional().nullable(),
+}).refine((value) => Boolean(value.to ?? value.email), {
+  message: 'Ungültige E-Mail-Adresse.',
 })
 
 const FORMAT_LABELS: Record<string, string> = {
@@ -71,7 +74,8 @@ export async function POST(
     )
   }
 
-  const { to, message } = parsedBody.data
+  const to = parsedBody.data.to ?? parsedBody.data.email ?? ''
+  const { message } = parsedBody.data
 
   const admin = createAdminClient()
 
@@ -146,7 +150,7 @@ export async function POST(
     .update({ email_sent_at: new Date().toISOString(), email_sent_to: to })
     .eq('id', parsedId.data)
     .select(
-      'id, export_type, format, customer_id, branding_source, brand_color, status, error_message, created_at, email_sent_at, email_sent_to'
+      'id, export_type, format, customer_id, branding_source, brand_color, status, error_message, created_at, email_sent_at, email_sent_to, customers(name)'
     )
     .single()
 
@@ -157,7 +161,11 @@ export async function POST(
 
   return NextResponse.json({
     export: updated
-      ? { ...updated, type: updated.export_type, customer_name: null }
+      ? {
+          ...(updated as typeof updated & { customers?: { name: string } | null }),
+          type: updated.export_type,
+          customer_name: (updated as typeof updated & { customers?: { name: string } | null }).customers?.name ?? null,
+        }
       : null,
   })
 }

@@ -93,16 +93,28 @@ export async function POST(
     return NextResponse.json({ error: 'PNG-Upload fehlgeschlagen.' }, { status: 500 })
   }
 
-  const { data: updated, error: updateError } = await admin
+  const { error: updateError } = await admin
     .from('exports')
     .update({ status: 'done', storage_path: storagePath, file_name: fileName })
     .eq('id', parsedId.data)
-    .select('id, export_type, format, customer_id, branding_source, brand_color, status, error_message, created_at, email_sent_at, email_sent_to')
-    .single()
 
-  if (updateError || !updated) {
+  if (updateError) {
     console.error('[POST /exports/[id]/upload] Update fehlgeschlagen:', updateError)
     return NextResponse.json({ error: 'Export-Status konnte nicht aktualisiert werden.' }, { status: 500 })
+  }
+
+  const { data: updated, error: refetchError } = await admin
+    .from('exports')
+    .select(
+      'id, export_type, format, customer_id, branding_source, brand_color, status, error_message, created_at, email_sent_at, email_sent_to, customers(name)'
+    )
+    .eq('id', parsedId.data)
+    .eq('tenant_id', tenantId)
+    .maybeSingle()
+
+  if (refetchError || !updated) {
+    console.error('[POST /exports/[id]/upload] Refetch fehlgeschlagen:', refetchError)
+    return NextResponse.json({ error: 'Aktualisierter Export konnte nicht geladen werden.' }, { status: 500 })
   }
 
   await recordTenantDataAuditLog({
@@ -115,6 +127,10 @@ export async function POST(
   })
 
   return NextResponse.json({
-    export: { ...updated, type: updated.export_type, customer_name: null },
+    export: {
+      ...(updated as typeof updated & { customers?: { name: string } | null }),
+      type: updated.export_type,
+      customer_name: (updated as typeof updated & { customers?: { name: string } | null }).customers?.name ?? null,
+    },
   })
 }

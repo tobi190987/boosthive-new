@@ -150,6 +150,74 @@ CREATE INDEX idx_ad_spend_budget ON ad_spend_entries(budget_id, spend_date);
 - Kein Invoice-/Rechnungs-Feature (kommt separat)
 - Keine historischen Daten vor dem ersten manuellen Eintrag
 
+## Tech Design (Solution Architect)
+
+### Neue Seite
+- `/[tenant]/budget` — Haupt-Budget-Dashboard (analog zu `/[tenant]/marketing`)
+
+### Komponenten-Struktur
+```
+/[tenant]/budget
++-- BudgetWorkspace
+    +-- MonthSelector              — Monat/Jahr-Auswahl (Dropdown)
+    +-- BudgetSummaryBar           — Gesamtbudget + Gesamtausgaben aller Kunden
+    +-- BudgetGrid
+    |   +-- BudgetCard[]           — Eine Karte pro Budget-Eintrag
+    |       +-- PlatformIcon       — Google / Meta / TikTok Logo
+    |       +-- SpendProgressBar   — shadcn Progress (orange >80%, rot >100%)
+    |       +-- AlertBadge         — Kritisch-Icon bei >150%
+    |       +-- SpendMetrics       — CPC, CPM, ROAS (aus Ads-API)
+    +-- BudgetDetailSheet          — Slide-out (shadcn Sheet)
+    |   +-- DailySpendChart        — Balken-Chart (Recharts, bereits im Projekt)
+    |   +-- ManualSpendForm        — Eingabe wenn keine API verbunden
+    +-- BudgetFormDialog           — Modal: Budget anlegen / bearbeiten
+    +-- NoBudgetBanner             — Hinweis wenn kein Budget hinterlegt
+```
+
+### Neue API-Endpunkte
+| Endpunkt | Zweck |
+|---|---|
+| `GET /api/tenant/budgets` | Alle Budgets (gefiltert nach Monat & Kunde) |
+| `POST /api/tenant/budgets` | Budget anlegen |
+| `PUT /api/tenant/budgets/[id]` | Budget bearbeiten |
+| `DELETE /api/tenant/budgets/[id]` | Budget löschen |
+| `GET /api/tenant/budgets/[id]/spend` | Täglicher Spend-Verlauf |
+| `POST /api/tenant/budgets/[id]/spend` | Manuellen Spend-Eintrag hinzufügen |
+| `POST /api/tenant/budgets/sync` | Spend aus allen Ads-APIs synchronisieren |
+
+### Datenmodell
+**ad_budgets** — Budget-Einträge (tenant, customer, platform, label, month, planned_amount, currency, alert_threshold_percent, alert_80_sent_at, alert_100_sent_at, alert_150_sent_at)
+
+**ad_spend_entries** — Tägliche Spend-Einträge (budget_id, spend_date, amount, source: manual/api_google/api_meta/api_tiktok), eindeutig pro Budget + Tag
+
+Alert-Deduplizierungsfelder (`alert_X_sent_at`) verhindern, dass dieselbe Warnung mehrfach ausgelöst wird.
+
+### Tech-Entscheidungen
+| Entscheidung | Warum |
+|---|---|
+| Recharts für Charts | Bereits via `trend-area-chart.tsx` im Projekt — kein neues Paket |
+| shadcn Sheet für Detail-Ansicht | Gleiche Pattern wie in anderen Workspaces |
+| shadcn Progress für Balken | Bereits installiert, Farbe per CSS-Klasse steuerbar |
+| Sync-on-Demand (kein Cron) | Spend wird beim Öffnen oder per Button synchronisiert — Cron als spätere Erweiterung |
+| Alert via PROJ-35 | Bestehende Notification-Infrastruktur nutzen |
+
+### Alert-Logik (Fluss)
+1. Sync-API ruft Ads-APIs auf (analog zu `/api/tenant/dashboard/google-ads/`)
+2. Spend wird in `ad_spend_entries` gespeichert (Quelle: `api_google` etc.)
+3. Für jedes Budget: `SUM(spend) / planned_amount` prüfen
+4. Wenn Schwellenwert erreicht **und** `alert_X_sent_at IS NULL` → Notification erstellen
+5. Timestamp setzen um Duplikate zu verhindern
+
+### Abhängigkeiten (keine neuen Pakete)
+- Recharts — bereits im Projekt
+- shadcn/ui Sheet, Progress, Dialog — bereits installiert
+- PROJ-35 Notification-System — bestehende Notification-Funktion
+- PROJ-28 Kunden-Selektor — für Kunden-Filterung
+
+### Navigation
+- Neuer Sidebar-Eintrag unter "Marketing" in `tenant-shell-navigation.tsx`
+- Modul-Code: `budget_tracking`
+
 ## Status
-- **Status:** Planned
+- **Status:** In Progress
 - **Created:** 2026-04-11

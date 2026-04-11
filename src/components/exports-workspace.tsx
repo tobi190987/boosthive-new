@@ -1,6 +1,7 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { toBlob } from 'html-to-image'
+import { forwardRef, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BarChart3,
@@ -13,6 +14,7 @@ import {
   Mail,
   RefreshCw,
   Search,
+  Upload,
   XCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -88,6 +90,28 @@ interface ExportHistoryItem {
   email_sent_to: string | null
 }
 
+interface PngSnapshotPayload {
+  title: string
+  subtitle: string
+  metrics: Array<{ label: string; value: string | number; unit?: string }>
+  generatedAt: string
+  accentColor: string
+}
+
+interface CustomerListResponse {
+  customers?: ExportCustomer[]
+}
+
+interface ExportAvailabilityResponse {
+  hasData?: boolean
+  message?: string | null
+}
+
+type ExportCustomer = ReturnType<typeof useActiveCustomer>['customers'][number] & {
+  contact_email?: string | null
+  logo_url?: string | null
+}
+
 interface ExportsWorkspaceProps {
   tenantName: string
   tenantLogoUrl: string | null
@@ -153,10 +177,20 @@ const FORMAT_ICONS: Record<ExportFormat, typeof FileText> = {
   xlsx: FileSpreadsheet,
 }
 
+function isSupportedLogoUrl(value: string | null | undefined): value is string {
+  if (!value) return false
+  return (
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('/') ||
+    value.startsWith('data:image/')
+  )
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function ExportsWorkspace({ tenantName, tenantLogoUrl }: ExportsWorkspaceProps) {
-  const { activeCustomer, customers } = useActiveCustomer()
+  const { activeCustomer, customers, refetchCustomers } = useActiveCustomer()
   const { toast } = useToast()
 
   const [history, setHistory] = useState<ExportHistoryItem[]>([])
@@ -182,7 +216,7 @@ export function ExportsWorkspace({ tenantName, tenantLogoUrl }: ExportsWorkspace
         throw new Error(`Fehler beim Laden des Verlaufs (${res.status})`)
       }
       const data = (await res.json()) as { exports?: ExportHistoryItem[] }
-      setHistory(data.exports ?? [])
+      setHistory((data.exports ?? []).filter((item) => item.status !== 'failed'))
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unbekannter Fehler'
       setHistoryError(message)
@@ -304,7 +338,8 @@ export function ExportsWorkspace({ tenantName, tenantLogoUrl }: ExportsWorkspace
           tenantName={tenantName}
           tenantLogoUrl={tenantLogoUrl}
           activeCustomer={activeCustomer}
-          customerCount={customers.length}
+          customers={customers as ExportCustomer[]}
+          refetchCustomers={refetchCustomers}
           onCreated={handleExportCreated}
         />
       ) : null}
@@ -602,7 +637,8 @@ interface ExportConfigModalProps {
   tenantName: string
   tenantLogoUrl: string | null
   activeCustomer: ReturnType<typeof useActiveCustomer>['activeCustomer']
-  customerCount: number
+  customers: ExportCustomer[]
+  refetchCustomers: ReturnType<typeof useActiveCustomer>['refetchCustomers']
   onCreated: (item: ExportHistoryItem) => void
 }
 
@@ -613,48 +649,188 @@ function ExportConfigModal({
   tenantName,
   tenantLogoUrl,
   activeCustomer,
-  customerCount,
+  customers,
+  refetchCustomers,
   onCreated,
 }: ExportConfigModalProps) {
   const { toast } = useToast()
 
   const [format, setFormat] = useState<ExportFormat>(exportType.formats[0])
-  const [customerScope, setCustomerScope] = useState<'current' | 'all'>(
-    activeCustomer ? 'current' : 'all'
-  )
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>(activeCustomer?.id ?? 'all')
   const [brandingSource, setBrandingSource] = useState<BrandingSource>(
     activeCustomer ? 'customer' : 'tenant'
   )
   const [brandColor, setBrandColor] = useState<string>('#2563eb')
   const [acknowledgedEmpty, setAcknowledgedEmpty] = useState(false)
   const [emptyDataWarning, setEmptyDataWarning] = useState<string | null>(null)
+  const [hasAvailableData, setHasAvailableData] = useState(false)
+  const [checkingAvailability, setCheckingAvailability] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [pngSnapshot, setPngSnapshot] = useState<PngSnapshotPayload | null>(null)
+  const [uploadingCustomerLogo, setUploadingCustomerLogo] = useState(false)
+  const [customerOptions, setCustomerOptions] = useState<ExportCustomer[]>(customers)
+  const snapshotRef = useRef<HTMLDivElement | null>(null)
+  const customerLogoInputRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    setCustomerOptions(customers)
+  }, [customers])
 
   // Reset state when modal opens/exportType changes
   useEffect(() => {
     if (open) {
       setFormat(exportType.formats[0])
-      setCustomerScope(activeCustomer ? 'current' : 'all')
+      setSelectedCustomerId(activeCustomer?.id ?? 'all')
       setBrandingSource(activeCustomer ? 'customer' : 'tenant')
       setBrandColor('#2563eb')
       setAcknowledgedEmpty(false)
       setEmptyDataWarning(null)
+      setHasAvailableData(false)
+      setCheckingAvailability(false)
       setError(null)
       setSubmitting(false)
+      setUploadingCustomerLogo(false)
     }
   }, [open, exportType, activeCustomer])
 
+  useEffect(() => {
+    if (!open) return
+
+    let cancelled = false
+
+    async function loadCustomerOptions() {
+      try {
+        const response = await fetch('/api/tenant/customers', {
+          credentials: 'include',
+        })
+        if (!response.ok) return
+
+        const payload = (await response.json()) as CustomerListResponse
+        if (cancelled) return
+        setCustomerOptions(payload.customers ?? [])
+      } catch {
+        // Keep existing options from context if the refresh fails.
+      }
+    }
+
+    void loadCustomerOptions()
+
+    return () => {
+      cancelled = true
+    }
+  }, [open])
+
+  const selectedCustomer = useMemo(
+    () => customerOptions.find((customer) => customer.id === selectedCustomerId) ?? null,
+    [customerOptions, selectedCustomerId]
+  )
+  const selectedCustomerValue = selectedCustomer?.id ?? 'all'
+  const selectedCustomerName = selectedCustomer?.name ?? null
+  const selectedCustomerLogoUrl = isSupportedLogoUrl(selectedCustomer?.logo_url)
+    ? selectedCustomer.logo_url
+    : null
+  const showCustomerBrandingOption = selectedCustomerValue !== 'all'
+  const effectiveBrandingSource: BrandingSource =
+    showCustomerBrandingOption ? brandingSource : 'tenant'
   const customerLogoMissing =
-    brandingSource === 'customer' && customerScope === 'current' && !activeCustomer
+    effectiveBrandingSource === 'customer' && showCustomerBrandingOption && !selectedCustomerLogoUrl
 
-  const effectiveBrandingSource: BrandingSource = customerLogoMissing ? 'tenant' : brandingSource
+  const waitForSnapshotReady = useCallback(async () => {
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      await new Promise((resolve) => requestAnimationFrame(() => resolve(undefined)))
+      if (snapshotRef.current) return snapshotRef.current
+    }
 
-  const selectedCustomerId = customerScope === 'current' ? activeCustomer?.id ?? null : null
-  const selectedCustomerName =
-    customerScope === 'current' ? activeCustomer?.name ?? null : null
+    throw new Error('PNG-Vorschau konnte nicht gerendert werden.')
+  }, [])
 
-  const canSelectCurrent = !!activeCustomer
+  const uploadPngExport = useCallback(
+    async (exportId: string) => {
+      const node = await waitForSnapshotReady()
+      const blob = await toBlob(node, {
+        cacheBust: true,
+        pixelRatio: 2,
+        backgroundColor: '#ffffff',
+        skipFonts: true,
+      })
+
+      if (!blob) {
+        throw new Error('PNG-Datei konnte nicht erstellt werden.')
+      }
+
+      const formData = new FormData()
+      formData.set('file', new File([blob], `export-${exportId}.png`, { type: 'image/png' }))
+
+      const uploadRes = await fetch(`/api/tenant/exports/${exportId}/upload`, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+      })
+
+      if (!uploadRes.ok) {
+        const uploadData = await uploadRes.json().catch(() => ({}))
+        throw new Error(
+          (uploadData as { error?: string }).error ?? `PNG-Upload fehlgeschlagen (${uploadRes.status})`
+        )
+      }
+
+      const uploaded = (await uploadRes.json()) as { export?: ExportHistoryItem }
+      if (!uploaded.export) throw new Error('Server-Antwort für PNG-Upload ungültig')
+      return uploaded.export
+    },
+    [waitForSnapshotReady]
+  )
+
+  const handleCustomerLogoUpload = useCallback(
+    async (file: File) => {
+      if (!selectedCustomer) {
+        throw new Error('Bitte wähle zuerst einen Kunden aus.')
+      }
+
+      setUploadingCustomerLogo(true)
+      setError(null)
+
+      try {
+        const formData = new FormData()
+        formData.set('logo', file)
+
+        const response = await fetch(`/api/tenant/customers/${selectedCustomer.id}/logo`, {
+          method: 'POST',
+          body: formData,
+          credentials: 'include',
+        })
+        const payload = await response.json().catch(() => ({}))
+
+        if (!response.ok) {
+          throw new Error(
+            (payload as { error?: string }).error ??
+              `Kundenlogo konnte nicht hochgeladen werden (${response.status})`
+          )
+        }
+
+        const nextLogoUrl = (payload as { logo_url?: string | null }).logo_url ?? null
+        if (nextLogoUrl) {
+          setCustomerOptions((current) =>
+            current.map((customer) =>
+              customer.id === selectedCustomer.id
+                ? { ...customer, logo_url: nextLogoUrl }
+                : customer
+            )
+          )
+        }
+
+        await refetchCustomers()
+        toast({
+          title: 'Kundenlogo gespeichert',
+          description: `Das Logo für ${selectedCustomer.name} wurde hinterlegt.`,
+        })
+      } finally {
+        setUploadingCustomerLogo(false)
+      }
+    },
+    [refetchCustomers, selectedCustomer, toast]
+  )
 
   const handleSubmit = useCallback(async () => {
     setError(null)
@@ -668,7 +844,7 @@ function ExportConfigModal({
         body: JSON.stringify({
           type: exportType.id,
           format,
-          customer_id: selectedCustomerId,
+          customer_id: selectedCustomerValue === 'all' ? null : selectedCustomerValue,
           branding_source: effectiveBrandingSource,
           brand_color: brandColor,
           acknowledge_empty: acknowledgedEmpty,
@@ -692,17 +868,26 @@ function ExportConfigModal({
         )
       }
 
-      const data = (await res.json()) as { export?: ExportHistoryItem }
+      const data = (await res.json()) as {
+        export?: ExportHistoryItem
+        snapshot?: PngSnapshotPayload
+      }
       if (!data.export) throw new Error('Server-Antwort ungültig')
+
+      if (format === 'png') {
+        if (!data.snapshot) throw new Error('PNG-Snapshotdaten fehlen.')
+        setPngSnapshot(data.snapshot)
+        const uploadedExport = await uploadPngExport(data.export.id)
+        setPngSnapshot(null)
+        onCreated(uploadedExport)
+        return
+      }
+
       onCreated(data.export)
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unbekannter Fehler'
+      setPngSnapshot(null)
       setError(message)
-      toast({
-        title: 'Export fehlgeschlagen',
-        description: message,
-        variant: 'destructive',
-      })
     } finally {
       setSubmitting(false)
     }
@@ -713,23 +898,80 @@ function ExportConfigModal({
     exportType.id,
     format,
     onCreated,
-    selectedCustomerId,
-    toast,
+    selectedCustomerValue,
+    uploadPngExport,
   ])
 
   const needsAcknowledgement = !!emptyDataWarning && !acknowledgedEmpty
 
+  useEffect(() => {
+    if (!open) return
+
+    let cancelled = false
+    const controller = new AbortController()
+
+    async function checkAvailability() {
+      setCheckingAvailability(true)
+
+      try {
+        const params = new URLSearchParams({
+          type: exportType.id,
+        })
+
+        if (selectedCustomerValue !== 'all') {
+          params.set('customer_id', selectedCustomerValue)
+        }
+
+        const response = await fetch(`/api/tenant/exports/availability?${params.toString()}`, {
+          credentials: 'include',
+          signal: controller.signal,
+        })
+
+        if (!response.ok) {
+          if (cancelled) return
+          setEmptyDataWarning(null)
+          setHasAvailableData(false)
+          return
+        }
+
+        const payload = (await response.json()) as ExportAvailabilityResponse
+        if (cancelled) return
+        const hasData = payload.hasData !== false
+        setHasAvailableData(hasData)
+        setEmptyDataWarning(hasData ? null : payload.message ?? null)
+        setAcknowledgedEmpty(false)
+      } catch (availabilityError) {
+        if (controller.signal.aborted || cancelled) return
+        setEmptyDataWarning(null)
+        setHasAvailableData(false)
+      } finally {
+        if (!cancelled) {
+          setCheckingAvailability(false)
+        }
+      }
+    }
+
+    void checkAvailability()
+
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [open, exportType.id, selectedCustomerValue])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-xl overflow-hidden p-0">
         <DialogHeader>
-          <DialogTitle>{exportType.name} exportieren</DialogTitle>
-          <DialogDescription>
-            Konfiguriere Format, Kunden-Kontext und Branding für diesen Export.
-          </DialogDescription>
+          <div className="px-6 pt-6">
+            <DialogTitle>{exportType.name} exportieren</DialogTitle>
+            <DialogDescription>
+              Konfiguriere Format, Kunden-Kontext und Branding für diesen Export.
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-2">
+        <div className="max-h-[min(70vh,720px)] space-y-6 overflow-y-auto px-6 py-2">
           {/* Format */}
           <div className="space-y-2">
             <Label htmlFor="export-format">Format</Label>
@@ -753,61 +995,31 @@ function ExportConfigModal({
 
           <Separator />
 
-          {/* Customer scope */}
+          {/* Customer selection */}
           <div className="space-y-3">
-            <Label>Kunden-Kontext</Label>
-            <RadioGroup
-              value={customerScope}
-              onValueChange={(value) => setCustomerScope(value as 'current' | 'all')}
-              disabled={submitting}
-              className="gap-2"
+            <Label htmlFor="export-customer">Kunde</Label>
+              <Select
+              value={selectedCustomerValue}
+              onValueChange={setSelectedCustomerId}
+              disabled={submitting || uploadingCustomerLogo}
             >
-              <label
-                className={cn(
-                  'flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors',
-                  customerScope === 'current'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                    : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600',
-                  !canSelectCurrent && 'cursor-not-allowed opacity-60'
-                )}
-              >
-                <RadioGroupItem
-                  value="current"
-                  id="scope-current"
-                  disabled={!canSelectCurrent || submitting}
-                  className="mt-0.5"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    Aktueller Kunde
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    {activeCustomer
-                      ? activeCustomer.name
-                      : 'Kein Kunde ausgewählt — wähle oben einen Kunden im Selektor.'}
-                  </p>
-                </div>
-              </label>
-
-              <label
-                className={cn(
-                  'flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors',
-                  customerScope === 'all'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                    : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
-                )}
-              >
-                <RadioGroupItem value="all" id="scope-all" disabled={submitting} className="mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    Alle Kunden
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    Export umfasst {customerCount > 0 ? `${customerCount} Kunden` : 'alle Kunden'} dieses Tenants.
-                  </p>
-                </div>
-              </label>
-            </RadioGroup>
+              <SelectTrigger id="export-customer">
+                <SelectValue placeholder="Kunden auswählen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Alle Kunden</SelectItem>
+                {customerOptions.map((customer) => (
+                  <SelectItem key={customer.id} value={customer.id}>
+                    {customer.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {selectedCustomer
+                ? `Export wird für ${selectedCustomer.name} erstellt.`
+                : `Export umfasst ${customerOptions.length > 0 ? `${customerOptions.length} Kunden` : 'alle Kunden'} dieses Tenants.`}
+            </p>
           </div>
 
           <Separator />
@@ -816,15 +1028,15 @@ function ExportConfigModal({
           <div className="space-y-3">
             <Label>Branding</Label>
             <RadioGroup
-              value={brandingSource}
+              value={effectiveBrandingSource}
               onValueChange={(value) => setBrandingSource(value as BrandingSource)}
-              disabled={submitting}
+              disabled={submitting || uploadingCustomerLogo}
               className="gap-2"
             >
               <label
                 className={cn(
                   'flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors',
-                  brandingSource === 'tenant'
+                  effectiveBrandingSource === 'tenant'
                     ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
                     : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
                 )}
@@ -842,36 +1054,125 @@ function ExportConfigModal({
                 </div>
               </label>
 
-              <label
-                className={cn(
-                  'flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors',
-                  brandingSource === 'customer'
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
-                    : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
-                )}
-              >
-                <RadioGroupItem value="customer" id="brand-customer" className="mt-0.5" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
-                    Kunden-Logo
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                    {selectedCustomerName
-                      ? `Logo des Kunden „${selectedCustomerName}" wird verwendet.`
-                      : 'Wähle einen Kunden-Kontext, damit das Kunden-Logo verwendet werden kann.'}
-                  </p>
-                </div>
-              </label>
+              {showCustomerBrandingOption ? (
+                <label
+                  className={cn(
+                    'flex items-start gap-3 rounded-xl border p-3 cursor-pointer transition-colors',
+                    effectiveBrandingSource === 'customer'
+                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
+                      : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'
+                  )}
+                >
+                  <RadioGroupItem value="customer" id="brand-customer" className="mt-0.5" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      Kunden-Logo
+                    </p>
+                    <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                      {selectedCustomerLogoUrl
+                        ? `Logo des Kunden „${selectedCustomerName}" wird verwendet.`
+                        : `Für ${selectedCustomerName} ist noch kein Logo hinterlegt.`}
+                    </p>
+                  </div>
+                </label>
+              ) : null}
             </RadioGroup>
 
             {customerLogoMissing ? (
               <Alert className="border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-300">
                 <AlertTriangle className="h-4 w-4" />
-                <AlertTitle>Kein Kunden-Logo verfügbar</AlertTitle>
-                <AlertDescription>
-                  Da kein Kunde ausgewählt ist, fällt das Branding auf das Tenant-Logo zurück.
+                <AlertTitle>Kein Kundenlogo hinterlegt</AlertTitle>
+                <AlertDescription className="mt-2 space-y-3">
+                  <p>
+                    Für {selectedCustomerName} ist noch kein Kundenlogo gespeichert. Du kannst es
+                    direkt hier hochladen und anschließend für den Export verwenden.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input
+                      ref={customerLogoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0]
+                        if (!file) return
+
+                        void handleCustomerLogoUpload(file)
+                          .catch((uploadError) => {
+                            const message =
+                              uploadError instanceof Error
+                                ? uploadError.message
+                                : 'Kundenlogo konnte nicht hochgeladen werden.'
+                            setError(message)
+                            toast({
+                              title: 'Logo-Upload fehlgeschlagen',
+                              description: message,
+                              variant: 'destructive',
+                            })
+                          })
+                          .finally(() => {
+                            if (customerLogoInputRef.current) {
+                              customerLogoInputRef.current.value = ''
+                            }
+                          })
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => customerLogoInputRef.current?.click()}
+                      disabled={submitting || uploadingCustomerLogo}
+                      className="gap-2"
+                    >
+                      {uploadingCustomerLogo ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Logo wird hochgeladen...
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-3.5 w-3.5" />
+                          Kundenlogo hochladen
+                        </>
+                      )}
+                    </Button>
+                    <span className="text-xs text-amber-800/80 dark:text-amber-300/80">
+                      Erlaubt: PNG, JPG, SVG, WebP bis 5 MB
+                    </span>
+                  </div>
                 </AlertDescription>
               </Alert>
+            ) : null}
+
+            {effectiveBrandingSource === 'customer' && selectedCustomerLogoUrl ? (
+              <div className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/40">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  Hinterlegtes Kundenlogo
+                </p>
+                <div className="mt-3 flex items-center gap-3">
+                  <div className="relative h-12 w-12 overflow-hidden rounded-lg border border-slate-200 bg-white dark:border-slate-700">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={selectedCustomerLogoUrl}
+                      alt={`Logo von ${selectedCustomerName}`}
+                      className="h-full w-full object-contain p-1"
+                      loading="lazy"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none'
+                      }}
+                    />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                      {selectedCustomerName}
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Dieses Logo wird im Export verwendet.
+                    </p>
+                  </div>
+                </div>
+              </div>
             ) : null}
 
             <div className="flex items-center gap-3">
@@ -885,14 +1186,14 @@ function ExportConfigModal({
                     id="brand-color"
                     value={brandColor}
                     onChange={(e) => setBrandColor(e.target.value)}
-                    disabled={submitting}
+                    disabled={submitting || uploadingCustomerLogo}
                     aria-label="Akzentfarbe wählen"
                     className="h-9 w-12 cursor-pointer rounded-lg border border-slate-200 bg-white p-1 dark:border-slate-700 dark:bg-slate-900"
                   />
                   <Input
                     value={brandColor}
                     onChange={(e) => setBrandColor(e.target.value)}
-                    disabled={submitting}
+                    disabled={submitting || uploadingCustomerLogo}
                     className="h-9 flex-1 font-mono text-xs uppercase"
                     maxLength={7}
                   />
@@ -919,6 +1220,16 @@ function ExportConfigModal({
                 </label>
               </AlertDescription>
             </Alert>
+          ) : checkingAvailability ? (
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Datenlage wird geprüft...
+            </div>
+          ) : hasAvailableData ? (
+            <div className="flex items-center gap-2 text-xs text-emerald-700 dark:text-emerald-400">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Daten verfügbar
+            </div>
           ) : null}
 
           {/* Error */}
@@ -931,18 +1242,18 @@ function ExportConfigModal({
           ) : null}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="border-t bg-background px-6 py-4">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={submitting}
+            disabled={submitting || uploadingCustomerLogo}
           >
             Abbrechen
           </Button>
           <Button
             variant="dark"
             onClick={() => void handleSubmit()}
-            disabled={submitting || needsAcknowledgement}
+            disabled={submitting || uploadingCustomerLogo || needsAcknowledgement}
             className="gap-2"
           >
             {submitting ? (
@@ -958,6 +1269,15 @@ function ExportConfigModal({
             )}
           </Button>
         </DialogFooter>
+
+        {pngSnapshot ? (
+          <div className="pointer-events-none absolute -left-[10000px] top-0 opacity-0">
+            <MarketingDashboardExportSnapshot
+              ref={snapshotRef}
+              snapshot={pngSnapshot}
+            />
+          </div>
+        ) : null}
       </DialogContent>
     </Dialog>
   )
@@ -989,7 +1309,7 @@ function ExportEmailModal({ open, onOpenChange, item, onSent }: ExportEmailModal
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ email: email.trim(), message: message.trim() || null }),
+        body: JSON.stringify({ to: email.trim(), message: message.trim() || null }),
       })
 
       if (!res.ok) {
@@ -1086,3 +1406,50 @@ function ExportEmailModal({ open, onOpenChange, item, onSent }: ExportEmailModal
     </Dialog>
   )
 }
+
+const MarketingDashboardExportSnapshot = forwardRef<HTMLDivElement, { snapshot: PngSnapshotPayload }>(
+  function MarketingDashboardExportSnapshot({ snapshot }, ref) {
+  return (
+    <div
+      ref={ref}
+      className="w-[1200px] rounded-[32px] bg-white p-10 text-slate-900 shadow-2xl"
+      style={{
+        backgroundImage:
+          'radial-gradient(circle at top right, rgba(148,163,184,0.18), transparent 28%)',
+      }}
+    >
+      <div
+        className="rounded-[28px] px-8 py-7 text-white"
+        style={{ backgroundColor: snapshot.accentColor }}
+      >
+        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-white/80">
+          Export Center
+        </p>
+        <div className="mt-4 flex items-end justify-between gap-8">
+          <div>
+            <h2 className="text-4xl font-semibold">{snapshot.title}</h2>
+            <p className="mt-2 text-lg text-white/80">{snapshot.subtitle}</p>
+          </div>
+          <p className="text-sm text-white/80">{snapshot.generatedAt}</p>
+        </div>
+      </div>
+
+      <div className="mt-8 grid grid-cols-2 gap-5">
+        {snapshot.metrics.map((metric) => (
+          <div
+            key={metric.label}
+            className="rounded-[24px] border border-slate-200 bg-slate-50 px-6 py-5"
+          >
+            <p className="text-sm font-medium uppercase tracking-[0.16em] text-slate-500">
+              {metric.label}
+            </p>
+            <p className="mt-3 text-3xl font-semibold text-slate-950">
+              {metric.value}
+              {metric.unit ? ` ${metric.unit}` : ''}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+})

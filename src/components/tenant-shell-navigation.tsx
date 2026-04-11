@@ -10,6 +10,7 @@ import {
   CreditCard,
   Download,
   LayoutDashboard,
+  LayoutGrid,
   Loader2,
   Lock,
   Menu,
@@ -68,6 +69,7 @@ function tenantNav(context: TenantShellContext) {
 
 function isNavActive(pathname: string, href: string) {
   if (href === '/dashboard') return pathname === '/dashboard'
+  if (href === '/dashboard/portfolio') return pathname === '/dashboard/portfolio'
   return pathname === href || pathname.startsWith(`${href}/`)
 }
 
@@ -312,6 +314,32 @@ function NavigationContent({
                   Dashboard
                 </span>
                 {visiblePendingHref === '/dashboard' ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                )}
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="/dashboard/portfolio"
+                onClick={() => handleNavigate('/dashboard/portfolio')}
+                onMouseEnter={() => router.prefetch('/dashboard/portfolio')}
+                onFocus={() => router.prefetch('/dashboard/portfolio')}
+                data-tour="nav-portfolio"
+                className={cn(
+                  'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
+                  isNavActive(pathname, '/dashboard/portfolio')
+                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
+                )}
+                aria-current={isNavActive(pathname, '/dashboard/portfolio') ? 'page' : undefined}
+              >
+                <span className="flex items-center gap-3">
+                  <LayoutGrid className={cn('h-4 w-4', isNavActive(pathname, '/dashboard/portfolio') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                  Portfolio
+                </span>
+                {visiblePendingHref === '/dashboard/portfolio' ? (
                   <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
                 ) : (
                   <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
