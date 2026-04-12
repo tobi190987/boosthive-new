@@ -168,6 +168,153 @@ CREATE INDEX idx_portal_users_customer ON client_portal_users(customer_id);
 - Kein Self-Signup für Endkunden (immer vom Admin eingeladen)
 - Keine Mobile App (nur Web, responsive)
 
+## Tech Design (Solution Architect)
+
+### Entscheidungen aus Klärungsrunde
+- **Portal-URL:** `agentur.boost-hive.de/portal` — kein extra DNS-Aufwand, Middleware-Erweiterung reicht
+- **Approval-Flow:** Token-basiert (kein Portal-Login nötig) — wiederverwendet bestehenden `approval-public-page.tsx`-Flow aus PROJ-34
+
+---
+
+### Komponentenstruktur
+
+```
+ADMIN-SEITE (im bestehenden Tenant-Shell)
+└── CustomerDetailWorkspace (bereits vorhanden)
+    └── Tab: "Portal-Zugang" (neu)
+        ├── PortalUsersTable — Liste Portal-User + Status
+        ├── PortalInviteDialog — E-Mail-Einladung verschicken
+        └── PortalVisibilityToggles — An/Aus je Datenbereich
+
+└── Settings > "Portal-Einstellungen" (neue Settings-Seite)
+    └── PortalSettingsWorkspace
+        ├── BrandingForm — Logo, Primärfarbe, Agenturname
+        └── PortalPreviewBanner — Vorschau wie der Kunde es sieht
+
+PORTAL-SEITE (eigenständiges Layout — kein Tenant-Shell)
+└── PortalAuthLayout — lädt Branding aus DB, zeigt Agenturlogo
+    ├── /portal/login
+    │   └── PortalLoginForm — Magic-Link per E-Mail anfordern
+    │
+    ├── /portal/dashboard (nach Login)
+    │   ├── PortalHeader — Agentur-Branding + Logout-Button
+    │   ├── PortalNavigation — nur freigegebene Bereiche sichtbar
+    │   └── PortalDashboardGrid
+    │       ├── GA4-Widget (Traffic) — read-only
+    │       ├── Ads-Widget (Spend/ROAS) — read-only
+    │       ├── SEO-Widget (Top-Keywords) — read-only
+    │       └── EmptyStatePlaceholder — wenn Integration fehlt
+    │
+    └── /portal/reports
+        ├── ReportsList — freigegebene Reports mit Datum
+        └── ReportDownloadButton — PDF-Download
+
+APPROVAL-FLOW (token-basiert, kein Portal-Login)
+└── /public/approval/[token] — bestehender Flow aus PROJ-34
+    └── approval-public-page.tsx — bereits vorhanden, wird wiederverwendet
+```
+
+---
+
+### Datenmodell
+
+**`client_portal_users`** — Wer hat Zugang?
+- Verknüpfung zu Tenant + Kunde
+- E-Mail, Name, Supabase-Auth-ID
+- Aktiv-Flag, letzter Login
+
+**`client_portal_settings`** — Wie sieht das Portal aus?
+- Eine Zeile pro Tenant
+- Logo-URL, Primärfarbe, Agenturname, optionale Custom-Domain
+
+**`client_portal_visibility`** — Was darf der Kunde sehen?
+- Eine Zeile pro Kunde
+- An/Aus-Schalter: GA4, Ads, SEO, Reports
+
+*(Kein separater Visibility-Toggle für Freigaben — Freigaben laufen über Token, nicht über Portal-Login)*
+
+---
+
+### Routing
+
+```
+agentur.boost-hive.de/portal/*  →  (portal)-Route-Gruppe (neues Layout)
+agentur.boost-hive.de/*         →  (tenant)-Route-Gruppe (wie bisher)
+/public/approval/[token]        →  bestehend (PROJ-34, unverändert)
+```
+
+Middleware-Erweiterung: Pfade mit `/portal`-Präfix bekommen das Portal-Layout mit Tenant-Branding statt dem Agentur-Shell.
+
+---
+
+### Auth-Architektur
+
+| | Agentur-User | Portal-User | Approval-Flow |
+|---|---|---|---|
+| Auth-Typ | Supabase (E-Mail + PW) | Supabase Magic Link | Token in URL (kein Login) |
+| JWT-Claim | `role: member/admin` | `role: portal_user` | Kein JWT |
+| Zugriff | `/api/tenant/*` | `/api/portal/*` | `/api/public/approval/*` |
+| Datenzugriff | Alle Kunden des Tenants | Nur eigener `customer_id` | Nur eigener Approval-Token |
+
+---
+
+### Neue API-Endpunkte
+
+```
+AUTH
+POST /api/portal/auth/invite       — Admin lädt Portal-User ein
+POST /api/portal/auth/login        — Magic-Link-Request
+POST /api/portal/auth/logout       — Portal-Logout
+
+PORTAL DATA
+GET  /api/portal/dashboard         — Metriken (GA4, Ads, SEO)
+GET  /api/portal/reports           — Freigegebene Reports
+
+ADMIN (innerhalb Tenant-Shell)
+GET/POST   /api/tenant/portal/users                      — Portal-User verwalten
+DELETE     /api/tenant/portal/users/[id]                 — Zugang deaktivieren
+GET/PUT    /api/tenant/portal/settings                   — Branding
+GET/PUT    /api/tenant/portal/visibility/[customerId]    — Sichtbarkeit
+```
+
+*(Approval-Endpunkte existieren bereits unter `/api/public/approval/*`)*
+
+---
+
+### Wiederverwendete Komponenten
+
+- **`approval-public-page.tsx`** — Approval-Flow vollständig wiederverwendet, keine Änderung nötig
+- **Chart-/Widget-Komponenten** (PROJ-40) — read-only, kein Auth-Kontext, direkt einsetzbar
+- **`login-form.tsx`-Muster** — Portal-Login-Form analog aufgebaut
+
+---
+
+### Tech-Entscheidungen
+
+| Entscheidung | Gewählt | Warum |
+|---|---|---|
+| Portal-Auth | Supabase Magic Link | Einfach für Endkunden; Muster existiert bereits (`email-link` Route) |
+| Approval-Flow | Token-basiert (bestehend) | Bereits implementiert in PROJ-34; kein Portal-Login nötig |
+| Portal-Routing | `(portal)` Route-Gruppe | Vollständige Layout-Trennung ohne zusätzlichen DNS |
+| Branding | DB-Abfrage im Layout | Tenant-spezifisch, muss vor erstem Render geladen sein |
+| Datensicherheit | JWT-Claims + RLS | Zwei-Schichten: API-Validierung + DB-Ebene |
+
+---
+
+### Abhängigkeiten (müssen deployed sein)
+
+- **PROJ-34** Client Approval Hub — Token-Flow bereits vorhanden
+- **PROJ-55** Reporting & Export Center — für Report-Downloads
+- **PROJ-50/51/52** GA4 / Google Ads / Meta Ads — Metriken im Dashboard
+
+---
+
+### Neue Packages
+Keine — alle benötigten Tools bereits installiert.
+
+---
+
 ## Status
-- **Status:** Planned
+- **Status:** In Progress
 - **Created:** 2026-04-11
+- **Architecture:** 2026-04-12
