@@ -21,6 +21,16 @@ const createCustomerSchema = z.object({
   status: z.enum(['active', 'paused']).default('active'),
 })
 
+function isMissingCustomerCrmColumns(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    error?.message?.includes('crm_status') === true ||
+    error?.message?.includes('monthly_volume') === true ||
+    error?.message?.includes('onboarding_checklist') === true
+  )
+}
+
 export async function GET(request: NextRequest) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
@@ -32,10 +42,23 @@ export async function GET(request: NextRequest) {
   if ('error' in authResult) return authResult.error
 
   const admin = createAdminClient()
-  const [customersResult, approvalsResult] = await Promise.all([
-    admin
-      .from('customers')
-      .select(`
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const customerSelectWithCrm = `
+        id,
+        name,
+        domain,
+        industry,
+        contact_email,
+        logo_url,
+        internal_notes,
+        status,
+        crm_status,
+        monthly_volume,
+        onboarding_checklist,
+        created_at,
+        updated_at
+      `
+  const customerSelectFallback = `
         id,
         name,
         domain,
@@ -46,7 +69,12 @@ export async function GET(request: NextRequest) {
         status,
         created_at,
         updated_at
-      `)
+      `
+
+  const [initialCustomersResult, approvalsResult, followUpsResult] = await Promise.all([
+    admin
+      .from('customers')
+      .select(customerSelectWithCrm)
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
       .order('name', { ascending: true })
@@ -57,10 +85,38 @@ export async function GET(request: NextRequest) {
       .eq('tenant_id', tenantId)
       .in('status', ['pending_approval', 'changes_requested'])
       .not('customer_id', 'is', null),
+    admin
+      .from('customer_activities')
+      .select('customer_id')
+      .eq('tenant_id', tenantId)
+      .not('follow_up_date', 'is', null)
+      .lte('follow_up_date', todayStr),
   ])
 
-  if (customersResult.error) {
-    return NextResponse.json({ error: customersResult.error.message }, { status: 500 })
+  let customersData = initialCustomersResult.data as Array<Record<string, unknown>> | null
+  let customersError = initialCustomersResult.error
+
+  if (isMissingCustomerCrmColumns(customersError)) {
+    const fallbackCustomersResult = await admin
+      .from('customers')
+      .select(customerSelectFallback)
+      .eq('tenant_id', tenantId)
+      .is('deleted_at', null)
+      .order('name', { ascending: true })
+      .limit(500)
+
+    customersData =
+      fallbackCustomersResult.data?.map((customer) => ({
+        ...(customer as Record<string, unknown>),
+        crm_status: 'active',
+        monthly_volume: null,
+        onboarding_checklist: [],
+      })) ?? null
+    customersError = fallbackCustomersResult.error
+  }
+
+  if (customersError) {
+    return NextResponse.json({ error: customersError.message }, { status: 500 })
   }
 
   if (approvalsResult.error) {
@@ -77,9 +133,10 @@ export async function GET(request: NextRequest) {
   }
 
   return NextResponse.json({
-    customers: (customersResult.data ?? []).map((customer) => ({
+    customers: (customersData ?? []).map((customer) => ({
       ...customer,
-      openApprovalsCount: openApprovalsByCustomer.get(customer.id) ?? 0,
+      openApprovalsCount:
+        typeof customer.id === 'string' ? (openApprovalsByCustomer.get(customer.id) ?? 0) : 0,
     })),
   })
 }
