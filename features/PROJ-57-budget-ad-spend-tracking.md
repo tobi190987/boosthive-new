@@ -228,3 +228,4 @@ Alert-Deduplizierungsfelder (`alert_X_sent_at`) verhindern, dass dieselbe Warnun
   - Migration: `supabase/migrations/044_ad_budgets.sql`
   - Navigation: Budget Tracking-Eintrag in `tenant-shell-navigation.tsx`
   - Sync nutzt bestehende Dashboard-Snapshot-Funktionen (30d-Timeseries gefiltert auf Zielmonat)
+  - Tests: `tests/api/budgets.spec.ts` (17 Tests: Auth, CRUD, Validation, Cross-Tenant)

@@ -62,62 +62,72 @@ ALTER TABLE ad_spend_entries ENABLE ROW LEVEL SECURITY;
 -- Tenant members can read
 CREATE POLICY "tenant members read ad_budgets"
   ON ad_budgets FOR SELECT
+  TO authenticated
   USING (
-    tenant_id IN (
-      SELECT tenant_id FROM tenant_memberships
-      WHERE user_id = auth.uid()
-        AND deleted_at IS NULL
+    EXISTS (
+      SELECT 1 FROM tenant_members
+      WHERE tenant_members.tenant_id = ad_budgets.tenant_id
+        AND tenant_members.user_id   = auth.uid()
+        AND tenant_members.status    = 'active'
     )
   );
 
 -- Only admins can insert/update/delete
 CREATE POLICY "tenant admins write ad_budgets"
   ON ad_budgets FOR ALL
+  TO authenticated
   USING (
-    tenant_id IN (
-      SELECT tenant_id FROM tenant_memberships
-      WHERE user_id = auth.uid()
-        AND role = 'admin'
-        AND deleted_at IS NULL
+    EXISTS (
+      SELECT 1 FROM tenant_members
+      WHERE tenant_members.tenant_id = ad_budgets.tenant_id
+        AND tenant_members.user_id   = auth.uid()
+        AND tenant_members.role      = 'admin'
+        AND tenant_members.status    = 'active'
     )
   )
   WITH CHECK (
-    tenant_id IN (
-      SELECT tenant_id FROM tenant_memberships
-      WHERE user_id = auth.uid()
-        AND role = 'admin'
-        AND deleted_at IS NULL
+    EXISTS (
+      SELECT 1 FROM tenant_members
+      WHERE tenant_members.tenant_id = ad_budgets.tenant_id
+        AND tenant_members.user_id   = auth.uid()
+        AND tenant_members.role      = 'admin'
+        AND tenant_members.status    = 'active'
     )
   );
 
 -- Tenant members can read spend entries
 CREATE POLICY "tenant members read ad_spend_entries"
   ON ad_spend_entries FOR SELECT
+  TO authenticated
   USING (
-    tenant_id IN (
-      SELECT tenant_id FROM tenant_memberships
-      WHERE user_id = auth.uid()
-        AND deleted_at IS NULL
+    EXISTS (
+      SELECT 1 FROM tenant_members
+      WHERE tenant_members.tenant_id = ad_spend_entries.tenant_id
+        AND tenant_members.user_id   = auth.uid()
+        AND tenant_members.status    = 'active'
     )
   );
 
 -- Only admins can write spend entries
 CREATE POLICY "tenant admins write ad_spend_entries"
   ON ad_spend_entries FOR ALL
+  TO authenticated
   USING (
-    tenant_id IN (
-      SELECT tenant_id FROM tenant_memberships
-      WHERE user_id = auth.uid()
-        AND role = 'admin'
-        AND deleted_at IS NULL
+    EXISTS (
+      SELECT 1 FROM tenant_members
+      WHERE tenant_members.tenant_id = ad_spend_entries.tenant_id
+        AND tenant_members.user_id   = auth.uid()
+        AND tenant_members.role      = 'admin'
+        AND tenant_members.status    = 'active'
     )
   )
   WITH CHECK (
-    tenant_id IN (
-      SELECT tenant_id FROM tenant_memberships
-      WHERE user_id = auth.uid()
-        AND role = 'admin'
-        AND deleted_at IS NULL
+    EXISTS (
+      SELECT 1 FROM tenant_members
+      WHERE tenant_members.tenant_id = ad_spend_entries.tenant_id
+        AND tenant_members.user_id   = auth.uid()
+        AND tenant_members.role      = 'admin'
+        AND tenant_members.status    = 'active'
     )
   );
 

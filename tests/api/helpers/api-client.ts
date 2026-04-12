@@ -125,6 +125,27 @@ export async function tenantDelete(
 }
 
 /**
+ * Makes a PUT request to a tenant API endpoint.
+ */
+export async function tenantPut(
+  request: APIRequestContext,
+  slug: string,
+  path: string,
+  tenantId: string,
+  data?: unknown,
+  cookies?: string
+) {
+  return request.put(tenantUrl(slug, path), {
+    headers: {
+      'content-type': 'application/json',
+      'x-tenant-id': tenantId,
+      cookie: buildCookieHeader(cookies),
+    },
+    ...(data !== undefined ? { data } : {}),
+  })
+}
+
+/**
  * Makes a PATCH request to a tenant API endpoint.
  */
 export async function tenantPatch(
