@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   BarChart3,
   Bot,
+  CalendarDays,
   CheckSquare,
   Eye,
   FileImage,
@@ -11,7 +12,7 @@ import {
   Search,
 } from 'lucide-react'
 
-export type ColorKey = 'blue' | 'indigo' | 'violet' | 'purple' | 'emerald' | 'orange' | 'amber'
+export type ColorKey = 'blue' | 'indigo' | 'violet' | 'purple' | 'emerald' | 'orange' | 'amber' | 'rose'
 
 export interface ToolItem {
   label: string
@@ -98,6 +99,14 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
         color: 'blue',
       },
       {
+        label: 'Social Media Kalender',
+        description: 'Plane und verwalte Social-Media-Posts für Instagram, LinkedIn, Facebook und TikTok.',
+        href: '/tools/social-calendar',
+        icon: CalendarDays,
+        moduleCode: 'social_calendar',
+        color: 'rose',
+      },
+      {
         label: 'Freigaben',
         description: 'Verfolge Freigaben, Korrekturen und Abnahmen im Überblick.',
         href: '/tools/approvals',
@@ -118,4 +127,5 @@ export const COLOR_MAP: Record<ColorKey, { icon: string; bg: string }> = {
   emerald: { icon: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/40' },
   orange: { icon: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40' },
   amber: { icon: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40' },
+  rose: { icon: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40' },
 }

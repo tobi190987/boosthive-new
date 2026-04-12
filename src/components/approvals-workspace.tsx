@@ -1,23 +1,28 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
+import React, { useCallback, useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   AlertCircle,
   Check,
   CheckCircle2,
   CheckSquare,
+  ChevronDown,
+  ChevronRight,
   Clock,
   Copy,
   ExternalLink,
+  Eye,
   FileImage,
   FileText,
+  Loader2,
   MessageSquare,
   RefreshCw,
   Type,
   X,
 } from 'lucide-react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -153,6 +158,167 @@ function SummaryCard({ label, count, icon, colorClass, onClick, active }: Summar
   )
 }
 
+interface BriefPreview {
+  id: string
+  keyword: string
+  language: string
+  tone: string
+  word_count_target: number
+  target_url: string | null
+  workflow_status: string | null
+  brief_json: {
+    search_intent?: { type: string; reasoning: string }
+    h1_titles?: string[]
+    meta_descriptions?: string[]
+    outline?: Array<{ h2: string; description: string; h3s: string[] }>
+    keywords?: Array<{ term: string; frequency: string }>
+    cta_recommendation?: string
+  } | null
+}
+
+function BriefInlinePreview({ briefId }: { briefId: string }) {
+  const [brief, setBrief] = useState<BriefPreview | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const res = await fetch(`/api/tenant/content/briefs/${briefId}`)
+        if (!res.ok) throw new Error('Brief konnte nicht geladen werden.')
+        const data = await res.json()
+        if (!cancelled) setBrief(data.brief ?? null)
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Unbekannter Fehler')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    void load()
+    return () => {
+      cancelled = true
+    }
+  }, [briefId])
+
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 p-4 text-sm text-slate-500 dark:text-slate-400">
+        <Loader2 className="h-4 w-4 animate-spin" />
+        Brief-Inhalt wird geladen...
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="m-4 rounded-xl">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    )
+  }
+
+  if (!brief || !brief.brief_json) {
+    return (
+      <div className="p-4 text-sm text-slate-500 dark:text-slate-400">
+        Kein Brief-Inhalt verfügbar.
+      </div>
+    )
+  }
+
+  const b = brief.brief_json
+  return (
+    <div className="space-y-4 rounded-xl border border-slate-100 bg-slate-50/60 p-4 dark:border-border dark:bg-[#1a2231]/40">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+        <Badge variant="outline" className="rounded-full">Keyword: {brief.keyword}</Badge>
+        <Badge variant="outline" className="rounded-full">{brief.language.toUpperCase()}</Badge>
+        <Badge variant="outline" className="rounded-full">{brief.tone}</Badge>
+        <Badge variant="outline" className="rounded-full">{brief.word_count_target} Wörter</Badge>
+      </div>
+
+      {b.search_intent && (
+        <section>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Suchintention
+          </h4>
+          <p className="text-sm text-slate-700 dark:text-slate-200">
+            <span className="font-semibold">{b.search_intent.type}:</span> {b.search_intent.reasoning}
+          </p>
+        </section>
+      )}
+
+      {b.h1_titles && b.h1_titles.length > 0 && (
+        <section>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            H1-Vorschläge
+          </h4>
+          <ul className="list-disc space-y-0.5 pl-5 text-sm text-slate-700 dark:text-slate-200">
+            {b.h1_titles.slice(0, 3).map((t, i) => (
+              <li key={i}>{t}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {b.meta_descriptions && b.meta_descriptions.length > 0 && (
+        <section>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Meta-Descriptions
+          </h4>
+          <ul className="list-disc space-y-0.5 pl-5 text-sm text-slate-700 dark:text-slate-200">
+            {b.meta_descriptions.slice(0, 2).map((m, i) => (
+              <li key={i}>{m}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {b.outline && b.outline.length > 0 && (
+        <section>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Gliederung
+          </h4>
+          <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-200">
+            {b.outline.map((o, i) => (
+              <li key={i}>
+                <span className="font-semibold">{o.h2}</span>
+                {o.description ? <span className="text-slate-500 dark:text-slate-400"> – {o.description}</span> : null}
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
+      {b.keywords && b.keywords.length > 0 && (
+        <section>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            LSI-Keywords
+          </h4>
+          <div className="flex flex-wrap gap-1.5">
+            {b.keywords.slice(0, 12).map((kw, i) => (
+              <Badge key={i} variant="outline" className="rounded-full text-[11px]">
+                {kw.term}
+              </Badge>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {b.cta_recommendation && (
+        <section>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+            Call-to-Action
+          </h4>
+          <p className="text-sm text-slate-700 dark:text-slate-200">{b.cta_recommendation}</p>
+        </section>
+      )}
+    </div>
+  )
+}
+
 const PAGE_SIZE = 20
 
 interface ApprovalsWorkspaceProps {
@@ -172,6 +338,7 @@ export function ApprovalsWorkspace({ selectedCustomerId }: ApprovalsWorkspacePro
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [copiedId, setCopiedId] = useState<string | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   const fetchApprovals = useCallback(async () => {
     setLoading(true)
@@ -439,9 +606,10 @@ export function ApprovalsWorkspace({ selectedCustomerId }: ApprovalsWorkspacePro
         {!loading && !error && filteredApprovals.length > 0 && (
           <Card className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
             <div className="overflow-x-auto">
-              <Table className="min-w-[760px]">
+              <Table className="min-w-[820px]">
               <TableHeader>
                 <TableRow className="border-slate-100 dark:border-border">
+                  <TableHead className="w-10"></TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Typ</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Titel</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Kunde</TableHead>
@@ -457,13 +625,43 @@ export function ApprovalsWorkspace({ selectedCustomerId }: ApprovalsWorkspacePro
                   const isPending = item.status === 'pending_approval'
                   const displayDate = !isPending && item.decided_at ? item.decided_at : item.created_at
                   const dateLabel = !isPending && item.decided_at ? 'Entschieden' : 'Erstellt'
+                  const isBrief = item.content_type === 'content_brief'
+                  const isExpanded = expandedId === item.id
 
                   return (
+                    <React.Fragment key={item.id}>
                     <TableRow
-                      key={item.id}
                       className="cursor-pointer border-slate-100 transition-colors hover:bg-slate-50 dark:border-border dark:hover:bg-[#1e2635]/40"
                       onClick={() => handleRowClick(item)}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        {isBrief ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 w-7 rounded-full p-0"
+                                onClick={() => setExpandedId(isExpanded ? null : item.id)}
+                                aria-label={isExpanded ? 'Brief-Vorschau schließen' : 'Brief-Vorschau öffnen'}
+                                aria-expanded={isExpanded}
+                              >
+                                {isExpanded ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                              {isExpanded ? 'Brief-Vorschau schließen' : 'Brief inline anzeigen'}
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <span className="inline-block w-7" />
+                        )}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {contentTypeIcon(item.content_type)}
@@ -528,6 +726,20 @@ export function ApprovalsWorkspace({ selectedCustomerId }: ApprovalsWorkspacePro
                         <ExternalLink className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                       </TableCell>
                     </TableRow>
+                    {isBrief && isExpanded && (
+                      <TableRow
+                        className="border-slate-100 bg-slate-50/40 dark:border-border dark:bg-[#171f2d]/40"
+                      >
+                        <TableCell colSpan={8} className="p-3">
+                          <div className="flex items-center gap-2 pb-2 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <Eye className="h-3.5 w-3.5" />
+                            Brief-Vorschau
+                          </div>
+                          <BriefInlinePreview briefId={item.content_id} />
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    </React.Fragment>
                   )
                 })}
               </TableBody>

@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
 
   let query = admin
     .from('content_briefs')
-    .select('id, keyword, language, tone, word_count_target, target_url, status, error_message, created_at, updated_at')
+    .select('id, keyword, language, tone, word_count_target, target_url, status, workflow_status, approval_status, error_message, created_at, updated_at')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(200)

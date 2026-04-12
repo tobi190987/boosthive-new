@@ -219,5 +219,12 @@ Alert-Deduplizierungsfelder (`alert_X_sent_at`) verhindern, dass dieselbe Warnun
 - Modul-Code: `budget_tracking`
 
 ## Status
-- **Status:** In Progress
+- **Status:** In Review
 - **Created:** 2026-04-11
+- **Implementation Notes:**
+  - Frontend: `src/components/budget-workspace.tsx` (vollständig)
+  - Page: `src/app/(tenant)/budget/page.tsx`
+  - API: `src/app/api/tenant/budgets/` (GET/POST + [id] PUT/DELETE + [id]/spend GET/POST + sync POST)
+  - Migration: `supabase/migrations/044_ad_budgets.sql`
+  - Navigation: Budget Tracking-Eintrag in `tenant-shell-navigation.tsx`
+  - Sync nutzt bestehende Dashboard-Snapshot-Funktionen (30d-Timeseries gefiltert auf Zielmonat)

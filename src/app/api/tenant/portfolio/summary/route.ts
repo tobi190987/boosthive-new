@@ -34,10 +34,21 @@ export interface PortfolioSummaryResponse {
     overdueFollowups: number
     brokenIntegrations: number
   }
+  userRole: 'admin' | 'member'
   generatedAt: string
 }
 
 type IntegrationStatusKey = 'ga4' | 'google_ads' | 'meta_ads' | 'tiktok_ads' | 'gsc'
+
+const SUPABASE_STORAGE_PREFIX = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/`
+  : null
+
+function sanitizeLogoUrl(url: string | null | undefined): string | null {
+  if (!url) return null
+  if (SUPABASE_STORAGE_PREFIX && url.startsWith(SUPABASE_STORAGE_PREFIX)) return url
+  return null
+}
 
 function normalizeIntegrationStatus(
   raw: string | null | undefined
@@ -61,6 +72,7 @@ export async function GET(request: NextRequest) {
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
+  const userRole = authResult.auth.role === 'admin' ? 'admin' : 'member'
 
   const admin = createAdminClient()
 
@@ -146,7 +158,7 @@ export async function GET(request: NextRequest) {
       name: customer.name,
       domain: customer.domain ?? null,
       industry: customer.industry ?? null,
-      logo_url: customer.logo_url ?? null,
+      logo_url: sanitizeLogoUrl(customer.logo_url),
       status: (customer.status ?? 'active') as 'active' | 'paused',
       updated_at: customer.updated_at,
       integrations,
@@ -172,12 +184,13 @@ export async function GET(request: NextRequest) {
       overdueFollowups: 0,
       brokenIntegrations: totalBrokenIntegrations,
     },
+    userRole,
     generatedAt: new Date().toISOString(),
   }
 
   return NextResponse.json(response, {
     headers: {
-      'Cache-Control': 'private, max-age=0, must-revalidate',
+      'Cache-Control': 'private, max-age=900',
     },
   })
 }

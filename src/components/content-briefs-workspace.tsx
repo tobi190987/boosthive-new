@@ -10,12 +10,14 @@ import {
   Copy,
   Download,
   FileText,
+  KanbanSquare,
   Link,
   Loader2,
   Plus,
   Printer,
   RefreshCw,
   Search,
+  Send,
   Sparkles,
   Trash2,
 } from 'lucide-react'
@@ -59,6 +61,8 @@ interface BriefSummary {
   word_count_target: number
   target_url: string | null
   status: 'pending' | 'generating' | 'done' | 'failed'
+  workflow_status: string | null
+  approval_status: string | null
   error_message: string | null
   created_at: string
   updated_at: string
@@ -89,6 +93,8 @@ interface BriefJson {
 interface BriefDetail extends BriefSummary {
   brief_json: BriefJson | null
 }
+
+type WorkflowStatus = 'none' | 'in_progress' | 'client_review' | 'done'
 
 interface ApprovalInfo {
   status: ApprovalStatus
@@ -127,6 +133,41 @@ function statusBadge(status: BriefSummary['status']) {
       return <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400">Fertig</Badge>
     case 'failed':
       return <Badge variant="outline" className="rounded-full border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/50 dark:text-red-400">Fehlgeschlagen</Badge>
+  }
+}
+
+function workflowStatusLabel(status: string | null): string {
+  switch (status) {
+    case 'in_progress': return 'In Bearbeitung'
+    case 'client_review': return 'Freigabe ausstehend'
+    case 'done': return 'Fertig'
+    default: return 'Entwurf'
+  }
+}
+
+function workflowStatusBadge(status: string | null) {
+  switch (status) {
+    case 'in_progress':
+      return <Badge variant="outline" className="rounded-full border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400">In Bearbeitung</Badge>
+    case 'client_review':
+      return <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-400">Freigabe ausstehend</Badge>
+    case 'done':
+      return <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400">Fertig</Badge>
+    default:
+      return <Badge variant="outline" className="rounded-full border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">Entwurf</Badge>
+  }
+}
+
+function approvalStatusBadgeSmall(status: string | null) {
+  switch (status) {
+    case 'pending_approval':
+      return <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/50 dark:text-amber-400 text-[10px] px-1.5 py-0"><Clock className="mr-0.5 h-2.5 w-2.5" />Warte auf Freigabe</Badge>
+    case 'approved':
+      return <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-400 text-[10px] px-1.5 py-0">Freigegeben</Badge>
+    case 'changes_requested':
+      return <Badge variant="outline" className="rounded-full border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-800 dark:bg-orange-950/50 dark:text-orange-400 text-[10px] px-1.5 py-0">Korrektur</Badge>
+    default:
+      return null
   }
 }
 
@@ -862,9 +903,61 @@ export function ContentBriefsWorkspace({
                     </div>
                     <div className="flex flex-wrap gap-2">
                       {statusBadge(brief.status)}
+                      {brief.status === 'done' && workflowStatusBadge(brief.workflow_status)}
+                      {brief.status === 'done' && approvalStatusBadgeSmall(brief.approval_status)}
                       <Badge variant="outline" className="rounded-full text-xs">{langLabel(brief.language)}</Badge>
                       <Badge variant="outline" className="rounded-full text-xs">{brief.word_count_target} W.</Badge>
                     </div>
+                    {/* Inline workflow status dropdown */}
+                    {brief.status === 'done' && (
+                      <div
+                        className="flex items-center gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <KanbanSquare className="h-3.5 w-3.5 text-slate-400" />
+                        <Select
+                          value={brief.workflow_status || 'none'}
+                          onValueChange={async (value) => {
+                            // Optimistic update
+                            setBriefs((prev) =>
+                              prev.map((b) =>
+                                b.id === brief.id ? { ...b, workflow_status: value } : b
+                              )
+                            )
+                            try {
+                              const res = await fetch(`/api/tenant/content/briefs/${brief.id}/workflow-status`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ workflow_status: value }),
+                              })
+                              if (!res.ok) {
+                                const data = await res.json().catch(() => ({}))
+                                throw new Error(data.error || 'Status konnte nicht geaendert werden.')
+                              }
+                              toast({ title: 'Status aktualisiert', description: `Workflow-Status auf "${workflowStatusLabel(value)}" gesetzt.` })
+                            } catch (err) {
+                              // Revert optimistic update
+                              setBriefs((prev) =>
+                                prev.map((b) =>
+                                  b.id === brief.id ? { ...b, workflow_status: brief.workflow_status } : b
+                                )
+                              )
+                              toast({ title: 'Fehler', description: err instanceof Error ? err.message : 'Status konnte nicht geaendert werden.', variant: 'destructive' })
+                            }
+                          }}
+                        >
+                          <SelectTrigger className="h-7 w-[150px] rounded-lg text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">Entwurf</SelectItem>
+                            <SelectItem value="in_progress">In Bearbeitung</SelectItem>
+                            <SelectItem value="client_review">Freigabe ausstehend</SelectItem>
+                            <SelectItem value="done">Fertig</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
                     <div className="flex items-center gap-1.5 text-xs text-slate-400 dark:text-slate-500">
                       <Clock className="h-3.5 w-3.5" />
                       {formatDate(brief.created_at)}

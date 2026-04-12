@@ -119,6 +119,15 @@ export const EXPORTS_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
 export const EXPORTS_CREATE: RateLimitOptions = { limit: 10, windowMs: 60 * 1000 }
 export const EXPORTS_EMAIL: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
 
+/** Budget reads (list, detail, spend history): 60 requests / min / tenant+IP */
+export const BUDGETS_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** Budget mutations (create, update, delete, manual spend): 30 requests / min / tenant+IP */
+export const BUDGETS_WRITE: RateLimitOptions = { limit: 30, windowMs: 60 * 1000 }
+
+/** Budget sync (calls external Ads APIs): 10 requests / 15 min / tenant+IP */
+export const BUDGETS_SYNC: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------

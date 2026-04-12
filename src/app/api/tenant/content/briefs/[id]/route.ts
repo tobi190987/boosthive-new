@@ -40,7 +40,7 @@ export async function GET(
 
   const { data: brief, error } = await admin
     .from('content_briefs')
-    .select('id, keyword, language, tone, word_count_target, target_url, status, brief_json, error_message, created_at, updated_at')
+    .select('id, keyword, language, tone, word_count_target, target_url, status, workflow_status, approval_status, brief_json, error_message, created_at, updated_at')
     .eq('tenant_id', tenantId)
     .eq('id', id)
     .maybeSingle()

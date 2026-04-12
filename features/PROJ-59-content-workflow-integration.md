@@ -182,6 +182,24 @@ Brief generiert (workflow_status = 'open')
 Keine neuen — Accordion, Badge, Select, Button, Tooltip bereits installiert.
 
 ## Status
-- **Status:** In Progress
+- **Status:** In Review
 - **Created:** 2026-04-11
 - **Architecture:** 2026-04-11
+- **Frontend:** 2026-04-11
+- **Backend:** 2026-04-11
+
+## Implementation Notes (Frontend)
+- `content-briefs-workspace.tsx`: Workflow-Status-Dropdown + Freigabe-Badge in Brief-Liste (AC-3), `ApprovalSubmitPanel` in Detail-View (AC-2, EC-4 über pending-Zustand), Status-Badges (Entwurf/In Bearbeitung/Freigabe ausstehend/Fertig).
+- `kanban-workspace.tsx`: Brief-Icon-Badges per `content_type`, Content-Type-Filter, Brief-Link in Karten-Detail (AC-1, AC-5).
+- `approvals-workspace.tsx`: Neue expandable Row mit Chevron-Toggle + `BriefInlinePreview`-Komponente. Lädt `brief_json` on-demand via `GET /api/tenant/content/briefs/[id]` und zeigt Keyword, Suchintention, H1-Titel, Meta, Outline, LSI-Keywords, CTA inline (AC-4).
+- `tenant-app-data.ts`: `ContentBriefListItem` um `workflow_status` + `approval_status` erweitert damit SSR-Liste konsistent ist.
+- Keine neuen shadcn/ui-Komponenten nötig (Badge, Button, Tooltip, Table bereits vorhanden).
+- AC-6 (Kunden-Inline-Ansicht + Approve/Reject) bereits durch `approval-public-page.tsx` abgedeckt.
+
+## Implementation Notes (Backend)
+- `POST /api/tenant/content/briefs/[id]/send-to-approval`: Zod-UUID-Check, `requireTenantUser` + `requireTenantModuleAccess('content_briefs')` + `CONTENT_BRIEFS_WRITE` Rate-Limit. Erzwingt `status='done'`, blockt `approval_status IN ('pending_approval','approved')` (AC-2, EC-4). Validiert `customer_id` (EC-1) und Kunden-E-Mail bevor `submitContentForApproval` ausgeführt wird. Setzt `workflow_status='client_review'` + `workflow_status_changed_at` nach erfolgreicher Freigabe-Einreichung.
+- `PATCH /api/tenant/content/briefs/[id]/workflow-status`: Zod-Enum aus `KANBAN_WORKFLOW_STATUSES` (`none`/`in_progress`/`client_review`/`done`), `requireTenantUser` + Modul-Zugriff + Rate-Limit. No-op wenn Status identisch (AC-3).
+- Versionierung (AC-6) via `submitContentForApproval` in `src/lib/approvals.ts`: Bei existierendem Approval wird `status=pending_approval` gesetzt und ein `resubmitted` Event in `approval_request_events` angelegt -> vollständige Version-Historie abrufbar via `GET /api/tenant/approvals` (history pro Eintrag).
+- Inline-Brief-Anzeige im Approval Hub (AC-4) konsumiert bestehenden `GET /api/tenant/content/briefs/[id]` — kein neuer Approval-Detail-Endpoint benötigt. Tech-Design-Punkt „GET /api/tenant/approvals/[id] erweitert" entfaellt.
+- Datenbank: Alle erforderlichen Spalten (`content_briefs.workflow_status`, `workflow_status_changed_at`, `approval_status`) und Index `idx_content_briefs_workflow_status(tenant_id, workflow_status, updated_at DESC)` bereits in Migration `036_kanban_workflow_status.sql`. Keine neuen Tabellen/Migrationen noetig. `approval_request_id`/`kanban_card_id` aus initialer Spec entfallen laut Tech-Design.
+- RLS: Alle neuen Endpoints nutzen `createAdminClient()` und filtern immer explizit auf `tenant_id` -> Cross-Tenant-Isolation wie in bestehenden Briefs-Endpoints.

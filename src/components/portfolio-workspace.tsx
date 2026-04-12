@@ -206,9 +206,16 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
       }
     }
 
-    for (const customer of ga4Customers) {
-      void fetchOne(customer.id)
+    // Concurrency-begrenzt: max. 5 parallele GA4-Calls um Rate-Limits zu vermeiden
+    async function fetchBatched() {
+      const BATCH_SIZE = 5
+      for (let i = 0; i < ga4Customers.length; i += BATCH_SIZE) {
+        if (cancelled) break
+        const batch = ga4Customers.slice(i, i + BATCH_SIZE)
+        await Promise.all(batch.map((c) => fetchOne(c.id)))
+      }
     }
+    void fetchBatched()
 
     return () => {
       cancelled = true

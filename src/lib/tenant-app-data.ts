@@ -111,6 +111,8 @@ export interface ContentBriefListItem {
   word_count_target: number
   target_url: string | null
   status: 'pending' | 'generating' | 'done' | 'failed'
+  workflow_status: string | null
+  approval_status: string | null
   error_message: string | null
   created_at: string
   updated_at: string
@@ -561,7 +563,7 @@ export async function getContentBriefsList(
 
   let query = admin
     .from('content_briefs')
-    .select('id, keyword, language, tone, word_count_target, target_url, status, error_message, created_at, updated_at')
+    .select('id, keyword, language, tone, word_count_target, target_url, status, workflow_status, approval_status, error_message, created_at, updated_at')
     .eq('tenant_id', tenantId)
     .order('created_at', { ascending: false })
     .limit(200)

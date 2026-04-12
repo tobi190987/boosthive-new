@@ -70,10 +70,10 @@
 
 | PROJ-54 | Usage Limits & Quotas | In Review | [PROJ-54-usage-limits.md](PROJ-54-usage-limits.md) | 2026-04-10 |
 | PROJ-55 | Reporting & Export Center | In Review | [PROJ-55-reporting-export.md](PROJ-55-reporting-export.md) | 2026-04-11 |
-| PROJ-56 | Dashboard Portfolio-Übersicht | Planned | [PROJ-56-dashboard-portfolio-uebersicht.md](PROJ-56-dashboard-portfolio-uebersicht.md) | 2026-04-11 |
+| PROJ-56 | Dashboard Portfolio-Übersicht | In Review | [PROJ-56-dashboard-portfolio-uebersicht.md](PROJ-56-dashboard-portfolio-uebersicht.md) | 2026-04-11 |
 | PROJ-57 | Budget & Ad Spend Tracking | In Progress | [PROJ-57-budget-ad-spend-tracking.md](PROJ-57-budget-ad-spend-tracking.md) | 2026-04-11 |
-| PROJ-58 | Social Media Kalender | In Progress | [PROJ-58-social-media-kalender.md](PROJ-58-social-media-kalender.md) | 2026-04-11 |
-| PROJ-59 | Content Workflow Integration (Brief → Approval → Kanban) | In Progress | [PROJ-59-content-workflow-integration.md](PROJ-59-content-workflow-integration.md) | 2026-04-11 |
+| PROJ-58 | Social Media Kalender | In Review | [PROJ-58-social-media-kalender.md](PROJ-58-social-media-kalender.md) | 2026-04-11 |
+| PROJ-59 | Content Workflow Integration (Brief → Approval → Kanban) | In Review | [PROJ-59-content-workflow-integration.md](PROJ-59-content-workflow-integration.md) | 2026-04-11 |
 | PROJ-60 | Backlink Monitoring | Planned | [PROJ-60-backlink-monitoring.md](PROJ-60-backlink-monitoring.md) | 2026-04-11 |
 | PROJ-61 | CRM-Upgrade (Kontaktstatus, Aktivitäten-Timeline) | Planned | [PROJ-61-crm-upgrade.md](PROJ-61-crm-upgrade.md) | 2026-04-11 |
 | PROJ-62 | Client-Portal (Kunden-Login, Read-Only) | Planned | [PROJ-62-client-portal.md](PROJ-62-client-portal.md) | 2026-04-11 |

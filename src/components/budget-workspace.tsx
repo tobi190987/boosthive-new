@@ -783,8 +783,7 @@ function BudgetCard({
                   <TooltipContent side="top">Bearbeiten</TooltipContent>
                 </Tooltip>
                 <InlineConfirm
-                  title="Budget löschen?"
-                  description="Alle Spend-Einträge dieses Budgets werden entfernt."
+                  message="Budget löschen? Alle Spend-Einträge werden entfernt."
                   confirmLabel="Löschen"
                   onConfirm={onDelete}
                 >
@@ -1346,8 +1345,8 @@ function BudgetDetailSheet({
                           color: '#0f172a',
                           padding: '8px 12px',
                         }}
-                        formatter={(value: number) => [
-                          formatCurrencyPrecise(value, budget.currency),
+                        formatter={(value: unknown) => [
+                          formatCurrencyPrecise(Number(value ?? 0), budget.currency),
                           'Spend',
                         ]}
                         labelFormatter={(label) => `Tag ${label}`}
