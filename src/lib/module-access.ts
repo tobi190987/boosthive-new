@@ -91,7 +91,7 @@ export async function requireTenantModuleAccess(
 }
 
 // Modules temporarily unlocked for all tenants (preview/beta access)
-const PREVIEW_MODULES = ['content_briefs']
+const PREVIEW_MODULES = ['content_briefs', 'budget_tracking', 'social_calendar']
 
 /**
  * Returns a list of active module codes for a tenant.

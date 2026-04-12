@@ -82,16 +82,29 @@ export async function GET(request: NextRequest) {
   }
 
   if (!budgets || budgets.length === 0) {
-    // Check if any integration exists to show the banner
-    const { data: integrations } = await admin
-      .from('customer_integrations')
+    // Check if any integration exists to show the banner.
+    // customer_integrations has no tenant_id column — join via customers.
+    const { data: tenantCustomers } = await admin
+      .from('customers')
       .select('id')
       .eq('tenant_id', tenantId)
-      .in('integration_type', ['google_ads', 'meta_ads', 'tiktok_ads'])
-      .neq('status', 'disconnected')
-      .limit(1)
+      .is('deleted_at', null)
+      .limit(500)
 
-    return NextResponse.json({ budgets: [], hasAnyIntegration: (integrations?.length ?? 0) > 0 })
+    const tenantCustomerIds = tenantCustomers?.map((c) => c.id) ?? []
+    let hasAnyIntegration = false
+    if (tenantCustomerIds.length > 0) {
+      const { data: integrations } = await admin
+        .from('customer_integrations')
+        .select('id')
+        .in('customer_id', tenantCustomerIds)
+        .in('integration_type', ['google_ads', 'meta_ads', 'tiktok_ads'])
+        .neq('status', 'disconnected')
+        .limit(1)
+      hasAnyIntegration = (integrations?.length ?? 0) > 0
+    }
+
+    return NextResponse.json({ budgets: [], hasAnyIntegration })
   }
 
   const budgetIds = budgets.map((b) => b.id)
@@ -128,10 +141,10 @@ export async function GET(request: NextRequest) {
 
   // Check integrations for each unique customer
   const uniqueCustomerIds = [...new Set(budgets.map((b) => b.customer_id))]
+  // customer_integrations has no tenant_id — filter by customer_id only (already scoped to tenant via budgets)
   const { data: integrations } = await admin
     .from('customer_integrations')
     .select('customer_id, integration_type, status')
-    .eq('tenant_id', tenantId)
     .in('customer_id', uniqueCustomerIds)
     .in('integration_type', ['google_ads', 'meta_ads', 'tiktok_ads'])
     .neq('status', 'disconnected')
@@ -187,6 +200,7 @@ export async function GET(request: NextRequest) {
       cpm: b.cached_cpm !== null ? Number(b.cached_cpm) : null,
       roas: b.cached_roas !== null ? Number(b.cached_roas) : null,
       has_integration: hasIntegration,
+      last_synced_at: b.last_synced_at ?? null,
     }
   })
 

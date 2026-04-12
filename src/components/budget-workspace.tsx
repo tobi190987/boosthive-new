@@ -89,6 +89,7 @@ interface Budget {
   cpm: number | null
   roas: number | null
   has_integration: boolean
+  last_synced_at: string | null
 }
 
 interface DailySpendPoint {
@@ -281,6 +282,12 @@ export function BudgetWorkspace({ isAdmin }: BudgetWorkspaceProps) {
   const [hasAnyIntegration, setHasAnyIntegration] = useState(true)
   const [syncing, setSyncing] = useState(false)
 
+  const lastSyncedAt = useMemo(() => {
+    const dates = budgets.map((b) => b.last_synced_at).filter(Boolean) as string[]
+    if (dates.length === 0) return null
+    return dates.reduce((latest, d) => (d > latest ? d : latest))
+  }, [budgets])
+
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null)
   const [detailBudget, setDetailBudget] = useState<Budget | null>(null)
@@ -426,7 +433,11 @@ export function BudgetWorkspace({ isAdmin }: BudgetWorkspaceProps) {
     <div className="space-y-6">
       {/* Filter-Bar */}
       <div className="flex flex-wrap items-center gap-3">
-        <CustomerSelectorDropdown />
+        <CustomerSelectorDropdown
+          className="mx-0 my-0 w-[220px]"
+          triggerClassName="mx-0 my-0 w-[220px]"
+          compact
+        />
 
         <Select value={selectedMonth} onValueChange={setSelectedMonth}>
           <SelectTrigger className="h-10 w-56 rounded-xl">
@@ -443,6 +454,19 @@ export function BudgetWorkspace({ isAdmin }: BudgetWorkspaceProps) {
         </Select>
 
         <div className="ml-auto flex flex-wrap items-center gap-2">
+          {lastSyncedAt && !loading && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              Zuletzt aktualisiert:{' '}
+              {new Intl.DateTimeFormat('de-DE', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              }).format(new Date(lastSyncedAt))}{' '}
+              Uhr
+            </span>
+          )}
           <Button
             variant="outline"
             size="sm"

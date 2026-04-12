@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/keyword-rankings-cleanup",
       "schedule": "30 2 * * *"
+    },
+    {
+      "path": "/api/cron/budget-sync",
+      "schedule": "30 6,12,18 * * *"
     }
   ]
 }
