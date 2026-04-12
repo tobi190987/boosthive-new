@@ -5,9 +5,21 @@ import {
   getPlatformDisplayLabel,
 } from '@/lib/ad-limits'
 import { sendApprovalRequest } from '@/lib/email'
+import {
+  SOCIAL_PLATFORM_META,
+  SOCIAL_POST_FORMAT_META,
+  socialPostFormatLabel,
+  type SocialPlatformId,
+  type SocialPostFormat,
+} from '@/lib/social-calendar'
 import { loadTenantStatusRecord, resolveTenantStatus } from '@/lib/tenant-status'
 
-export const APPROVAL_CONTENT_TYPES = ['content_brief', 'ad_generation', 'ad_library_asset'] as const
+export const APPROVAL_CONTENT_TYPES = [
+  'content_brief',
+  'ad_generation',
+  'ad_library_asset',
+  'social_media_post',
+] as const
 export type ApprovalContentType = (typeof APPROVAL_CONTENT_TYPES)[number]
 
 export const APPROVAL_STATUSES = [
@@ -60,6 +72,8 @@ export function buildContentHref(contentType: ApprovalContentType, contentId: st
       return `/tools/ad-generator?id=${contentId}`
     case 'ad_library_asset':
       return `/tools/ads-library?assetId=${contentId}`
+    case 'social_media_post':
+      return `/tools/social-calendar?postId=${contentId}`
     default:
       return '/tools/approvals'
   }
@@ -73,6 +87,8 @@ export function approvalContentTypeLabel(contentType: ApprovalContentType): stri
       return 'Ad-Text'
     case 'ad_library_asset':
       return 'Ad-Creative'
+    case 'social_media_post':
+      return 'Social Post'
     default:
       return 'Inhalt'
   }
@@ -444,6 +460,137 @@ function adLibraryAssetToHtml(asset: {
   ].join('')
 }
 
+function isMissingPostFormatColumn(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    error?.message?.includes('post_format') === true
+  )
+}
+
+function socialMediaPostToHtml(post: {
+  title: string
+  caption: string | null
+  publicUrl: string | null
+  postFormat: string
+  scheduledAt: string
+  customerName: string | null
+  platforms: string[]
+  notes: string | null
+}) {
+  const formatId = (post.postFormat as SocialPostFormat) || 'instagram_feed'
+  const formatMeta = SOCIAL_POST_FORMAT_META[formatId]
+  const platformIds = post.platforms.filter((entry): entry is SocialPlatformId =>
+    entry in SOCIAL_PLATFORM_META
+  )
+  const primaryPlatform = platformIds[0] ?? formatMeta.platformId
+  const scheduledLabel = new Intl.DateTimeFormat('de-DE', {
+    weekday: 'long',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(post.scheduledAt))
+  const activePlatforms = platformIds.length > 0 ? platformIds : [primaryPlatform]
+  const primaryMeta = SOCIAL_PLATFORM_META[primaryPlatform]
+  const mediaAspectRatio =
+    formatId === 'instagram_reel' || formatId === 'tiktok_video'
+      ? '9 / 16'
+      : formatId === 'linkedin_post'
+        ? '1.91 / 1'
+        : '1 / 1'
+  const mediaPreview = post.publicUrl
+    ? /\.(mp4|mov|webm)(\?|$)/i.test(post.publicUrl)
+      ? `<video src="${escapeHtml(post.publicUrl)}" controls playsinline preload="metadata" style="display:block;width:100%;aspect-ratio:${mediaAspectRatio};object-fit:cover;background:#0f172a;"></video>`
+      : `<img src="${escapeHtml(post.publicUrl)}" alt="${escapeHtml(post.title)}" style="display:block;width:100%;aspect-ratio:${mediaAspectRatio};object-fit:cover;background:#f3f4f6;" />`
+    : `<div style="display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:${mediaAspectRatio};background:#f3f4f6;color:#64748b;font-size:14px;">Noch kein Bild oder Video hinterlegt</div>`
+  const platformPills = activePlatforms
+    .map(
+      (platformId) =>
+        `<span style="display:inline-flex;align-items:center;border:1px solid #dbe3f0;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600;color:#334155;background:#f8fafc;">${escapeHtml(SOCIAL_PLATFORM_META[platformId].label)}</span>`
+    )
+    .join('')
+  const details = [
+    ['Format', socialPostFormatLabel(formatId)],
+    [
+      'Ausspielung',
+      (platformIds.length > 0 ? platformIds : [primaryPlatform])
+        .map((platformId) => SOCIAL_PLATFORM_META[platformId].label)
+        .join(', '),
+    ],
+    ['Medientyp', formatMeta.mediaLabel],
+    ['Geplant', scheduledLabel],
+    ['Kunde', post.customerName ?? '-'],
+  ]
+
+  return [
+    '<div class="approval-rich-content approval-rich-content--asset" data-render-version="social-v4">',
+    section(
+      'So erscheint der Post auf den Plattformen',
+      [
+        '<div style="display:flex;justify-content:center;">',
+        '<article style="width:100%;max-width:340px;overflow:hidden;border:1px solid #e2e8f0;border-radius:24px;background:#ffffff;box-shadow:0 18px 45px -34px rgba(15,23,42,0.35);">',
+        '<div style="display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid #eef2f7;">',
+        `<div style="display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:999px;background:#0f172a;color:#fff;font-size:13px;font-weight:700;">${escapeHtml(primaryMeta.short)}</div>`,
+        '<div style="min-width:0;flex:1;">',
+        `<div style="font-size:14px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(post.customerName ?? 'Kundenprofil')}</div>`,
+        `<div style="margin-top:2px;font-size:12px;color:#64748b;">${escapeHtml(primaryMeta.label)} • ${escapeHtml(socialPostFormatLabel(formatId))}</div>`,
+        '</div>',
+        `<div style="font-size:11px;color:#64748b;">${escapeHtml(formatTimeLabel(primaryPlatform))}</div>`,
+        '</div>',
+        mediaPreview,
+        '<div style="padding:14px 16px;">',
+        `<div style="font-size:14px;font-weight:700;color:#0f172a;">${escapeHtml(post.title)}</div>`,
+        post.caption?.trim()
+          ? `<div style="margin-top:10px;font-size:14px;line-height:1.55;color:#334155;">${toParagraphs(post.caption)}</div>`
+          : '<p style="margin-top:10px;font-size:14px;color:#94a3b8;">Keine Caption hinterlegt.</p>',
+        `<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">${platformPills}</div>`,
+        '<div style="display:flex;gap:18px;margin-top:14px;padding-top:12px;border-top:1px solid #eef2f7;font-size:12px;font-weight:600;color:#94a3b8;">',
+        '<span>Gefällt mir</span><span>Kommentieren</span><span>Teilen</span>',
+        '</div>',
+        '</div>',
+        '</article>',
+        '</div>',
+      ].join(''),
+      'accent'
+    ),
+    section(
+      'Post Überblick',
+      `<div class="approval-keyword-table">${details
+        .map(
+          ([label, value]) =>
+            `<div class="approval-keyword-row"><div class="approval-keyword-row__term">${escapeHtml(label)}</div><div class="approval-keyword-row__frequency">${escapeHtml(value)}</div></div>`
+        )
+        .join('')}</div>`,
+      'default'
+    ),
+    section(
+      'Interne Notiz',
+      post.notes?.trim()
+        ? `<div class="approval-copy">${toParagraphs(post.notes)}</div>`
+        : '<p class="approval-empty">Keine Notiz vorhanden.</p>',
+      'warm'
+    ),
+    '</div>',
+  ].join('')
+}
+
+function formatTimeLabel(platformId: SocialPlatformId) {
+  switch (platformId) {
+    case 'instagram':
+      return 'Feed'
+    case 'facebook':
+      return 'Timeline'
+    case 'linkedin':
+      return 'Netzwerk'
+    case 'tiktok':
+      return 'For You'
+    default:
+      return 'Social'
+  }
+}
+
 export async function ensurePublicApprovalAccess(tenantId: string): Promise<{
   allowed: boolean
   tenantName: string | null
@@ -790,6 +937,88 @@ export async function loadContentForApproval(input: {
     }
   }
 
+  if (input.contentType === 'social_media_post') {
+    type SocialPostApprovalRow = {
+      id: string
+      title: string | null
+      caption: string | null
+      platforms: unknown
+      scheduled_at: string
+      status: string
+      customer_id: string | null
+      notes: string | null
+      ad_asset_url: string | null
+      post_format?: string | null
+    }
+
+    const initialResult = await admin
+      .from('social_media_posts')
+      .select('id, title, caption, platforms, scheduled_at, status, customer_id, notes, ad_asset_url, post_format')
+      .eq('tenant_id', input.tenantId)
+      .eq('id', input.contentId)
+      .maybeSingle()
+
+    let data = initialResult.data as SocialPostApprovalRow | null
+    let error = initialResult.error
+
+    if (isMissingPostFormatColumn(error)) {
+      const fallbackResult = await admin
+        .from('social_media_posts')
+        .select('id, title, caption, platforms, scheduled_at, status, customer_id, notes, ad_asset_url')
+        .eq('tenant_id', input.tenantId)
+        .eq('id', input.contentId)
+        .maybeSingle()
+
+      data = fallbackResult.data
+        ? { ...(fallbackResult.data as SocialPostApprovalRow), post_format: 'instagram_feed' }
+        : null
+      error = fallbackResult.error
+    }
+
+    if (error || !data) {
+      return { found: false, reason: 'Social Post nicht gefunden.' }
+    }
+
+    let customerName: string | null = null
+    if (data.customer_id) {
+      const customerResult = await admin
+        .from('customers')
+        .select('name')
+        .eq('tenant_id', input.tenantId)
+        .eq('id', data.customer_id)
+        .maybeSingle()
+
+      customerName = customerResult.data?.name ?? null
+    }
+
+    const approvalStatus: ApprovalStatus =
+      data.status === 'approved'
+        ? 'approved'
+        : data.status === 'review'
+          ? 'pending_approval'
+          : data.status === 'in_progress'
+            ? 'changes_requested'
+            : 'draft'
+
+    return {
+      found: true,
+      title: data.title || 'Social Post',
+      html: socialMediaPostToHtml({
+        title: data.title || 'Social Post',
+        caption: data.caption ?? null,
+        publicUrl: data.ad_asset_url ?? null,
+        postFormat: data.post_format ?? 'instagram_feed',
+        scheduledAt: data.scheduled_at,
+        customerName,
+        platforms: Array.isArray(data.platforms) ? data.platforms.map((entry) => String(entry)) : [],
+        notes: data.notes ?? null,
+      }),
+      approvalStatus,
+      customerId: data.customer_id ?? null,
+      customerName,
+    }
+  }
+
   try {
     const { data, error } = await admin
       .from('ad_generations')
@@ -858,6 +1087,24 @@ export async function updateContentApprovalStatus(input: {
     await admin
       .from('ad_library_assets')
       .update({ approval_status: input.status })
+      .eq('tenant_id', input.tenantId)
+      .eq('id', input.contentId)
+    return
+  }
+
+  if (input.contentType === 'social_media_post') {
+    const socialStatus =
+      input.status === 'approved'
+        ? 'approved'
+        : input.status === 'pending_approval'
+          ? 'review'
+          : input.status === 'changes_requested'
+            ? 'in_progress'
+            : 'draft'
+
+    await admin
+      .from('social_media_posts')
+      .update({ status: socialStatus })
       .eq('tenant_id', input.tenantId)
       .eq('id', input.contentId)
     return

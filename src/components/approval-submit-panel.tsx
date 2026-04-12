@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast'
 import { ApprovalStatusBadge, type ApprovalStatus } from '@/components/approval-status-badge'
 
 interface ApprovalSubmitPanelProps {
-  contentType: 'content_brief' | 'ad_generation' | 'ad_library_asset'
+  contentType: 'content_brief' | 'ad_generation' | 'ad_library_asset' | 'social_media_post'
   contentId: string
   approvalStatus: ApprovalStatus
   approvalLink?: string | null

@@ -13,6 +13,13 @@ import {
 
 const PLATFORMS = ['instagram', 'linkedin', 'facebook', 'tiktok'] as const
 const STATUSES = ['draft', 'in_progress', 'review', 'approved', 'published'] as const
+const FORMATS = [
+  'instagram_feed',
+  'instagram_reel',
+  'facebook_post',
+  'linkedin_post',
+  'tiktok_video',
+] as const
 
 const createPostSchema = z.object({
   title: z.string().min(1, 'Titel ist erforderlich.').max(500),
@@ -27,9 +34,18 @@ const createPostSchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   ad_asset_id: z.string().uuid().nullable().optional(),
   ad_asset_url: z.string().url().nullable().optional(),
+  post_format: z.enum(FORMATS).optional().default('instagram_feed'),
 })
 
 const uuidSchema = z.string().uuid()
+
+function isMissingPostFormatColumn(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    error?.message?.includes('post_format') === true
+  )
+}
 
 async function hasModuleAccess(tenantId: string) {
   const codes = await getActiveModuleCodes(tenantId)
@@ -65,13 +81,16 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  let query = admin
-    .from('social_media_posts')
-    .select(
-      `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
+  const selectWithFormat = `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
+       status, assignee_id, notes, ad_asset_id, ad_asset_url, post_format, created_by, created_at, updated_at,
+       customer:customers(name)`
+  const selectWithoutFormat = `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
        status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at,
        customer:customers(name)`
-    )
+
+  let query = admin
+    .from('social_media_posts')
+    .select(selectWithFormat)
     .eq('tenant_id', tenantId)
     .order('scheduled_at', { ascending: true })
     .limit(500)
@@ -88,7 +107,38 @@ export async function GET(request: NextRequest) {
     query = query.in('status', statuses)
   }
 
-  const { data, error } = await query
+  const initialResult = await query
+  let data = initialResult.data as Array<Record<string, unknown>> | null
+  let error = initialResult.error
+
+  if (isMissingPostFormatColumn(error)) {
+    let fallbackQuery = admin
+      .from('social_media_posts')
+      .select(selectWithoutFormat)
+      .eq('tenant_id', tenantId)
+      .order('scheduled_at', { ascending: true })
+      .limit(500)
+
+    if (startParam) fallbackQuery = fallbackQuery.gte('scheduled_at', startParam)
+    if (endParam) fallbackQuery = fallbackQuery.lte('scheduled_at', endParam)
+    if (customerIdParam) fallbackQuery = fallbackQuery.eq('customer_id', customerIdParam)
+    if (platformParam) {
+      const platforms = platformParam.split(',')
+      fallbackQuery = fallbackQuery.overlaps('platforms', platforms)
+    }
+    if (statusParam) {
+      const statuses = statusParam.split(',')
+      fallbackQuery = fallbackQuery.in('status', statuses)
+    }
+
+    const fallbackResult = await fallbackQuery
+    data =
+      fallbackResult.data?.map((row) => ({
+        ...(row as Record<string, unknown>),
+        post_format: 'instagram_feed',
+      })) ?? null
+    error = fallbackResult.error
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
@@ -101,7 +151,9 @@ export async function GET(request: NextRequest) {
       .select('user_id, first_name, last_name')
       .in('user_id', assigneeIds)
     for (const p of profiles ?? []) {
-      assigneeMap[p.user_id] = formatAssigneeName(p)
+      if (typeof p.user_id === 'string') {
+        assigneeMap[p.user_id] = formatAssigneeName(p)
+      }
     }
   }
 
@@ -116,10 +168,12 @@ export async function GET(request: NextRequest) {
     scheduledAt: row.scheduled_at,
     status: row.status,
     assigneeId: row.assignee_id ?? null,
-    assigneeName: row.assignee_id ? (assigneeMap[row.assignee_id] ?? null) : null,
+    assigneeName:
+      typeof row.assignee_id === 'string' ? (assigneeMap[row.assignee_id] ?? null) : null,
     notes: row.notes ?? null,
     adAssetId: row.ad_asset_id ?? null,
     adAssetUrl: row.ad_asset_url ?? null,
+    postFormat: row.post_format ?? 'instagram_feed',
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -158,7 +212,7 @@ export async function POST(request: NextRequest) {
   const d = parsed.data
   const admin = createAdminClient()
 
-  const { data, error } = await admin
+  const initialInsert = await admin
     .from('social_media_posts')
     .insert({
       tenant_id: tenantId,
@@ -172,14 +226,44 @@ export async function POST(request: NextRequest) {
       notes: d.notes ?? null,
       ad_asset_id: d.ad_asset_id ?? null,
       ad_asset_url: d.ad_asset_url ?? null,
+      post_format: d.post_format,
       created_by: authResult.auth.userId,
     })
-    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at')
+    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, post_format, created_by, created_at, updated_at')
     .single()
+
+  let data = initialInsert.data as Record<string, unknown> | null
+  let error = initialInsert.error
+
+  if (isMissingPostFormatColumn(error)) {
+    const fallbackInsert = await admin
+      .from('social_media_posts')
+      .insert({
+        tenant_id: tenantId,
+        customer_id: d.customer_id ?? null,
+        title: d.title,
+        caption: d.caption ?? null,
+        platforms: d.platforms,
+        scheduled_at: d.scheduled_at,
+        status: d.status,
+        assignee_id: d.assignee_id ?? null,
+        notes: d.notes ?? null,
+        ad_asset_id: d.ad_asset_id ?? null,
+        ad_asset_url: d.ad_asset_url ?? null,
+        created_by: authResult.auth.userId,
+      })
+      .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at')
+      .single()
+
+    data = fallbackInsert.data
+      ? { ...(fallbackInsert.data as Record<string, unknown>), post_format: 'instagram_feed' }
+      : null
+    error = fallbackInsert.error
+  }
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ post: mapPost(data) }, { status: 201 })
+  return NextResponse.json({ post: mapPost(data as Record<string, unknown>) }, { status: 201 })
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -206,6 +290,7 @@ function mapPost(row: Record<string, unknown>) {
     notes: row.notes ?? null,
     adAssetId: row.ad_asset_id ?? null,
     adAssetUrl: row.ad_asset_url ?? null,
+    postFormat: row.post_format ?? 'instagram_feed',
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

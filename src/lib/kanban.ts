@@ -24,6 +24,8 @@ export function buildKanbanItemHref(contentType: ApprovalContentType, contentId:
       return `/tools/ad-generator?id=${contentId}`
     case 'ad_library_asset':
       return `/tools/ads-library?assetId=${contentId}`
+    case 'social_media_post':
+      return `/tools/social-calendar?postId=${contentId}`
     default:
       return '/tools/kanban'
   }
@@ -37,6 +39,8 @@ export function kanbanContentTypeLabel(contentType: ApprovalContentType): string
       return 'Ad-Text'
     case 'ad_library_asset':
       return 'Creative'
+    case 'social_media_post':
+      return 'Social Post'
     default:
       return contentType
   }
@@ -201,6 +205,24 @@ export async function updateContentWorkflowStatus(input: {
     await admin
       .from('ad_library_assets')
       .update(payload)
+      .eq('tenant_id', input.tenantId)
+      .eq('id', input.contentId)
+    return
+  }
+
+  if (input.contentType === 'social_media_post') {
+    const socialStatus =
+      input.status === 'done'
+        ? 'approved'
+        : input.status === 'client_review'
+          ? 'review'
+          : input.status === 'in_progress'
+            ? 'in_progress'
+            : 'draft'
+
+    await admin
+      .from('social_media_posts')
+      .update({ status: socialStatus })
       .eq('tenant_id', input.tenantId)
       .eq('id', input.contentId)
     return

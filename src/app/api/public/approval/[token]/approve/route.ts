@@ -21,6 +21,8 @@ function contentTypeLabel(contentType: string): string {
       return 'Ad-Text'
     case 'ad_library_asset':
       return 'Ad-Creative'
+    case 'social_media_post':
+      return 'Social Post'
     default:
       return 'Inhalt'
   }
@@ -76,7 +78,10 @@ async function notifyByEmailIfEnabled(params: {
       decision: 'approved',
       contentUrl: buildTenantUrl(
         tenantSlug,
-        buildContentHref(params.contentType as 'content_brief' | 'ad_generation' | 'ad_library_asset', params.contentId)
+        buildContentHref(
+          params.contentType as 'content_brief' | 'ad_generation' | 'ad_library_asset' | 'social_media_post',
+          params.contentId
+        )
       ),
     })
   } catch (error) {

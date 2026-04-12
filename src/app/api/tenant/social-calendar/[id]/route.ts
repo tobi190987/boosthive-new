@@ -13,6 +13,13 @@ import {
 
 const PLATFORMS = ['instagram', 'linkedin', 'facebook', 'tiktok'] as const
 const STATUSES = ['draft', 'in_progress', 'review', 'approved', 'published'] as const
+const FORMATS = [
+  'instagram_feed',
+  'instagram_reel',
+  'facebook_post',
+  'linkedin_post',
+  'tiktok_video',
+] as const
 
 const updatePostSchema = z.object({
   title: z.string().min(1).max(500).optional(),
@@ -25,9 +32,18 @@ const updatePostSchema = z.object({
   notes: z.string().max(2000).nullable().optional(),
   ad_asset_id: z.string().uuid().nullable().optional(),
   ad_asset_url: z.string().url().nullable().optional(),
+  post_format: z.enum(FORMATS).optional(),
 })
 
 const idSchema = z.string().uuid('Ungültige Post-ID.')
+
+function isMissingPostFormatColumn(error: { code?: string; message?: string } | null) {
+  return (
+    error?.code === '42703' ||
+    error?.code === 'PGRST204' ||
+    error?.message?.includes('post_format') === true
+  )
+}
 
 async function hasModuleAccess(tenantId: string) {
   const codes = await getActiveModuleCodes(tenantId)
@@ -56,20 +72,43 @@ export async function GET(
   if (!idParsed.success) return NextResponse.json({ error: 'Ungültige Post-ID.' }, { status: 400 })
 
   const admin = createAdminClient()
-  const { data, error } = await admin
-    .from('social_media_posts')
-    .select(
-      `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
+  const selectWithFormat = `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
+       status, assignee_id, notes, ad_asset_id, ad_asset_url, post_format, created_by, created_at, updated_at,
+       customer:customers(name)`
+  const selectWithoutFormat = `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
        status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at,
        customer:customers(name)`
-    )
+
+  const initialResult = await admin
+    .from('social_media_posts')
+    .select(selectWithFormat)
     .eq('tenant_id', tenantId)
     .eq('id', idParsed.data)
     .single()
 
+  let data = initialResult.data as Record<string, unknown> | null
+  let error = initialResult.error
+
+  if (isMissingPostFormatColumn(error)) {
+    const fallbackResult = await admin
+      .from('social_media_posts')
+      .select(selectWithoutFormat)
+      .eq('tenant_id', tenantId)
+      .eq('id', idParsed.data)
+      .single()
+
+    data = fallbackResult.data
+      ? { ...(fallbackResult.data as Record<string, unknown>), post_format: 'instagram_feed' }
+      : null
+    error = fallbackResult.error
+  }
+
   if (error) {
     if (error.code === 'PGRST116') return NextResponse.json({ error: 'Post nicht gefunden.' }, { status: 404 })
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!data) {
+    return NextResponse.json({ error: 'Post nicht gefunden.' }, { status: 404 })
   }
 
   // Fetch assignee name separately (assignee_id references auth.users, not user_profiles directly)
@@ -132,23 +171,46 @@ export async function PUT(
   if (d.notes !== undefined) updateData.notes = d.notes
   if ('ad_asset_id' in d) updateData.ad_asset_id = d.ad_asset_id ?? null
   if ('ad_asset_url' in d) updateData.ad_asset_url = d.ad_asset_url ?? null
+  if (d.post_format !== undefined) updateData.post_format = d.post_format
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: 'Keine Änderungen übergeben.' }, { status: 400 })
   }
 
   const admin = createAdminClient()
-  const { data, error } = await admin
+  const initialUpdate = await admin
     .from('social_media_posts')
     .update(updateData)
     .eq('tenant_id', tenantId)
     .eq('id', idParsed.data)
-    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at')
+    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, post_format, created_by, created_at, updated_at')
     .single()
+
+  let data = initialUpdate.data as Record<string, unknown> | null
+  let error = initialUpdate.error
+
+  if (isMissingPostFormatColumn(error)) {
+    const { post_format: _postFormat, ...fallbackUpdateData } = updateData
+    const fallbackUpdate = await admin
+      .from('social_media_posts')
+      .update(fallbackUpdateData)
+      .eq('tenant_id', tenantId)
+      .eq('id', idParsed.data)
+      .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at')
+      .single()
+
+    data = fallbackUpdate.data
+      ? { ...(fallbackUpdate.data as Record<string, unknown>), post_format: 'instagram_feed' }
+      : null
+    error = fallbackUpdate.error
+  }
 
   if (error) {
     if (error.code === 'PGRST116') return NextResponse.json({ error: 'Post nicht gefunden.' }, { status: 404 })
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+  if (!data) {
+    return NextResponse.json({ error: 'Post nicht gefunden.' }, { status: 404 })
   }
 
   return NextResponse.json({ post: mapPost(data) })
@@ -211,6 +273,7 @@ function mapPostWithRelations(row: Record<string, unknown>, assigneeName: string
     notes: row.notes ?? null,
     adAssetId: row.ad_asset_id ?? null,
     adAssetUrl: row.ad_asset_url ?? null,
+    postFormat: row.post_format ?? 'instagram_feed',
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -233,6 +296,7 @@ function mapPost(row: Record<string, unknown>) {
     notes: row.notes ?? null,
     adAssetId: row.ad_asset_id ?? null,
     adAssetUrl: row.ad_asset_url ?? null,
+    postFormat: row.post_format ?? 'instagram_feed',
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

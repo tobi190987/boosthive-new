@@ -30,7 +30,7 @@ import {
 interface ApprovalData {
   tenant_name: string
   tenant_logo_url: string | null
-  content_type: 'content_brief' | 'ad_generation' | 'ad_library_asset'
+  content_type: 'content_brief' | 'ad_generation' | 'ad_library_asset' | 'social_media_post'
   content_title: string
   status: 'pending_approval' | 'approved' | 'changes_requested'
   content_html: string
@@ -236,7 +236,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/public/approval/${token}`)
+      const res = await fetch(`/api/public/approval/${token}?t=${Date.now()}`, { cache: 'no-store' })
       if (res.status === 404) {
         setNotFound(true)
         return
@@ -393,7 +393,9 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
       ? 'Content Brief'
       : data.content_type === 'ad_library_asset'
         ? 'Ad-Creative'
-        : 'Ad-Text'
+        : data.content_type === 'social_media_post'
+          ? 'Social Post'
+          : 'Ad-Text'
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.10),_transparent_30%),linear-gradient(180deg,#f8fafc_0%,#eef4ff_100%)] px-4 py-8 dark:bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(180deg,#0f172a_0%,#020617_100%)] sm:py-12">
@@ -476,6 +478,8 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
                   <FileText className="h-4 w-4 text-blue-600" />
                 ) : data.content_type === 'ad_library_asset' ? (
                   <FileImage className="h-4 w-4 text-emerald-600" />
+                ) : data.content_type === 'social_media_post' ? (
+                  <MessageSquare className="h-4 w-4 text-fuchsia-600" />
                 ) : (
                   <Type className="h-4 w-4 text-purple-600" />
                 )}
@@ -508,7 +512,7 @@ export function ApprovalPublicPage({ token }: ApprovalPublicPageProps) {
           <CardContent className="px-6 py-6 sm:px-8 sm:py-8">
             {/* Content display */}
             <div
-              className={`approval-render-shell ${data.content_type === 'content_brief' ? 'approval-render-shell--brief' : 'approval-render-shell--ads'}`}
+              className={`approval-render-shell ${data.content_type === 'content_brief' ? 'approval-render-shell--brief' : data.content_type === 'social_media_post' ? 'approval-render-shell--asset' : 'approval-render-shell--ads'}`}
               dangerouslySetInnerHTML={{ __html: displayHtml }}
             />
           </CardContent>

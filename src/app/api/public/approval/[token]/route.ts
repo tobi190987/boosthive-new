@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
+import { createAdminClient } from '@/lib/supabase-admin'
 import {
   ensurePublicApprovalAccess,
   loadApprovalHistory,
@@ -8,6 +9,8 @@ import {
 } from '@/lib/approvals'
 
 const tokenSchema = z.string().uuid('Ungültiger Freigabe-Token.')
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 export async function GET(
   request: NextRequest,
@@ -43,6 +46,20 @@ export async function GET(
   const contentHtml = latestContent.found ? latestContent.html : approval.content_html
   const history = await loadApprovalHistory(approval.id)
 
+  if (
+    latestContent.found &&
+    (approval.content_type === 'social_media_post' || approval.content_html !== contentHtml || approval.content_title !== contentTitle)
+  ) {
+    const admin = createAdminClient()
+    await admin
+      .from('approval_requests')
+      .update({
+        content_title: contentTitle,
+        content_html: contentHtml,
+      })
+      .eq('id', approval.id)
+  }
+
   return NextResponse.json({
     tenant_name: tenantAccess.tenantName ?? 'Tenant',
     tenant_logo_url: tenantAccess.tenantLogoUrl,
@@ -53,5 +70,9 @@ export async function GET(
     feedback: approval.feedback,
     decided_at: approval.decided_at,
     history,
+  }, {
+    headers: {
+      'Cache-Control': 'no-store, max-age=0',
+    },
   })
 }

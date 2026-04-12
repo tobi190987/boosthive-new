@@ -54,7 +54,7 @@ import { useToast } from '@/hooks/use-toast'
 
 interface ApprovalItem {
   id: string
-  content_type: 'content_brief' | 'ad_generation' | 'ad_library_asset'
+  content_type: 'content_brief' | 'ad_generation' | 'ad_library_asset' | 'social_media_post'
   content_id: string
   public_token: string
   status: ApprovalStatus
@@ -99,6 +99,8 @@ function contentTypeLabel(type: string): string {
       return 'Ad-Text'
     case 'ad_library_asset':
       return 'Ad-Creative'
+    case 'social_media_post':
+      return 'Social Post'
     default:
       return type
   }
@@ -112,6 +114,8 @@ function contentTypeIcon(type: string) {
       return <Type className="h-4 w-4 text-purple-500 dark:text-purple-400" />
     case 'ad_library_asset':
       return <FileImage className="h-4 w-4 text-emerald-500 dark:text-emerald-400" />
+    case 'social_media_post':
+      return <MessageSquare className="h-4 w-4 text-fuchsia-500 dark:text-fuchsia-400" />
     default:
       return <FileText className="h-4 w-4 text-slate-400" />
   }
@@ -434,6 +438,8 @@ export function ApprovalsWorkspace({ selectedCustomerId }: ApprovalsWorkspacePro
       router.push(`/tools/ad-generator?id=${item.content_id}`)
     } else if (item.content_type === 'ad_library_asset') {
       router.push(`/tools/ads-library?assetId=${item.content_id}`)
+    } else if (item.content_type === 'social_media_post') {
+      router.push(`/tools/social-calendar?postId=${item.content_id}`)
     }
   }
 

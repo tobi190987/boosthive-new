@@ -1,4 +1,10 @@
 export type SocialPlatformId = 'instagram' | 'linkedin' | 'facebook' | 'tiktok'
+export type SocialPostFormat =
+  | 'instagram_feed'
+  | 'instagram_reel'
+  | 'facebook_post'
+  | 'linkedin_post'
+  | 'tiktok_video'
 
 export type SocialPostStatus =
   | 'draft'
@@ -24,9 +30,21 @@ export interface SocialMediaPost {
   notes: string | null
   adAssetId: string | null
   adAssetUrl: string | null
+  postFormat: SocialPostFormat
   createdBy: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface SocialFormatConfig {
+  id: SocialPostFormat
+  label: string
+  shortLabel: string
+  description: string
+  platformId: SocialPlatformId
+  mediaLabel: 'Bild' | 'Video'
+  characterLimit: number
+  previewSoftLimit: number
 }
 
 export const SOCIAL_PLATFORM_META: Record<
@@ -85,6 +103,65 @@ export const SOCIAL_PLATFORMS: SocialPlatformId[] = [
   'tiktok',
 ]
 
+export const SOCIAL_POST_FORMATS: SocialFormatConfig[] = [
+  {
+    id: 'instagram_feed',
+    label: 'Instagram Feed Post',
+    shortLabel: 'IG Feed',
+    description: 'Klassischer Bild- oder Carousel-Post im Feed.',
+    platformId: 'instagram',
+    mediaLabel: 'Bild',
+    characterLimit: 2200,
+    previewSoftLimit: 140,
+  },
+  {
+    id: 'instagram_reel',
+    label: 'Instagram Reel',
+    shortLabel: 'IG Reel',
+    description: 'Kurzvideo mit Caption im Feed und Reels Tab.',
+    platformId: 'instagram',
+    mediaLabel: 'Video',
+    characterLimit: 2200,
+    previewSoftLimit: 125,
+  },
+  {
+    id: 'facebook_post',
+    label: 'Facebook Post',
+    shortLabel: 'FB Post',
+    description: 'Feed-Post mit Bild oder Video und längerer Caption.',
+    platformId: 'facebook',
+    mediaLabel: 'Bild',
+    characterLimit: 63206,
+    previewSoftLimit: 180,
+  },
+  {
+    id: 'linkedin_post',
+    label: 'LinkedIn Beitrag',
+    shortLabel: 'LinkedIn',
+    description: 'Business-Post mit stärkerem Fokus auf den ersten Zeilen.',
+    platformId: 'linkedin',
+    mediaLabel: 'Bild',
+    characterLimit: 3000,
+    previewSoftLimit: 210,
+  },
+  {
+    id: 'tiktok_video',
+    label: 'TikTok Video',
+    shortLabel: 'TikTok',
+    description: 'Video-Post mit kurzer, knackiger Caption.',
+    platformId: 'tiktok',
+    mediaLabel: 'Video',
+    characterLimit: 4000,
+    previewSoftLimit: 90,
+  },
+]
+
+export const SOCIAL_POST_FORMAT_META: Record<SocialPostFormat, SocialFormatConfig> =
+  Object.fromEntries(SOCIAL_POST_FORMATS.map((format) => [format.id, format])) as Record<
+    SocialPostFormat,
+    SocialFormatConfig
+  >
+
 export const SOCIAL_STATUS_META: Record<
   SocialPostStatus,
   { id: SocialPostStatus; label: string; badgeClass: string }
@@ -131,6 +208,10 @@ export const SOCIAL_STATUSES: SocialPostStatus[] = [
 
 export function platformLabel(id: SocialPlatformId) {
   return SOCIAL_PLATFORM_META[id]?.label ?? id
+}
+
+export function socialPostFormatLabel(id: SocialPostFormat) {
+  return SOCIAL_POST_FORMAT_META[id]?.label ?? id
 }
 
 export function statusLabel(id: SocialPostStatus) {
