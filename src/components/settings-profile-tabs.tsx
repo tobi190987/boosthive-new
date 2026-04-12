@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { ShieldCheck, UserRound } from 'lucide-react'
+import { Globe, ShieldCheck, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 function isActive(pathname: string, href: string) {
@@ -19,6 +19,7 @@ export function SettingsProfileTabs({ isAdmin }: SettingsProfileTabsProps) {
   const tabs = [
     { href: '/settings/profile', label: 'Profil', icon: UserRound },
     ...(isAdmin ? [{ href: '/settings/legal', label: 'Rechtliches & Datenschutz', icon: ShieldCheck }] : []),
+    ...(isAdmin ? [{ href: '/settings/portal', label: 'Client-Portal', icon: Globe }] : []),
   ]
 
   return (

@@ -54,6 +54,24 @@ import {
 } from 'lucide-react'
 import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
 import { CUSTOMER_INDUSTRIES, isCustomerIndustry } from '@/lib/customer-industries'
+import { PortalAccessTab } from '@/components/portal-access-tab'
+import { CrmActivityTimeline } from '@/components/crm-activity-timeline'
+import {
+  CrmOnboardingChecklist,
+  type OnboardingItem,
+} from '@/components/crm-onboarding-checklist'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+
+export type CrmStatus = 'lead' | 'prospect' | 'active' | 'paused' | 'churned'
 
 interface CustomerExtended {
   id: string
@@ -66,6 +84,9 @@ interface CustomerExtended {
   contact_email?: string | null
   logo_url?: string
   internal_notes?: string
+  crm_status?: CrmStatus
+  monthly_volume?: number | null
+  onboarding_checklist?: OnboardingItem[] | null
 }
 
 interface CustomerFormData {
@@ -75,6 +96,8 @@ interface CustomerFormData {
   contact_email: string
   internal_notes: string
   status: 'active' | 'paused'
+  crm_status: CrmStatus
+  monthly_volume: string
 }
 
 interface IntegrationData {
@@ -125,7 +148,14 @@ interface DocumentLink {
   file_name?: string
 }
 
-type CustomerDetailTab = 'master-data' | 'integrations' | 'documents' | 'notes'
+type CustomerDetailTab =
+  | 'master-data'
+  | 'integrations'
+  | 'documents'
+  | 'notes'
+  | 'activities'
+  | 'onboarding'
+  | 'portal'
 
 async function getResponseErrorMessage(res: Response, fallback: string) {
   const data = await res.json().catch(() => ({}))
@@ -161,7 +191,15 @@ export function CustomerDetailWorkspace({
     contact_email: customer.contact_email ?? '',
     internal_notes: customer.internal_notes ?? '',
     status: customer.status,
+    crm_status: customer.crm_status ?? 'active',
+    monthly_volume:
+      typeof customer.monthly_volume === 'number'
+        ? String(customer.monthly_volume)
+        : '',
   })
+  const [churnConfirmOpen, setChurnConfirmOpen] = useState(false)
+  const [churnNote, setChurnNote] = useState('')
+  const [savingChurn, setSavingChurn] = useState(false)
   const [localLogoUrl, setLocalLogoUrl] = useState<string | null>(customer.logo_url ?? null)
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -217,6 +255,11 @@ export function CustomerDetailWorkspace({
       contact_email: customer.contact_email ?? '',
       internal_notes: customer.internal_notes ?? '',
       status: customer.status,
+      crm_status: customer.crm_status ?? 'active',
+      monthly_volume:
+        typeof customer.monthly_volume === 'number'
+          ? String(customer.monthly_volume)
+          : '',
     })
     setLocalLogoUrl(customer.logo_url ?? null)
   }, [customer])
@@ -557,17 +600,22 @@ export function CustomerDetailWorkspace({
     }
   }, [activeTab, documents.length, loadDocuments, open])
 
-  const handleSaveMasterData = async () => {
-    if (!form.name.trim()) {
-      toast.error('Bitte gib einen Kundennamen ein.')
-      return
-    }
-    if (!form.industry) {
-      toast.error('Bitte wähle eine Branche aus.')
-      return
-    }
-    setSaving(true)
-    try {
+  const persistMasterData = useCallback(
+    async (options?: { churnNote?: string }) => {
+      const monthlyVolumeValue = form.monthly_volume.trim()
+      const monthlyVolumeNumber = monthlyVolumeValue
+        ? Number(monthlyVolumeValue.replace(',', '.'))
+        : null
+      if (
+        monthlyVolumeValue &&
+        (monthlyVolumeNumber === null ||
+          Number.isNaN(monthlyVolumeNumber) ||
+          monthlyVolumeNumber < 0)
+      ) {
+        toast.error('Bitte gib einen gültigen Betrag für das monatliche Volumen ein.')
+        throw new Error('invalid_monthly_volume')
+      }
+
       const res = await fetch(`/api/tenant/customers/${customer.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -577,19 +625,65 @@ export function CustomerDetailWorkspace({
           industry: form.industry,
           contact_email: form.contact_email || null,
           status: form.status,
+          crm_status: form.crm_status,
+          monthly_volume: monthlyVolumeNumber,
+          churn_note: options?.churnNote ?? undefined,
         }),
       })
       if (!res.ok) {
         const err = await res.json().catch(() => ({}))
         throw new Error(err.error || 'Fehler beim Speichern')
       }
+    },
+    [customer.id, form]
+  )
+
+  const handleSaveMasterData = async () => {
+    if (!form.name.trim()) {
+      toast.error('Bitte gib einen Kundennamen ein.')
+      return
+    }
+    if (!form.industry) {
+      toast.error('Bitte wähle eine Branche aus.')
+      return
+    }
+
+    const previousStatus = customer.crm_status ?? 'active'
+    if (form.crm_status === 'churned' && previousStatus !== 'churned') {
+      setChurnNote('')
+      setChurnConfirmOpen(true)
+      return
+    }
+
+    setSaving(true)
+    try {
+      await persistMasterData()
       toast.success('Kundendaten gespeichert.')
       onUpdate()
       onClose()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Unbekannter Fehler')
+      if (err instanceof Error && err.message !== 'invalid_monthly_volume') {
+        toast.error(err.message)
+      }
     } finally {
       setSaving(false)
+    }
+  }
+
+  const confirmChurn = async () => {
+    setSavingChurn(true)
+    try {
+      await persistMasterData({ churnNote: churnNote.trim() || undefined })
+      toast.success('Kunde als "Churned" markiert.')
+      setChurnConfirmOpen(false)
+      onUpdate()
+      onClose()
+    } catch (err) {
+      if (err instanceof Error && err.message !== 'invalid_monthly_volume') {
+        toast.error(err.message)
+      }
+    } finally {
+      setSavingChurn(false)
     }
   }
 
@@ -1944,11 +2038,14 @@ export function CustomerDetailWorkspace({
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-4 md:grid-cols-7">
               <TabsTrigger value="master-data">Stammdaten</TabsTrigger>
+              <TabsTrigger value="activities">Aktivitäten</TabsTrigger>
+              <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
               <TabsTrigger value="integrations">Integrationen</TabsTrigger>
               <TabsTrigger value="documents">Dokumente</TabsTrigger>
               <TabsTrigger value="notes">Notizen</TabsTrigger>
+              {isAdmin && <TabsTrigger value="portal">Portal-Zugang</TabsTrigger>}
             </TabsList>
 
             {/* Stammdaten */}
@@ -2026,6 +2123,50 @@ export function CustomerDetailWorkspace({
                     </div>
                   </div>
 
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="crm_status">CRM-Status</Label>
+                      <Select
+                        value={form.crm_status}
+                        onValueChange={(value) =>
+                          setForm({ ...form, crm_status: value as CrmStatus })
+                        }
+                      >
+                        <SelectTrigger id="crm_status">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="lead">Lead</SelectItem>
+                          <SelectItem value="prospect">Prospect</SelectItem>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="paused">Paused</SelectItem>
+                          <SelectItem value="churned">Churned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        Pipeline-Status dieses Kunden.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="monthly_volume">Monatl. Volumen (€)</Label>
+                      <Input
+                        id="monthly_volume"
+                        type="number"
+                        inputMode="decimal"
+                        min="0"
+                        step="0.01"
+                        value={form.monthly_volume}
+                        onChange={(e) =>
+                          setForm({ ...form, monthly_volume: e.target.value })
+                        }
+                        placeholder="z.B. 1500"
+                      />
+                      <p className="text-xs text-slate-400 dark:text-slate-500">
+                        Optional. Fließt in den Gesamt-MRR der Agentur ein.
+                      </p>
+                    </div>
+                  </div>
+
                   {/* Logo Upload */}
                   <div className="space-y-2">
                     <Label>Logo</Label>
@@ -2074,6 +2215,20 @@ export function CustomerDetailWorkspace({
                   </div>
                 </CardContent>
               </Card>
+            </TabsContent>
+
+            {/* Aktivitäten */}
+            <TabsContent value="activities" className="space-y-4">
+              <CrmActivityTimeline customerId={customer.id} />
+            </TabsContent>
+
+            {/* Onboarding */}
+            <TabsContent value="onboarding" className="space-y-4">
+              <CrmOnboardingChecklist
+                customerId={customer.id}
+                initialItems={customer.onboarding_checklist ?? null}
+                isAdmin={isAdmin}
+              />
             </TabsContent>
 
             {/* Integrationen */}
@@ -2333,9 +2488,45 @@ export function CustomerDetailWorkspace({
                 </CardContent>
               </Card>
             </TabsContent>
+
+            {/* Portal-Zugang */}
+            {isAdmin && (
+              <TabsContent value="portal">
+                <PortalAccessTab customerId={customer.id} />
+              </TabsContent>
+            )}
           </Tabs>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={churnConfirmOpen} onOpenChange={setChurnConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Kunde als &quot;Churned&quot; markieren?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Möchtest du eine abschließende Notiz hinzufügen? Der Kunde bleibt sichtbar, wird in
+              der Standardansicht aber ausgeblendet.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="churn_note">Abschluss-Notiz (optional)</Label>
+            <Textarea
+              id="churn_note"
+              value={churnNote}
+              onChange={(e) => setChurnNote(e.target.value)}
+              placeholder="Warum hat der Kunde gekündigt?"
+              rows={4}
+              disabled={savingChurn}
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={savingChurn}>Abbrechen</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmChurn} disabled={savingChurn}>
+              {savingChurn ? 'Speichern...' : 'Churned bestätigen'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={ga4DisconnectOpen} onOpenChange={setGa4DisconnectOpen}>
         <DialogContent className="sm:max-w-md">
