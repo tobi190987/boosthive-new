@@ -124,7 +124,7 @@ Eine Agentur-Übersichtsseite, die alle Kunden auf einen Blick zeigt — mit agg
 - Navigation-Link im Sidebar vorhanden
 
 ## Status
-- **Status:** In Review
+- **Status:** Deployed
 - **Created:** 2026-04-11
 
 ## QA Test Results

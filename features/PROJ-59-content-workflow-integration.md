@@ -182,7 +182,7 @@ Brief generiert (workflow_status = 'open')
 Keine neuen — Accordion, Badge, Select, Button, Tooltip bereits installiert.
 
 ## Status
-- **Status:** In Review
+- **Status:** Deployed
 - **Created:** 2026-04-11
 - **Architecture:** 2026-04-11
 - **Frontend:** 2026-04-11

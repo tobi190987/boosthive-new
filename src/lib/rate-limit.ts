@@ -128,6 +128,12 @@ export const BUDGETS_WRITE: RateLimitOptions = { limit: 30, windowMs: 60 * 1000 
 /** Budget sync (calls external Ads APIs): 10 requests / 15 min / tenant+IP */
 export const BUDGETS_SYNC: RateLimitOptions = { limit: 10, windowMs: 15 * 60 * 1000 }
 
+/** Social calendar reads (list with range/filter): 60 requests / min / tenant+IP */
+export const SOCIAL_CALENDAR_READ: RateLimitOptions = { limit: 60, windowMs: 60 * 1000 }
+
+/** Social calendar mutations (create/update/delete): 30 requests / min / tenant+IP */
+export const SOCIAL_CALENDAR_WRITE: RateLimitOptions = { limit: 30, windowMs: 60 * 1000 }
+
 // ---------------------------------------------------------------------------
 // Core
 // ---------------------------------------------------------------------------
