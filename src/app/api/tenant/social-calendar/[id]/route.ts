@@ -23,6 +23,8 @@ const updatePostSchema = z.object({
   status: z.enum(STATUSES).optional(),
   assignee_id: z.string().uuid().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
+  ad_asset_id: z.string().uuid().nullable().optional(),
+  ad_asset_url: z.string().url().nullable().optional(),
 })
 
 const idSchema = z.string().uuid('Ungültige Post-ID.')
@@ -58,9 +60,8 @@ export async function GET(
     .from('social_media_posts')
     .select(
       `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
-       status, assignee_id, notes, created_by, created_at, updated_at,
-       customer:customers(name),
-       assignee:profiles!social_media_posts_assignee_id_fkey(first_name, last_name)`
+       status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at,
+       customer:customers(name)`
     )
     .eq('tenant_id', tenantId)
     .eq('id', idParsed.data)
@@ -71,7 +72,18 @@ export async function GET(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json({ post: mapPostWithRelations(data) })
+  // Fetch assignee name separately (assignee_id references auth.users, not user_profiles directly)
+  let assigneeName: string | null = null
+  if (data.assignee_id) {
+    const { data: profile } = await admin
+      .from('user_profiles')
+      .select('first_name, last_name')
+      .eq('user_id', data.assignee_id)
+      .single()
+    assigneeName = formatAssigneeName(profile)
+  }
+
+  return NextResponse.json({ post: mapPostWithRelations(data, assigneeName) })
 }
 
 export async function PUT(
@@ -118,6 +130,8 @@ export async function PUT(
   if (d.status !== undefined) updateData.status = d.status
   if ('assignee_id' in d) updateData.assignee_id = d.assignee_id ?? null
   if (d.notes !== undefined) updateData.notes = d.notes
+  if ('ad_asset_id' in d) updateData.ad_asset_id = d.ad_asset_id ?? null
+  if ('ad_asset_url' in d) updateData.ad_asset_url = d.ad_asset_url ?? null
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json({ error: 'Keine Änderungen übergeben.' }, { status: 400 })
@@ -129,7 +143,7 @@ export async function PUT(
     .update(updateData)
     .eq('tenant_id', tenantId)
     .eq('id', idParsed.data)
-    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, created_by, created_at, updated_at')
+    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at')
     .single()
 
   if (error) {
@@ -181,7 +195,7 @@ function formatAssigneeName(profile: { first_name?: string; last_name?: string }
   return name || null
 }
 
-function mapPostWithRelations(row: Record<string, unknown>) {
+function mapPostWithRelations(row: Record<string, unknown>, assigneeName: string | null = null) {
   return {
     id: row.id,
     tenantId: row.tenant_id,
@@ -193,8 +207,10 @@ function mapPostWithRelations(row: Record<string, unknown>) {
     scheduledAt: row.scheduled_at,
     status: row.status,
     assigneeId: row.assignee_id ?? null,
-    assigneeName: formatAssigneeName(row.assignee as { first_name?: string; last_name?: string } | null),
+    assigneeName,
     notes: row.notes ?? null,
+    adAssetId: row.ad_asset_id ?? null,
+    adAssetUrl: row.ad_asset_url ?? null,
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -215,6 +231,8 @@ function mapPost(row: Record<string, unknown>) {
     assigneeId: row.assignee_id ?? null,
     assigneeName: null,
     notes: row.notes ?? null,
+    adAssetId: row.ad_asset_id ?? null,
+    adAssetUrl: row.ad_asset_url ?? null,
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

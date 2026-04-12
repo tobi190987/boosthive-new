@@ -6,6 +6,7 @@ import { startTransition, useCallback, useEffect, useMemo, useRef, useState } fr
 import { useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
+  CalendarPlus,
   Clapperboard,
   Download,
   FileImage,
@@ -252,6 +253,7 @@ interface AssetGridCardProps {
   onOpen: (asset: AdAsset) => void
   onDelete: (asset: AdAsset) => void
   onToggleSelect: (assetId: string, checked: boolean) => void
+  onPlan: (asset: AdAsset) => void
 }
 
 function AssetGridCard({
@@ -262,6 +264,7 @@ function AssetGridCard({
   onOpen,
   onDelete,
   onToggleSelect,
+  onPlan,
 }: AssetGridCardProps) {
   return (
     <article className={cn(
@@ -363,6 +366,16 @@ function AssetGridCard({
           ) : null}
         </div>
 
+        <Button
+          variant="outline"
+          size="sm"
+          className="w-full gap-1.5 text-xs"
+          onClick={() => onPlan(asset)}
+        >
+          <CalendarPlus className="h-3.5 w-3.5" />
+          Im Planer verwenden
+        </Button>
+
         <dl className="grid grid-cols-2 gap-3 text-sm">
           <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-[#172131]">
             <dt className="text-slate-500 dark:text-slate-400">Pixel</dt>
@@ -411,6 +424,7 @@ interface AssetListRowProps {
   onOpen: (asset: AdAsset) => void
   onDelete: (asset: AdAsset) => void
   onToggleSelect: (assetId: string, checked: boolean) => void
+  onPlan: (asset: AdAsset) => void
 }
 
 function AssetListRow({
@@ -422,6 +436,7 @@ function AssetListRow({
   onOpen,
   onDelete,
   onToggleSelect,
+  onPlan,
 }: AssetListRowProps) {
   const previewWidth = Math.max(140, Math.min(240, Math.round(140 + (asset.width_px / maxWidthPx) * 100)))
 
@@ -551,6 +566,16 @@ function AssetListRow({
         {asset.notes ? (
           <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{asset.notes}</p>
         ) : null}
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 text-xs"
+          onClick={() => onPlan(asset)}
+        >
+          <CalendarPlus className="h-3.5 w-3.5" />
+          Im Planer verwenden
+        </Button>
       </div>
     </article>
   )
@@ -1041,6 +1066,14 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
     router.replace(`?${params.toString()}`, { scroll: false })
   }, [router, searchParams])
 
+  const handlePlanAsset = useCallback((asset: AdAsset) => {
+    const params = new URLSearchParams()
+    params.set('asset_id', asset.id)
+    params.set('asset_url', encodeURIComponent(asset.public_url))
+    params.set('asset_title', encodeURIComponent(asset.title))
+    router.push(`/tools/social-calendar?${params.toString()}`)
+  }, [router])
+
   const customerOptions = customers.filter((customer) => customer.status === 'active')
 
   useEffect(() => {
@@ -1310,6 +1343,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     onOpen={openAssetDetail}
                     onDelete={setDeletingAsset}
                     onToggleSelect={toggleAssetSelection}
+                    onPlan={handlePlanAsset}
                   />
                 ))}
               </div>
@@ -1340,6 +1374,7 @@ export function AdsLibraryWorkspace({ isAdmin }: { isAdmin: boolean }) {
                     onOpen={openAssetDetail}
                     onDelete={setDeletingAsset}
                     onToggleSelect={toggleAssetSelection}
+                    onPlan={handlePlanAsset}
                   />
                 ))}
               </div>

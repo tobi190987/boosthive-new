@@ -16,7 +16,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
+  FileImage,
   Loader2,
+  Play,
   Plus,
   Trash2,
   X,
@@ -48,6 +50,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
@@ -72,6 +75,21 @@ import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { FilterChips } from '@/components/filter-chips'
 
+// ─── Asset-Picker types ───────────────────────────────────────────────────────
+
+interface PickerAsset {
+  id: string
+  title: string
+  media_type: 'image' | 'video'
+  public_url: string
+  width_px: number
+  height_px: number
+  file_format: string
+  file_size_bytes: number
+  duration_seconds: number | null
+  customer_id: string
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 
 interface TeamMember {
@@ -90,6 +108,8 @@ type PostFormData = {
   status: SocialPostStatus
   assigneeId: string
   notes: string
+  adAssetId: string | null
+  adAssetUrl: string | null
 }
 
 const EMPTY_FORM: PostFormData = {
@@ -101,6 +121,8 @@ const EMPTY_FORM: PostFormData = {
   status: 'draft',
   assigneeId: 'none',
   notes: '',
+  adAssetId: null,
+  adAssetUrl: null,
 }
 
 // ─── Helper: URL key for date ────────────────────────────────────────────────
@@ -159,6 +181,12 @@ export function SocialCalendarWorkspace() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
   const teamMembersFetched = useRef(false)
 
+  // Asset picker
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerAssets, setPickerAssets] = useState<PickerAsset[]>([])
+  const [pickerLoading, setPickerLoading] = useState(false)
+  const [pickerSearch, setPickerSearch] = useState('')
+
   // ─── URL Sync ──────────────────────────────────────────────────────────────
 
   const updateUrl = useCallback(
@@ -178,6 +206,39 @@ export function SocialCalendarWorkspace() {
     },
     [router, searchParams]
   )
+
+  // ─── Auto-open sheet from Ads Library URL params ───────────────────────────
+
+  useEffect(() => {
+    const assetId = searchParams.get('asset_id')
+    const assetUrl = searchParams.get('asset_url')
+    const assetTitle = searchParams.get('asset_title')
+    if (!assetId || !assetUrl) return
+
+    const now = new Date()
+    now.setMinutes(0, 0, 0)
+    now.setHours(now.getHours() + 1)
+    setForm({
+      ...EMPTY_FORM,
+      title: assetTitle ? decodeURIComponent(assetTitle) : '',
+      scheduledAt: toDateTimeLocalValue(now),
+      customerId: activeCustomer?.id ?? 'none',
+      adAssetId: assetId,
+      adAssetUrl: decodeURIComponent(assetUrl),
+    })
+    setEditingPost(null)
+    setSheetOpen(true)
+    // clean URL params without re-render loop
+    const sp = new URLSearchParams(searchParams.toString())
+    sp.delete('asset_id')
+    sp.delete('asset_url')
+    sp.delete('asset_title')
+    const qs = sp.toString()
+    startTransition(() => {
+      router.replace(`/tools/social-calendar${qs ? `?${qs}` : ''}`, { scroll: false })
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ─── Fetch posts ───────────────────────────────────────────────────────────
 
@@ -228,6 +289,26 @@ export function SocialCalendarWorkspace() {
   useEffect(() => {
     fetchPosts()
   }, [fetchPosts])
+
+  // ─── Fetch picker assets ───────────────────────────────────────────────────
+
+  const openPicker = useCallback(async () => {
+    setPickerOpen(true)
+    setPickerSearch('')
+    setPickerAssets([])
+    setPickerLoading(true)
+    try {
+      const sp = new URLSearchParams({ limit: '200' })
+      const customerId = form.customerId !== 'none' ? form.customerId : null
+      if (customerId) sp.set('customer_id', customerId)
+      const res = await fetch(`/api/tenant/ad-library?${sp.toString()}`)
+      if (!res.ok) return
+      const data = await res.json()
+      setPickerAssets(data.assets ?? [])
+    } finally {
+      setPickerLoading(false)
+    }
+  }, [form.customerId])
 
   // ─── Fetch team members ────────────────────────────────────────────────────
 
@@ -385,6 +466,7 @@ export function SocialCalendarWorkspace() {
 
   function openEditSheet(post: SocialMediaPost) {
     setEditingPost(post)
+    setPickerAssets([])
     setForm({
       title: post.title,
       caption: post.caption ?? '',
@@ -394,6 +476,8 @@ export function SocialCalendarWorkspace() {
       status: post.status,
       assigneeId: post.assigneeId ?? 'none',
       notes: post.notes ?? '',
+      adAssetId: post.adAssetId ?? null,
+      adAssetUrl: post.adAssetUrl ?? null,
     })
     setSheetOpen(true)
   }
@@ -402,6 +486,7 @@ export function SocialCalendarWorkspace() {
     setSheetOpen(false)
     setEditingPost(null)
     setForm(EMPTY_FORM)
+    setPickerAssets([])
   }
 
   // ─── Platform multi-select ─────────────────────────────────────────────────
@@ -443,6 +528,8 @@ export function SocialCalendarWorkspace() {
         status: form.status,
         assignee_id: form.assigneeId === 'none' ? null : form.assigneeId,
         notes: form.notes.trim() || null,
+        ad_asset_id: form.adAssetId ?? null,
+        ad_asset_url: form.adAssetUrl ?? null,
       }
 
       const isEdit = !!editingPost
@@ -830,6 +917,141 @@ export function SocialCalendarWorkspace() {
         </div>
       )}
 
+      {/* ── Asset Picker Dialog ────────────────────────────────────────────── */}
+      <Dialog open={pickerOpen} onOpenChange={setPickerOpen}>
+        <DialogContent className="flex max-h-[85vh] w-full max-w-2xl flex-col gap-0 p-0">
+          <DialogHeader className="border-b border-slate-200 px-5 py-4 dark:border-border">
+            <DialogTitle>
+              Asset aus Bibliothek wählen
+              {form.customerId !== 'none' && customers.find((c) => c.id === form.customerId) && (
+                <span className="ml-2 text-sm font-normal text-slate-500 dark:text-slate-400">
+                  — {customers.find((c) => c.id === form.customerId)?.name}
+                </span>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 overflow-hidden px-4 pb-4 pt-3">
+            <Input
+              placeholder="Titel suchen…"
+              value={pickerSearch}
+              onChange={(e) => setPickerSearch(e.target.value)}
+              className="h-9"
+            />
+            <div className="overflow-y-auto pr-0.5">
+              {pickerLoading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+                </div>
+              ) : pickerAssets.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <FileImage className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    {form.customerId !== 'none'
+                      ? 'Keine Assets für diesen Kunden'
+                      : 'Keine Assets in der Bibliothek'}
+                  </p>
+                </div>
+              ) : (() => {
+                const filtered = pickerAssets.filter((a) =>
+                  pickerSearch ? a.title.toLowerCase().includes(pickerSearch.toLowerCase()) : true
+                )
+                return filtered.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-slate-400">Keine Treffer</p>
+                ) : (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {filtered.map((asset) => {
+                      const isSelected = form.adAssetId === asset.id
+                      const sizeKb = Math.round(asset.file_size_bytes / 1024)
+                      const sizeLabel = sizeKb >= 1024
+                        ? `${(sizeKb / 1024).toFixed(1)} MB`
+                        : `${sizeKb} KB`
+                      const ratio = asset.width_px / asset.height_px
+                      const knownRatios: [number, string][] = [
+                        [1, '1:1'], [4/3, '4:3'], [3/4, '3:4'], [16/9, '16:9'],
+                        [9/16, '9:16'], [4/5, '4:5'], [5/4, '5:4'],
+                      ]
+                      const ratioLabel =
+                        knownRatios.find(([r]) => Math.abs(ratio - r) < 0.025)?.[1] ??
+                        `${ratio.toFixed(2)}:1`
+                      return (
+                        <button
+                          key={asset.id}
+                          type="button"
+                          onClick={() => {
+                            setForm((prev) => ({
+                              ...prev,
+                              adAssetId: asset.id,
+                              adAssetUrl: asset.public_url,
+                            }))
+                            setPickerOpen(false)
+                          }}
+                          className={cn(
+                            'group overflow-hidden rounded-xl border bg-white text-left transition-all hover:border-blue-500 hover:shadow-md dark:bg-[#101723]',
+                            isSelected
+                              ? 'border-blue-500 ring-2 ring-blue-500/30'
+                              : 'border-slate-200 dark:border-border'
+                          )}
+                        >
+                          {/* Preview */}
+                          <div className="relative aspect-video w-full overflow-hidden bg-slate-100 dark:bg-[#0b1220]">
+                            {asset.media_type === 'image' ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={asset.public_url}
+                                alt={asset.title}
+                                className="h-full w-full object-cover"
+                              />
+                            ) : (
+                              <>
+                                <video
+                                  src={asset.public_url}
+                                  className="h-full w-full object-cover"
+                                  muted
+                                  playsInline
+                                  preload="metadata"
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/25">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90">
+                                    <Play className="h-3.5 w-3.5 translate-x-0.5 text-slate-900" />
+                                  </div>
+                                </div>
+                              </>
+                            )}
+                            {/* Format badge */}
+                            <span className="absolute left-2 top-2 rounded bg-black/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                              {asset.file_format}
+                            </span>
+                            {isSelected && (
+                              <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-blue-600 text-white">
+                                <svg viewBox="0 0 12 12" className="h-3 w-3 fill-current">
+                                  <path d="M10 3L5 8.5 2 5.5" stroke="currentColor" strokeWidth="1.8" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                                </svg>
+                              </span>
+                            )}
+                          </div>
+                          {/* Info */}
+                          <div className="px-2.5 py-2">
+                            <p className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">
+                              {asset.title}
+                            </p>
+                            <p className="mt-1 text-[10px] text-slate-400 dark:text-slate-500">
+                              {asset.width_px}×{asset.height_px}px · {ratioLabel}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {asset.media_type === 'video' ? 'Video' : 'Bild'} · {sizeLabel}
+                            </p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* ── Post Sheet (Create / Edit) ─────────────────────────────────────── */}
       <Sheet open={sheetOpen} onOpenChange={(open) => !open && closeSheet()}>
         <SheetContent className="w-full overflow-y-auto sm:max-w-lg">
@@ -991,6 +1213,69 @@ export function SocialCalendarWorkspace() {
                   setForm((prev) => ({ ...prev, notes: e.target.value }))
                 }
               />
+            </div>
+
+            {/* Ad Asset */}
+            <div className="space-y-2">
+              <Label>Asset aus Bibliothek</Label>
+              {form.adAssetUrl ? (
+                <div className="relative overflow-hidden rounded-xl border border-slate-200 bg-slate-50 dark:border-border dark:bg-card">
+                  <div className="relative aspect-video w-full">
+                    {form.adAssetUrl.match(/\.(mp4|mov|webm)(\?|$)/i) ? (
+                      <video
+                        src={form.adAssetUrl}
+                        className="h-full w-full object-contain"
+                        muted
+                        playsInline
+                        preload="metadata"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={form.adAssetUrl}
+                        alt="Ausgewähltes Asset"
+                        className="h-full w-full object-contain"
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between px-3 py-2">
+                    <span className="truncate text-xs text-slate-500 dark:text-slate-400">
+                      {form.adAssetId ? 'Asset ausgewählt' : 'Asset'}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-xs text-slate-500 hover:text-red-600"
+                      onClick={() => setForm((prev) => ({ ...prev, adAssetId: null, adAssetUrl: null }))}
+                    >
+                      <X className="h-3 w-3" />
+                      Entfernen
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 border-dashed"
+                  onClick={openPicker}
+                  type="button"
+                >
+                  <FileImage className="h-4 w-4 text-slate-400" />
+                  Asset aus Bibliothek wählen
+                </Button>
+              )}
+              {form.adAssetUrl && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs"
+                  onClick={openPicker}
+                  type="button"
+                >
+                  <FileImage className="h-3 w-3" />
+                  Asset wechseln
+                </Button>
+              )}
             </div>
 
             <Separator />

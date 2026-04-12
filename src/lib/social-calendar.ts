@@ -22,6 +22,8 @@ export interface SocialMediaPost {
   assigneeId: string | null
   assigneeName: string | null
   notes: string | null
+  adAssetId: string | null
+  adAssetUrl: string | null
   createdBy: string | null
   createdAt: string
   updatedAt: string

@@ -25,6 +25,8 @@ const createPostSchema = z.object({
   status: z.enum(STATUSES).optional().default('draft'),
   assignee_id: z.string().uuid().nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
+  ad_asset_id: z.string().uuid().nullable().optional(),
+  ad_asset_url: z.string().url().nullable().optional(),
 })
 
 const uuidSchema = z.string().uuid()
@@ -67,9 +69,8 @@ export async function GET(request: NextRequest) {
     .from('social_media_posts')
     .select(
       `id, tenant_id, customer_id, title, caption, platforms, scheduled_at,
-       status, assignee_id, notes, created_by, created_at, updated_at,
-       customer:customers(name),
-       assignee:profiles!social_media_posts_assignee_id_fkey(first_name, last_name)`
+       status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at,
+       customer:customers(name)`
     )
     .eq('tenant_id', tenantId)
     .order('scheduled_at', { ascending: true })
@@ -91,6 +92,19 @@ export async function GET(request: NextRequest) {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
+  // Fetch assignee names separately (assignee_id references auth.users, not user_profiles directly)
+  const assigneeIds = [...new Set((data ?? []).map((r) => r.assignee_id).filter(Boolean))]
+  const assigneeMap: Record<string, string | null> = {}
+  if (assigneeIds.length > 0) {
+    const { data: profiles } = await admin
+      .from('user_profiles')
+      .select('user_id, first_name, last_name')
+      .in('user_id', assigneeIds)
+    for (const p of profiles ?? []) {
+      assigneeMap[p.user_id] = formatAssigneeName(p)
+    }
+  }
+
   const posts = (data ?? []).map((row) => ({
     id: row.id,
     tenantId: row.tenant_id,
@@ -102,8 +116,10 @@ export async function GET(request: NextRequest) {
     scheduledAt: row.scheduled_at,
     status: row.status,
     assigneeId: row.assignee_id ?? null,
-    assigneeName: formatAssigneeName(row.assignee as { first_name?: string; last_name?: string } | null),
+    assigneeName: row.assignee_id ? (assigneeMap[row.assignee_id] ?? null) : null,
     notes: row.notes ?? null,
+    adAssetId: row.ad_asset_id ?? null,
+    adAssetUrl: row.ad_asset_url ?? null,
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -154,9 +170,11 @@ export async function POST(request: NextRequest) {
       status: d.status,
       assignee_id: d.assignee_id ?? null,
       notes: d.notes ?? null,
+      ad_asset_id: d.ad_asset_id ?? null,
+      ad_asset_url: d.ad_asset_url ?? null,
       created_by: authResult.auth.userId,
     })
-    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, created_by, created_at, updated_at')
+    .select('id, tenant_id, customer_id, title, caption, platforms, scheduled_at, status, assignee_id, notes, ad_asset_id, ad_asset_url, created_by, created_at, updated_at')
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -186,6 +204,8 @@ function mapPost(row: Record<string, unknown>) {
     assigneeId: row.assignee_id ?? null,
     assigneeName: null,
     notes: row.notes ?? null,
+    adAssetId: row.ad_asset_id ?? null,
+    adAssetUrl: row.ad_asset_url ?? null,
     createdBy: row.created_by ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
