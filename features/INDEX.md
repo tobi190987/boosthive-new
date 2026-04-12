@@ -72,7 +72,7 @@
 | PROJ-55 | Reporting & Export Center | In Review | [PROJ-55-reporting-export.md](PROJ-55-reporting-export.md) | 2026-04-11 |
 | PROJ-56 | Dashboard Portfolio-Übersicht | Deployed | [PROJ-56-dashboard-portfolio-uebersicht.md](PROJ-56-dashboard-portfolio-uebersicht.md) | 2026-04-11 |
 | PROJ-57 | Budget & Ad Spend Tracking | In Review | [PROJ-57-budget-ad-spend-tracking.md](PROJ-57-budget-ad-spend-tracking.md) | 2026-04-11 |
-| PROJ-58 | Social Media Kalender | In Review | [PROJ-58-social-media-kalender.md](PROJ-58-social-media-kalender.md) | 2026-04-11 |
+| PROJ-58 | Social Media Kalender | Deployed | [PROJ-58-social-media-kalender.md](PROJ-58-social-media-kalender.md) | 2026-04-11 |
 | PROJ-59 | Content Workflow Integration (Brief → Approval → Kanban) | Deployed | [PROJ-59-content-workflow-integration.md](PROJ-59-content-workflow-integration.md) | 2026-04-11 |
 | PROJ-60 | Backlink Monitoring | Planned | [PROJ-60-backlink-monitoring.md](PROJ-60-backlink-monitoring.md) | 2026-04-11 |
 | PROJ-61 | CRM-Upgrade (Kontaktstatus, Aktivitäten-Timeline) | Planned | [PROJ-61-crm-upgrade.md](PROJ-61-crm-upgrade.md) | 2026-04-11 |

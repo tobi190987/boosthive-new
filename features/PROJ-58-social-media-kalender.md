@@ -243,7 +243,7 @@ Keine — alles mit bestehenden shadcn/ui-Komponenten und Tailwind umsetzbar.
 - **BUG-2 gefixt:** Kundenfilter-Select in der FilterBar, URL-persistent (`?customer=<id>`)
 
 ## Status
-- **Status:** In Review
+- **Status:** Deployed
 - **Created:** 2026-04-11
 - **Last Updated:** 2026-04-12
 
