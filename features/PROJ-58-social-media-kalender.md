@@ -238,6 +238,10 @@ Keine — alles mit bestehenden shadcn/ui-Komponenten und Tailwind umsetzbar.
 ### Abweichungen von der Spec
 - Keine — alle ACs implementiert
 
+### QA-Fixes (2026-04-12)
+- **BUG-7 gefixt:** Rate-Limiting auf allen 5 Endpunkten (READ 60/min, WRITE 30/min)
+- **BUG-2 gefixt:** Kundenfilter-Select in der FilterBar, URL-persistent (`?customer=<id>`)
+
 ## Status
 - **Status:** In Review
 - **Created:** 2026-04-11

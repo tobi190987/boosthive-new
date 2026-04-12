@@ -3,6 +3,13 @@ import { z } from 'zod'
 import { requireTenantUser } from '@/lib/auth-guards'
 import { getActiveModuleCodes } from '@/lib/module-access'
 import { createAdminClient } from '@/lib/supabase-admin'
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+  SOCIAL_CALENDAR_READ,
+  SOCIAL_CALENDAR_WRITE,
+} from '@/lib/rate-limit'
 
 const PLATFORMS = ['instagram', 'linkedin', 'facebook', 'tiktok'] as const
 const STATUSES = ['draft', 'in_progress', 'review', 'approved', 'published'] as const
@@ -31,6 +38,9 @@ export async function GET(
 ) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`social-calendar-read:${tenantId}:${getClientIp(request)}`, SOCIAL_CALENDAR_READ)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
@@ -70,6 +80,9 @@ export async function PUT(
 ) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`social-calendar-write:${tenantId}:${getClientIp(request)}`, SOCIAL_CALENDAR_WRITE)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error
@@ -133,6 +146,9 @@ export async function DELETE(
 ) {
   const tenantId = request.headers.get('x-tenant-id')
   if (!tenantId) return NextResponse.json({ error: 'Kein Tenant-Kontext.' }, { status: 400 })
+
+  const rl = checkRateLimit(`social-calendar-write:${tenantId}:${getClientIp(request)}`, SOCIAL_CALENDAR_WRITE)
+  if (!rl.allowed) return rateLimitResponse(rl)
 
   const authResult = await requireTenantUser(tenantId)
   if ('error' in authResult) return authResult.error

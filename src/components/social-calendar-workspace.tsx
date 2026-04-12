@@ -144,6 +144,9 @@ export function SocialCalendarWorkspace() {
     const s = searchParams.get('status')
     return s ? (s.split(',') as SocialPostStatus[]) : []
   })
+  const [customerFilter, setCustomerFilter] = useState<string | null>(() => {
+    return searchParams.get('customer') ?? null
+  })
 
   // Sheet state
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -197,8 +200,10 @@ export function SocialCalendarWorkspace() {
         sp.set('end', endOfWeek.toISOString())
       }
 
-      if (activeCustomer) {
-        sp.set('customer_id', activeCustomer.id)
+      // customerFilter (FilterBar) takes precedence over global activeCustomer
+      const effectiveCustomerId = customerFilter ?? activeCustomer?.id ?? null
+      if (effectiveCustomerId) {
+        sp.set('customer_id', effectiveCustomerId)
       }
       if (platformFilter.length > 0) {
         sp.set('platform', platformFilter.join(','))
@@ -218,7 +223,7 @@ export function SocialCalendarWorkspace() {
     } finally {
       setLoading(false)
     }
-  }, [viewMode, referenceDate, activeCustomer, platformFilter, statusFilter])
+  }, [viewMode, referenceDate, activeCustomer, customerFilter, platformFilter, statusFilter])
 
   useEffect(() => {
     fetchPosts()
@@ -326,13 +331,22 @@ export function SocialCalendarWorkspace() {
     [updateUrl]
   )
 
+  const setCustomerFilterValue = useCallback(
+    (id: string | null) => {
+      setCustomerFilter(id)
+      updateUrl({ customer: id })
+    },
+    [updateUrl]
+  )
+
   const clearAllFilters = useCallback(() => {
     setPlatformFilter([])
     setStatusFilter([])
-    updateUrl({ platform: null, status: null })
+    setCustomerFilter(null)
+    updateUrl({ platform: null, status: null, customer: null })
   }, [updateUrl])
 
-  const hasActiveFilters = platformFilter.length > 0 || statusFilter.length > 0
+  const hasActiveFilters = platformFilter.length > 0 || statusFilter.length > 0 || customerFilter !== null
 
   // ─── Computed grids ────────────────────────────────────────────────────────
 
@@ -568,7 +582,32 @@ export function SocialCalendarWorkspace() {
       </div>
 
       {/* ── Filters ────────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        {/* Kundenfilter */}
+        {customers.length > 0 && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Kunde:</span>
+              <Select
+                value={customerFilter ?? 'all'}
+                onValueChange={(v) => setCustomerFilterValue(v === 'all' ? null : v)}
+              >
+                <SelectTrigger className="h-7 w-[160px] rounded-full text-xs">
+                  <SelectValue placeholder="Alle Kunden" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Alle Kunden</SelectItem>
+                  {customers.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <Separator orientation="vertical" className="hidden h-5 sm:block" />
+          </>
+        )}
         <div className="flex items-center gap-2">
           <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Plattform:</span>
           <FilterChips
@@ -596,7 +635,7 @@ export function SocialCalendarWorkspace() {
             className="h-7 gap-1.5 rounded-full px-2.5 text-xs text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
           >
             <X className="h-3 w-3" />
-            Filter zuruecksetzen
+            Filter zurücksetzen
           </Button>
         )}
       </div>
