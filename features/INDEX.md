@@ -75,7 +75,7 @@
 | PROJ-58 | Social Media Kalender | Deployed | [PROJ-58-social-media-kalender.md](PROJ-58-social-media-kalender.md) | 2026-04-11 |
 | PROJ-59 | Content Workflow Integration (Brief → Approval → Kanban) | Deployed | [PROJ-59-content-workflow-integration.md](PROJ-59-content-workflow-integration.md) | 2026-04-11 |
 | PROJ-60 | Backlink Monitoring | Planned | [PROJ-60-backlink-monitoring.md](PROJ-60-backlink-monitoring.md) | 2026-04-11 |
-| PROJ-61 | CRM-Upgrade (Kontaktstatus, Aktivitäten-Timeline) | Planned | [PROJ-61-crm-upgrade.md](PROJ-61-crm-upgrade.md) | 2026-04-11 |
+| PROJ-61 | CRM-Upgrade (Kontaktstatus, Aktivitäten-Timeline) | In Progress | [PROJ-61-crm-upgrade.md](PROJ-61-crm-upgrade.md) | 2026-04-11 |
 | PROJ-62 | Client-Portal (Kunden-Login, Read-Only) | Planned | [PROJ-62-client-portal.md](PROJ-62-client-portal.md) | 2026-04-11 |
 | PROJ-63 | Time Tracking & Client-Invoicing | Planned | [PROJ-63-time-tracking-invoicing.md](PROJ-63-time-tracking-invoicing.md) | 2026-04-11 |
 | PROJ-64 | Competitor Intelligence Automation | Planned | [PROJ-64-competitor-intelligence.md](PROJ-64-competitor-intelligence.md) | 2026-04-11 |

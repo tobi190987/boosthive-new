@@ -157,6 +157,62 @@ CREATE INDEX idx_activities_followup ON customer_activities(tenant_id, follow_up
 - Kein automatischer MRR-Import aus Stripe (manuelle Eingabe)
 - Keine Kunden-Segmentierung oder Tags (kann in einem späteren Sprint ergänzt werden)
 
+## Tech Design (Solution Architect)
+
+### Ausgangslage
+PROJ-29 (Customer Database) ist das Fundament. Bestehende Basis:
+- `customers-management-workspace.tsx` — Kundenliste
+- `customer-detail-workspace.tsx` — Kunden-Detailansicht (mit Tabs)
+- APIs unter `/api/tenant/customers/[id]/`
+
+Das CRM-Upgrade ist eine **Erweiterung** — kein Neubau.
+
+### Komponenten-Struktur
+
+```
+customers-management-workspace (ERWEITERT)
++-- Kopfzeile
+|   +-- MRR-Summe Badge (neu)
+|   +-- Status-Filter Dropdown (neu)
+|   +-- Follow-up-Filter Toggle (neu)
++-- Kundentabelle (ERWEITERT)
+    +-- Status-Badge Spalte (neu)
+    +-- Follow-up-Indikator (neu)
+
+customer-detail-workspace (ERWEITERT — neue Tabs)
++-- Tab: Stammdaten (ERWEITERT)
+|   +-- Status-Select Dropdown (neu) — mit Churn-Bestätigungsdialog
+|   +-- Monatl. Volumen-Feld (neu)
++-- Tab: Aktivitäten (NEU)
+|   +-- crm-activity-timeline.tsx (neu)
+|   +-- crm-log-activity-dialog.tsx (neu)
++-- Tab: Onboarding (NEU)
+    +-- crm-onboarding-checklist.tsx (neu)
+        +-- Progress-Bar
+        +-- Standard-Checklistenpunkte (6 Items)
+        +-- Custom-Items
+```
+
+### Neue Dateien
+- `src/components/crm-activity-timeline.tsx`
+- `src/components/crm-log-activity-dialog.tsx`
+- `src/components/crm-onboarding-checklist.tsx`
+- `src/app/api/tenant/customers/[id]/activities/route.ts`
+- `src/app/api/tenant/customers/[id]/activities/[actId]/route.ts`
+- `src/app/api/tenant/customers/[id]/onboarding/route.ts`
+- `src/app/api/tenant/customers/[id]/status/route.ts`
+- `src/app/api/tenant/customers/follow-ups/route.ts`
+
+### Datenmodell
+**Erweiterung `customers`:** `crm_status` (Lead/Prospect/Active/Paused/Churned), `monthly_volume` (€), `onboarding_checklist` (JSONB)
+
+**Neue Tabelle `customer_activities`:** `activity_type`, `description`, `activity_date`, `follow_up_date`, `created_by`, `tenant_id`
+
+**JSONB für Checkliste:** Flexible Struktur ohne weitere Migrations für Custom-Items.
+
+### Keine neuen npm-Packages nötig
+Alle shadcn-Komponenten (Select, Dialog, Checkbox, Progress, Badge) sind bereits installiert.
+
 ## Status
-- **Status:** Planned
+- **Status:** In Progress
 - **Created:** 2026-04-11
