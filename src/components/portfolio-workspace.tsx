@@ -7,15 +7,19 @@ import {
   AlertTriangle,
   BarChart3,
   CheckCircle2,
+  CircleDollarSign,
   ClipboardList,
   FileText,
   Filter,
-  Grid2x2,
+  Globe,
+  KeyRound,
   LayoutGrid,
   LineChart,
+  List,
   Plug,
   RefreshCw,
   Search,
+  ShieldCheck,
   Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -103,7 +107,7 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
   const [integrationFilter, setIntegrationFilter] = useState<IntegrationFilter>('all')
   const [alertsOnly, setAlertsOnly] = useState(false)
-  const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [viewMode, setViewMode] = useState<ViewMode>('table')
   const [page, setPage] = useState(1)
 
   const loadSummary = useCallback(
@@ -115,6 +119,7 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
 
         const response = await fetch('/api/tenant/portfolio/summary', {
           credentials: 'include',
+          cache: 'no-store',
         })
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}))
@@ -165,23 +170,19 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
         }
         const json = await res.json()
         if (cancelled) return
-        const visitors = Number(json?.data?.totals?.activeUsers ?? json?.data?.totalUsers ?? 0)
-        const previousVisitors = Number(
-          json?.trend?.previousTotals?.activeUsers ??
-            json?.trend?.previousTotalUsers ??
-            0
-        )
-        const deltaPercent =
-          previousVisitors > 0
-            ? ((visitors - previousVisitors) / previousVisitors) * 100
+        const visitors = Number(json?.data?.users ?? 0)
+        // trend is already a percentage (based on sessions comparison)
+        const deltaPercent: number | null = json?.data?.trend ?? null
+        // Approximate previous count from delta for tooltip display
+        const previousVisitors =
+          deltaPercent != null && visitors > 0
+            ? Math.round(visitors / (1 + deltaPercent / 100))
+            : 0
+        // GA4DashboardData uses cacheAgeMinutes, not a cachedAt timestamp
+        const staleHours: number | null =
+          json?.data?.isCached && json.data.cacheAgeMinutes != null
+            ? Math.floor(json.data.cacheAgeMinutes / 60)
             : null
-        const cachedAt: string | undefined = json?.cachedAt || json?.data?.cachedAt
-        let staleHours: number | null = null
-        if (cachedAt) {
-          staleHours = Math.floor(
-            (Date.now() - new Date(cachedAt).getTime()) / (1000 * 60 * 60)
-          )
-        }
         setTrafficByCustomer((prev) => ({
           ...prev,
           [customerId]: {
@@ -240,7 +241,8 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
             !!traffic?.deltaPercent && Math.abs(traffic.deltaPercent) > ANOMALY_THRESHOLD
           const hasIntegrationError = customer.integrationsError
           const hasStaleData = !!traffic?.staleHours && traffic.staleHours > STALE_HOURS_THRESHOLD
-          if (!hasTrafficAlert && !hasIntegrationError && !hasStaleData) return false
+          const hasNoIntegration = customer.noIntegrationConnected
+          if (!hasTrafficAlert && !hasIntegrationError && !hasStaleData && !hasNoIntegration) return false
         }
         return true
       })
@@ -464,6 +466,8 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
             customers={pagedCustomers}
             trafficByCustomer={trafficByCustomer}
             onOpen={handleOpenCustomer}
+            onReport={handleReport}
+            onActivity={handleOpenActivity}
           />
         )}
 
@@ -653,13 +657,13 @@ function FiltersBar({
                     size="sm"
                     className="h-8 w-8 p-0"
                     onClick={() => onViewModeChange('table')}
-                    aria-label="Tabellen-Ansicht"
+                    aria-label="Listen-Ansicht"
                     aria-pressed={viewMode === 'table'}
                   >
-                    <Grid2x2 className="h-4 w-4" />
+                    <List className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>Tabellen-Ansicht</TooltipContent>
+                <TooltipContent>Listen-Ansicht</TooltipContent>
               </Tooltip>
             </div>
           </div>
@@ -736,6 +740,7 @@ function CustomerCard({ customer, traffic, onOpen, onReport, onActivity }: Custo
     traffic?.deltaPercent != null && Math.abs(traffic.deltaPercent) > ANOMALY_THRESHOLD
   const isCritical = hasAlert && (traffic?.deltaPercent ?? 0) < 0
   const isStale = !!traffic?.staleHours && traffic.staleHours > STALE_HOURS_THRESHOLD
+  const hasNoIntegration = customer.noIntegrationConnected
 
   return (
     <Card
@@ -743,7 +748,8 @@ function CustomerCard({ customer, traffic, onOpen, onReport, onActivity }: Custo
       className={cn(
         'group relative flex h-full flex-col overflow-hidden transition-all hover:border-slate-300 hover:shadow-md dark:hover:border-slate-700',
         hasAlert && isCritical && 'border-red-300 dark:border-red-900/60',
-        hasAlert && !isCritical && 'border-amber-300 dark:border-amber-900/60'
+        hasAlert && !isCritical && 'border-amber-300 dark:border-amber-900/60',
+        hasNoIntegration && !hasAlert && 'border-slate-300 dark:border-slate-600'
       )}
     >
       <button
@@ -764,7 +770,21 @@ function CustomerCard({ customer, traffic, onOpen, onReport, onActivity }: Custo
             )}
             <div className="mt-1.5 flex items-center gap-1.5">
               <StatusBadge status={customer.status} />
-              {customer.integrationsError && (
+              {hasNoIntegration && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span
+                      className="inline-flex h-5 items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-1.5 text-[10px] font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400"
+                      role="status"
+                    >
+                      <Plug className="h-3 w-3" />
+                      Keine Integration
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Noch keine Integration verbunden — GA4, Ads oder GSC einrichten.</TooltipContent>
+                </Tooltip>
+              )}
+              {!hasNoIntegration && customer.integrationsError && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span
@@ -782,8 +802,21 @@ function CustomerCard({ customer, traffic, onOpen, onReport, onActivity }: Custo
           </div>
         </div>
 
-        <div className="mt-4 space-y-3 border-t pt-4">
+        <div className="mt-4 space-y-2.5 border-t pt-4">
           <TrafficRow traffic={traffic} connected={customer.integrations.ga4 === 'connected'} />
+          <SeoRow seo={customer.seoLatest} />
+          <KeywordsRow keywords={customer.keywordsLatest} />
+          <div className="flex items-center justify-between text-xs">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <CircleDollarSign className="h-3.5 w-3.5" />
+              Budget Tracker
+            </span>
+            {customer.hasBudget ? (
+              <span className="font-medium text-emerald-600 dark:text-emerald-400">Aktiv</span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </div>
           <IntegrationIcons integrations={customer.integrations} />
         </div>
 
@@ -831,10 +864,10 @@ function CustomerCard({ customer, traffic, onOpen, onReport, onActivity }: Custo
               }}
             >
               <ClipboardList className="mr-1 h-3.5 w-3.5" />
-              Aktivität
+              Notizen
             </Button>
           </TooltipTrigger>
-          <TooltipContent>Notiz oder Aktivität loggen</TooltipContent>
+          <TooltipContent>Interne Notizen öffnen</TooltipContent>
         </Tooltip>
         <Tooltip>
           <TooltipTrigger asChild>
@@ -1033,106 +1066,262 @@ function IntegrationIcons({
   )
 }
 
+function seoScoreColor(score: number): string {
+  if (score >= 80) return 'text-emerald-600 dark:text-emerald-400'
+  if (score >= 60) return 'text-amber-600 dark:text-amber-400'
+  return 'text-red-600 dark:text-red-400'
+}
+
+function SeoRow({ seo }: { seo: PortfolioCustomerSummary['seoLatest'] }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="flex items-center gap-1.5 text-muted-foreground">
+        <ShieldCheck className="h-3.5 w-3.5" />
+        SEO-Score
+      </span>
+      {seo ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className={cn('font-semibold tabular-nums', seoScoreColor(seo.score))}>
+              {Math.round(seo.score)}/100
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Letzter Crawl: {new Date(seo.completedAt).toLocaleDateString('de-DE')} · {seo.totalPages} Seiten
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <span className="text-muted-foreground">Kein Crawl</span>
+      )}
+    </div>
+  )
+}
+
+function KeywordsRow({ keywords }: { keywords: PortfolioCustomerSummary['keywordsLatest'] }) {
+  return (
+    <div className="flex items-center justify-between text-xs">
+      <span className="flex items-center gap-1.5 text-muted-foreground">
+        <KeyRound className="h-3.5 w-3.5" />
+        Keywords
+      </span>
+      {keywords ? (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span className="font-semibold tabular-nums">
+              {keywords.keywordCount} KW
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>
+            Projekt: {keywords.projectName}
+            {keywords.lastRun
+              ? ` · Zuletzt: ${new Date(keywords.lastRun).toLocaleDateString('de-DE')}`
+              : ' · Noch kein Tracking'}
+          </TooltipContent>
+        </Tooltip>
+      ) : (
+        <span className="text-muted-foreground">Kein Projekt</span>
+      )}
+    </div>
+  )
+}
+
 interface PortfolioTableProps {
   customers: PortfolioCustomerSummary[]
   trafficByCustomer: Record<string, TrafficData>
   onOpen: (customer: PortfolioCustomerSummary) => void
+  onReport: (customer: PortfolioCustomerSummary) => void
+  onActivity: (customer: PortfolioCustomerSummary) => void
 }
 
-function PortfolioTable({ customers, trafficByCustomer, onOpen }: PortfolioTableProps) {
+function PortfolioTable({ customers, trafficByCustomer, onOpen, onReport, onActivity }: PortfolioTableProps) {
   return (
     <Card>
       <CardContent className="p-0">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Kunde</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Traffic (7T)</TableHead>
-              <TableHead>Δ Vorwoche</TableHead>
+              <TableHead className="w-[220px]">Kunde</TableHead>
+              <TableHead>GA4 Traffic (7T)</TableHead>
+              <TableHead>SEO-Score</TableHead>
+              <TableHead>Keywords</TableHead>
+              <TableHead>Budget</TableHead>
               <TableHead>Integrationen</TableHead>
-              <TableHead>Offene Freigaben</TableHead>
-              <TableHead className="text-right">Aktion</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead className="text-right">Aktionen</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {customers.map((customer) => {
               const traffic = trafficByCustomer[customer.id]
               const delta = traffic?.deltaPercent
+              const ga4Connected = customer.integrations.ga4 === 'connected'
               return (
                 <TableRow
                   key={customer.id}
                   className="cursor-pointer"
                   onClick={() => onOpen(customer)}
                 >
-                  <TableCell className="font-medium">
+                  {/* Kunde */}
+                  <TableCell>
                     <div className="flex items-center gap-3">
                       <CustomerAvatar customer={customer} />
                       <div className="min-w-0">
-                        <p className="truncate">{customer.name}</p>
+                        <p className="truncate font-medium">{customer.name}</p>
                         {customer.domain && (
-                          <p className="truncate text-xs text-muted-foreground">
+                          <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
+                            <Globe className="h-3 w-3 shrink-0" />
                             {customer.domain}
                           </p>
+                        )}
+                        {customer.openApprovalsCount > 0 && (
+                          <Badge variant="secondary" className="mt-0.5 h-4 text-[10px]">
+                            {customer.openApprovalsCount} Freigabe{customer.openApprovalsCount > 1 ? 'n' : ''}
+                          </Badge>
                         )}
                       </div>
                     </div>
                   </TableCell>
+
+                  {/* GA4 Traffic */}
                   <TableCell>
-                    <StatusBadge status={customer.status} />
-                  </TableCell>
-                  <TableCell className="tabular-nums">
-                    {customer.integrations.ga4 !== 'connected' ? (
+                    {!ga4Connected ? (
                       <span className="text-xs text-muted-foreground">—</span>
                     ) : !traffic || traffic.loading ? (
-                      <Skeleton className="h-3 w-14" />
+                      <Skeleton className="h-3 w-16" />
                     ) : traffic.error ? (
                       <span className="text-xs text-amber-600 dark:text-amber-400">Fehler</span>
                     ) : (
-                      formatNumber(traffic.visitors ?? 0)
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {delta == null ? (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    ) : (
-                      <span
-                        className={cn(
-                          'text-xs font-medium tabular-nums',
-                          delta < -ANOMALY_THRESHOLD
-                            ? 'text-red-600 dark:text-red-400'
-                            : delta > ANOMALY_THRESHOLD
-                              ? 'text-emerald-600 dark:text-emerald-400'
-                              : 'text-muted-foreground'
+                      <div className="flex items-center gap-2">
+                        <span className="tabular-nums font-medium text-sm">
+                          {formatNumber(traffic.visitors ?? 0)}
+                        </span>
+                        {delta != null && (
+                          <span
+                            className={cn(
+                              'text-xs tabular-nums',
+                              delta < -ANOMALY_THRESHOLD
+                                ? 'text-red-600 dark:text-red-400'
+                                : delta > ANOMALY_THRESHOLD
+                                  ? 'text-emerald-600 dark:text-emerald-400'
+                                  : 'text-muted-foreground'
+                            )}
+                          >
+                            {formatDelta(delta)}
+                          </span>
                         )}
-                      >
-                        {formatDelta(delta)}
-                      </span>
+                      </div>
                     )}
                   </TableCell>
+
+                  {/* SEO Score */}
                   <TableCell>
-                    <IntegrationIcons integrations={customer.integrations} />
-                  </TableCell>
-                  <TableCell>
-                    {customer.openApprovalsCount > 0 ? (
-                      <Badge variant="secondary" className="h-5 text-[10px]">
-                        {customer.openApprovalsCount}
-                      </Badge>
+                    {customer.seoLatest ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-2">
+                            <span className={cn('font-semibold tabular-nums', seoScoreColor(customer.seoLatest.score))}>
+                              {Math.round(customer.seoLatest.score)}/100
+                            </span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          Letzter Crawl: {new Date(customer.seoLatest.completedAt).toLocaleDateString('de-DE')} · {customer.seoLatest.totalPages} Seiten
+                        </TooltipContent>
+                      </Tooltip>
                     ) : (
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
+
+                  {/* Keywords */}
+                  <TableCell>
+                    {customer.keywordsLatest ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="space-y-0.5">
+                            <p className="font-medium text-sm tabular-nums">
+                              {customer.keywordsLatest.keywordCount} KW
+                            </p>
+                            {customer.keywordsLatest.lastRun && (
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(customer.keywordsLatest.lastRun).toLocaleDateString('de-DE')}
+                              </p>
+                            )}
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>{customer.keywordsLatest.projectName}</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+
+                  {/* Budget Tracker */}
+                  <TableCell>
+                    {customer.hasBudget ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                            <CircleDollarSign className="h-4 w-4" />
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Budget Tracker aktiv (aktueller Monat)</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+
+                  {/* Integrationen */}
+                  <TableCell>
+                    {customer.noIntegrationConnected ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[10px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                            <Plug className="h-3 w-3" />
+                            Keine
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>Noch keine Integration verbunden</TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <IntegrationIcons integrations={customer.integrations} />
+                    )}
+                  </TableCell>
+
+                  {/* Status */}
+                  <TableCell>
+                    <StatusBadge status={customer.status} />
+                  </TableCell>
+
+                  {/* Aktionen */}
                   <TableCell className="text-right">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        onOpen(customer)
-                      }}
-                    >
-                      Öffnen
-                    </Button>
+                    <div className="flex items-center justify-end gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onOpen(customer)}>
+                            <LineChart className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Dashboard öffnen</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onActivity(customer)}>
+                            <ClipboardList className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Interne Notizen öffnen</TooltipContent>
+                      </Tooltip>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onReport(customer)}>
+                            <FileText className="h-3.5 w-3.5" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>Report erstellen</TooltipContent>
+                      </Tooltip>
+                    </div>
                   </TableCell>
                 </TableRow>
               )

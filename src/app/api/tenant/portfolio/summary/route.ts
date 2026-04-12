@@ -7,6 +7,7 @@ import {
   rateLimitResponse,
   CUSTOMERS_READ,
 } from '@/lib/rate-limit'
+import { readSeoConfigSummary } from '@/lib/seo-analysis'
 
 export interface PortfolioCustomerSummary {
   id: string
@@ -25,6 +26,10 @@ export interface PortfolioCustomerSummary {
   }
   openApprovalsCount: number
   integrationsError: boolean
+  noIntegrationConnected: boolean
+  hasBudget: boolean
+  seoLatest: { score: number; completedAt: string; totalPages: number } | null
+  keywordsLatest: { projectName: string; lastRun: string | null; keywordCount: number } | null
 }
 
 export interface PortfolioSummaryResponse {
@@ -76,21 +81,14 @@ export async function GET(request: NextRequest) {
 
   const admin = createAdminClient()
 
-  const [customersResult, integrationsResult, approvalsResult] = await Promise.all([
+  const [customersResult, approvalsResult] = await Promise.all([
     admin
       .from('customers')
-      .select(
-        'id, name, domain, industry, logo_url, status, updated_at'
-      )
+      .select('id, name, domain, industry, logo_url, status, updated_at')
       .eq('tenant_id', tenantId)
       .is('deleted_at', null)
       .order('name', { ascending: true })
       .limit(500),
-    admin
-      .from('customer_integrations')
-      .select('customer_id, integration_type, status')
-      .eq('tenant_id', tenantId)
-      .limit(2000),
     admin
       .from('approval_requests')
       .select('customer_id')
@@ -103,6 +101,49 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: customersResult.error.message }, { status: 500 })
   }
 
+  const customerIds = (customersResult.data ?? []).map((c) => c.id)
+
+  // customer_integrations has no tenant_id column — filter by customer_id only
+  const now = new Date()
+  const currentBudgetMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+  const [integrationsResult, seoResult, keywordProjectsResult, budgetsResult] = await Promise.all([
+    customerIds.length > 0
+      ? admin
+          .from('customer_integrations')
+          .select('customer_id, integration_type, status')
+          .in('customer_id', customerIds)
+          .limit(2000)
+      : Promise.resolve({ data: [] as { customer_id: string; integration_type: string; status: string | null }[], error: null }),
+    customerIds.length > 0
+      ? admin
+          .from('seo_analyses')
+          .select('id, customer_id, status, completed_at, config')
+          .eq('tenant_id', tenantId)
+          .in('customer_id', customerIds)
+          .eq('status', 'done')
+          .order('completed_at', { ascending: false })
+          .limit(500)
+      : Promise.resolve({ data: [] as { id: string; customer_id: string | null; status: string; completed_at: string | null; config: unknown }[], error: null }),
+    customerIds.length > 0
+      ? admin
+          .from('keyword_projects')
+          .select('id, customer_id, name, last_tracking_run, keywords(count)')
+          .eq('tenant_id', tenantId)
+          .in('customer_id', customerIds)
+          .order('last_tracking_run', { ascending: false, nullsFirst: false })
+          .limit(500)
+      : Promise.resolve({ data: [] as { id: string; customer_id: string | null; name: string; last_tracking_run: string | null; keywords: { count: number }[] | null }[], error: null }),
+    admin
+      .from('ad_budgets')
+      .select('customer_id')
+      .eq('tenant_id', tenantId)
+      .gte('budget_month', currentBudgetMonth)
+      .lte('budget_month', currentBudgetMonth)
+      .limit(1000),
+  ])
+
+  // Build integration maps
   const integrationsByCustomer = new Map<string, Record<IntegrationStatusKey, string>>()
   const integrationErrorsByCustomer = new Map<string, number>()
 
@@ -132,6 +173,45 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Latest SEO per customer (results already ordered desc by completed_at)
+  const seoByCustomer = new Map<string, { score: number; completedAt: string; totalPages: number }>()
+  if (!seoResult.error) {
+    for (const row of seoResult.data ?? []) {
+      if (!row.customer_id || seoByCustomer.has(row.customer_id)) continue
+      const summary = readSeoConfigSummary(row.config)
+      if (summary) {
+        seoByCustomer.set(row.customer_id, {
+          score: summary.overallScore,
+          completedAt: summary.completedAt,
+          totalPages: summary.totalPages,
+        })
+      }
+    }
+  }
+
+  // Latest keyword project per customer
+  const keywordsByCustomer = new Map<string, { projectName: string; lastRun: string | null; keywordCount: number }>()
+  if (!keywordProjectsResult.error) {
+    for (const row of keywordProjectsResult.data ?? []) {
+      if (!row.customer_id || keywordsByCustomer.has(row.customer_id)) continue
+      const kwArr = row.keywords as { count: number }[] | null
+      keywordsByCustomer.set(row.customer_id, {
+        projectName: row.name,
+        lastRun: row.last_tracking_run ?? null,
+        keywordCount: kwArr?.[0]?.count ?? 0,
+      })
+    }
+  }
+
+  // Budget map: customer_ids that have a budget this month
+  const customersWithBudget = new Set<string>()
+  if (!budgetsResult.error) {
+    for (const row of budgetsResult.data ?? []) {
+      if (row.customer_id) customersWithBudget.add(row.customer_id)
+    }
+  }
+
+  // Approvals map
   const approvalsByCustomer = new Map<string, number>()
   if (!approvalsResult.error) {
     for (const row of approvalsResult.data ?? []) {
@@ -164,6 +244,11 @@ export async function GET(request: NextRequest) {
       integrations,
       openApprovalsCount: approvalsByCustomer.get(customer.id) ?? 0,
       integrationsError: (integrationErrorsByCustomer.get(customer.id) ?? 0) > 0,
+      noIntegrationConnected: !integrationsByCustomer.has(customer.id) ||
+        Object.values(integrationsByCustomer.get(customer.id)!).every((s) => s === 'disconnected'),
+      hasBudget: customersWithBudget.has(customer.id),
+      seoLatest: seoByCustomer.get(customer.id) ?? null,
+      keywordsLatest: keywordsByCustomer.get(customer.id) ?? null,
     }
   })
 
@@ -175,6 +260,10 @@ export async function GET(request: NextRequest) {
   let totalBrokenIntegrations = 0
   for (const count of integrationErrorsByCustomer.values()) {
     totalBrokenIntegrations += count
+  }
+  // Also count customers with zero integrations connected as "needing attention"
+  for (const customer of customers) {
+    if (customer.noIntegrationConnected) totalBrokenIntegrations += 1
   }
 
   const response: PortfolioSummaryResponse = {
@@ -190,7 +279,7 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json(response, {
     headers: {
-      'Cache-Control': 'private, max-age=900',
+      'Cache-Control': 'no-store',
     },
   })
 }
