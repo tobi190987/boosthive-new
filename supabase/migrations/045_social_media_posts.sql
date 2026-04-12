@@ -44,7 +44,7 @@ CREATE POLICY "tenant_members_select_social_posts"
   ON social_media_posts FOR SELECT
   USING (
     tenant_id IN (
-      SELECT tm.tenant_id FROM tenant_memberships tm
+      SELECT tm.tenant_id FROM tenant_members tm
       WHERE tm.user_id = auth.uid() AND tm.status = 'active'
     )
   );
@@ -54,7 +54,7 @@ CREATE POLICY "tenant_members_insert_social_posts"
   ON social_media_posts FOR INSERT
   WITH CHECK (
     tenant_id IN (
-      SELECT tm.tenant_id FROM tenant_memberships tm
+      SELECT tm.tenant_id FROM tenant_members tm
       WHERE tm.user_id = auth.uid() AND tm.status = 'active'
     )
   );
@@ -64,7 +64,7 @@ CREATE POLICY "tenant_members_update_social_posts"
   ON social_media_posts FOR UPDATE
   USING (
     tenant_id IN (
-      SELECT tm.tenant_id FROM tenant_memberships tm
+      SELECT tm.tenant_id FROM tenant_members tm
       WHERE tm.user_id = auth.uid() AND tm.status = 'active'
     )
   );
@@ -74,7 +74,7 @@ CREATE POLICY "tenant_members_delete_social_posts"
   ON social_media_posts FOR DELETE
   USING (
     tenant_id IN (
-      SELECT tm.tenant_id FROM tenant_memberships tm
+      SELECT tm.tenant_id FROM tenant_members tm
       WHERE tm.user_id = auth.uid() AND tm.status = 'active'
     )
   );
