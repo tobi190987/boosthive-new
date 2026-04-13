@@ -59,7 +59,8 @@ export default function PortalInvitePage() {
 
       const res = await fetch(`/api/portal/tenant-lookup?tenantId=${encodeURIComponent(tenantId)}`)
       if (!res.ok) {
-        setError('Tenant konnte nicht ermittelt werden. Bitte wende dich an deine Agentur.')
+        const body = await res.json().catch(() => ({})) as { error?: string }
+        setError(`Tenant konnte nicht ermittelt werden (${res.status}: ${body.error ?? 'Unbekannter Fehler'}). Tenant-ID: ${tenantId}`)
         return
       }
 
