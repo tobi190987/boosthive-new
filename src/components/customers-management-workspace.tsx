@@ -12,13 +12,15 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Search, Plus, Trash2, Users, Pencil, Globe } from 'lucide-react'
+import { Search, Plus, Trash2, Users, Pencil, Globe, Euro, Bell } from 'lucide-react'
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { FilterChips } from '@/components/filter-chips'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { readSessionCache, writeSessionCache } from '@/lib/client-cache'
 import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
 import { CUSTOMER_INDUSTRIES, isCustomerIndustry } from '@/lib/customer-industries'
+
+type CrmStatus = 'lead' | 'prospect' | 'active' | 'paused' | 'churned'
 
 // Extended customer type for enhanced features
 interface CustomerExtended {
@@ -31,7 +33,44 @@ interface CustomerExtended {
   industry?: string
   integration_count?: number
   last_activity?: string
+  crm_status?: CrmStatus
+  monthly_volume?: number | null
+  has_due_follow_up?: boolean
 }
+
+const CRM_STATUS_LABEL: Record<CrmStatus, string> = {
+  lead: 'Lead',
+  prospect: 'Prospect',
+  active: 'Active',
+  paused: 'Paused',
+  churned: 'Churned',
+}
+
+const CRM_STATUS_BADGE: Record<CrmStatus, string> = {
+  lead: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-800 dark:bg-sky-950/40 dark:text-sky-400',
+  prospect:
+    'border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-800 dark:bg-violet-950/40 dark:text-violet-400',
+  active:
+    'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400',
+  paused:
+    'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400',
+  churned:
+    'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400',
+}
+
+const CRM_STATUS_CHIPS: Array<{ id: CrmStatus; label: string }> = [
+  { id: 'lead', label: 'Lead' },
+  { id: 'prospect', label: 'Prospect' },
+  { id: 'active', label: 'Active' },
+  { id: 'paused', label: 'Paused' },
+  { id: 'churned', label: 'Churned' },
+]
+
+const EUR_FORMATTER = new Intl.NumberFormat('de-DE', {
+  style: 'currency',
+  currency: 'EUR',
+  maximumFractionDigits: 0,
+})
 
 interface CustomerForm {
   name: string
@@ -91,6 +130,8 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
+  const [crmStatusFilter, setCrmStatusFilter] = useState<CrmStatus[]>([])
+  const [followUpOnly, setFollowUpOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [form, setForm] = useState<CustomerForm>(emptyForm)
   const [editingCustomer, setEditingCustomer] = useState<CustomerExtended | null>(null)
@@ -135,9 +176,29 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (customer.domain && customer.domain.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
-    return matchesSearch && matchesStatus
+    const effectiveCrmStatuses: CrmStatus[] =
+      crmStatusFilter.length > 0
+        ? crmStatusFilter
+        : (['lead', 'prospect', 'active', 'paused'] as CrmStatus[])
+    const customerCrmStatus: CrmStatus = customer.crm_status ?? 'active'
+    const matchesCrmStatus = effectiveCrmStatuses.includes(customerCrmStatus)
+    const matchesFollowUp = !followUpOnly || customer.has_due_follow_up === true
+    return matchesSearch && matchesStatus && matchesCrmStatus && matchesFollowUp
   })
-  const hasActiveFilters = searchQuery.trim().length > 0 || statusFilter !== 'all'
+  const hasActiveFilters =
+    searchQuery.trim().length > 0 ||
+    statusFilter !== 'all' ||
+    crmStatusFilter.length > 0 ||
+    followUpOnly
+
+  const totalMrr = customers
+    .filter((c) => (c.crm_status ?? 'active') === 'active')
+    .reduce((sum, c) => sum + (typeof c.monthly_volume === 'number' ? c.monthly_volume : 0), 0)
+  const filteredMrr = filteredCustomers.reduce(
+    (sum, c) => sum + (typeof c.monthly_volume === 'number' ? c.monthly_volume : 0),
+    0
+  )
+  const dueFollowUpsCount = customers.filter((c) => c.has_due_follow_up === true).length
   const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE)
   const pagedCustomers = filteredCustomers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
@@ -346,10 +407,37 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Kundenverwaltung
-          </CardTitle>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Users className="w-5 h-5" />
+              Kundenverwaltung
+            </CardTitle>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge
+                variant="outline"
+                className="border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-400"
+                aria-label="Gesamter monatlicher Umsatz aktiver Kunden"
+              >
+                <Euro className="w-3.5 h-3.5 mr-1" />
+                MRR: {EUR_FORMATTER.format(totalMrr)}
+              </Badge>
+              {crmStatusFilter.length > 0 && filteredCustomers.length > 0 && (
+                <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
+                  {filteredCustomers.length} {filteredCustomers.length === 1 ? 'Kunde' : 'Kunden'}
+                  {filteredMrr > 0 && ` · ${EUR_FORMATTER.format(filteredMrr)}`}
+                </Badge>
+              )}
+              {dueFollowUpsCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400"
+                >
+                  <Bell className="w-3.5 h-3.5 mr-1" />
+                  {dueFollowUpsCount} Follow-up{dueFollowUpsCount === 1 ? '' : 's'} fällig
+                </Badge>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-3">
@@ -382,6 +470,37 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               }}
               onClear={() => { setStatusFilter('all'); setCurrentPage(1) }}
             />
+            <div className="flex flex-wrap items-center gap-2">
+              <FilterChips
+                chips={CRM_STATUS_CHIPS}
+                activeIds={crmStatusFilter}
+                onToggle={(id) => {
+                  setCurrentPage(1)
+                  setCrmStatusFilter((prev) => {
+                    const typedId = id as CrmStatus
+                    return prev.includes(typedId)
+                      ? prev.filter((s) => s !== typedId)
+                      : [...prev, typedId]
+                  })
+                }}
+                onClear={() => {
+                  setCrmStatusFilter([])
+                  setCurrentPage(1)
+                }}
+              />
+              <Button
+                variant={followUpOnly ? 'default' : 'outline'}
+                size="sm"
+                className="rounded-full"
+                onClick={() => {
+                  setFollowUpOnly((prev) => !prev)
+                  setCurrentPage(1)
+                }}
+              >
+                <Bell className="w-3.5 h-3.5 mr-1" />
+                Follow-up fällig
+              </Button>
+            </div>
           </div>
 
           {loading ? (
@@ -410,6 +529,8 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                     onClick={() => {
                       setSearchQuery('')
                       setStatusFilter('all')
+                      setCrmStatusFilter([])
+                      setFollowUpOnly(false)
                     }}
                   >
                     Filter zurücksetzen
@@ -431,14 +552,31 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                     <TableHead>Name</TableHead>
                     <TableHead>Website</TableHead>
                     <TableHead>Branche</TableHead>
+                    <TableHead>CRM-Status</TableHead>
+                    <TableHead>MRR</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">Aktionen</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {pagedCustomers.map((customer) => (
+                  {pagedCustomers.map((customer) => {
+                    const crmStatus: CrmStatus = customer.crm_status ?? 'active'
+                    return (
                     <TableRow key={customer.id}>
-                      <TableCell className="font-medium">{customer.name}</TableCell>
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          <span>{customer.name}</span>
+                          {customer.has_due_follow_up && (
+                            <span
+                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                              aria-label="Follow-up fällig"
+                              title="Follow-up fällig"
+                            >
+                              <Bell className="w-3 h-3" />
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Globe className="w-4 h-4 text-slate-400" />
@@ -448,6 +586,18 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                       <TableCell>
                         <span className="text-sm text-slate-600 dark:text-slate-300">
                           {customer.industry || 'Nicht angegeben'}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={CRM_STATUS_BADGE[crmStatus]}>
+                          {CRM_STATUS_LABEL[crmStatus]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-slate-600 dark:text-slate-300">
+                          {typeof customer.monthly_volume === 'number' && customer.monthly_volume > 0
+                            ? EUR_FORMATTER.format(customer.monthly_volume)
+                            : '—'}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -483,7 +633,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                         </div>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )})}
                 </TableBody>
               </Table>
             </div>
