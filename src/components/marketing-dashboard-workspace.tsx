@@ -598,6 +598,7 @@ function getPlatformPreview(key: string, state: PlatformState<unknown> | undefin
   switch (key) {
     case 'ga4': {
       const d = data as GA4Data
+      if (!d.propertyId) return null
       return <>{formatNumber(d.sessions)} Sessions</>
     }
     case 'gsc': {
@@ -1530,7 +1531,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       {/* KPI Sections */}
       <div className="space-y-4 print:space-y-3">
         {/* Website Performance (GA4) */}
-        {(ga4.loading || ga4.connected) && (
+        {(ga4.loading || (ga4.connected && !!ga4.data?.propertyId)) && (
           <div>
             <p className="mb-3 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
               <TrendingUp className="h-3.5 w-3.5 text-orange-400" />

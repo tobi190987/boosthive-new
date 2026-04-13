@@ -170,6 +170,14 @@ export function PortfolioWorkspace({ isAdmin, tenantName }: PortfolioWorkspacePr
         }
         const json = await res.json()
         if (cancelled) return
+        // If GA4 is connected but no property is selected, treat as not connected
+        if (!json?.data?.propertyId) {
+          setTrafficByCustomer((prev) => ({
+            ...prev,
+            [customerId]: { loading: false, connected: false },
+          }))
+          return
+        }
         const visitors = Number(json?.data?.users ?? 0)
         // trend is already a percentage (based on sessions comparison)
         const deltaPercent: number | null = json?.data?.trend ?? null
@@ -803,7 +811,7 @@ function CustomerCard({ customer, traffic, onOpen, onReport, onActivity }: Custo
         </div>
 
         <div className="mt-4 space-y-2.5 border-t pt-4">
-          <TrafficRow traffic={traffic} connected={customer.integrations.ga4 === 'connected'} />
+          <TrafficRow traffic={traffic} connected={customer.integrations.ga4 === 'connected' && traffic?.connected !== false} />
           <SeoRow seo={customer.seoLatest} />
           <KeywordsRow keywords={customer.keywordsLatest} />
           <div className="flex items-center justify-between text-xs">
@@ -1154,7 +1162,7 @@ function PortfolioTable({ customers, trafficByCustomer, onOpen, onReport, onActi
             {customers.map((customer) => {
               const traffic = trafficByCustomer[customer.id]
               const delta = traffic?.deltaPercent
-              const ga4Connected = customer.integrations.ga4 === 'connected'
+              const ga4Connected = customer.integrations.ga4 === 'connected' && traffic?.connected !== false
               return (
                 <TableRow
                   key={customer.id}
