@@ -7,6 +7,22 @@ import { checkRateLimit, getClientIp, rateLimitResponse } from '@/lib/rate-limit
 const PORTAL_WRITE = { limit: 20, windowMs: 60 * 1000 }
 const PORTAL_READ = { limit: 60, windowMs: 60 * 1000 }
 
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN ?? 'boost-hive.de'
+
+/**
+ * Builds the invite redirect URL.
+ * Uses a fixed root-domain relay page (/portal-invite) so no wildcard whitelist
+ * entry is needed in Supabase — the relay page then redirects to the correct tenant.
+ */
+function buildInviteRedirectUrl(request: NextRequest): string {
+  const isLocal = process.env.NODE_ENV === 'development'
+  const localDomain = process.env.LOCAL_DOMAIN ?? 'localhost'
+  if (isLocal) {
+    return `http://${localDomain}:3000/portal-invite`
+  }
+  return `https://${ROOT_DOMAIN}/portal-invite`
+}
+
 const inviteSchema = z.object({
   customerId: z.string().uuid('Ungültige Kunden-ID.'),
   email: z.string().email('Ungültige E-Mail-Adresse.').toLowerCase(),
@@ -121,7 +137,7 @@ export async function POST(request: NextRequest) {
       .update({ is_active: true, invited_at: new Date().toISOString() })
       .eq('id', existing.id)
 
-    const redirectTo = `${request.nextUrl.origin}/portal/auth/callback`
+    const redirectTo = buildInviteRedirectUrl(request)
     await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,
       data: {
@@ -154,8 +170,9 @@ export async function POST(request: NextRequest) {
   }
 
   // inviteUserByEmail uses the old implicit flow — tokens land in the URL hash.
-  // The redirect must point to the client-side page /portal/auth/callback (not the API route).
-  const redirectTo = `${request.nextUrl.origin}/portal/auth/callback`
+  // Supabase may fall back to the Site URL when the redirect_to isn't whitelisted.
+  // We use a fixed root-domain relay page (/portal-invite) that works without wildcards.
+  const redirectTo = buildInviteRedirectUrl(request)
   const { data: authInvite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
     email,
     {

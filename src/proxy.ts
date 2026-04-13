@@ -236,7 +236,8 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname === '/impressum' ||
     pathname === '/datenschutz' ||
     pathname === '/reset-password' ||
-    // Client-Portal: login, dashboard, reports, auth callback — bypass preview gate
+    // Client-Portal: invite relay, login, dashboard, reports, auth callback
+    pathname === '/portal-invite' ||
     pathname.startsWith('/portal/') ||
     pathname.startsWith('/api/portal/') ||
     (IS_LOCAL && pathname.startsWith('/api/test/')) ||
