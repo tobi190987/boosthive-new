@@ -59,6 +59,9 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 | P1 | Meta Ads Integration | Planned |
 | P1 | TikTok Ads Integration | Planned |
 | P2 | Reporting & Export Center | Planned |
+| P2 | Google Trends Integration (Brand Intelligence) | Planned |
+| P2 | Brand Mention Monitoring & Sentiment Analyse | Planned |
+| P2 | Social Media Trend Radar | Planned |
 
 ## Success Metrics
 - **Technische Stabilität:** Zero-Downtime-Deployment, nachgewiesene Datenisolation zwischen Tenants
