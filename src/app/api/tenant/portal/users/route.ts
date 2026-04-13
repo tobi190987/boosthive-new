@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
       .update({ is_active: true, invited_at: new Date().toISOString() })
       .eq('id', existing.id)
 
-    const redirectTo = `${request.nextUrl.origin}/api/portal/auth/callback`
+    const redirectTo = `${request.nextUrl.origin}/portal/auth/callback`
     await admin.auth.admin.inviteUserByEmail(email, {
       redirectTo,
       data: {
@@ -153,8 +153,9 @@ export async function POST(request: NextRequest) {
     )
   }
 
-  // Send Supabase invite email with portal_user metadata
-  const redirectTo = `${request.nextUrl.origin}/api/portal/auth/callback`
+  // inviteUserByEmail uses the old implicit flow — tokens land in the URL hash.
+  // The redirect must point to the client-side page /portal/auth/callback (not the API route).
+  const redirectTo = `${request.nextUrl.origin}/portal/auth/callback`
   const { data: authInvite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
     email,
     {
