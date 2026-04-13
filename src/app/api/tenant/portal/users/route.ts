@@ -115,11 +115,21 @@ export async function POST(request: NextRequest) {
         { status: 409 }
       )
     }
-    // Reactivate if previously deactivated
+    // Reactivate if previously deactivated — also send a fresh invite email
     await admin
       .from('client_portal_users')
       .update({ is_active: true, invited_at: new Date().toISOString() })
       .eq('id', existing.id)
+
+    const redirectTo = `${request.nextUrl.origin}/api/portal/auth/callback`
+    await admin.auth.admin.inviteUserByEmail(email, {
+      redirectTo,
+      data: {
+        portal_user_id: existing.id,
+        customer_id: customerId,
+        tenant_id: tenantId,
+      },
+    })
 
     return NextResponse.json({ success: true })
   }

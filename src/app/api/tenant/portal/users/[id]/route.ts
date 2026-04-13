@@ -8,8 +8,8 @@ const PORTAL_WRITE = { limit: 20, windowMs: 60 * 1000 }
 /**
  * DELETE /api/tenant/portal/users/[id]
  *
- * Deactivates a portal user (soft delete — is_active = false).
- * The auth account remains but future session checks will fail.
+ * ?hard=true  → Hard-delete: removes DB row + deletes Supabase Auth account.
+ * (default)   → Soft-deactivate: sets is_active = false, invalidates sessions.
  */
 export async function DELETE(
   request: NextRequest,
@@ -25,6 +25,7 @@ export async function DELETE(
   if ('error' in authResult) return authResult.error
 
   const { id } = await params
+  const hard = new URL(request.url).searchParams.get('hard') === 'true'
   const admin = createAdminClient()
 
   // Verify the portal user belongs to this tenant
@@ -39,21 +40,38 @@ export async function DELETE(
     return NextResponse.json({ error: 'Portal-User nicht gefunden.' }, { status: 404 })
   }
 
-  // Soft-deactivate
-  const { error: updateError } = await admin
-    .from('client_portal_users')
-    .update({ is_active: false })
-    .eq('id', id)
+  if (hard) {
+    // Hard-delete: remove DB row + delete Supabase Auth account
+    const { error: deleteError } = await admin
+      .from('client_portal_users')
+      .delete()
+      .eq('id', id)
 
-  if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 })
-  }
+    if (deleteError) {
+      return NextResponse.json({ error: deleteError.message }, { status: 500 })
+    }
 
-  // Sign out the auth user if linked (invalidates existing sessions)
-  if (portalUser.auth_user_id) {
-    await admin.auth.admin.signOut(portalUser.auth_user_id as string, 'global').catch(() => {
-      // Non-fatal: user may already be signed out
-    })
+    if (portalUser.auth_user_id) {
+      await admin.auth.admin.deleteUser(portalUser.auth_user_id as string).catch(() => {
+        // Non-fatal: auth account may already be absent
+      })
+    }
+  } else {
+    // Soft-deactivate
+    const { error: updateError } = await admin
+      .from('client_portal_users')
+      .update({ is_active: false })
+      .eq('id', id)
+
+    if (updateError) {
+      return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    if (portalUser.auth_user_id) {
+      await admin.auth.admin.signOut(portalUser.auth_user_id as string, 'global').catch(() => {
+        // Non-fatal: user may already be signed out
+      })
+    }
   }
 
   return NextResponse.json({ success: true })

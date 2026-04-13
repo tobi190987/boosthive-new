@@ -25,7 +25,7 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Loader2, Mail, UserPlus, XCircle } from 'lucide-react'
+import { Loader2, Mail, Trash2, UserPlus, XCircle } from 'lucide-react'
 
 interface PortalUser {
   id: string
@@ -66,6 +66,7 @@ export function PortalAccessTab({ customerId }: PortalAccessTabProps) {
   const [loadingVisibility, setLoadingVisibility] = useState(true)
   const [savingVisibility, setSavingVisibility] = useState(false)
   const [deactivating, setDeactivating] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<string | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
@@ -143,6 +144,21 @@ export function PortalAccessTab({ customerId }: PortalAccessTabProps) {
     }
   }
 
+  async function handleDelete(userId: string) {
+    if (!confirm('Portal-User endgültig löschen? Diese Aktion kann nicht rückgängig gemacht werden.')) return
+    setDeleting(userId)
+    try {
+      const res = await fetch(`/api/tenant/portal/users/${userId}?hard=true`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      toast.success('Portal-User wurde gelöscht.')
+      await loadUsers()
+    } catch {
+      toast.error('Portal-User konnte nicht gelöscht werden.')
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   async function handleVisibilityChange(key: keyof PortalVisibility, value: boolean) {
     const next = { ...visibility, [key]: value }
     setVisibility(next)
@@ -210,22 +226,38 @@ export function PortalAccessTab({ customerId }: PortalAccessTabProps) {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      {u.is_active && (
+                      <div className="flex items-center justify-end gap-1">
+                        {u.is_active && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 dark:hover:bg-orange-950"
+                            disabled={deactivating === u.id || deleting === u.id}
+                            onClick={() => void handleDeactivate(u.id)}
+                          >
+                            {deactivating === u.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <XCircle className="h-4 w-4" />
+                            )}
+                            <span className="ml-1.5">Deaktivieren</span>
+                          </Button>
+                        )}
                         <Button
                           variant="ghost"
                           size="sm"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
-                          disabled={deactivating === u.id}
-                          onClick={() => void handleDeactivate(u.id)}
+                          disabled={deleting === u.id || deactivating === u.id}
+                          onClick={() => void handleDelete(u.id)}
                         >
-                          {deactivating === u.id ? (
+                          {deleting === u.id ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            <XCircle className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" />
                           )}
-                          <span className="ml-1.5">Deaktivieren</span>
+                          <span className="ml-1.5">Löschen</span>
                         </Button>
-                      )}
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
