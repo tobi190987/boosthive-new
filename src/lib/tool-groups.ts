@@ -10,9 +10,10 @@ import {
   LayoutGrid,
   Megaphone,
   Search,
+  TrendingUp,
 } from 'lucide-react'
 
-export type ColorKey = 'blue' | 'indigo' | 'violet' | 'purple' | 'emerald' | 'orange' | 'amber' | 'rose'
+export type ColorKey = 'blue' | 'indigo' | 'violet' | 'purple' | 'emerald' | 'orange' | 'amber' | 'rose' | 'teal'
 
 export interface ToolItem {
   label: string
@@ -62,6 +63,14 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
         icon: Eye,
         moduleCode: 'ai_visibility',
         color: 'purple',
+      },
+      {
+        label: 'Brand Trends',
+        description: 'Beobachte Google-Trends-Verläufe und verwandte Suchanfragen für deine Kunden-Marken.',
+        href: '/tools/brand-trends',
+        icon: TrendingUp,
+        moduleCode: 'brand_intelligence',
+        color: 'teal',
       },
     ],
   },
@@ -136,4 +145,5 @@ export const COLOR_MAP: Record<ColorKey, { icon: string; bg: string }> = {
   orange: { icon: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-50 dark:bg-orange-950/40' },
   amber: { icon: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/40' },
   rose: { icon: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-950/40' },
+  teal: { icon: 'text-teal-600 dark:text-teal-400', bg: 'bg-teal-50 dark:bg-teal-950/40' },
 }

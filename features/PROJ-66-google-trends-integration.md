@@ -1,6 +1,6 @@
 # PROJ-66: Google Trends Integration (Brand Intelligence – Phase 1)
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-04-13
 **Last Updated:** 2026-04-13
 
@@ -167,6 +167,36 @@ Keine neuen npm-Pakete erforderlich. SerpAPI wird direkt über `fetch` angesproc
 ### H) RLS-Sicherheit (Row Level Security)
 
 Beide neuen Tabellen (`brand_keywords`, `brand_trend_cache`) erhalten RLS-Policies nach dem bestehenden Muster: Zugriff nur auf Zeilen, bei denen `tenant_id` mit dem authentifizierten Tenant übereinstimmt. Customers werden zusätzlich per `customer_id`-Join gegen die bestehende `customers`-Tabelle geprüft.
+
+## Implementation Notes (Frontend)
+
+**Status:** Frontend implementiert (Backend-Routen folgen via `/backend`).
+
+**Neue/geänderte Dateien:**
+- `src/lib/tool-groups.ts` — Neuer Eintrag „Brand Trends" in der Gruppe „Analyse & SEO" (Icon `TrendingUp`, Farbe `teal`, Modul-Code `brand_intelligence`). Neue ColorKey `teal` in `COLOR_MAP` ergänzt.
+- `src/components/brand-trends-workspace.tsx` — Client-Component mit:
+  - Keyword-Manager (Chips mit Primär-Badge, Stern-Toggle, InlineConfirm-Delete, Input mit Validierung, 2–60 Zeichen, max. 5 Keywords)
+  - Zeitraum-Tabs (7d / 30d / 90d, Default 30d) via shadcn Tabs
+  - Trend-Chart (Recharts LineChart, Y-Achse 0–100, Custom-Tooltip, Teal-Theme)
+  - Cache-Stand/Stale-Indikator (Badge „Cache-Daten" bei Rate-Limit-Fallback)
+  - RelatedPanel (Verwandte Suchanfragen + Themen, Rising/Top Badges)
+  - Skeleton-Loading-States, Error-States mit „Erneut versuchen", Empty-State
+- `src/app/(tenant)/tools/brand-trends/page.tsx` — Server-Page mit Modul-Gate (`brand_intelligence` oder `all`) und Customer-Selector im Header
+- `src/app/(tenant)/tools/brand-trends/loading.tsx` — Route-level Skeleton
+
+**Abhängigkeiten zu Backend-Routen (noch zu bauen in /backend):**
+- `GET /api/tenant/brand-keywords?customer_id=…` → `{ keywords: BrandKeyword[] }`
+- `POST /api/tenant/brand-keywords` (Body: `{ customer_id, keyword }`) → `{ keyword: BrandKeyword }`
+- `DELETE /api/tenant/brand-keywords/[id]`
+- `PATCH /api/tenant/brand-keywords/[id]/primary`
+- `GET /api/tenant/brand-trends?customer_id=…&keyword=…&period=7d|30d|90d` → `{ timeline, relatedQueries, relatedTopics, cachedAt, stale? }`
+
+**Datenform (Frontend-Erwartung):**
+- `BrandKeyword` = `{ id, keyword, isPrimary, createdAt }`
+- `TrendPoint` = `{ date: ISO-Datum, value: 0–100 }`
+- `RelatedItem` = `{ label, type: 'rising' | 'top', value? }`
+
+**Abweichungen zum Tech-Design:** Keine. Teal-ColorKey wurde wie im Design vorgesehen neu hinzugefügt.
 
 ## QA Test Results
 _To be added by /qa_
