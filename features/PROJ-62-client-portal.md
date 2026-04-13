@@ -315,6 +315,16 @@ Keine — alle benötigten Tools bereits installiert.
 ---
 
 ## Status
-- **Status:** In Progress
+- **Status:** In Review
 - **Created:** 2026-04-11
 - **Architecture:** 2026-04-12
+- **Frontend:** 2026-04-12
+- **Backend:** 2026-04-12
+
+## Implementation Notes
+- Auth: Supabase Magic Link mit `app_metadata.portal_user_id` + `app_metadata.tenant_id` + `app_metadata.customer_id`
+- Admin-Invite via `admin.auth.admin.inviteUserByEmail` + DB-Row in `client_portal_users`
+- Reports aus `exports`-Tabelle mit neuem Flag `is_shared_with_portal`
+- Dashboard: SEO aus `keyword_rankings`, Ads aus `ad_budgets` (GA4 live-read als TODO für nächste Iteration)
+- Portal-Pfade (`/portal/*`, `/api/portal/*`) aus Preview-Gate und Tenant-Auth ausgenommen
+- Abweichungen: `/portal/approvals` nicht gebaut — Freigaben laufen über bestehenden Token-Flow (PROJ-34)

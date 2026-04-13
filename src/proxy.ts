@@ -177,6 +177,9 @@ const INACTIVE_TENANT_ALLOWED_PREFIXES = [
   '/api/auth/password-reset/',
   '/api/invitations/',
   '/api/auth/email-link',
+  // Portal paths are allowed even for inactive tenants
+  '/portal/',
+  '/api/portal/',
 ]
 
 function isPublicPath(pathname: string): boolean {
@@ -233,6 +236,9 @@ function isPreviewGateBypassPath(pathname: string): boolean {
     pathname === '/impressum' ||
     pathname === '/datenschutz' ||
     pathname === '/reset-password' ||
+    // Client-Portal: login, dashboard, reports, auth callback — bypass preview gate
+    pathname.startsWith('/portal/') ||
+    pathname.startsWith('/api/portal/') ||
     (IS_LOCAL && pathname.startsWith('/api/test/')) ||
     pathname === '/api/auth/email-link' ||
     pathname === '/api/auth/password-reset/confirm' ||
