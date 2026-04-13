@@ -91,13 +91,14 @@ function NavigationContent({
   const [openApprovalsCount] = useState(initialOpenApprovalsCount)
   const [pendingHref, setPendingHref] = useState<string | null>(null)
 
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
-    if (typeof window === 'undefined') return {}
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({})
+
+  useEffect(() => {
     try {
       const stored = localStorage.getItem('sidebar-sections-open')
-      return stored ? JSON.parse(stored) : {}
-    } catch { return {} }
-  })
+      if (stored) setOpenSections(JSON.parse(stored) as Record<string, boolean>)
+    } catch { /* ignore */ }
+  }, [])
 
   const isSectionOpen = (label: string) => openSections[label] !== false
 

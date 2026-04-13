@@ -54,36 +54,28 @@ export function CustomerSelectorDropdown({
     [activeCustomer, customers, setActiveCustomer]
   )
 
-  if (loading) {
-    return (
-      <div
-        className={cn(
-          'mx-3 mt-2 mb-1 flex items-center gap-2.5 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-border dark:bg-card/50 dark:border-slate-800 dark:bg-slate-900/50',
-          className,
-          triggerClassName
-        )}
-      >
-        <div className="h-4 w-4 animate-pulse rounded bg-slate-200 dark:bg-[#252d3a] dark:bg-slate-700" />
-        <div className="h-4 flex-1 animate-pulse rounded bg-slate-200 dark:bg-[#252d3a] dark:bg-slate-700" />
-      </div>
-    )
-  }
-
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open && !loading} onOpenChange={loading ? undefined : setOpen}>
       <PopoverTrigger asChild>
         <button
           type="button"
           aria-label="Kunden auswählen"
+          disabled={loading}
           className={cn(
             'mx-3 mt-2 mb-1 flex w-[calc(100%-1.5rem)] items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left text-sm transition-colors',
             'border-slate-100 dark:border-border bg-slate-50 dark:bg-card/50 hover:border-slate-200 hover:bg-slate-50 dark:hover:bg-[#1e2635]',
             'dark:border-slate-800 dark:bg-slate-900/50 dark:hover:border-slate-700 dark:hover:bg-slate-800/60',
+            loading && 'cursor-default',
             className,
             triggerClassName
           )}
         >
-          {activeCustomer ? (
+          {loading ? (
+            <>
+              <div className="h-4 w-4 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+              <div className="h-4 flex-1 animate-pulse rounded bg-slate-200 dark:bg-slate-700" />
+            </>
+          ) : activeCustomer ? (
             <>
               <StatusDot status={activeCustomer.status} />
               <div className="min-w-0 flex-1">
