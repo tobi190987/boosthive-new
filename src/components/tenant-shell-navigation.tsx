@@ -8,9 +8,9 @@ import {
   ChevronRight,
   CircleHelp,
   CreditCard,
-  Download,
+  // Download, // ARCHIVED: Export Center nav item entfernt (April 2026)
   LayoutDashboard,
-  LayoutGrid,
+  // LayoutGrid, // ARCHIVED: Portfolio nav item entfernt (April 2026)
   Loader2,
   Lock,
   Menu,
@@ -322,32 +322,7 @@ function NavigationContent({
                 )}
               </Link>
             </li>
-            <li>
-              <Link
-                href="/dashboard/portfolio"
-                onClick={() => handleNavigate('/dashboard/portfolio')}
-                onMouseEnter={() => router.prefetch('/dashboard/portfolio')}
-                onFocus={() => router.prefetch('/dashboard/portfolio')}
-                data-tour="nav-portfolio"
-                className={cn(
-                  'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
-                  isNavActive(pathname, '/dashboard/portfolio')
-                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
-                )}
-                aria-current={isNavActive(pathname, '/dashboard/portfolio') ? 'page' : undefined}
-              >
-                <span className="flex items-center gap-3">
-                  <LayoutGrid className={cn('h-4 w-4', isNavActive(pathname, '/dashboard/portfolio') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
-                  Portfolio
-                </span>
-                {visiblePendingHref === '/dashboard/portfolio' ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                )}
-              </Link>
-            </li>
+            {/* ARCHIVED PROJ-56 Portfolio — April 2026, Route /dashboard/portfolio bleibt erhalten, siehe docs/archived-features.md */}
             <li>
               <Link
                 href="/budget"
@@ -373,32 +348,7 @@ function NavigationContent({
                 )}
               </Link>
             </li>
-            <li>
-              <Link
-                href="/exports"
-                onClick={() => handleNavigate('/exports')}
-                onMouseEnter={() => router.prefetch('/exports')}
-                onFocus={() => router.prefetch('/exports')}
-                data-tour="nav-exports"
-                className={cn(
-                  'flex items-center justify-between rounded-2xl px-3 py-2.5 text-sm font-medium transition-colors',
-                  isNavActive(pathname, '/exports')
-                    ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
-                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
-                )}
-                aria-current={isNavActive(pathname, '/exports') ? 'page' : undefined}
-              >
-                <span className="flex items-center gap-3">
-                  <Download className={cn('h-4 w-4', isNavActive(pathname, '/exports') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
-                  Export Center
-                </span>
-                {visiblePendingHref === '/exports' ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                )}
-              </Link>
-            </li>
+            {/* ARCHIVED PROJ-55 Export Center — April 2026, Route /exports bleibt erhalten, siehe docs/archived-features.md */}
           </ul>
 
           {/* Tool-Gruppen */}

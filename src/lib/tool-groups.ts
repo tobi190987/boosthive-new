@@ -23,6 +23,8 @@ export interface ToolItem {
   color: ColorKey
   /** Nicht in der Sidebar-Navigation anzeigen (default: true) */
   showInNav?: boolean
+  /** Nicht im Tools-Grid anzeigen (default: true) */
+  showInGrid?: boolean
 }
 
 export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
@@ -97,6 +99,9 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
         icon: LayoutGrid,
         moduleCode: 'kanban',
         color: 'blue',
+        // ARCHIVED: aus Navigation + Tools-Grid ausgeblendet (April 2026) — Route /tools/kanban bleibt erhalten
+        showInNav: false,
+        showInGrid: false,
       },
       {
         label: 'Social Media Kalender',
@@ -105,6 +110,9 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
         icon: CalendarDays,
         moduleCode: 'social_calendar',
         color: 'rose',
+        // ARCHIVED: aus Navigation + Tools-Grid ausgeblendet (April 2026) — Route /tools/social-calendar bleibt erhalten
+        showInNav: false,
+        showInGrid: false,
       },
       {
         label: 'Freigaben',

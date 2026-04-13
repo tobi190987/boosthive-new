@@ -95,7 +95,7 @@ export function ToolsGrid({ activeCodes }: { activeCodes: string[] }) {
             {group.label}
           </h2>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {group.items.map((tool) => {
+            {group.items.filter((tool) => tool.showInGrid !== false).map((tool) => {
               const hasAccess = hasToolAccess(tool.moduleCode, activeCodes)
               const colors = COLOR_MAP[tool.color]
               const Icon = tool.icon
