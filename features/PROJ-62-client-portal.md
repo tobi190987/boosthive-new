@@ -315,7 +315,7 @@ Keine — alle benötigten Tools bereits installiert.
 ---
 
 ## Status
-- **Status:** In Review
+- **Status:** Deployed
 - **Created:** 2026-04-11
 - **Architecture:** 2026-04-12
 - **Frontend:** 2026-04-12
