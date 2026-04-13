@@ -23,7 +23,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Tooltip,
   TooltipContent,
@@ -32,8 +32,15 @@ import {
 } from '@/components/ui/tooltip'
 import { InlineConfirm } from '@/components/inline-confirm'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
+import { BrandMentionsPanel } from '@/components/brand-mentions-panel'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { useToast } from '@/hooks/use-toast'
+
+type WorkspaceTab = 'trends' | 'mentions'
+
+export interface BrandTrendsWorkspaceProps {
+  isAdmin?: boolean
+}
 
 type Period = '7d' | '30d' | '90d'
 
@@ -86,9 +93,12 @@ function validateKeyword(value: string): string | null {
   return null
 }
 
-export function BrandTrendsWorkspace() {
+export function BrandTrendsWorkspace({
+  isAdmin = false,
+}: BrandTrendsWorkspaceProps = {}) {
   const { activeCustomer } = useActiveCustomer()
   const { toast } = useToast()
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>('trends')
 
   const [keywords, setKeywords] = useState<BrandKeyword[]>([])
   const [keywordsLoading, setKeywordsLoading] = useState(false)
@@ -158,7 +168,9 @@ export function BrandTrendsWorkspace() {
           cache: 'no-store',
         })
         if (res.status === 429) {
-          throw new Error('API-Limit erreicht. Bitte später erneut versuchen.')
+          throw new Error(
+            'API-Limit erreicht – kein Cache verfügbar. Bitte in einigen Stunden erneut versuchen.'
+          )
         }
         if (!res.ok) {
           const body = (await res.json().catch(() => null)) as { error?: string } | null
@@ -233,7 +245,8 @@ export function BrandTrendsWorkspace() {
     try {
       const res = await fetch(`/api/tenant/brand-keywords/${id}`, { method: 'DELETE' })
       if (!res.ok) {
-        throw new Error('Löschen fehlgeschlagen.')
+        const body = (await res.json().catch(() => null)) as { error?: string } | null
+        throw new Error(body?.error ?? 'Löschen fehlgeschlagen.')
       }
       setKeywords((prev) => prev.filter((k) => k.id !== id))
       toast({ title: 'Keyword entfernt' })
@@ -287,42 +300,63 @@ export function BrandTrendsWorkspace() {
         validationError={validationError}
         onDelete={handleDeleteKeyword}
         onSetPrimary={handleSetPrimary}
+        onRetry={() => loadKeywords(activeCustomer.id)}
       />
 
       {keywords.length === 0 && !keywordsLoading && !keywordsError ? (
         <EmptyKeywordsState />
       ) : (
-        <>
-          <PeriodTabs period={period} onChange={setPeriod} />
+        <Tabs
+          value={activeTab}
+          onValueChange={(value) => setActiveTab(value as WorkspaceTab)}
+          className="w-full"
+        >
+          <TabsList aria-label="Brand-Intelligence-Bereiche">
+            <TabsTrigger value="trends">Trend-Verlauf</TabsTrigger>
+            <TabsTrigger value="mentions">Mentions &amp; Sentiment</TabsTrigger>
+          </TabsList>
 
-          <TrendChartCard
-            keyword={primaryKeyword?.keyword ?? null}
-            period={period}
-            loading={trendLoading}
-            error={trendError}
-            data={trendData}
-            onRetry={() => {
-              if (activeCustomer && primaryKeyword) {
-                loadTrend(activeCustomer.id, primaryKeyword.keyword, period)
-              }
-            }}
-          />
+          <TabsContent value="trends" className="mt-6 flex flex-col gap-6">
+            <PeriodTabs period={period} onChange={setPeriod} />
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <RelatedPanel
-              title="Verwandte Suchanfragen"
-              items={trendData?.relatedQueries ?? []}
+            <TrendChartCard
+              keyword={primaryKeyword?.keyword ?? null}
+              period={period}
               loading={trendLoading}
-              emptyText="Keine verwandten Suchanfragen gefunden."
+              error={trendError}
+              data={trendData}
+              onRetry={() => {
+                if (activeCustomer && primaryKeyword) {
+                  loadTrend(activeCustomer.id, primaryKeyword.keyword, period)
+                }
+              }}
             />
-            <RelatedPanel
-              title="Verwandte Themen"
-              items={trendData?.relatedTopics ?? []}
-              loading={trendLoading}
-              emptyText="Keine verwandten Themen gefunden."
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <RelatedPanel
+                title="Verwandte Suchanfragen"
+                items={trendData?.relatedQueries ?? []}
+                loading={trendLoading}
+                emptyText="Keine verwandten Suchanfragen gefunden."
+              />
+              <RelatedPanel
+                title="Verwandte Themen"
+                items={trendData?.relatedTopics ?? []}
+                loading={trendLoading}
+                emptyText="Keine verwandten Themen gefunden."
+              />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="mentions" className="mt-6">
+            <BrandMentionsPanel
+              customerId={activeCustomer.id}
+              keyword={primaryKeyword?.keyword ?? null}
+              keywordId={primaryKeyword?.id ?? null}
+              isAdmin={isAdmin}
             />
-          </div>
-        </>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   )
@@ -343,6 +377,7 @@ interface KeywordsManagerProps {
   validationError: string | null
   onDelete: (id: string) => void
   onSetPrimary: (id: string) => void
+  onRetry?: () => void
 }
 
 function KeywordsManager({
@@ -356,6 +391,7 @@ function KeywordsManager({
   validationError,
   onDelete,
   onSetPrimary,
+  onRetry,
 }: KeywordsManagerProps) {
   const canAdd = keywords.length < KEYWORD_MAX_COUNT
 
@@ -376,9 +412,22 @@ function KeywordsManager({
             <Skeleton className="h-8 w-24 rounded-full" />
           </div>
         ) : error ? (
-          <div className="flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{error}</span>
+          <div className="flex flex-col gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-3 dark:border-rose-900 dark:bg-rose-950/40">
+            <div className="flex items-center gap-2 text-sm text-rose-700 dark:text-rose-300">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+            {onRetry ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onRetry}
+                className="w-fit gap-2 self-start"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Erneut versuchen
+              </Button>
+            ) : null}
           </div>
         ) : keywords.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -450,6 +499,7 @@ function KeywordsManager({
                   onAdd()
                 }
               }}
+              id="brand-keyword-input"
               placeholder={
                 canAdd ? 'Neues Brand-Keyword eingeben…' : 'Limit erreicht'
               }
@@ -712,9 +762,15 @@ function RelatedPanel({
 // --------------------------------------------------------------------------
 
 function EmptyKeywordsState() {
+  const focusInput = () => {
+    const input = document.getElementById('brand-keyword-input') as HTMLInputElement | null
+    input?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    input?.focus()
+  }
+
   return (
     <Card className="rounded-2xl border-dashed border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-900/40">
-      <CardContent className="flex flex-col items-center gap-3 px-6 py-10 text-center">
+      <CardContent className="flex flex-col items-center gap-4 px-6 py-10 text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-teal-50 dark:bg-teal-950/40">
           <TrendingUp className="h-5 w-5 text-teal-600 dark:text-teal-400" />
         </div>
@@ -723,10 +779,20 @@ function EmptyKeywordsState() {
             Noch keine Brand-Keywords
           </h3>
           <p className="max-w-sm text-sm text-slate-500 dark:text-slate-400">
-            Füge oben ein oder mehrere Keywords hinzu, um den Google-Trends-Verlauf
-            für diesen Kunden zu sehen.
+            Füge das erste Keyword hinzu, um den Google-Trends-Verlauf für diesen
+            Kunden zu sehen.
           </p>
         </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={focusInput}
+          className="gap-2"
+        >
+          <Plus className="h-4 w-4" />
+          Jetzt Keyword hinzufügen
+        </Button>
       </CardContent>
     </Card>
   )
