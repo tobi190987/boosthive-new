@@ -83,6 +83,7 @@ interface Budget {
   planned_amount: number
   currency: string
   alert_threshold_percent: number
+  campaign_ids: string[] | null
   spent_amount: number
   spent_source: 'api' | 'manual' | 'mixed'
   cpc: number | null
@@ -751,13 +752,21 @@ function BudgetCard({
               <CardTitle className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">
                 {budget.label ?? config.label}
               </CardTitle>
-              <div className="mt-0.5 flex items-center gap-1.5">
+              <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
                 <Badge
                   variant="outline"
                   className="rounded-full border-slate-200 px-2 py-0 text-[10px] font-medium text-slate-600 dark:border-slate-700 dark:text-slate-300"
                 >
                   {config.shortLabel}
                 </Badge>
+                {budget.campaign_ids && budget.campaign_ids.length > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-blue-200 bg-blue-50 px-2 py-0 text-[10px] font-medium text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-400"
+                  >
+                    {budget.campaign_ids.length} Kampagne{budget.campaign_ids.length !== 1 ? 'n' : ''}
+                  </Badge>
+                )}
                 {!budget.has_integration && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -970,6 +979,13 @@ interface BudgetFormDialogProps {
   onSaved: (saved: Budget) => void
 }
 
+interface AvailableCampaign {
+  id: string
+  name: string
+  status: string
+  cost: number
+}
+
 function BudgetFormDialog({
   open,
   onOpenChange,
@@ -987,6 +1003,11 @@ function BudgetFormDialog({
   const [threshold, setThreshold] = useState('80')
   const [saving, setSaving] = useState(false)
 
+  // Campaign selection
+  const [availableCampaigns, setAvailableCampaigns] = useState<AvailableCampaign[]>([])
+  const [campaignsLoading, setCampaignsLoading] = useState(false)
+  const [selectedCampaignIds, setSelectedCampaignIds] = useState<string[]>([])
+
   useEffect(() => {
     if (!open) return
     if (initialBudget) {
@@ -995,14 +1016,52 @@ function BudgetFormDialog({
       setLabel(initialBudget.label ?? '')
       setAmount(initialBudget.planned_amount.toString())
       setThreshold(initialBudget.alert_threshold_percent.toString())
+      setSelectedCampaignIds(initialBudget.campaign_ids ?? [])
     } else {
       setCustomerId(defaultCustomerId ?? customers[0]?.id ?? '')
       setPlatform('google_ads')
       setLabel('')
       setAmount('')
       setThreshold('80')
+      setSelectedCampaignIds([])
     }
+    setAvailableCampaigns([])
   }, [open, initialBudget, defaultCustomerId, customers])
+
+  // Fetch available campaigns when customer+platform changes
+  useEffect(() => {
+    if (!open || !customerId) return
+    let cancelled = false
+    setCampaignsLoading(true)
+    setAvailableCampaigns([])
+
+    fetch(
+      `/api/tenant/budgets/campaigns?customer_id=${encodeURIComponent(customerId)}&platform=${encodeURIComponent(platform)}`,
+      { credentials: 'include' }
+    )
+      .then((res) => res.json())
+      .then((data: { campaigns?: AvailableCampaign[] }) => {
+        if (!cancelled) setAvailableCampaigns(data.campaigns ?? [])
+      })
+      .catch(() => {
+        if (!cancelled) setAvailableCampaigns([])
+      })
+      .finally(() => {
+        if (!cancelled) setCampaignsLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [open, customerId, platform])
+
+  const toggleCampaign = (id: string) => {
+    setSelectedCampaignIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    )
+  }
+
+  const allSelected = selectedCampaignIds.length === 0
 
   const canSubmit =
     customerId.trim() !== '' &&
@@ -1023,6 +1082,7 @@ function BudgetFormDialog({
         budget_month: selectedMonth,
         planned_amount: Number(amount),
         alert_threshold_percent: Number(threshold) || 80,
+        campaign_ids: selectedCampaignIds.length > 0 ? selectedCampaignIds : null,
       }
 
       const url = initialBudget
@@ -1068,8 +1128,8 @@ function BudgetFormDialog({
             {initialBudget ? 'Budget bearbeiten' : 'Neues Budget anlegen'}
           </DialogTitle>
           <DialogDescription>
-            Hinterlege ein geplantes Monatsbudget pro Kunde und Plattform. Optional kannst du mehrere Einträge pro
-            Monat anlegen (z.B. &quot;Brand&quot; und &quot;Generic&quot;).
+            Hinterlege ein geplantes Monatsbudget pro Kunde und Plattform. Wähle optional einzelne oder
+            mehrere Kampagnen aus — oder tracke alle Kampagnen zusammen.
           </DialogDescription>
         </DialogHeader>
 
@@ -1098,7 +1158,10 @@ function BudgetFormDialog({
             <Label htmlFor="budget-platform">Plattform</Label>
             <Select
               value={platform}
-              onValueChange={(value) => setPlatform(value as Platform)}
+              onValueChange={(value) => {
+                setPlatform(value as Platform)
+                setSelectedCampaignIds([])
+              }}
               disabled={!!initialBudget}
             >
               <SelectTrigger id="budget-platform" className="rounded-xl">
@@ -1110,6 +1173,99 @@ function BudgetFormDialog({
                 <SelectItem value="tiktok_ads">TikTok Ads</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Campaign Scope */}
+          <div className="space-y-2">
+            <Label>
+              Kampagnen{' '}
+              <span className="text-slate-400">(optional)</span>
+            </Label>
+            {campaignsLoading && (
+              <div className="flex items-center gap-2 rounded-xl border border-slate-200 p-3 text-xs text-slate-500 dark:border-border">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Kampagnen werden geladen…
+              </div>
+            )}
+            {!campaignsLoading && availableCampaigns.length === 0 && (
+              <p className="rounded-xl border border-dashed border-slate-200 px-3 py-2.5 text-xs text-slate-400 dark:border-border">
+                Keine verbundene Kampagnendaten verfügbar — Budget trackt den gesamten Account.
+              </p>
+            )}
+            {!campaignsLoading && availableCampaigns.length > 0 && (
+              <div className="max-h-52 overflow-y-auto rounded-xl border border-slate-200 dark:border-border">
+                {/* "Alle Kampagnen" option */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedCampaignIds([])}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60',
+                    allSelected && 'bg-blue-50 dark:bg-blue-950/20'
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+                      allSelected
+                        ? 'border-blue-500 bg-blue-500 text-white'
+                        : 'border-slate-300 dark:border-slate-600'
+                    )}
+                  >
+                    {allSelected && (
+                      <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 fill-current">
+                        <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className={cn('font-medium', allSelected ? 'text-blue-700 dark:text-blue-300' : 'text-slate-700 dark:text-slate-200')}>
+                    Alle Kampagnen
+                  </span>
+                </button>
+                <Separator />
+                {availableCampaigns.map((campaign) => {
+                  const checked = selectedCampaignIds.includes(campaign.id)
+                  return (
+                    <button
+                      key={campaign.id}
+                      type="button"
+                      onClick={() => toggleCampaign(campaign.id)}
+                      className={cn(
+                        'flex w-full items-center gap-2.5 px-3 py-2 text-left text-xs transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/60',
+                        checked && 'bg-blue-50/60 dark:bg-blue-950/10'
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          'flex h-4 w-4 shrink-0 items-center justify-center rounded border',
+                          checked
+                            ? 'border-blue-500 bg-blue-500 text-white'
+                            : 'border-slate-300 dark:border-slate-600'
+                        )}
+                      >
+                        {checked && (
+                          <svg viewBox="0 0 10 8" className="h-2.5 w-2.5 fill-current">
+                            <path d="M1 4l2.5 2.5L9 1" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="flex-1 truncate text-slate-700 dark:text-slate-200">
+                        {campaign.name}
+                      </span>
+                      {campaign.cost > 0 && (
+                        <span className="shrink-0 tabular-nums text-slate-400 dark:text-slate-500">
+                          {formatCurrency(campaign.cost)}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+            {!allSelected && (
+              <p className="text-[11px] text-blue-600 dark:text-blue-400">
+                {selectedCampaignIds.length} Kampagne{selectedCampaignIds.length !== 1 ? 'n' : ''} ausgewählt
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">

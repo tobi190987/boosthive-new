@@ -41,6 +41,7 @@ export interface GoogleAdsIntegrationRecord {
 export type GoogleAdsDateRangeKey = 'today' | '7d' | '30d' | '90d'
 
 export interface GoogleAdsCampaign {
+  id: string
   name: string
   status: string
   budget: number
@@ -83,6 +84,7 @@ interface GoogleAdsSearchStreamRow {
     level?: string | number
   }
   campaign?: {
+    id?: string | number
     name?: string
     status?: string
   }
@@ -525,6 +527,7 @@ async function fetchGoogleAdsCampaignSnapshot(options: {
       body: JSON.stringify({
         query: `
           SELECT
+            campaign.id,
             campaign.name,
             campaign.status,
             campaign_budget.amount_micros,
@@ -548,6 +551,7 @@ async function fetchGoogleAdsCampaignSnapshot(options: {
       const budget = parseNumber(row.campaignBudget?.amountMicros) / 1_000_000
 
       return {
+        id: String(row.campaign?.id ?? ''),
         name: row.campaign?.name || 'Unbenannte Kampagne',
         status: row.campaign?.status || 'UNKNOWN',
         budget,
@@ -610,6 +614,64 @@ async function fetchGoogleAdsCostTimeseries(options: {
   return Array.from(totalsByDate.entries())
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([label, value]) => ({ label, value }))
+}
+
+// Returns daily spend broken down per campaign — used for campaign-scoped budget tracking.
+async function fetchGoogleAdsCampaignDailySpend(options: {
+  accessToken: string
+  customerId: string
+  managerCustomerId?: string
+  startDate: string
+  endDate: string
+}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+  const customerId = normalizeCustomerId(options.customerId)
+  const managerCustomerId = normalizeCustomerId(options.managerCustomerId ?? '')
+  const batches = await fetchGoogleAdsJson<GoogleAdsSearchStreamBatch[]>(
+    `${GOOGLE_ADS_API_BASE}/customers/${customerId}/googleAds:searchStream`,
+    {
+      method: 'POST',
+      headers: buildGoogleAdsHeaders(options.accessToken, managerCustomerId || customerId),
+      body: JSON.stringify({
+        query: `
+          SELECT
+            campaign.id,
+            campaign.name,
+            segments.date,
+            metrics.cost_micros
+          FROM campaign
+          WHERE segments.date BETWEEN '${options.startDate}' AND '${options.endDate}'
+        `,
+      }),
+    },
+    { tokenErrorMessage: 'Google-Ads-Token ist abgelaufen oder wurde widerrufen.' }
+  )
+
+  return batches
+    .flatMap((batch) => batch.results ?? [])
+    .map((row) => ({
+      campaignId: String(row.campaign?.id ?? ''),
+      campaignName: row.campaign?.name || 'Unbenannte Kampagne',
+      date: String(row.segments?.date ?? '').trim(),
+      cost: parseNumber(row.metrics?.costMicros) / 1_000_000,
+    }))
+    .filter((r) => r.date && r.campaignId)
+}
+
+export async function getGoogleAdsCampaignDailySpend(
+  integration: GoogleAdsIntegrationRecord,
+  credentials: GoogleAdsCredentials,
+  options: { startDate: string; endDate: string }
+): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+  const { accessToken, credentials: refreshed } = await getValidGoogleAdsToken(integration.id, credentials)
+  const customerId = refreshed.google_ads_customer_id ?? credentials.google_ads_customer_id
+  if (!customerId) return []
+  return fetchGoogleAdsCampaignDailySpend({
+    accessToken,
+    customerId,
+    managerCustomerId: refreshed.google_ads_manager_customer_id,
+    startDate: options.startDate,
+    endDate: options.endDate,
+  })
 }
 
 function getCachedSnapshot(

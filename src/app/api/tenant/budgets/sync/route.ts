@@ -12,16 +12,19 @@ import {
   getGoogleAdsIntegration,
   parseGoogleAdsCredentials,
   getGoogleAdsDashboardSnapshot,
+  getGoogleAdsCampaignDailySpend,
 } from '@/lib/google-ads-api'
 import {
   getMetaAdsIntegration,
   parseMetaAdsCredentials,
   getMetaAdsDashboardSnapshot,
+  getMetaAdsCampaignDailySpend,
 } from '@/lib/meta-ads-api'
 import {
   getTikTokAdsIntegration,
   parseTikTokAdsCredentials,
   getTikTokAdsDashboardSnapshot,
+  getTikTokCampaignDailySpend,
 } from '@/lib/tiktok-ads-api'
 
 const syncSchema = z.object({
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
   // Load all budgets for the target month
   const { data: budgets, error: budgetsError } = await admin
     .from('ad_budgets')
-    .select('id, customer_id, platform, planned_amount, alert_threshold_percent, alert_80_sent_at, alert_100_sent_at, alert_150_sent_at, customers!inner(name)')
+    .select('id, customer_id, platform, planned_amount, alert_threshold_percent, campaign_ids, alert_80_sent_at, alert_100_sent_at, alert_150_sent_at, customers!inner(name)')
     .eq('tenant_id', tenantId)
     .eq('budget_month', budgetMonthDate)
     .limit(200)
@@ -86,6 +89,8 @@ export async function POST(request: NextRequest) {
     try {
       const customerId = budget.customer_id
       const platform = budget.platform as 'google_ads' | 'meta_ads' | 'tiktok_ads'
+      const campaignIds = (budget.campaign_ids as string[] | null) ?? null
+      const hasCampaignFilter = Array.isArray(campaignIds) && campaignIds.length > 0
 
       let dailySpend: { date: string; amount: number }[] = []
       let cpc: number | null = null
@@ -98,23 +103,34 @@ export async function POST(request: NextRequest) {
         const credentials = parseGoogleAdsCredentials(integration.credentials_encrypted)
         if (!credentials || !credentials.google_ads_customer_id) continue
 
-        const snapshot = await getGoogleAdsDashboardSnapshot(integration, credentials, '30d')
-        const timeseries = snapshot.data.timeseries ?? []
-
-        // Filter to target month and map to { date, amount }
-        dailySpend = timeseries
-          .filter((p) => {
-            const dateStr = p.label // YYYY-MM-DD
-            return dateStr >= monthStart && dateStr <= monthEnd
+        if (hasCampaignFilter) {
+          // Campaign-level daily spend — filter to selected campaigns
+          const rows = await getGoogleAdsCampaignDailySpend(integration, credentials, {
+            startDate: monthStart,
+            endDate: monthEnd,
           })
-          .map((p) => ({ date: p.label, amount: p.value }))
+          const filtered = rows.filter((r) => campaignIds!.includes(r.campaignId))
+          const byDate = new Map<string, number>()
+          for (const r of filtered) {
+            byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.cost)
+          }
+          dailySpend = Array.from(byDate.entries()).map(([date, amount]) => ({ date, amount }))
 
-        const totalCost = snapshot.data.totalCost
-        const clicks = snapshot.data.campaigns.reduce((a, c) => a + (c.clicks ?? 0), 0)
-        const impressions = 0 // Not directly available in GoogleAdsDashboardData
-        cpc = totalCost > 0 && clicks > 0 ? totalCost / clicks : null
-        cpm = impressions > 0 ? (totalCost / impressions) * 1000 : null
-        roas = null // Not directly available without conversion value
+          const totalCost = filtered.reduce((a, r) => a + r.cost, 0)
+          const clicksAll = 0 // clicks not returned by campaign daily spend query
+          cpc = totalCost > 0 && clicksAll > 0 ? totalCost / clicksAll : null
+        } else {
+          const snapshot = await getGoogleAdsDashboardSnapshot(integration, credentials, '30d')
+          const timeseries = snapshot.data.timeseries ?? []
+          dailySpend = timeseries
+            .filter((p) => p.label >= monthStart && p.label <= monthEnd)
+            .map((p) => ({ date: p.label, amount: p.value }))
+          const totalCost = snapshot.data.totalCost
+          const clicks = snapshot.data.campaigns.reduce((a, c) => a + (c.clicks ?? 0), 0)
+          cpc = totalCost > 0 && clicks > 0 ? totalCost / clicks : null
+        }
+        cpm = null
+        roas = null
 
       } else if (platform === 'meta_ads') {
         const integration = await getMetaAdsIntegration(tenantId, customerId)
@@ -122,19 +138,27 @@ export async function POST(request: NextRequest) {
         const credentials = parseMetaAdsCredentials(integration.credentials_encrypted)
         if (!credentials?.selected_ad_account_id) continue
 
-        const snapshot = await getMetaAdsDashboardSnapshot(integration, credentials, '30d')
-        const timeseries = snapshot.data.timeseries ?? []
-
-        dailySpend = timeseries
-          .filter((p) => {
-            const dateStr = p.label
-            return dateStr >= monthStart && dateStr <= monthEnd
+        if (hasCampaignFilter) {
+          const rows = await getMetaAdsCampaignDailySpend(integration, credentials, {
+            startDate: monthStart,
+            endDate: monthEnd,
           })
-          .map((p) => ({ date: p.label, amount: p.value }))
-
-        const totalCost = snapshot.data.totalCost
-        const totalImpressions = snapshot.data.totalImpressions ?? 0
-        cpm = totalCost > 0 && totalImpressions > 0 ? (totalCost / totalImpressions) * 1000 : null
+          const filtered = rows.filter((r) => campaignIds!.includes(r.campaignId))
+          const byDate = new Map<string, number>()
+          for (const r of filtered) {
+            byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.cost)
+          }
+          dailySpend = Array.from(byDate.entries()).map(([date, amount]) => ({ date, amount }))
+        } else {
+          const snapshot = await getMetaAdsDashboardSnapshot(integration, credentials, '30d')
+          const timeseries = snapshot.data.timeseries ?? []
+          dailySpend = timeseries
+            .filter((p) => p.label >= monthStart && p.label <= monthEnd)
+            .map((p) => ({ date: p.label, amount: p.value }))
+          const totalCost = snapshot.data.totalCost
+          const totalImpressions = snapshot.data.totalImpressions ?? 0
+          cpm = totalCost > 0 && totalImpressions > 0 ? (totalCost / totalImpressions) * 1000 : null
+        }
         cpc = null
         roas = null
 
@@ -144,16 +168,24 @@ export async function POST(request: NextRequest) {
         const credentials = parseTikTokAdsCredentials(integration.credentials_encrypted)
         if (!credentials?.selected_advertiser_id) continue
 
-        const snapshot = await getTikTokAdsDashboardSnapshot(integration, credentials, '30d')
-        const timeseries = snapshot.data.timeseries ?? []
-
-        dailySpend = timeseries
-          .filter((p) => {
-            const dateStr = p.label
-            return dateStr >= monthStart && dateStr <= monthEnd
+        if (hasCampaignFilter) {
+          const rows = await getTikTokCampaignDailySpend(integration, credentials, {
+            startDate: monthStart,
+            endDate: monthEnd,
           })
-          .map((p) => ({ date: p.label, amount: p.value }))
-
+          const filtered = rows.filter((r) => campaignIds!.includes(r.campaignId))
+          const byDate = new Map<string, number>()
+          for (const r of filtered) {
+            byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.cost)
+          }
+          dailySpend = Array.from(byDate.entries()).map(([date, amount]) => ({ date, amount }))
+        } else {
+          const snapshot = await getTikTokAdsDashboardSnapshot(integration, credentials, '30d')
+          const timeseries = snapshot.data.timeseries ?? []
+          dailySpend = timeseries
+            .filter((p) => p.label >= monthStart && p.label <= monthEnd)
+            .map((p) => ({ date: p.label, amount: p.value }))
+        }
         cpc = null
         cpm = null
         roas = null

@@ -14,6 +14,7 @@ const updateBudgetSchema = z.object({
   label: z.string().trim().max(100).nullable().optional(),
   alert_threshold_percent: z.number().int().min(0).max(200).optional(),
   currency: z.string().max(3).optional(),
+  campaign_ids: z.array(z.string()).nullable().optional(),
 })
 
 // ── PUT /api/tenant/budgets/[id] ──
@@ -71,10 +72,16 @@ export async function PUT(
         alert_150_sent_at: null,
       }),
       ...(parsed.data.currency !== undefined && { currency: parsed.data.currency }),
+      ...(parsed.data.campaign_ids !== undefined && {
+        campaign_ids:
+          Array.isArray(parsed.data.campaign_ids) && parsed.data.campaign_ids.length > 0
+            ? parsed.data.campaign_ids
+            : null,
+      }),
     })
     .eq('id', id)
     .eq('tenant_id', tenantId)
-    .select(`id, customer_id, customers!inner(name), platform, label, budget_month, planned_amount, currency, alert_threshold_percent, cached_cpc, cached_cpm, cached_roas`)
+    .select(`id, customer_id, customers!inner(name), platform, label, budget_month, planned_amount, currency, alert_threshold_percent, campaign_ids, cached_cpc, cached_cpm, cached_roas`)
     .single()
 
   if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
@@ -108,6 +115,7 @@ export async function PUT(
     planned_amount: Number(updated.planned_amount),
     currency: updated.currency,
     alert_threshold_percent: updated.alert_threshold_percent,
+    campaign_ids: (updated.campaign_ids as string[] | null) ?? null,
     spent_amount: totalSpent,
     spent_source: spentSource as 'api' | 'manual' | 'mixed',
     cpc: updated.cached_cpc !== null ? Number(updated.cached_cpc) : null,

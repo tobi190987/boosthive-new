@@ -484,6 +484,62 @@ async function fetchTikTokCostTimeseries(options: {
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
+// Returns daily spend broken down per campaign — used for campaign-scoped budget tracking.
+async function fetchTikTokCampaignDailySpend(options: {
+  accessToken: string
+  advertiserId: string
+  startDate: string
+  endDate: string
+}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+  const url = new URL(`${TIKTOK_API_BASE}/report/integrated/get/`)
+
+  const body = {
+    advertiser_id: options.advertiserId,
+    report_type: 'BASIC',
+    data_level: 'AUCTION_CAMPAIGN',
+    dimensions: ['campaign_id', 'campaign_name', 'stat_time_day'],
+    metrics: ['spend'],
+    start_date: options.startDate,
+    end_date: options.endDate,
+    page: 1,
+    page_size: 5000,
+  }
+
+  const data = await fetchTikTokJson<TikTokListResponse<TikTokReportRow>>(url, {
+    method: 'POST',
+    headers: {
+      'Access-Token': options.accessToken,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+
+  return extractTikTokList(data, 'report/integrated/get')
+    .map((row) => ({
+      campaignId: normalizeId(row.campaign_id || row.dimensions?.campaign_id),
+      campaignName: String(row.campaign_name || row.dimensions?.campaign_name || ''),
+      date: String(row.dimensions?.stat_time_day ?? '').substring(0, 10), // strip time part if present
+      cost: getReportCost(row),
+    }))
+    .filter((r) => r.date && r.campaignId)
+}
+
+export async function getTikTokCampaignDailySpend(
+  integration: TikTokAdsIntegrationRecord,
+  credentials: TikTokAdsCredentials,
+  options: { startDate: string; endDate: string }
+): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+  const { accessToken, credentials: refreshed } = await getValidTikTokAdsToken(integration.id, credentials)
+  const advertiserId = refreshed.selected_advertiser_id ?? credentials.selected_advertiser_id
+  if (!advertiserId) return []
+  return fetchTikTokCampaignDailySpend({
+    accessToken,
+    advertiserId,
+    startDate: options.startDate,
+    endDate: options.endDate,
+  })
+}
+
 function getReportCampaignId(row: TikTokReportRow): string {
   return normalizeId(row.campaign_id || row.dimensions?.campaign_id)
 }

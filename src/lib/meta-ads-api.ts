@@ -19,6 +19,7 @@ export interface MetaAdsAccount {
 }
 
 export interface MetaAdsCampaign {
+  id: string
   name: string
   reach: number
   impressions: number
@@ -63,6 +64,7 @@ export interface MetaAdsIntegrationRecord {
 
 interface MetaAdsInsightRow {
   date_start?: string
+  campaign_id?: string
   campaign_name?: string
   reach?: string
   impressions?: string
@@ -332,6 +334,7 @@ function mapInsightRowsToDashboard(
   currency?: string
 ): MetaAdsDashboardData {
   const campaigns = rows.map((row) => ({
+    id: row.campaign_id ?? '',
     name: row.campaign_name || 'Unbenannte Kampagne',
     reach: parseNumber(row.reach),
     impressions: parseNumber(row.impressions),
@@ -406,6 +409,52 @@ async function fetchMetaAdsCostTimeseries(options: {
     }))
     .filter((point) => point.label)
     .sort((a, b) => a.label.localeCompare(b.label))
+}
+
+// Returns daily spend broken down per campaign — used for campaign-scoped budget tracking.
+async function fetchMetaAdsCampaignDailySpend(options: {
+  accessToken: string
+  adAccountId: string
+  startDate: string
+  endDate: string
+}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+  const url = new URL(`${META_GRAPH_API}/${normalizeAdAccountId(options.adAccountId)}/insights`)
+  url.searchParams.set('fields', 'campaign_id,campaign_name,date_start,spend')
+  url.searchParams.set('level', 'campaign')
+  url.searchParams.set('time_increment', '1')
+  url.searchParams.set('limit', '5000')
+  url.searchParams.set(
+    'time_range',
+    JSON.stringify({ since: options.startDate, until: options.endDate })
+  )
+  url.searchParams.set('access_token', options.accessToken)
+
+  const data = await fetchMetaJson<{ data?: MetaAdsInsightRow[] }>(url)
+
+  return (data.data ?? [])
+    .map((row) => ({
+      campaignId: row.campaign_id ?? '',
+      campaignName: row.campaign_name || 'Unbenannte Kampagne',
+      date: row.date_start ?? '',
+      cost: parseNumber(row.spend),
+    }))
+    .filter((r) => r.date && r.campaignId)
+}
+
+export async function getMetaAdsCampaignDailySpend(
+  integration: MetaAdsIntegrationRecord,
+  credentials: MetaAdsCredentials,
+  options: { startDate: string; endDate: string }
+): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+  const { accessToken, credentials: refreshed } = await getValidMetaAdsToken(integration.id, credentials)
+  const adAccountId = refreshed.selected_ad_account_id ?? credentials.selected_ad_account_id
+  if (!adAccountId) return []
+  return fetchMetaAdsCampaignDailySpend({
+    accessToken,
+    adAccountId,
+    startDate: options.startDate,
+    endDate: options.endDate,
+  })
 }
 
 function getCachedSnapshot(

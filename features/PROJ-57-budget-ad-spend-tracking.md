@@ -224,8 +224,12 @@ Alert-Deduplizierungsfelder (`alert_X_sent_at`) verhindern, dass dieselbe Warnun
 - **Implementation Notes:**
   - Frontend: `src/components/budget-workspace.tsx` (vollständig)
   - Page: `src/app/(tenant)/budget/page.tsx`
-  - API: `src/app/api/tenant/budgets/` (GET/POST + [id] PUT/DELETE + [id]/spend GET/POST + sync POST)
-  - Migration: `supabase/migrations/044_ad_budgets.sql`
+  - API: `src/app/api/tenant/budgets/` (GET/POST + [id] PUT/DELETE + [id]/spend GET/POST + sync POST + campaigns GET)
+  - Migration: `supabase/migrations/044_ad_budgets.sql` + `050_budget_campaign_scope.sql`
   - Navigation: Budget Tracking-Eintrag in `tenant-shell-navigation.tsx`
-  - Sync nutzt bestehende Dashboard-Snapshot-Funktionen (30d-Timeseries gefiltert auf Zielmonat)
+  - Sync: Wenn `campaign_ids` gesetzt → campaign-level Daily-Spend via neue API-Funktionen; sonst Account-Level-Timeseries
+  - Campaign-Scope: `campaign_ids TEXT[]` in `ad_budgets` (NULL = alle Kampagnen)
+  - Neue API-Funktionen: `getGoogleAdsCampaignDailySpend`, `getMetaAdsCampaignDailySpend`, `getTikTokCampaignDailySpend`
+  - Campaign-List-Endpoint: `GET /api/tenant/budgets/campaigns?customer_id=&platform=`
+  - UI: Campaign-Multiselect im Budget-Dialog, Badge auf Budget-Karte zeigt Kampagnenanzahl
   - Tests: `tests/api/budgets.spec.ts` (17 Tests: Auth, CRUD, Validation, Cross-Tenant)

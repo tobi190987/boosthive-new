@@ -20,6 +20,7 @@ const createBudgetSchema = z.object({
   planned_amount: z.number().min(0, 'Betrag darf nicht negativ sein.'),
   alert_threshold_percent: z.number().int().min(0).max(200).optional().default(80),
   currency: z.string().max(3).optional().default('EUR'),
+  campaign_ids: z.array(z.string()).nullable().optional(),
 })
 
 // ── GET /api/tenant/budgets?month=YYYY-MM&customer_id=uuid ──
@@ -62,6 +63,7 @@ export async function GET(request: NextRequest) {
       planned_amount,
       currency,
       alert_threshold_percent,
+      campaign_ids,
       cached_cpc,
       cached_cpm,
       cached_roas,
@@ -194,6 +196,7 @@ export async function GET(request: NextRequest) {
       planned_amount: Number(b.planned_amount),
       currency: b.currency,
       alert_threshold_percent: b.alert_threshold_percent,
+      campaign_ids: (b.campaign_ids as string[] | null) ?? null,
       spent_amount: totalSpent,
       spent_source: spentSource,
       cpc: b.cached_cpc !== null ? Number(b.cached_cpc) : null,
@@ -231,7 +234,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 })
   }
 
-  const { customer_id, platform, label, budget_month, planned_amount, alert_threshold_percent, currency } =
+  const { customer_id, platform, label, budget_month, planned_amount, alert_threshold_percent, currency, campaign_ids } =
     parsed.data
 
   // Ensure budget_month is the first of the month
@@ -251,6 +254,9 @@ export async function POST(request: NextRequest) {
   if (customerError) return NextResponse.json({ error: customerError.message }, { status: 500 })
   if (!customer) return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
 
+  const normalizedCampaignIds =
+    Array.isArray(campaign_ids) && campaign_ids.length > 0 ? campaign_ids : null
+
   const { data: inserted, error: insertError } = await admin
     .from('ad_budgets')
     .insert({
@@ -262,8 +268,9 @@ export async function POST(request: NextRequest) {
       planned_amount,
       currency: currency ?? 'EUR',
       alert_threshold_percent: alert_threshold_percent ?? 80,
+      campaign_ids: normalizedCampaignIds,
     })
-    .select(`id, customer_id, customers!inner(name), platform, label, budget_month, planned_amount, currency, alert_threshold_percent, cached_cpc, cached_cpm, cached_roas`)
+    .select(`id, customer_id, customers!inner(name), platform, label, budget_month, planned_amount, currency, alert_threshold_percent, campaign_ids, cached_cpc, cached_cpm, cached_roas`)
     .single()
 
   if (insertError) {
@@ -286,6 +293,7 @@ export async function POST(request: NextRequest) {
     planned_amount: Number(inserted.planned_amount),
     currency: inserted.currency,
     alert_threshold_percent: inserted.alert_threshold_percent,
+    campaign_ids: (inserted.campaign_ids as string[] | null) ?? null,
     spent_amount: 0,
     spent_source: 'manual' as const,
     cpc: null,
