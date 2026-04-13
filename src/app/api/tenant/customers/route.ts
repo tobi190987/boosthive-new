@@ -132,11 +132,20 @@ export async function GET(request: NextRequest) {
     )
   }
 
+  const dueFollowUpCustomerIds = new Set<string>()
+  if (!followUpsResult.error) {
+    for (const row of followUpsResult.data ?? []) {
+      if (row.customer_id) dueFollowUpCustomerIds.add(row.customer_id)
+    }
+  }
+
   return NextResponse.json({
     customers: (customersData ?? []).map((customer) => ({
       ...customer,
       openApprovalsCount:
         typeof customer.id === 'string' ? (openApprovalsByCustomer.get(customer.id) ?? 0) : 0,
+      has_due_follow_up:
+        typeof customer.id === 'string' ? dueFollowUpCustomerIds.has(customer.id) : false,
     })),
   })
 }

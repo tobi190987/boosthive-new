@@ -12,6 +12,8 @@ import {
   CUSTOMERS_WRITE,
 } from '@/lib/rate-limit'
 
+const CRM_STATUSES = ['lead', 'prospect', 'active', 'paused', 'churned'] as const
+
 const updateCustomerSchema = z.object({
   name: z.string().trim().min(1, 'Name ist erforderlich.').max(200).optional(),
   domain: z.string().trim().max(500).nullable().optional(),
@@ -21,6 +23,9 @@ const updateCustomerSchema = z.object({
   contact_email: z.string().trim().email('Ungültige E-Mail-Adresse.').nullable().optional(),
   internal_notes: z.string().trim().max(5000).nullable().optional(),
   status: z.enum(['active', 'paused']).optional(),
+  crm_status: z.enum(CRM_STATUSES).optional(),
+  monthly_volume: z.number().min(0).max(9999999.99).nullable().optional(),
+  churn_note: z.string().trim().max(5000).optional(),
 })
 
 export async function GET(
@@ -103,6 +108,8 @@ export async function PUT(
   if (parsed.data.contact_email !== undefined) updates.contact_email = parsed.data.contact_email
   if (parsed.data.internal_notes !== undefined) updates.internal_notes = parsed.data.internal_notes
   if (parsed.data.status !== undefined) updates.status = parsed.data.status
+  if (parsed.data.crm_status !== undefined) updates.crm_status = parsed.data.crm_status
+  if (parsed.data.monthly_volume !== undefined) updates.monthly_volume = parsed.data.monthly_volume
 
   const admin = createAdminClient()
   const { data, error } = await admin
@@ -120,6 +127,8 @@ export async function PUT(
       logo_url,
       internal_notes,
       status,
+      crm_status,
+      monthly_volume,
       created_at,
       updated_at
     `)
@@ -130,6 +139,17 @@ export async function PUT(
       return NextResponse.json({ error: 'Kunde nicht gefunden.' }, { status: 404 })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  // If churned with a closing note, log it as an activity (EC-1)
+  if (parsed.data.crm_status === 'churned' && parsed.data.churn_note?.trim()) {
+    await admin.from('customer_activities').insert({
+      tenant_id: tenantId,
+      customer_id: id,
+      activity_type: 'note',
+      description: `[Abschluss-Notiz] ${parsed.data.churn_note.trim()}`,
+      created_by: authResult.auth.userId,
+    })
   }
 
   return NextResponse.json({ customer: data })
