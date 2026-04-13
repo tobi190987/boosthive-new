@@ -80,7 +80,7 @@
 | PROJ-63 | Time Tracking & Client-Invoicing | Planned | [PROJ-63-time-tracking-invoicing.md](PROJ-63-time-tracking-invoicing.md) | 2026-04-11 |
 | PROJ-64 | Competitor Intelligence Automation | Planned | [PROJ-64-competitor-intelligence.md](PROJ-64-competitor-intelligence.md) | 2026-04-11 |
 | PROJ-65 | Globale Suche (Cmd+K) | Planned | [PROJ-65-globale-suche.md](PROJ-65-globale-suche.md) | 2026-04-11 |
-| PROJ-66 | Google Trends Integration (Brand Intelligence – Phase 1) | In Progress | [PROJ-66-google-trends-integration.md](PROJ-66-google-trends-integration.md) | 2026-04-13 |
+| PROJ-66 | Google Trends Integration (Brand Intelligence – Phase 1) | Deployed | [PROJ-66-google-trends-integration.md](PROJ-66-google-trends-integration.md) | 2026-04-13 |
 | PROJ-67 | Brand Mention Monitoring & Sentiment Analyse | In Progress | [PROJ-67-brand-mention-monitoring.md](PROJ-67-brand-mention-monitoring.md) | 2026-04-13 |
 | PROJ-68 | Social Media Trend Radar | Planned | [PROJ-68-social-media-trend-radar.md](PROJ-68-social-media-trend-radar.md) | 2026-04-13 |
 
