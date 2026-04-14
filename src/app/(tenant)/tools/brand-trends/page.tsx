@@ -19,10 +19,10 @@ export default async function BrandTrendsPage() {
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Brand Trends
+            Brand Intelligence
           </h1>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Beobachte Google-Trends-Verläufe und verwandte Suchanfragen für deine
+            Google-Trends-Verläufe, Web-Mentions und Sentiment für deine
             Kunden-Marken.
           </p>
         </div>
@@ -36,7 +36,7 @@ export default async function BrandTrendsPage() {
           </div>
         </div>
       </div>
-      <BrandTrendsWorkspace />
+      <BrandTrendsWorkspace isAdmin={isAdmin} />
     </>
   )
 }

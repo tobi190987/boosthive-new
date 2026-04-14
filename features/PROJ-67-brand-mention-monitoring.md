@@ -175,6 +175,33 @@ Eine neue Migration wird benötigt:
 1. Tabelle `brand_mention_cache` anlegen (inkl. RLS)
 2. Spalte `sentiment_alert_threshold` zu `brand_keywords` hinzufügen
 
+## Implementation Notes (Frontend)
+
+**Frontend-Implementierung abgeschlossen (2026-04-13):**
+
+- Neue Komponente `src/components/brand-mentions-panel.tsx` kapselt den gesamten Mentions-Tab (KPIs, Donut-Chart, Filter, Liste, Alert-Config).
+- `src/components/brand-trends-workspace.tsx` ergänzt um shadcn-Tabs (`Trend-Verlauf` / `Mentions & Sentiment`). Der bestehende Keywords-Manager bleibt über beiden Tabs sichtbar (gemeinsamer Kontext).
+- Workspace bekommt jetzt einen `isAdmin`-Prop; die Seite `/(tenant)/tools/brand-trends/page.tsx` reicht den Admin-Flag aus `requireTenantShellContext()` durch (nötig für das Alert-Config-Panel).
+- Der Mentions-Tab nutzt das primäre Brand-Keyword (gleiche Logik wie Trend-Verlauf). Fehlt das primäre Keyword, zeigt das Panel einen sprechenden Empty-State.
+- KPI-Karten:
+  - `SentimentScoreCard` (0–100, farb-codiert: ≥70 positiv, ≥40 neutral, sonst kritisch).
+  - `SentimentDonutCard` (Recharts PieChart, innerRadius/outerRadius 30/48, Prozent-Legende rechts).
+  - `MetaInfoCard` (Anzahl Mentions, Gefiltert-Hinweis bei >200, Cache-Zeitstempel, Refresh-Button).
+- Filter-Leiste: shadcn-Tabs für Zeitraum (7/30/90) und Quelle (All/News/Blogs/Foren/Social). Quellen-Filter ist client-seitig (Daten kommen komplett aus dem 24h-Cache).
+- Mentions-Liste: 20 Einträge pro Seite, einfache Prev/Next-Pagination. Titel als externer Link mit `target=_blank rel=noopener noreferrer`. Sentiment-Badge pro Eintrag.
+- Empty-State mit Cache-Zeitstempel, Error-State mit Retry-Button, Loading-Skeletons an allen relevanten Stellen.
+- Alert-Config-Panel (nur Admin): Toggle + Input `type="number"` (0–100), PATCH an `/api/tenant/brand-keywords/{id}` mit `{ sentiment_alert_threshold }`.
+- Alle Komponenten responsiv (375 / 768 / 1440), semantische Labels (`aria-label`, `aria-invalid`, `<nav>` für Pagination), dark-mode-kompatibel.
+
+**Noch offen (Backend-Phase / `/backend`):**
+- Route `GET /api/tenant/brand-mentions` (Exa.ai + Claude Sentiment Batch + Cache-Hit-Pfad, Alert-Trigger auf PROJ-35).
+- Route `PATCH /api/tenant/brand-keywords/[id]` muss `sentiment_alert_threshold` schreiben können (Feld aktuell nur geplant).
+- Migration: Tabelle `brand_mention_cache` + Spalte `sentiment_alert_threshold` auf `brand_keywords` (analog zur bestehenden `051_brand_trends.sql`).
+
+**Abweichungen vom Tech-Design:**
+- Statt eines separaten Kachel-Paares (`SentimentScoreCard` + `SentimentDonutChart`) liefert die KPI-Zeile drei Karten (Score / Donut / Meta-Info), um Cache-Zeitstempel und Refresh-Button prominent anzubieten — das Notification-System (PROJ-35) liefert keine Live-Info darüber.
+- Kein shadcn-`Slider` installiert — Schwellwert-Input nutzt `Input type="number"`. Spart Pakete und bleibt konsistent mit bestehenden Config-Formularen.
+
 ## QA Test Results
 _To be added by /qa_
 
