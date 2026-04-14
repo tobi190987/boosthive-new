@@ -96,20 +96,11 @@ CREATE POLICY "tenant members delete brand_keywords"
     )
   );
 
--- updated_at-Trigger
-CREATE OR REPLACE FUNCTION update_brand_keywords_updated_at()
-RETURNS TRIGGER LANGUAGE plpgsql
-SET search_path = public AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$;
-
+-- updated_at-Trigger (nutzt die projektweite Funktion update_updated_at_column)
 DROP TRIGGER IF EXISTS trg_brand_keywords_updated_at ON brand_keywords;
 CREATE TRIGGER trg_brand_keywords_updated_at
   BEFORE UPDATE ON brand_keywords
-  FOR EACH ROW EXECUTE FUNCTION update_brand_keywords_updated_at();
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ── brand_trend_cache ───────────────────────────────────────
 
