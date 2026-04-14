@@ -620,12 +620,12 @@ function TrendChartCard({
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-[260px] space-y-1.5">
                 <p className="text-xs font-medium">Was bedeutet der Index?</p>
-                <ul className="space-y-1 text-xs text-slate-300">
-                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5">100</span><span>= maximales Interesse im gewählten Zeitraum (Höchstwert)</span></li>
-                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5">50</span><span>= halb so viel Interesse wie der Spitzenwert</span></li>
-                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5">0</span><span>= kaum oder kein messbares Suchinteresse</span></li>
+                <ul className="space-y-1 text-xs opacity-90">
+                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5 font-medium">100</span><span>= maximales Interesse im gewählten Zeitraum (Höchstwert)</span></li>
+                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5 font-medium">50</span><span>= halb so viel Interesse wie der Spitzenwert</span></li>
+                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5 font-medium">0</span><span>= kaum oder kein messbares Suchinteresse</span></li>
                 </ul>
-                <p className="text-[11px] text-slate-400 pt-0.5">Der Index ist relativ — absolute Suchvolumina werden nicht angezeigt.</p>
+                <p className="text-[11px] opacity-70 pt-0.5">Der Index ist relativ — keine absoluten Suchvolumina.</p>
               </TooltipContent>
             </Tooltip>
           </CardTitle>
