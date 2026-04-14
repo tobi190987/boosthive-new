@@ -32,6 +32,7 @@ import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
 import { GlobalCommandPalette } from '@/components/global-command-palette'
 import { useActiveCustomer } from '@/lib/active-customer-context'
+import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { writeSessionCache } from '@/lib/client-cache'
 import type { ShellNotification } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
@@ -292,6 +293,10 @@ function NavigationContent({
       </div>
       <Separator className="bg-slate-100 dark:bg-slate-800" />
 
+      <div className="px-3 py-3 pb-0">
+        <CustomerSelectorDropdown />
+      </div>
+
       <nav className="flex-1 px-3 py-3" aria-label="Hauptnavigation" data-tour="sidebar-nav">
         <div className="space-y-6">
           {/* Dashboard — alleinstehend ohne Label */}
@@ -407,7 +412,7 @@ function NavigationContent({
                         <span className="flex items-center gap-1.5">
                           {hasAccess ? (
                             <>
-                              {tool.href === '/tools/kanban' && openApprovalsCount > 0 && (
+                              {(tool.href === '/tools/kanban' || tool.href === '/tools/approvals') && openApprovalsCount > 0 && (
                                 <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                                   {openApprovalsCount}
                                 </span>

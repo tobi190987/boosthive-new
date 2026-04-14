@@ -17,7 +17,7 @@ export function ModuleLockedCard({ moduleName, isAdmin }: ModuleLockedCardProps)
         <h2 className="text-xl font-semibold text-foreground">{moduleName} ist nicht freigeschaltet</h2>
         <p className="text-sm text-muted-foreground max-w-md">
           {isAdmin
-            ? "Dieses Modul ist noch nicht aktiviert. Gehe zu den Einstellungen um es freizuschalten."
+            ? "Dieses Modul ist noch nicht aktiviert. Gehe zur Abrechnung um es freizuschalten."
             : "Dieses Modul ist nicht in deinem Plan enthalten. Kontaktiere deinen Administrator."}
         </p>
       </div>

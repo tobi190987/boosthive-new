@@ -10,6 +10,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb'
+import { useActiveCustomer } from '@/lib/active-customer-context'
 
 const SEGMENT_LABELS: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -50,6 +51,7 @@ function segmentToLabel(segment: string): string {
 
 export function AppBreadcrumb() {
   const pathname = usePathname()
+  const { activeCustomer } = useActiveCustomer()
 
   // Split path and filter empty segments
   const segments = pathname.split('/').filter(Boolean)
@@ -71,26 +73,34 @@ export function AppBreadcrumb() {
   if (items.length === 0) return null
 
   return (
-    <Breadcrumb>
-      <BreadcrumbList>
-        {items.map((item, index) => {
-          const isLast = index === items.length - 1
-          return (
-            <span key={item.href} className="flex items-center gap-1.5">
-              {index > 0 && <BreadcrumbSeparator />}
-              <BreadcrumbItem>
-                {isLast ? (
-                  <BreadcrumbPage>{item.label}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link href={item.href}>{item.label}</Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            </span>
-          )
-        })}
-      </BreadcrumbList>
-    </Breadcrumb>
+    <div className="flex items-center gap-3 min-w-0">
+      <Breadcrumb>
+        <BreadcrumbList>
+          {items.map((item, index) => {
+            const isLast = index === items.length - 1
+            return (
+              <span key={item.href} className="flex items-center gap-1.5">
+                {index > 0 && <BreadcrumbSeparator />}
+                <BreadcrumbItem>
+                  {isLast ? (
+                    <BreadcrumbPage>{item.label}</BreadcrumbPage>
+                  ) : (
+                    <BreadcrumbLink asChild>
+                      <Link href={item.href}>{item.label}</Link>
+                    </BreadcrumbLink>
+                  )}
+                </BreadcrumbItem>
+              </span>
+            )
+          })}
+        </BreadcrumbList>
+      </Breadcrumb>
+      {activeCustomer && (
+        <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-400 shrink-0">
+          <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+          {activeCustomer.name}
+        </span>
+      )}
+    </div>
   )
 }
