@@ -145,19 +145,12 @@ function isProfane(hashtag: string): boolean {
 // ---------------------------------------------------------------------------
 
 export function checkPlatformAvailability(): SocialTrendResponse['availability'] {
-  const hasTikTok = Boolean(
-    process.env.TIKTOK_RESEARCH_API_KEY || process.env.APIFY_TOKEN
-  )
-  const hasRapid = Boolean(process.env.RAPIDAPI_SOCIAL_TRENDS_KEY)
-  return {
-    tiktok: hasTikTok,
-    instagram: hasRapid,
-    youtube: hasRapid,
-  }
+  const hasKey = Boolean(process.env.SERPAPI_KEY)
+  return { tiktok: hasKey, instagram: hasKey, youtube: hasKey }
 }
 
 // ---------------------------------------------------------------------------
-// Fetcher (Plattform-spezifisch)
+// Fetcher — alle Plattformen via SerpAPI Google Trends
 // ---------------------------------------------------------------------------
 
 interface FetchArgs {
@@ -166,316 +159,177 @@ interface FetchArgs {
   period: SocialPeriod
 }
 
+const SERPAPI_TRENDS_BASE = 'https://serpapi.com/search.json'
+
+const PERIOD_TO_SERPAPI: Record<SocialPeriod, string> = {
+  today: 'now 1-d',
+  week: 'now 7-d',
+  month: 'today 1-m',
+}
+
+interface SerpapiRelatedQuery {
+  query?: string
+  value?: number | string
+  extracted_value?: number
+  link?: string
+}
+
+interface SerpapiTimelineEntry {
+  date?: string
+  values?: Array<{ value?: string | number; extracted_value?: number }>
+}
+
+interface SerpapiYouTubeVideo {
+  video_id?: string
+  title?: string
+  link?: string
+  thumbnail?: { static?: string; rich?: string }
+  channel?: { name?: string }
+  views?: number
+  view_count?: string
+}
+
 async function fetchPlatformTrends(args: FetchArgs): Promise<SocialTrendPayload> {
-  const { platform } = args
-  if (platform === 'tiktok') return fetchTikTokTrends(args)
-  if (platform === 'instagram') return fetchInstagramTrends(args)
-  return fetchYouTubeTrends(args)
-}
-
-// ─── TikTok ──────────────────────────────────────────────────
-async function fetchTikTokTrends(args: FetchArgs): Promise<SocialTrendPayload> {
-  const apiKey = process.env.TIKTOK_RESEARCH_API_KEY
-  const apifyToken = process.env.APIFY_TOKEN
-  if (!apiKey && !apifyToken) {
-    throw new SocialTrendsApiError(
-      'Weder TIKTOK_RESEARCH_API_KEY noch APIFY_TOKEN gesetzt.',
-      500
-    )
-  }
-
-  // TikTok Research API (primär)
-  if (apiKey) {
-    const url = new URL('https://open.tiktokapis.com/v2/research/hashtag/query/')
-    const res = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: { keyword: args.category },
-        period: mapPeriodForTikTok(args.period),
-        max_count: MAX_HASHTAGS,
-      }),
-      cache: 'no-store',
-    })
-    if (res.status === 429) throw new SocialTrendsRateLimitError()
-    if (res.ok) {
-      const json = (await res.json().catch(() => null)) as unknown
-      const parsed = parseTikTokResponse(json)
-      if (parsed.hashtags.length > 0) return parsed
-    }
-    // sonst Fallback auf Apify
-  }
-
-  if (apifyToken) {
-    return fetchTikTokViaApify(args, apifyToken)
-  }
-
-  return { hashtags: [] }
-}
-
-function mapPeriodForTikTok(period: SocialPeriod): number {
-  // TikTok Research API erwartet Tage
-  if (period === 'today') return 1
-  if (period === 'week') return 7
-  return 30
-}
-
-interface TikTokApiResponse {
-  data?: {
-    hashtags?: Array<{
-      hashtag_name?: string
-      publish_cnt?: number
-      view_cnt?: number
-      rank_diff?: number
-      trend?: Array<{ time?: string; value?: number }>
-      videos?: Array<{
-        id?: string
-        title?: string
-        url?: string
-        cover_image_url?: string
-        author?: { unique_id?: string }
-        view_count?: number
-      }>
-    }>
-  }
-}
-
-function parseTikTokResponse(raw: unknown): SocialTrendPayload {
-  const data = (raw as TikTokApiResponse)?.data
-  const list = data?.hashtags ?? []
-  const hashtags: SocialHashtagTrend[] = []
-  for (const entry of list) {
-    const name = entry.hashtag_name?.trim()
-    if (!name) continue
-    if (isProfane(name)) continue
-    const sparkline = normalizeSparkline(
-      (entry.trend ?? [])
-        .map((point) => {
-          const date = parseDate(point.time)
-          if (!date) return null
-          return { date, value: safeValue(point.value ?? 0) }
-        })
-        .filter((p): p is SocialSparklinePoint => p !== null)
-        .slice(-14)
-    )
-    hashtags.push({
-      hashtag: name.startsWith('#') ? name : `#${name}`,
-      volume: entry.publish_cnt ?? entry.view_cnt ?? null,
-      direction: deriveDirection(sparkline, entry.rank_diff),
-      sparkline,
-      examples: (entry.videos ?? [])
-        .slice(0, MAX_EXAMPLES_PER_HASHTAG)
-        .map((v, index) => ({
-          id: v.id ?? `tiktok-${name}-${index}`,
-          title: v.title ?? name,
-          url: v.url ?? '',
-          thumbnailUrl: v.cover_image_url ?? null,
-          author: v.author?.unique_id ?? null,
-          views: v.view_count ?? null,
-        }))
-        .filter((ex) => ex.url.length > 0),
-    })
-    if (hashtags.length >= MAX_HASHTAGS) break
-  }
-  return { hashtags }
-}
-
-async function fetchTikTokViaApify(
-  args: FetchArgs,
-  token: string
-): Promise<SocialTrendPayload> {
-  const url = new URL(
-    'https://api.apify.com/v2/acts/clockworks~tiktok-scraper/run-sync-get-dataset-items'
-  )
-  url.searchParams.set('token', token)
-  url.searchParams.set('timeout', '60')
-  const res = await fetch(url.toString(), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      hashtags: [args.category],
-      resultsPerPage: MAX_HASHTAGS,
-      shouldDownloadVideos: false,
-    }),
-    cache: 'no-store',
-  })
-  if (res.status === 429) throw new SocialTrendsRateLimitError()
-  if (!res.ok) {
-    throw new SocialTrendsApiError(
-      `Apify TikTok-Scraper Fehler: HTTP ${res.status}`,
-      res.status
-    )
-  }
-  const items = (await res.json().catch(() => [])) as Array<{
-    hashtags?: Array<{ name?: string }>
-    playCount?: number
-    webVideoUrl?: string
-    text?: string
-    authorMeta?: { name?: string }
-    covers?: { default?: string }
-    id?: string
-  }>
-
-  // Aggregiere Hashtag-Counts aus Apify-Videos
-  const aggregate = new Map<
-    string,
-    { volume: number; examples: SocialContentExample[] }
-  >()
-  for (const item of items) {
-    const videoTags = item.hashtags ?? []
-    for (const tag of videoTags) {
-      const name = tag.name?.trim()
-      if (!name || isProfane(name)) continue
-      const key = name.startsWith('#') ? name : `#${name}`
-      const entry = aggregate.get(key) ?? { volume: 0, examples: [] }
-      entry.volume += item.playCount ?? 0
-      if (entry.examples.length < MAX_EXAMPLES_PER_HASHTAG && item.webVideoUrl) {
-        entry.examples.push({
-          id: item.id ?? `${key}-${entry.examples.length}`,
-          title: item.text ?? key,
-          url: item.webVideoUrl,
-          thumbnailUrl: item.covers?.default ?? null,
-          author: item.authorMeta?.name ?? null,
-          views: item.playCount ?? null,
-        })
-      }
-      aggregate.set(key, entry)
-    }
-  }
-
-  const hashtags: SocialHashtagTrend[] = Array.from(aggregate.entries())
-    .sort((a, b) => b[1].volume - a[1].volume)
-    .slice(0, MAX_HASHTAGS)
-    .map(([name, entry]) => ({
-      hashtag: name,
-      volume: entry.volume,
-      direction: 'stable' as TrendDirection,
-      sparkline: [], // Apify liefert keine Timeline
-      examples: entry.examples,
-    }))
-
-  return { hashtags }
-}
-
-// ─── Instagram / YouTube via RapidAPI ───────────────────────
-async function fetchInstagramTrends(args: FetchArgs): Promise<SocialTrendPayload> {
-  return fetchRapidApiTrends({ ...args, platform: 'instagram' })
-}
-
-async function fetchYouTubeTrends(args: FetchArgs): Promise<SocialTrendPayload> {
-  return fetchRapidApiTrends({ ...args, platform: 'youtube' })
-}
-
-async function fetchRapidApiTrends(args: FetchArgs): Promise<SocialTrendPayload> {
-  const apiKey = process.env.RAPIDAPI_SOCIAL_TRENDS_KEY
-  const host =
-    process.env.RAPIDAPI_SOCIAL_TRENDS_HOST ?? 'social-trends.p.rapidapi.com'
+  const apiKey = process.env.SERPAPI_KEY
   if (!apiKey) {
-    throw new SocialTrendsApiError('RAPIDAPI_SOCIAL_TRENDS_KEY ist nicht konfiguriert.', 500)
+    throw new SocialTrendsApiError('SERPAPI_KEY ist nicht konfiguriert.', 500)
+  }
+  const key: string = apiKey
+
+  const dateParam = PERIOD_TO_SERPAPI[args.period]
+
+  function trendsUrl(dataType: string): string {
+    const u = new URL(SERPAPI_TRENDS_BASE)
+    u.searchParams.set('engine', 'google_trends')
+    u.searchParams.set('q', args.category)
+    u.searchParams.set('data_type', dataType)
+    u.searchParams.set('date', dateParam)
+    u.searchParams.set('geo', 'DE')
+    u.searchParams.set('hl', 'de')
+    u.searchParams.set('api_key', key)
+    return u.toString()
   }
 
-  const url = new URL(`https://${host}/hashtags/trending`)
-  url.searchParams.set('platform', args.platform)
-  url.searchParams.set('query', args.category)
-  url.searchParams.set('period', args.period)
-  url.searchParams.set('limit', String(MAX_HASHTAGS))
-
-  const res = await fetch(url.toString(), {
-    headers: {
-      'X-RapidAPI-Key': apiKey,
-      'X-RapidAPI-Host': host,
-    },
-    cache: 'no-store',
-  })
-  if (res.status === 429) throw new SocialTrendsRateLimitError()
-  if (!res.ok) {
-    throw new SocialTrendsApiError(
-      `RapidAPI ${args.platform} error: HTTP ${res.status}`,
-      res.status
-    )
+  // Für YouTube: zusätzlich echte Video-Ergebnisse holen
+  const fetchList: Promise<Response>[] = [
+    fetch(trendsUrl('RELATED_QUERIES'), { cache: 'no-store' }),
+    fetch(trendsUrl('TIMESERIES'), { cache: 'no-store' }),
+  ]
+  if (args.platform === 'youtube') {
+    const ytUrl = new URL(SERPAPI_TRENDS_BASE)
+    ytUrl.searchParams.set('engine', 'youtube')
+    ytUrl.searchParams.set('search_query', args.category)
+    ytUrl.searchParams.set('hl', 'de')
+    ytUrl.searchParams.set('gl', 'DE')
+    ytUrl.searchParams.set('api_key', key)
+    fetchList.push(fetch(ytUrl.toString(), { cache: 'no-store' }))
   }
-  const json = (await res.json().catch(() => null)) as unknown
-  return parseRapidApiResponse(json)
-}
 
-interface RapidApiResponse {
-  hashtags?: Array<{
-    tag?: string
-    hashtag?: string
-    volume?: number
-    posts?: number
-    direction?: string
-    sparkline?: Array<{ date?: string; value?: number }>
-    history?: Array<{ date?: string; value?: number }>
-    examples?: Array<{
-      id?: string
-      title?: string
-      caption?: string
-      url?: string
-      link?: string
-      thumbnail?: string
-      cover?: string
-      author?: string
-      views?: number
-      play_count?: number
-    }>
-  }>
-}
+  const [queriesRes, timelineRes, ytRes] = await Promise.all(fetchList)
 
-function parseRapidApiResponse(raw: unknown): SocialTrendPayload {
-  const list = (raw as RapidApiResponse)?.hashtags ?? []
-  const hashtags: SocialHashtagTrend[] = []
-  for (const entry of list) {
-    const rawName = (entry.tag ?? entry.hashtag ?? '').trim()
-    if (!rawName) continue
-    if (isProfane(rawName)) continue
-    const name = rawName.startsWith('#') ? rawName : `#${rawName}`
-    const spark = normalizeSparkline(
-      (entry.sparkline ?? entry.history ?? [])
-        .map((p) => {
-          const date = parseDate(p.date)
-          if (!date) return null
-          return { date, value: safeValue(p.value ?? 0) }
+  if ([queriesRes, timelineRes, ytRes].some((r) => r?.status === 429)) {
+    throw new SocialTrendsRateLimitError()
+  }
+
+  // Timeseries → gemeinsame Sparkline-Basis für alle Hashtags
+  let baseSparkline: SocialSparklinePoint[] = []
+  if (timelineRes.ok) {
+    const tJson = (await timelineRes.json().catch(() => null)) as {
+      interest_over_time?: { timeline_data?: SerpapiTimelineEntry[] }
+    } | null
+    baseSparkline = normalizeSparkline(
+      (tJson?.interest_over_time?.timeline_data ?? [])
+        .map((entry) => {
+          const rawDate = entry.date?.split('–')[0].trim() ?? ''
+          const date = parseDate(rawDate)
+          const val =
+            entry.values?.[0]?.extracted_value ??
+            Number(entry.values?.[0]?.value ?? NaN)
+          if (!date || !Number.isFinite(val)) return null
+          return { date, value: safeValue(val) }
         })
         .filter((p): p is SocialSparklinePoint => p !== null)
         .slice(-14)
     )
-
-    hashtags.push({
-      hashtag: name,
-      volume: entry.volume ?? entry.posts ?? null,
-      direction: normalizeDirection(entry.direction) ?? deriveDirection(spark),
-      sparkline: spark,
-      examples: (entry.examples ?? [])
-        .slice(0, MAX_EXAMPLES_PER_HASHTAG)
-        .map((ex, index) => {
-          const url = ex.url ?? ex.link ?? ''
-          return {
-            id: ex.id ?? `${name}-${index}`,
-            title: ex.title ?? ex.caption ?? name,
-            url,
-            thumbnailUrl: ex.thumbnail ?? ex.cover ?? null,
-            author: ex.author ?? null,
-            views: ex.views ?? ex.play_count ?? null,
-          }
-        })
-        .filter((ex) => ex.url.length > 0),
-    })
-    if (hashtags.length >= MAX_HASHTAGS) break
   }
-  return { hashtags }
-}
 
-function normalizeDirection(value: string | undefined): TrendDirection | null {
-  if (!value) return null
-  const v = value.toLowerCase()
-  if (v === 'rising' || v === 'up' || v === 'increasing') return 'rising'
-  if (v === 'falling' || v === 'down' || v === 'decreasing') return 'falling'
-  if (v === 'stable' || v === 'flat') return 'stable'
-  return null
+  // Related Queries → Hashtags
+  const hashtags: SocialHashtagTrend[] = []
+  if (queriesRes.ok) {
+    const qJson = (await queriesRes.json().catch(() => null)) as {
+      related_queries?: {
+        rising?: SerpapiRelatedQuery[]
+        top?: SerpapiRelatedQuery[]
+      }
+      error?: string
+    } | null
+
+    const rising = qJson?.related_queries?.rising ?? []
+    const top = qJson?.related_queries?.top ?? []
+
+    // TikTok: Rising-Queries zuerst (neueste Trends)
+    // Instagram: Top-Queries zuerst (bewährte Themen)
+    // YouTube: Rising zuerst, dann Top
+    const ordered =
+      args.platform === 'instagram'
+        ? [...top, ...rising]
+        : [...rising, ...top]
+
+    const seen = new Set<string>()
+    for (const item of ordered) {
+      const query = item.query?.trim()
+      if (!query) continue
+      const key = query.toLowerCase()
+      if (seen.has(key) || isProfane(query)) continue
+      seen.add(key)
+
+      const isRising = rising.some((r) => r.query?.trim().toLowerCase() === key)
+      const tag = `#${query.replace(/\s+/g, '').toLowerCase()}`
+
+      hashtags.push({
+        hashtag: tag,
+        volume: typeof item.extracted_value === 'number' ? item.extracted_value : null,
+        direction: isRising ? 'rising' : 'stable',
+        sparkline: baseSparkline,
+        examples: [],
+      })
+      if (hashtags.length >= MAX_HASHTAGS) break
+    }
+  }
+
+  // YouTube: Top-5 Video-Beispiele an den ersten Hashtag hängen
+  if (args.platform === 'youtube' && ytRes?.ok) {
+    const ytJson = (await ytRes.json().catch(() => null)) as {
+      video_results?: SerpapiYouTubeVideo[]
+    } | null
+    const videos = ytJson?.video_results ?? []
+    const examples: SocialContentExample[] = videos
+      .slice(0, MAX_EXAMPLES_PER_HASHTAG)
+      .map((v, i) => ({
+        id: v.video_id ?? `yt-${i}`,
+        title: v.title ?? args.category,
+        url: v.link ?? '',
+        thumbnailUrl: v.thumbnail?.static ?? v.thumbnail?.rich ?? null,
+        author: v.channel?.name ?? null,
+        views: v.views ?? null,
+      }))
+      .filter((ex) => ex.url.length > 0)
+
+    if (hashtags.length > 0) {
+      hashtags[0].examples = examples
+    } else if (examples.length > 0) {
+      // Keine Related Queries → zeige Videos unter Kategorie-Hashtag
+      hashtags.push({
+        hashtag: `#${args.category.replace(/\s+/g, '').toLowerCase()}`,
+        volume: null,
+        direction: 'stable',
+        sparkline: baseSparkline,
+        examples,
+      })
+    }
+  }
+
+  return { hashtags }
 }
 
 function deriveDirection(
@@ -567,10 +421,7 @@ export async function getSocialTrends(
       category: normalizedCategory,
       cachedAt: null,
       unavailable: true,
-      unavailableReason:
-        platform === 'tiktok'
-          ? 'TikTok-API-Key fehlt. Bitte TIKTOK_RESEARCH_API_KEY oder APIFY_TOKEN setzen.'
-          : 'RapidAPI-Key fehlt. Bitte RAPIDAPI_SOCIAL_TRENDS_KEY setzen.',
+      unavailableReason: 'SERPAPI_KEY ist nicht konfiguriert.',
       availability,
     }
   }

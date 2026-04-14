@@ -98,6 +98,8 @@ async function fetchTrendFromSerpapi(
   timelineUrl.searchParams.set('q', keyword)
   timelineUrl.searchParams.set('data_type', 'TIMESERIES')
   timelineUrl.searchParams.set('date', dateParam)
+  timelineUrl.searchParams.set('geo', 'DE')
+  timelineUrl.searchParams.set('hl', 'de')
   timelineUrl.searchParams.set('api_key', apiKey)
 
   // 2) Related queries
@@ -106,6 +108,8 @@ async function fetchTrendFromSerpapi(
   relatedQueriesUrl.searchParams.set('q', keyword)
   relatedQueriesUrl.searchParams.set('data_type', 'RELATED_QUERIES')
   relatedQueriesUrl.searchParams.set('date', dateParam)
+  relatedQueriesUrl.searchParams.set('geo', 'DE')
+  relatedQueriesUrl.searchParams.set('hl', 'de')
   relatedQueriesUrl.searchParams.set('api_key', apiKey)
 
   // 3) Related topics
@@ -114,6 +118,8 @@ async function fetchTrendFromSerpapi(
   relatedTopicsUrl.searchParams.set('q', keyword)
   relatedTopicsUrl.searchParams.set('data_type', 'RELATED_TOPICS')
   relatedTopicsUrl.searchParams.set('date', dateParam)
+  relatedTopicsUrl.searchParams.set('geo', 'DE')
+  relatedTopicsUrl.searchParams.set('hl', 'de')
   relatedTopicsUrl.searchParams.set('api_key', apiKey)
 
   const [timelineRes, queriesRes, topicsRes] = await Promise.all([
@@ -138,6 +144,13 @@ async function fetchTrendFromSerpapi(
     error?: string
   }
   if (timelineJson.error) {
+    // "no results" ist kein technischer Fehler — leere Payload zurückgeben
+    if (
+      timelineJson.error.toLowerCase().includes('no results') ||
+      timelineJson.error.toLowerCase().includes('hasn') // "hasn't returned any results"
+    ) {
+      return { timeline: [], relatedQueries: [], relatedTopics: [] }
+    }
     throw new TrendsApiError(`SerpAPI: ${timelineJson.error}`, 502)
   }
 

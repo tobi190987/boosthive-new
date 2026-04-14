@@ -123,13 +123,12 @@ async function fetchMentionsFromExa(
       'x-api-key': apiKey,
     },
     body: JSON.stringify({
-      query: `"${keyword}"`,
+      query: keyword,
       type: 'neural',
-      useAutoprompt: true,
-      numResults: MAX_MENTIONS,
+      numResults: 25,
       startPublishedDate: `${startDate}T00:00:00.000Z`,
       contents: {
-        highlights: { numSentences: 2, highlightsPerUrl: 1 },
+        text: { maxCharacters: 500 },
       },
     }),
     cache: 'no-store',
@@ -152,7 +151,7 @@ async function fetchMentionsFromExa(
     const url = entry.url?.trim() ?? ''
     const hostname = safeHostname(url)
     const snippet =
-      (entry.highlights?.[0]?.trim() || entry.text?.trim() || '').slice(0, 500)
+      (entry.text?.trim() || entry.highlights?.[0]?.trim() || '').slice(0, 500)
 
     return {
       id: entry.id || `${idx}-${hostname}`,
