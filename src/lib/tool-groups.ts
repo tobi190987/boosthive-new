@@ -136,6 +136,62 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
   },
 ]
 
+export const MODULE_HELP: Record<string, { tagline: string; features: string[] }> = {
+  seo_analyse: {
+    tagline: 'Vollständige SEO-Analyse und Keyword-Tracking für deine Kunden-Websites.',
+    features: [
+      'On-Page SEO-Analyse (Metadaten, Überschriften, interne Links)',
+      'Google Search Console Integration',
+      'Keyword-Positionen tracken und Rankingverläufe analysieren',
+      'Technische SEO-Fehler erkennen',
+    ],
+  },
+  ai_performance: {
+    tagline: 'KI-gestützte Content- und Kampagnen-Optimierung.',
+    features: [
+      'Performance-Analyse deiner Inhalte und Anzeigen',
+      'KI-Verbesserungsvorschläge für Texte und Creatives',
+      'Vergleich gegen Branchen-Benchmarks',
+    ],
+  },
+  ai_visibility: {
+    tagline: 'Wie präsent ist deine Marke in KI-Antworten wie ChatGPT oder Gemini?',
+    features: [
+      'Sichtbarkeits-Score in LLM-Suchantworten (ChatGPT, Gemini, Perplexity)',
+      'Benchmark gegen Wettbewerber',
+      'GEO-Optimierungsempfehlungen (Generative Engine Optimization)',
+      'Analyse-Historie und Trendverläufe',
+    ],
+  },
+  brand_intelligence: {
+    tagline: 'Google-Trends-Daten, Web-Mentions und Sentiment für deine Kundenmarken.',
+    features: [
+      'Google Trends Verlauf (bis 5 Jahre)',
+      'Web-Mentions Monitoring (News & Blogs)',
+      'Sentiment-Analyse der Erwähnungen',
+      'Social Media Trend Radar',
+    ],
+  },
+  content_briefs: {
+    tagline: 'Strukturierte Content-Briefings für SEO-optimierte Texte.',
+    features: [
+      'KI-generierte Briefing-Strukturen',
+      'SEO-Keyword-Integration',
+      'Freigabe-Workflow mit Kunden',
+      'Status-Tracking (Entwurf → Freigegeben)',
+    ],
+  },
+  ad_generator: {
+    tagline: 'KI-Anzeigentexte generieren und Werbemittel zentral verwalten.',
+    features: [
+      'Anzeigentexte für Google, Meta, LinkedIn und TikTok',
+      'Ads-Bibliothek für genehmigte Werbemittel',
+      'Varianten-Generierung (A/B-Testing-ready)',
+      'Kunden-Freigabe direkt in der App',
+    ],
+  },
+}
+
 export const COLOR_MAP: Record<ColorKey, { icon: string; bg: string }> = {
   blue: { icon: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-950/40' },
   indigo: { icon: 'text-indigo-600 dark:text-indigo-400', bg: 'bg-indigo-50 dark:bg-indigo-950/40' },

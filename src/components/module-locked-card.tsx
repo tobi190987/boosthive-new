@@ -23,7 +23,7 @@ export function ModuleLockedCard({ moduleName, isAdmin }: ModuleLockedCardProps)
       </div>
       {isAdmin && (
         <Button asChild variant="dark">
-          <Link href="/settings/billing">Modul freischalten</Link>
+          <Link href="/billing">Modul freischalten</Link>
         </Button>
       )}
     </div>

@@ -15,7 +15,7 @@ type CacheEntry<T> = {
 }
 
 const APP_DATA_CACHE_MAX_ENTRIES = 200
-const SHELL_SUMMARY_TTL_MS = 15_000
+const SHELL_SUMMARY_TTL_MS = 120_000
 const DASHBOARD_DATA_TTL_MS = 15_000
 const shellSummaryCache = new Map<string, CacheEntry<TenantShellSummary>>()
 const shellSummaryInflight = new Map<string, Promise<TenantShellSummary>>()

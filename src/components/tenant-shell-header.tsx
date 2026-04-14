@@ -6,6 +6,7 @@ interface TenantShellHeaderProps {
   eyebrow: string
   title: string
   description: string
+  features?: string[]
 }
 
 export function TenantShellHeader({
@@ -13,6 +14,7 @@ export function TenantShellHeader({
   eyebrow,
   title,
   description,
+  features,
 }: TenantShellHeaderProps) {
   return (
     <section className="relative overflow-hidden rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-6 shadow-soft sm:p-8">
@@ -32,6 +34,16 @@ export function TenantShellHeader({
                 {description}
               </p>
             ) : null}
+            {features && features.length > 0 && (
+              <ul className="mt-3 space-y-1">
+                {features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <span className="mt-0.5 shrink-0 text-slate-400">•</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

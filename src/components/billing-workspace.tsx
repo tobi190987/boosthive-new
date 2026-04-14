@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
 import { StripeCardForm } from '@/components/stripe-card-form'
+import { MODULE_HELP } from '@/lib/tool-groups'
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
@@ -1039,7 +1040,23 @@ function ModuleCatalogCard({
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{mod.name}</p>
-          <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{mod.description}</p>
+          {MODULE_HELP[mod.code] ? (
+            <>
+              <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                {MODULE_HELP[mod.code].tagline}
+              </p>
+              <ul className="mt-2 space-y-0.5">
+                {MODULE_HELP[mod.code].features.map((feature) => (
+                  <li key={feature} className="flex items-start gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="mt-0.5 shrink-0 text-slate-400">•</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{mod.description}</p>
+          )}
         </div>
         <Badge className={`shrink-0 rounded-full ${moduleStatusBadgeClasses(mod.status)}`}>
           {moduleStatusLabel(mod.status)}

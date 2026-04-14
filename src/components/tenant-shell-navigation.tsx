@@ -9,6 +9,7 @@ import {
   CircleHelp,
   CreditCard,
   // Download, // ARCHIVED: Export Center nav item entfernt (April 2026)
+  HelpCircle,
   LayoutDashboard,
   // LayoutGrid, // ARCHIVED: Portfolio nav item entfernt (April 2026)
   Loader2,
@@ -381,7 +382,7 @@ function NavigationContent({
                   const active = isNavActive(pathname, tool.href)
 
                   return (
-                    <li key={tool.href}>
+                    <li key={tool.href} className="group/navitem">
                       <Link
                         href={tool.href}
                         onClick={() => handleNavigate(tool.href)}
@@ -408,24 +409,41 @@ function NavigationContent({
                           )}
                           {tool.label}
                         </span>
-                        {hasAccess ? (
-                          <span className="flex items-center gap-2">
-                            {tool.href === '/tools/kanban' && openApprovalsCount > 0 && (
-                              <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
-                                {openApprovalsCount}
-                              </span>
-                            )}
-                            {visiblePendingHref === tool.href ? (
-                              <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
-                            )}
-                          </span>
-                        ) : (
-                          <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
-                        )}
+                        <span className="flex items-center gap-1.5">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <button
+                                type="button"
+                                onClick={(e) => e.preventDefault()}
+                                tabIndex={-1}
+                                aria-label={`Hilfe: ${tool.label}`}
+                                className="opacity-0 group-hover/navitem:opacity-100 transition-opacity p-0.5 rounded"
+                              >
+                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="max-w-[220px]">
+                              {tool.description}
+                            </TooltipContent>
+                          </Tooltip>
+                          {hasAccess ? (
+                            <>
+                              {tool.href === '/tools/kanban' && openApprovalsCount > 0 && (
+                                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                                  {openApprovalsCount}
+                                </span>
+                              )}
+                              {visiblePendingHref === tool.href ? (
+                                <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
+                              )}
+                            </>
+                          ) : (
+                            <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                          )}
+                        </span>
                       </Link>
-
                     </li>
                   )
                 })}

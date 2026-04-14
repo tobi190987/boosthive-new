@@ -1,4 +1,4 @@
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, unstable_cache } from 'next/cache'
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase'
 import { createAdminClient } from '@/lib/supabase-admin'
@@ -46,6 +46,102 @@ export interface TenantShellContext {
     isComplete: boolean
   }
   activeModuleCodes: string[]
+}
+
+interface CachedTenantShellData {
+  tenant: {
+    id: string
+    slug: string
+    name: string
+    logo_url: string | null
+    billing_company: string | null
+    billing_street: string | null
+    billing_zip: string | null
+    billing_city: string | null
+    billing_country: string | null
+    billing_vat_id: string | null
+    billing_onboarding_completed_at: string | null
+  }
+  profile: {
+    first_name: string | null
+    last_name: string | null
+    avatar_url: string | null
+    notify_on_approval_decision?: boolean | null
+  } | null
+  membership: {
+    role: string
+    status: string
+    onboarding_completed_at: string | null
+  }
+  activeModuleCodes: string[]
+}
+
+/**
+ * Fetches tenant DB data with persistent cross-request caching (5 min TTL).
+ * Auth (getUser) and tenant resolution are NOT cached — only DB records.
+ */
+function fetchCachedTenantShellData(tenantId: string, userId: string) {
+  return unstable_cache(
+    async (): Promise<CachedTenantShellData> => {
+      const admin = createAdminClient()
+
+      const [
+        { data: tenantRecord, error: tenantError },
+        { data: membership, error: membershipError },
+        profileResult,
+        activeModuleCodes,
+      ] = await Promise.all([
+        admin
+          .from('tenants')
+          .select(
+            'id, name, slug, logo_url, billing_company, billing_street, billing_zip, billing_city, billing_country, billing_vat_id, billing_onboarding_completed_at'
+          )
+          .eq('id', tenantId)
+          .single(),
+        admin
+          .from('tenant_members')
+          .select('role, status, onboarding_completed_at')
+          .eq('tenant_id', tenantId)
+          .eq('user_id', userId)
+          .eq('status', 'active')
+          .single(),
+        admin
+          .from('user_profiles')
+          .select('first_name, last_name, avatar_url, notify_on_approval_decision')
+          .eq('user_id', userId)
+          .maybeSingle(),
+        getActiveModuleCodes(tenantId),
+      ])
+
+      let profileData: CachedTenantShellData['profile'] = profileResult.data
+
+      if (isMissingNotifyPreferenceColumn(profileResult.error)) {
+        const fallbackProfile = await admin
+          .from('user_profiles')
+          .select('first_name, last_name, avatar_url')
+          .eq('user_id', userId)
+          .maybeSingle()
+        profileData = fallbackProfile.data
+      }
+
+      if (tenantError || !tenantRecord) {
+        throw new Error('Tenant metadata could not be loaded for: tenant shell.')
+      }
+
+      if (membershipError || !membership) {
+        throw new Error('Tenant membership could not be loaded for: tenant shell.')
+      }
+
+      return {
+        tenant: tenantRecord,
+        profile: profileData,
+        membership,
+        activeModuleCodes,
+      }
+    },
+    ['tenant-shell', tenantId, userId],
+    { revalidate: 300 }
+  )()
 }
 
 /**
@@ -110,63 +206,8 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
   }
 
   try {
-    const admin = createAdminClient()
-
-    const [
-      { data: tenantRecord, error: tenantError },
-      { data: membership, error: membershipError },
-      profileResult,
-      activeModuleCodes,
-    ] = await Promise.all([
-      admin
-        .from('tenants')
-        .select(
-          'id, name, slug, logo_url, billing_company, billing_street, billing_zip, billing_city, billing_country, billing_vat_id, billing_onboarding_completed_at'
-        )
-        .eq('id', tenant.id)
-        .single(),
-      admin
-        .from('tenant_members')
-        .select('role, status, onboarding_completed_at')
-        .eq('tenant_id', tenant.id)
-        .eq('user_id', user.id)
-        .eq('status', 'active')
-        .single(),
-      admin
-        .from('user_profiles')
-        .select('first_name, last_name, avatar_url, notify_on_approval_decision')
-        .eq('user_id', user.id)
-        .maybeSingle(),
-      getActiveModuleCodes(tenant.id),
-    ])
-
-    const tenantData = tenantRecord
-    const membershipData = membership
-    let profileData:
-      | {
-          first_name: string | null
-          last_name: string | null
-          avatar_url: string | null
-          notify_on_approval_decision?: boolean | null
-        }
-      | null = profileResult.data
-
-    if (isMissingNotifyPreferenceColumn(profileResult.error)) {
-      const fallbackProfile = await admin
-        .from('user_profiles')
-        .select('first_name, last_name, avatar_url')
-        .eq('user_id', user.id)
-        .maybeSingle()
-      profileData = fallbackProfile.data
-    }
-
-    if (tenantError || !tenantData) {
-      throw new Error('Tenant metadata could not be loaded for: tenant shell.')
-    }
-
-    if (membershipError || !membershipData) {
-      throw new Error('Tenant membership could not be loaded for: tenant shell.')
-    }
+    const cached = await fetchCachedTenantShellData(tenant.id, user.id)
+    const { tenant: tenantData, profile: profileData, membership: membershipData, activeModuleCodes } = cached
 
     const onboardingComplete = isOnboardingComplete({
       role: membershipData.role as TenantShellRole,
@@ -175,7 +216,7 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
       onboardingCompletedAt: membershipData.onboarding_completed_at,
     })
 
-    const resolvedContext = {
+    return {
       tenant: {
         id: tenantData.id,
         slug: tenantData.slug,
@@ -206,8 +247,6 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
       },
       activeModuleCodes,
     } satisfies TenantShellContext
-
-    return resolvedContext
   } catch (error) {
     // Fallback to mock data for development
     if (process.env.NODE_ENV === 'development') {
@@ -250,7 +289,6 @@ export const requireTenantShellContext = cache(async (): Promise<TenantShellCont
 export function invalidateTenantShellContext(tenantId: string, userId: string) {
   void tenantId
   void userId
-
   revalidatePath('/', 'layout')
   revalidatePath('/dashboard')
   revalidatePath('/onboarding')

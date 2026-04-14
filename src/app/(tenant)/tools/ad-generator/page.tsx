@@ -2,6 +2,7 @@ import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { AdGeneratorWorkspace } from '@/components/ad-generator-workspace'
 import { ModuleLockedCard } from '@/components/module-locked-card'
 import { TenantShellHeader } from '@/components/tenant-shell-header'
+import { MODULE_HELP } from '@/lib/tool-groups'
 
 export default async function AdGeneratorPage() {
   const context = await requireTenantShellContext()
@@ -13,6 +14,8 @@ export default async function AdGeneratorPage() {
     return <ModuleLockedCard moduleName="Ad Generator" isAdmin={isAdmin} />
   }
 
+  const help = MODULE_HELP['ad_generator']
+
   return (
     <div className="space-y-6">
       <TenantShellHeader
@@ -20,6 +23,7 @@ export default async function AdGeneratorPage() {
         eyebrow="Content & Kampagnen"
         title="Ad Generator"
         description="KI-gestützte Anzeigentexte für Facebook, LinkedIn, TikTok und Google Ads — in Sekunden."
+        features={help?.features}
       />
       <AdGeneratorWorkspace />
     </div>

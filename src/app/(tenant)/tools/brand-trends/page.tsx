@@ -2,6 +2,8 @@ import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { BrandTrendsWorkspace } from '@/components/brand-trends-workspace'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { ModuleLockedCard } from '@/components/module-locked-card'
+import { ModuleHelpTooltip } from '@/components/module-help-tooltip'
+import { MODULE_HELP } from '@/lib/tool-groups'
 
 export default async function BrandTrendsPage() {
   const context = await requireTenantShellContext()
@@ -14,13 +16,18 @@ export default async function BrandTrendsPage() {
     return <ModuleLockedCard moduleName="Brand Trends" isAdmin={isAdmin} />
   }
 
+  const help = MODULE_HELP['brand_intelligence']
+
   return (
     <>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-            Brand Intelligence
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
+              Brand Intelligence
+            </h1>
+            {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
+          </div>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             Google-Trends-Verläufe, Web-Mentions und Sentiment für deine
             Kunden-Marken.
