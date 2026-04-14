@@ -12,7 +12,6 @@ import {
   BarChart2,
   ChevronsDownUp,
   ChevronsUpDown,
-  CircleHelp,
   Download,
   ExternalLink,
   Eye,
@@ -46,7 +45,6 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
@@ -283,7 +281,6 @@ function formatTimeseriesTooltipValue(label: string, value: unknown): string {
 
 function MetricLabel({
   label,
-  description,
   size = 'default',
 }: {
   label: string
@@ -291,32 +288,10 @@ function MetricLabel({
   size?: 'default' | 'compact'
 }) {
   const textClass = size === 'compact'
-    ? 'text-xs text-slate-500 dark:text-slate-400'
-    : 'text-sm text-slate-500 dark:text-slate-400'
+    ? 'text-xs text-slate-500 dark:text-slate-400 leading-tight'
+    : 'text-sm text-slate-500 dark:text-slate-400 leading-tight'
 
-  if (!description) {
-    return <span className={textClass}>{label}</span>
-  }
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <span className={textClass}>{label}</span>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            aria-label={`${label} erklärt`}
-            className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 dark:text-slate-500 dark:hover:text-slate-300 dark:focus-visible:ring-slate-700"
-          >
-            <CircleHelp className="h-3.5 w-3.5" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-64 text-xs leading-5">
-          {description}
-        </TooltipContent>
-      </Tooltip>
-    </div>
-  )
+  return <span className={textClass}>{label}</span>
 }
 
 function KPICard({
@@ -416,9 +391,9 @@ function KPICard({
 
   return (
     <Card className={`rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card h-full ${className ?? ''}`}>
-      <CardContent className="flex h-full items-start gap-4 p-5">
+      <CardContent className="flex h-full items-start gap-2 p-3 sm:gap-4 sm:p-5">
         <div
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl sm:h-11 sm:w-11"
           style={{ backgroundColor: `${color}15` }}
         >
           {icon}
@@ -426,15 +401,15 @@ function KPICard({
         <div className="min-w-0 flex-1">
           {loading ? (
             <>
-              <Skeleton className="mb-1.5 h-7 w-20" />
-              <Skeleton className="h-4 w-24" />
+              <Skeleton className="mb-1.5 h-6 w-16 sm:h-7 sm:w-20" />
+              <Skeleton className="h-3 w-20 sm:h-4 sm:w-24" />
             </>
           ) : (
             <>
-              <p className="text-2xl font-bold tabular-nums text-slate-900 dark:text-slate-50">
+              <p className="text-lg font-bold tabular-nums text-slate-900 dark:text-slate-50 sm:text-2xl">
                 {value ?? '--'}
               </p>
-              <div className="mt-0.5 flex items-center gap-1.5">
+              <div className="mt-0.5 flex flex-wrap items-center gap-1">
                 <MetricLabel label={label} description={description} size="compact" />
                 {trend !== null && (
                   <TrendBadge value={trend} />
@@ -1461,43 +1436,35 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
               {lastRefreshed.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr
             </span>
           )}
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="icon"
-                className="h-9 w-9 shrink-0 rounded-xl"
-                onClick={handleManualRefresh}
-                disabled={anyLoading}
-              >
-                {anyLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Daten aktualisieren</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="rounded-xl"
-                onClick={handleExport}
-                disabled={exporting || anyLoading}
-              >
-                {exporting ? (
-                  <Loader2 className="h-4 w-4 animate-spin lg:mr-2" />
-                ) : (
-                  <Download className="h-4 w-4 lg:mr-2" />
-                )}
-                <span className="hidden lg:inline">Bericht exportieren</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>PDF-Bericht via Browser-Druck erstellen</TooltipContent>
-          </Tooltip>
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-xl"
+            onClick={handleManualRefresh}
+            disabled={anyLoading}
+            aria-label="Daten aktualisieren"
+          >
+            {anyLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-xl"
+            onClick={handleExport}
+            disabled={exporting || anyLoading}
+            aria-label="Bericht exportieren"
+          >
+            {exporting ? (
+              <Loader2 className="h-4 w-4 animate-spin lg:mr-2" />
+            ) : (
+              <Download className="h-4 w-4 lg:mr-2" />
+            )}
+            <span className="hidden lg:inline">Bericht exportieren</span>
+          </Button>
         </div>
       </div>
 
