@@ -1,3 +1,4 @@
+import { unstable_cache } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase-admin'
 import type { PerformanceAnalysis } from '@/lib/performance/types'
 import {
@@ -324,48 +325,56 @@ export async function getTenantShellSummary(
   )
 }
 
+const _cachedKeywordProjectsList = unstable_cache(
+  async (tenantId: string, customerId: string): Promise<KeywordProjectListItem[]> => {
+    const admin = createAdminClient()
+
+    let query = admin
+      .from('keyword_projects')
+      .select(`
+        id,
+        name,
+        target_domain,
+        language_code,
+        country_code,
+        status,
+        last_tracking_run,
+        created_at,
+        keywords(count),
+        competitor_domains(count)
+      `)
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+
+    if (customerId) {
+      query = query.eq('customer_id', customerId)
+    }
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+
+    return (data ?? []).map((project) => ({
+      id: project.id,
+      name: project.name,
+      target_domain: project.target_domain,
+      language_code: project.language_code,
+      country_code: project.country_code,
+      status: project.status,
+      last_tracking_run: project.last_tracking_run,
+      created_at: project.created_at,
+      keyword_count: (project.keywords as { count: number }[] | null)?.[0]?.count ?? 0,
+      competitor_count: (project.competitor_domains as { count: number }[] | null)?.[0]?.count ?? 0,
+    }))
+  },
+  ['keyword-projects-list'],
+  { revalidate: 30 }
+)
+
 export async function getKeywordProjectsList(
   tenantId: string,
   customerId?: string | null
 ): Promise<KeywordProjectListItem[]> {
-  const admin = createAdminClient()
-
-  let query = admin
-    .from('keyword_projects')
-    .select(`
-      id,
-      name,
-      target_domain,
-      language_code,
-      country_code,
-      status,
-      last_tracking_run,
-      created_at,
-      keywords(count),
-      competitor_domains(count)
-    `)
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-
-  if (customerId) {
-    query = query.eq('customer_id', customerId)
-  }
-
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
-
-  return (data ?? []).map((project) => ({
-    id: project.id,
-    name: project.name,
-    target_domain: project.target_domain,
-    language_code: project.language_code,
-    country_code: project.country_code,
-    status: project.status,
-    last_tracking_run: project.last_tracking_run,
-    created_at: project.created_at,
-    keyword_count: (project.keywords as { count: number }[] | null)?.[0]?.count ?? 0,
-    competitor_count: (project.competitor_domains as { count: number }[] | null)?.[0]?.count ?? 0,
-  }))
+  return _cachedKeywordProjectsList(tenantId, customerId ?? '')
 }
 
 export async function getKeywordProjectDetail(
@@ -437,50 +446,58 @@ export async function getKeywordProjectGscStatus(
   }
 }
 
+const _cachedSeoAnalysisSummaries = unstable_cache(
+  async (tenantId: string, customerId: string): Promise<SeoAnalysisSummary[]> => {
+    const admin = createAdminClient()
+    let query = admin
+      .from('seo_analyses')
+      .select('id, status, pages_crawled, pages_total, created_at, completed_at, config')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (customerId) {
+      query = query.eq('customer_id', customerId)
+    }
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+
+    const rows = (data ?? []) as SeoAnalysisRowLite[]
+    const missingSummaryIds = rows
+      .filter((analysis) => analysis.status === 'done' && !readSeoConfigSummary(analysis.config))
+      .map((analysis) => analysis.id)
+
+    const resultMap = new Map<string, unknown>()
+    if (missingSummaryIds.length > 0) {
+      const adminInner = createAdminClient()
+      const { data: analysesWithResult } = await adminInner
+        .from('seo_analyses')
+        .select('id, result')
+        .eq('tenant_id', tenantId)
+        .in('id', missingSummaryIds)
+
+      for (const item of analysesWithResult ?? []) {
+        resultMap.set(item.id, item.result)
+      }
+    }
+
+    return rows.map((analysis) =>
+      mapSeoAnalysisSummaryRow(tenantId, {
+        ...analysis,
+        result: analysis.result ?? resultMap.get(analysis.id),
+      })
+    )
+  },
+  ['seo-analysis-summaries'],
+  { revalidate: 30 }
+)
+
 export async function getSeoAnalysisSummaries(
   tenantId: string,
   customerId?: string | null
 ): Promise<SeoAnalysisSummary[]> {
-  const admin = createAdminClient()
-  let query = admin
-    .from('seo_analyses')
-    .select('id, status, pages_crawled, pages_total, created_at, completed_at, config')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(50)
-
-  if (customerId) {
-    query = query.eq('customer_id', customerId)
-  }
-
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
-
-  const rows = (data ?? []) as SeoAnalysisRowLite[]
-  const missingSummaryIds = rows
-    .filter((analysis) => analysis.status === 'done' && !readSeoConfigSummary(analysis.config))
-    .map((analysis) => analysis.id)
-
-  const resultMap = new Map<string, unknown>()
-  if (missingSummaryIds.length > 0) {
-    const admin = createAdminClient()
-    const { data: analysesWithResult } = await admin
-      .from('seo_analyses')
-      .select('id, result')
-      .eq('tenant_id', tenantId)
-      .in('id', missingSummaryIds)
-
-    for (const item of analysesWithResult ?? []) {
-      resultMap.set(item.id, item.result)
-    }
-  }
-
-  return rows.map((analysis) =>
-    mapSeoAnalysisSummaryRow(tenantId, {
-      ...analysis,
-      result: analysis.result ?? resultMap.get(analysis.id),
-    })
-  )
+  return _cachedSeoAnalysisSummaries(tenantId, customerId ?? '')
 }
 
 export async function getSeoAnalysisStatus(
@@ -520,62 +537,78 @@ export async function getSeoAnalysisStatus(
   }
 }
 
+const _cachedVisibilityProjectsList = unstable_cache(
+  async (tenantId: string, customerId: string) => {
+    const admin = createAdminClient()
+
+    let projectQuery = admin
+      .from('visibility_projects')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(100)
+
+    if (customerId) {
+      projectQuery = projectQuery.eq('customer_id', customerId)
+    }
+
+    const { data: projects, error } = await projectQuery
+    if (error) throw new Error(error.message)
+    if (!projects || projects.length === 0) return []
+
+    const projectIds = projects.map((project) => project.id)
+    const summaries = await getProjectReportSummaryMap(tenantId, projectIds)
+
+    return projects.map((project) => ({
+      ...project,
+      latest_analysis_status: summaries[project.id]?.latestAnalysisStatus ?? null,
+      latest_analysis_at: summaries[project.id]?.latestAnalysisAt ?? null,
+      latest_analytics_status: summaries[project.id]?.latestAnalyticsStatus ?? null,
+      latest_share_of_model: summaries[project.id]?.latestShareOfModel ?? null,
+      trend_delta: summaries[project.id]?.trendDelta ?? null,
+      analysis_count: summaries[project.id]?.analysisCount ?? 0,
+    }))
+  },
+  ['visibility-projects-list'],
+  { revalidate: 30 }
+)
+
 export async function getVisibilityProjectsList(
   tenantId: string,
   customerId?: string | null
 ) {
-  const admin = createAdminClient()
-
-  let projectQuery = admin
-    .from('visibility_projects')
-    .select('*')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(100)
-
-  if (customerId) {
-    projectQuery = projectQuery.eq('customer_id', customerId)
-  }
-
-  const { data: projects, error } = await projectQuery
-  if (error) throw new Error(error.message)
-  if (!projects || projects.length === 0) return []
-
-  const projectIds = projects.map((project) => project.id)
-  const summaries = await getProjectReportSummaryMap(tenantId, projectIds)
-
-  return projects.map((project) => ({
-    ...project,
-    latest_analysis_status: summaries[project.id]?.latestAnalysisStatus ?? null,
-    latest_analysis_at: summaries[project.id]?.latestAnalysisAt ?? null,
-    latest_analytics_status: summaries[project.id]?.latestAnalyticsStatus ?? null,
-    latest_share_of_model: summaries[project.id]?.latestShareOfModel ?? null,
-    trend_delta: summaries[project.id]?.trendDelta ?? null,
-    analysis_count: summaries[project.id]?.analysisCount ?? 0,
-  }))
+  return _cachedVisibilityProjectsList(tenantId, customerId ?? '')
 }
+
+const _cachedContentBriefsList = unstable_cache(
+  async (tenantId: string, customerId: string): Promise<ContentBriefListItem[]> => {
+    const admin = createAdminClient()
+
+    let query = admin
+      .from('content_briefs')
+      .select('id, keyword, language, tone, word_count_target, target_url, status, workflow_status, approval_status, error_message, created_at, updated_at')
+      .eq('tenant_id', tenantId)
+      .order('created_at', { ascending: false })
+      .limit(200)
+
+    if (customerId) {
+      query = query.eq('customer_id', customerId)
+    }
+
+    const { data, error } = await query
+    if (error) throw new Error(error.message)
+
+    return (data ?? []) as ContentBriefListItem[]
+  },
+  ['content-briefs-list'],
+  { revalidate: 30 }
+)
 
 export async function getContentBriefsList(
   tenantId: string,
   customerId?: string | null
 ): Promise<ContentBriefListItem[]> {
-  const admin = createAdminClient()
-
-  let query = admin
-    .from('content_briefs')
-    .select('id, keyword, language, tone, word_count_target, target_url, status, workflow_status, approval_status, error_message, created_at, updated_at')
-    .eq('tenant_id', tenantId)
-    .order('created_at', { ascending: false })
-    .limit(200)
-
-  if (customerId) {
-    query = query.eq('customer_id', customerId)
-  }
-
-  const { data, error } = await query
-  if (error) throw new Error(error.message)
-
-  return (data ?? []) as ContentBriefListItem[]
+  return _cachedContentBriefsList(tenantId, customerId ?? '')
 }
 
 export async function getPerformanceHistoryList(
