@@ -43,7 +43,7 @@ export function TenantAppShell({
             initialOpenApprovalsCount={shellSummary.openApprovalsCount}
             initialNotifications={shellSummary.notifications}
           />
-          <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+          <div className="flex min-h-screen min-w-0 flex-1 flex-col overflow-x-hidden">
             <TenantMobileHeader
               context={context}
               initialOpenApprovalsCount={shellSummary.openApprovalsCount}

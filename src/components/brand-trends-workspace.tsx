@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
-  HelpCircle,
   Plus,
   RefreshCw,
   Star,
@@ -598,43 +597,23 @@ function TrendChartCard({
 
   return (
     <Card className="rounded-2xl border-slate-100 bg-white shadow-soft dark:border-slate-800 dark:bg-slate-950">
-      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-3">
+      <CardHeader className="flex flex-col gap-2 pb-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div>
-          <CardTitle className="flex items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-50">
+          <CardTitle className="flex flex-wrap items-center gap-2 text-base font-semibold text-slate-900 dark:text-slate-50">
             <TrendingUp className="h-4 w-4 text-teal-600 dark:text-teal-400" />
             Trend-Verlauf
             {keyword ? (
-              <span className="text-sm font-normal text-slate-500 dark:text-slate-400">
+              <span className="text-sm font-normal text-slate-500 dark:text-slate-400 break-all">
                 · „{keyword}&#34;
               </span>
             ) : null}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type="button"
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
-                  aria-label="Index-Erklärung"
-                >
-                  <HelpCircle className="h-3.5 w-3.5" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="max-w-[260px] space-y-1.5">
-                <p className="text-xs font-medium">Was bedeutet der Index?</p>
-                <ul className="space-y-1 text-xs opacity-90">
-                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5 font-medium">100</span><span>= maximales Interesse im gewählten Zeitraum (Höchstwert)</span></li>
-                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5 font-medium">50</span><span>= halb so viel Interesse wie der Spitzenwert</span></li>
-                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5 font-medium">0</span><span>= kaum oder kein messbares Suchinteresse</span></li>
-                </ul>
-                <p className="text-[11px] opacity-70 pt-0.5">Der Index ist relativ — keine absoluten Suchvolumina.</p>
-              </TooltipContent>
-            </Tooltip>
           </CardTitle>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Google-Trends-Index (0–100) · {PERIOD_LABELS[period]}
           </p>
         </div>
         {data?.cachedAt ? (
-          <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="flex flex-wrap items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
             {data.stale ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
                 <AlertCircle className="h-3 w-3" />

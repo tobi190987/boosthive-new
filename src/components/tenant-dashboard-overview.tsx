@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import {
   ArrowRight,
   CheckSquare,
-  CircleHelp,
   Clock,
   FileText,
   Loader2,
@@ -19,7 +18,6 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { TenantDashboardData } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
 
@@ -114,49 +112,22 @@ interface StatCardProps {
   loading: boolean
 }
 
-function StatCard({ label, description, value, icon, href, loading }: StatCardProps) {
+function StatCard({ label, value, icon, href, loading }: Omit<StatCardProps, 'description'> & { description?: string }) {
   return (
     <Link
       href={href}
-      className="flex items-center gap-4 rounded-2xl border border-slate-100 bg-white p-4 transition-all hover:border-slate-200 hover:shadow-md dark:border-border dark:bg-card dark:hover:border-[#2d3847]"
+      className="flex items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3 transition-all hover:border-slate-200 hover:shadow-md dark:border-border dark:bg-card dark:hover:border-[#2d3847] sm:gap-4 sm:p-4"
     >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800/50">
+      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 dark:bg-slate-800/50 sm:h-10 sm:w-10">
         {icon}
       </div>
-      <div>
+      <div className="min-w-0">
         {loading ? (
-          <Skeleton className="h-7 w-10" />
+          <Skeleton className="h-6 w-10 sm:h-7" />
         ) : (
-          <p className="text-2xl font-bold text-slate-900 dark:text-slate-50">{value ?? '—'}</p>
+          <p className="text-xl font-bold text-slate-900 dark:text-slate-50 sm:text-2xl">{value ?? '—'}</p>
         )}
-        <div className="flex items-center gap-1.5">
-          <p className="text-xs text-slate-500 dark:text-slate-400">{label}</p>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                role="button"
-                tabIndex={0}
-                aria-label={`${label} erklärt`}
-                className="inline-flex h-4 w-4 items-center justify-center rounded-full text-slate-400 transition-colors hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                onClick={(event) => {
-                  event.preventDefault()
-                  event.stopPropagation()
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') {
-                    event.preventDefault()
-                    event.stopPropagation()
-                  }
-                }}
-              >
-                <CircleHelp className="h-3.5 w-3.5" />
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="max-w-56 text-xs leading-5">
-              {description}
-            </TooltipContent>
-          </Tooltip>
-        </div>
+        <p className="text-[11px] leading-tight text-slate-500 dark:text-slate-400 sm:text-xs">{label}</p>
       </div>
     </Link>
   )

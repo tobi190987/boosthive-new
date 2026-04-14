@@ -587,7 +587,6 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{props.context.tenant.name}</p>
           <div className="mt-1 flex items-center gap-2">
-            <p className="truncate text-xs text-slate-500 dark:text-slate-400">Alle Kunden</p>
             <Badge className="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-600 hover:bg-blue-50 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-950/50">
               {roleLabel(props.context.membership.role)}
             </Badge>
@@ -611,7 +610,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
           <SheetHeader className="sr-only">
             <SheetTitle>Tenant Navigation</SheetTitle>
           </SheetHeader>
-          <div className="flex h-full flex-col bg-white dark:bg-[#080c12]">
+          <div className="flex h-full flex-col overflow-y-auto bg-white dark:bg-[#080c12]">
             <NavigationContent {...props} onNavigate={() => setOpen(false)} inMobileSheet />
           </div>
         </SheetContent>
