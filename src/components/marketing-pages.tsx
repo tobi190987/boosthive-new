@@ -7,16 +7,22 @@ import {
   Bot,
   BriefcaseBusiness,
   CheckCircle2,
+  Database,
   FileStack,
+  Gauge,
   Globe2,
   KeyRound,
   LayoutGrid,
+  Layers,
   LineChart,
   LucideIcon,
+  Mail,
   Megaphone,
+  Rocket,
   Search,
   ShieldCheck,
   Sparkles,
+  TrendingUp,
   Users2,
   Workflow,
 } from 'lucide-react'
@@ -29,6 +35,7 @@ interface MarketingPagesProps {
   mode: PageMode
   pricing?: MarketingPriceItem[]
   tenant: MarketingTenantBranding | null
+  /** Only used for mode='access' (AccessPanel redirect target). Ignored by RootHome. */
   returnTo?: string
 }
 
@@ -648,7 +655,414 @@ function Footer() {
   )
 }
 
+// ==========================================================================
+// Root Landing Page (PROJ-70) – Dark/Modern Marketing Landing für Root-Domain
+// Wird genutzt wenn mode === 'home' && !tenant
+// ==========================================================================
+
+const CONTACT_MAIL = 'hello@boost-hive.de'
+
+const rootValueProps: FeatureItem[] = [
+  {
+    icon: Globe2,
+    title: 'White-Label statt Shared-SaaS',
+    copy: 'Jede Agentur bekommt ihre eigene Subdomain mit eigenem Branding, isoliertem Datenraum und eigenem Team-Login.',
+  },
+  {
+    icon: Layers,
+    title: 'Alles in einer Plattform',
+    copy: 'SEO, AI Visibility, Rankings, Ads, Content, Freigaben: kein Tool-Wechsel mehr, kein Datensilo.',
+  },
+  {
+    icon: Rocket,
+    title: 'Skalierbar ohne Overhead',
+    copy: 'Neue Kunden, neue Agentur-Workspaces — Provisionierung in Minuten statt Tagen.',
+  },
+  {
+    icon: Gauge,
+    title: 'Modularer Aufbau, klare Kosten',
+    copy: 'Basis-Plan plus nur die Module, die wirklich gebraucht werden — keine versteckten Gebühren.',
+  },
+]
+
+const rootModuleFeatures: FeatureItem[] = [
+  {
+    icon: Search,
+    title: 'SEO Analyse & Competitor',
+    copy: 'Technische Audits, Content-Checks und Wettbewerbsvergleiche mit klaren Handlungsempfehlungen.',
+  },
+  {
+    icon: Bot,
+    title: 'AI Visibility Analytics',
+    copy: 'Sichtbarkeit in ChatGPT, Perplexity & Co. — messbar, vergleichbar, reportbar.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Keyword Rankings & GSC',
+    copy: 'Keyword-Projekte, Ranking-Historie und direkte Google-Search-Console-Integration.',
+  },
+  {
+    icon: LineChart,
+    title: 'Marketing Performance',
+    copy: 'GA4, Google Ads, Meta Ads und TikTok Ads in einem gemeinsamen Dashboard.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Content Brief Generator',
+    copy: 'SEO-Briefings für Content-Teams — konsistent, schnell, strukturiert.',
+  },
+  {
+    icon: Megaphone,
+    title: 'Ad Text Generator',
+    copy: 'Anzeigentexte für Paid Kampagnen kanalnah vorbereitet und freigebbar.',
+  },
+  {
+    icon: Workflow,
+    title: 'Client Approval Hub',
+    copy: 'Freigaben, Feedback und finale Entscheidungen in einem nachvollziehbaren Workflow.',
+  },
+  {
+    icon: Database,
+    title: 'Customer Database (CRM)',
+    copy: 'Kundenprofile, Dokumente und Kontaktverlauf pro Tenant zentral verwaltet.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Brand Intelligence',
+    copy: 'Google Trends, Brand Mentions und Social Trend Radar für Brand-Entscheidungen.',
+  },
+]
+
+function RootHeader() {
+  return (
+    <header className="flex flex-col gap-4 py-6 sm:flex-row sm:items-center sm:justify-between">
+      <Link href="/" className="flex items-center gap-3">
+        <Image
+          src="/boosthive_dark.png"
+          alt="BoostHive"
+          width={759}
+          height={213}
+          priority
+          className="h-9 w-auto object-contain"
+        />
+      </Link>
+      <nav className="flex items-center gap-6 text-sm text-slate-300 sm:gap-8">
+        <a href="#features" className="transition hover:text-white">Features</a>
+        <a href="#pricing" className="transition hover:text-white">Pricing</a>
+        <a href="#contact" className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/40 bg-teal-500/10 px-4 py-1.5 text-teal-300 transition hover:border-teal-400/60 hover:bg-teal-500/20">Kontakt</a>
+      </nav>
+    </header>
+  )
+}
+
+function RootHero() {
+  return (
+    <section className="relative grid gap-10 py-16 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-28">
+      <div className="space-y-8">
+        <span className="inline-flex items-center rounded-full border border-teal-500/40 bg-teal-500/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-300">
+          White-Label Marketing OS für Agenturen
+        </span>
+        <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+          Eine Plattform.<br />
+          Dein Branding.<br />
+          <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-teal-400 bg-clip-text text-transparent">
+            Dein Agentur-Workspace.
+          </span>
+        </h1>
+        <p className="max-w-xl text-lg leading-8 text-slate-300">
+          BoostHive bündelt SEO, AI Visibility, Rankings, Paid Ads, Content und Kundenfreigaben in einer eigenen, gebrandeten Agenturumgebung — mit eigener Subdomain und sauber getrennten Daten.
+        </p>
+        <div className="flex flex-wrap gap-3">
+          <a
+            href="#contact"
+            className="inline-flex items-center gap-2 rounded-full bg-[#0f766e] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(15,118,110,0.8)] transition hover:bg-[#0b5f58]"
+          >
+            Demo anfragen
+            <ArrowRight className="h-4 w-4" />
+          </a>
+          <a
+            href="#features"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-slate-100 transition hover:border-white/30 hover:bg-white/10"
+          >
+            Features entdecken
+          </a>
+        </div>
+        <div className="flex flex-wrap gap-6 pt-4 text-sm text-slate-400">
+          {['Eigene Subdomain', 'Isolierter Datenraum', 'Provisionierung in Minuten'].map((item) => (
+            <span key={item} className="inline-flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-teal-400" />
+              {item}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="relative">
+        <div className="absolute inset-0 -z-10 rounded-[2rem] bg-gradient-to-br from-teal-500/20 via-cyan-500/10 to-transparent blur-3xl" />
+        <div className="rounded-[2rem] border border-white/10 bg-gradient-to-br from-slate-900/90 to-slate-950/90 p-6 shadow-[0_40px_120px_-40px_rgba(15,118,110,0.5)] sm:p-8">
+          <div className="flex items-center gap-2 border-b border-white/5 pb-4">
+            <div className="flex gap-1.5">
+              <span className="h-3 w-3 rounded-full bg-red-400/70" />
+              <span className="h-3 w-3 rounded-full bg-yellow-400/70" />
+              <span className="h-3 w-3 rounded-full bg-green-400/70" />
+            </div>
+            <span className="ml-2 text-xs text-slate-500">agentur.boost-hive.de</span>
+          </div>
+          <div className="mt-6 grid gap-4">
+            <div className="rounded-2xl bg-gradient-to-br from-teal-500/20 to-cyan-500/10 p-5 ring-1 ring-teal-400/20">
+              <p className="text-[11px] uppercase tracking-[0.22em] text-teal-300">Workspace</p>
+              <p className="mt-2 text-xl font-semibold text-white">Deine Agentur</p>
+              <p className="mt-1 text-sm text-slate-300">Eigenes Branding, eigene Domain, eigenes Team.</p>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Module</p>
+                <p className="mt-2 text-2xl font-semibold text-white">9</p>
+                <p className="text-xs text-slate-400">Marketing-Tools</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-4 ring-1 ring-white/10">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-slate-400">Rollen</p>
+                <p className="mt-2 text-2xl font-semibold text-white">3</p>
+                <p className="text-xs text-slate-400">Owner · Admin · Member</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function ValueProps() {
+  return (
+    <section className="py-20 sm:py-24">
+      <div className="max-w-3xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-400">Warum BoostHive</p>
+        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Kein weiteres generisches SaaS-Tool — sondern deine gebrandete Agenturplattform.
+        </h2>
+      </div>
+      <div className="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+        {rootValueProps.map((prop) => (
+          <div
+            key={prop.title}
+            className="group rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.04] to-white/[0.01] p-6 transition hover:border-teal-500/30 hover:bg-white/[0.06]"
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-teal-500/10 text-teal-300 ring-1 ring-teal-400/20">
+              <prop.icon className="h-6 w-6" />
+            </div>
+            <h3 className="mt-5 text-lg font-semibold text-white">{prop.title}</h3>
+            <p className="mt-2 text-sm leading-7 text-slate-400">{prop.copy}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function ModulesGrid() {
+  return (
+    <section id="features" className="py-20 sm:py-24">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="max-w-2xl">
+          <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-400">Features</p>
+          <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            Alle Kern-Module für den Agentur-Alltag.
+          </h2>
+        </div>
+        <p className="max-w-md text-sm leading-7 text-slate-400">
+          Von SEO über AI Visibility bis zu Paid Ads und Content-Workflows: jedes Modul ist separat zubuchbar.
+        </p>
+      </div>
+      <div className="mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {rootModuleFeatures.map((feature) => (
+          <div
+            key={feature.title}
+            className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 transition hover:border-teal-500/30 hover:bg-white/[0.04]"
+          >
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-500/10 text-teal-300 ring-1 ring-teal-400/20">
+              <feature.icon className="h-5 w-5" />
+            </div>
+            <h3 className="mt-4 text-base font-semibold text-white">{feature.title}</h3>
+            <p className="mt-2 text-sm leading-6 text-slate-400">{feature.copy}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function RootPricing({ pricing }: { pricing: MarketingPriceItem[] }) {
+  const hasPricing = pricing.length > 0
+  const basePlan = hasPricing ? pricing[0] : null
+  const modules = hasPricing ? pricing.slice(1) : []
+
+  return (
+    <section id="pricing" className="py-20 sm:py-24">
+      <div className="max-w-3xl">
+        <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-400">Pricing</p>
+        <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+          Transparentes Modell: Basis-Plan plus Module nach Bedarf.
+        </h2>
+        <p className="mt-4 text-sm leading-7 text-slate-400">
+          Der Basis-Plan schafft den Workspace. Zubuchbare Module erweitern die Plattform genau um das, was deine Agentur braucht.
+        </p>
+      </div>
+
+      {!hasPricing ? (
+        <div className="mt-12 rounded-2xl border border-white/10 bg-white/[0.02] p-10 text-center">
+          <p className="text-lg font-semibold text-white">Preise auf Anfrage</p>
+          <p className="mt-2 text-sm leading-7 text-slate-400">
+            Aktuelle Preise teilen wir dir gerne direkt mit. Melde dich für eine Demo und ein individuelles Angebot.
+          </p>
+          <a
+            href={`mailto:${CONTACT_MAIL}?subject=BoostHive%20Demo-Anfrage`}
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#0f766e] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#0b5f58]"
+          >
+            Demo anfragen
+            <ArrowRight className="h-4 w-4" />
+          </a>
+        </div>
+      ) : (
+        <div className="mt-12 grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
+          {basePlan && (
+            <div className="relative overflow-hidden rounded-2xl border border-teal-400/30 bg-gradient-to-br from-teal-500/20 via-slate-900 to-slate-950 p-8 shadow-[0_40px_100px_-40px_rgba(15,118,110,0.5)]">
+              <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_right,_rgba(20,184,166,0.25),_transparent_60%)]" />
+              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-300">Basis-Plan</p>
+              <h3 className="mt-4 text-3xl font-semibold text-white">{basePlan.name}</h3>
+              <div className="mt-6 flex items-end gap-3">
+                <span className="text-5xl font-semibold text-white">{formatPrice(basePlan.amount, basePlan.currency)}</span>
+                <span className="pb-1 text-sm text-slate-300">/ {basePlan.interval}</span>
+              </div>
+              {basePlan.description && (
+                <p className="mt-4 text-sm leading-7 text-slate-300">{basePlan.description}</p>
+              )}
+              <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                {[
+                  'Eigene Tenant-Subdomain',
+                  'Team-Login mit Rollen',
+                  'Eigenes Branding',
+                  'Basis für alle Module',
+                ].map((point) => (
+                  <div key={point} className="flex items-center gap-2 text-sm text-slate-200">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-teal-300" />
+                    {point}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 sm:p-8">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-400">Zubuchbare Module</p>
+            <h3 className="mt-3 text-2xl font-semibold text-white">Erweiterung nach Bedarf</h3>
+            {modules.length === 0 ? (
+              <p className="mt-6 text-sm leading-7 text-slate-400">
+                Weitere Module werden individuell konfiguriert. Details auf Anfrage.
+              </p>
+            ) : (
+              <div className="mt-6 space-y-3">
+                {modules.map((item) => (
+                  <div
+                    key={item.code}
+                    className="flex flex-col gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-4 py-4 transition hover:border-teal-500/20 sm:flex-row sm:items-start sm:justify-between"
+                  >
+                    <div className="pr-4">
+                      <p className="text-sm font-semibold text-white">{item.name}</p>
+                      {item.description && (
+                        <p className="mt-1 text-sm leading-6 text-slate-400">{item.description}</p>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-left sm:text-right">
+                      <p className="text-base font-semibold text-white">
+                        {formatPrice(item.amount, item.currency)}
+                      </p>
+                      <p className="text-xs text-slate-500">/ {item.interval}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="mt-6 text-xs leading-6 text-slate-500">
+              Abrechnung in 4-Wochen-Zyklen. Änderungen jederzeit zum Zyklusende möglich.
+            </p>
+          </div>
+        </div>
+      )}
+    </section>
+  )
+}
+
+function RootContactCta() {
+  return (
+    <section id="contact" className="py-20 sm:py-24">
+      <div className="relative overflow-hidden rounded-[2rem] border border-teal-400/20 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-10 sm:p-14">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.2),_transparent_50%),radial-gradient(circle_at_bottom_right,_rgba(6,182,212,0.15),_transparent_50%)]" />
+        <div className="flex flex-col items-start gap-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold uppercase tracking-[0.28em] text-teal-300">Demo anfragen</p>
+            <h2 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+              BoostHive persönlich kennenlernen.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-slate-300">
+              Agentur-Zugänge werden manuell provisioniert — kein Self-Service, keine Massenabfertigung. Schreib uns kurz, worum es geht, und wir zeigen dir die Plattform live an deinem Use Case.
+            </p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <a
+              href={`mailto:${CONTACT_MAIL}?subject=BoostHive%20Demo-Anfrage`}
+              className="inline-flex items-center gap-2 rounded-full bg-[#0f766e] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_-18px_rgba(15,118,110,0.8)] transition hover:bg-[#0b5f58]"
+            >
+              <Mail className="h-4 w-4" />
+              Demo anfragen
+            </a>
+            <span className="text-center text-xs text-slate-400">
+              oder schreibe an <span className="text-teal-300">{CONTACT_MAIL}</span>
+            </span>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function RootFooter() {
+  return (
+    <footer className="border-t border-white/5 py-10">
+      <div className="flex flex-col items-start justify-between gap-4 text-sm text-slate-500 sm:flex-row sm:items-center">
+        <p>&copy; {new Date().getFullYear()} BoostHive — White-Label Marketing OS</p>
+        <div className="flex items-center gap-6">
+          <Link href="/impressum" className="transition hover:text-white">Impressum</Link>
+          <Link href="/datenschutz" className="transition hover:text-white">Datenschutz</Link>
+        </div>
+      </div>
+    </footer>
+  )
+}
+
+function RootHome({ pricing }: { pricing: MarketingPriceItem[] }) {
+  return (
+    <main className="min-h-screen bg-slate-950 px-4 text-slate-100 sm:px-6 lg:px-8">
+      <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[600px] bg-[radial-gradient(ellipse_at_top,_rgba(20,184,166,0.15),_transparent_60%)]" />
+      <div className="mx-auto max-w-7xl">
+        <RootHeader />
+        <RootHero />
+        <ValueProps />
+        <ModulesGrid />
+        <RootPricing pricing={pricing} />
+        <RootContactCta />
+        <RootFooter />
+      </div>
+    </main>
+  )
+}
+
 export function MarketingPages({ mode, pricing = [], tenant, returnTo }: MarketingPagesProps) {
+  // PROJ-70: Root-Domain Landing Page (kein Tenant, mode='home')
+  if (mode === 'home' && !tenant) {
+    return <RootHome pricing={pricing} />
+  }
+
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(153,246,228,0.38),_rgba(248,250,252,0.92)_38%),radial-gradient(circle_at_bottom_right,_rgba(191,219,254,0.35),_rgba(248,250,252,0.92)_34%),linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,1))] px-4 dark:bg-[radial-gradient(circle_at_top_left,_rgba(20,184,166,0.16),_rgba(2,6,23,0.96)_38%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,0.18),_rgba(2,6,23,0.96)_34%),linear-gradient(180deg,rgba(15,23,42,1),rgba(2,6,23,1))] sm:px-6 lg:px-8">
       <div className="mx-auto max-w-7xl">

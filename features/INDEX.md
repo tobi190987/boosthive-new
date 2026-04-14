@@ -84,5 +84,6 @@
 | PROJ-67 | Brand Mention Monitoring & Sentiment Analyse | Deployed | [PROJ-67-brand-mention-monitoring.md](PROJ-67-brand-mention-monitoring.md) | 2026-04-13 |
 | PROJ-68 | Social Media Trend Radar | Deployed | [PROJ-68-social-media-trend-radar.md](PROJ-68-social-media-trend-radar.md) | 2026-04-13 |
 | PROJ-69 | Modul-Hilfe & Tooltips System | Deployed | [PROJ-69-modul-hilfe-tooltips.md](PROJ-69-modul-hilfe-tooltips.md) | 2026-04-14 |
+| PROJ-70 | Landing Page Startseite (Root Domain) | Deployed | [PROJ-70-landing-page-startseite.md](PROJ-70-landing-page-startseite.md) | 2026-04-14 |
 
-## Next Available ID: PROJ-70
+## Next Available ID: PROJ-71
