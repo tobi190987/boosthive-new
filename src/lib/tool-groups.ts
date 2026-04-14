@@ -34,7 +34,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
     items: [
       {
         label: 'SEO Analyse',
-        description: 'Analysiere On-Page SEO, Metadaten und technische Optimierungen.',
+        description: 'Analysiere URLs auf technische SEO-Fehler, Metadaten und On-Page-Faktoren.',
         href: '/tools/seo-analyse',
         icon: BarChart3,
         moduleCode: 'seo_analyse',
@@ -42,7 +42,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
       },
       {
         label: 'Keywordranking',
-        description: 'Tracke Keyword-Positionen und analysiere Rankingverläufe.',
+        description: 'Tracke Google-Positionen für Keywords und beobachte Rankingverläufe über Zeit.',
         href: '/tools/keywords',
         icon: Search,
         moduleCode: 'seo_analyse',
@@ -50,7 +50,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
       },
       {
         label: 'AI Performance',
-        description: 'Optimiere Inhalte und Kampagnen mit KI-gestützten Analysen.',
+        description: 'Starte KI-Analysen für Websites und Anzeigen — erhalte Optimierungsvorschläge.',
         href: '/tools/ai-performance',
         icon: Bot,
         moduleCode: 'ai_performance',
@@ -58,7 +58,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
       },
       {
         label: 'AI Visibility',
-        description: 'Analysiere deine Sichtbarkeit in KI-Suchantworten und LLMs.',
+        description: 'Miss, wie oft Marken in KI-Antworten (ChatGPT, Gemini) erscheinen und vergleiche mit Wettbewerbern.',
         href: '/tools/ai-visibility',
         icon: Eye,
         moduleCode: 'ai_visibility',
@@ -66,7 +66,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
       },
       {
         label: 'Brand Trends',
-        description: 'Beobachte Google-Trends-Verläufe und verwandte Suchanfragen für deine Kunden-Marken.',
+        description: 'Beobachte Google-Trends, Web-Mentions und Markenstimmung für deine Kunden.',
         href: '/tools/brand-trends',
         icon: TrendingUp,
         moduleCode: 'brand_intelligence',
@@ -79,7 +79,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
     items: [
       {
         label: 'Content Briefs',
-        description: 'Erstelle strukturierte Inhaltsanweisungen für SEO-optimierten Content.',
+        description: 'Erstelle strukturierte Briefings mit Keywords und Struktur — zur direkten Kundenfreigabe.',
         href: '/tools/content-briefs',
         icon: FileText,
         moduleCode: 'content_briefs',

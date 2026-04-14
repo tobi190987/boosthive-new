@@ -619,7 +619,7 @@ function ProjectList({
             <div className="space-y-2">
               <h2 className="text-xl font-semibold text-slate-950 dark:text-slate-50">Noch keine Projekte</h2>
               <p className="max-w-md text-sm leading-7 text-slate-600 dark:text-slate-300">
-                Erstelle dein erstes Keyword-Projekt, um Rankings für eine Domain zu tracken und mit Wettbewerbern zu vergleichen.
+                Erstelle dein erstes Keyword-Projekt, um Rankings für eine Domain zu tracken.
               </p>
             </div>
             {isAdmin && (
@@ -703,7 +703,6 @@ function ProjectList({
                     <Separator className="bg-slate-100 dark:bg-secondary" />
                     <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
                       <span>{project.keyword_count} Keywords</span>
-                      <span>{project.competitor_count} Wettbewerber</span>
                     </div>
                     {project.last_tracking_run && (
                       <p className="text-xs text-slate-400 dark:text-slate-500">
@@ -1157,9 +1156,6 @@ function ProjectDetail({
           <TabsTrigger value="keywords" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
             Keywords
           </TabsTrigger>
-          <TabsTrigger value="competitors" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
-            Wettbewerber
-          </TabsTrigger>
           {gscReady === true && (
             <TabsTrigger value="all-rankings" className="rounded-full text-slate-600 dark:text-slate-400 data-[state=active]:bg-white data-[state=active]:text-slate-900 dark:data-[state=active]:bg-slate-700 dark:data-[state=active]:text-white">
               <Globe className="mr-1.5 h-3.5 w-3.5" />
@@ -1200,14 +1196,6 @@ function ProjectDetail({
           className="mt-4 data-[state=inactive]:hidden"
         >
           <KeywordsTab projectId={projectId} targetDomain={project.target_domain} />
-        </TabsContent>
-
-        <TabsContent
-          value="competitors"
-          {...(mountedTabs.includes('competitors') ? { forceMount: true as const } : {})}
-          className="mt-4 data-[state=inactive]:hidden"
-        >
-          <CompetitorsTab projectId={projectId} targetDomain={project.target_domain} />
         </TabsContent>
 
         <TabsContent

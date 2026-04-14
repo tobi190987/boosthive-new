@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { getContentBriefsList } from '@/lib/tenant-app-data'
@@ -8,6 +9,23 @@ import { ModuleLockedCard } from '@/components/module-locked-card'
 import { Button } from '@/components/ui/button'
 import { ModuleHelpTooltip } from '@/components/module-help-tooltip'
 import { MODULE_HELP } from '@/lib/tool-groups'
+import { Skeleton } from '@/components/ui/skeleton'
+
+async function ContentBriefsContent({ tenantId }: { tenantId: string }) {
+  const initialBriefs = await getContentBriefsList(tenantId)
+  return <ContentBriefsWorkspace initialBriefs={initialBriefs} />
+}
+
+function ContentBriefsSkeleton() {
+  return (
+    <div className="space-y-3">
+      <Skeleton className="h-16 w-full rounded-2xl" />
+      <Skeleton className="h-16 w-full rounded-2xl" />
+      <Skeleton className="h-16 w-full rounded-2xl" />
+      <Skeleton className="h-16 w-full rounded-2xl" />
+    </div>
+  )
+}
 
 export default async function ContentBriefsPage() {
   const context = await requireTenantShellContext()
@@ -19,7 +37,6 @@ export default async function ContentBriefsPage() {
     return <ModuleLockedCard moduleName="Content Briefs" isAdmin={isAdmin} />
   }
 
-  const initialBriefs = await getContentBriefsList(context.tenant.id)
   const help = MODULE_HELP['content_briefs']
 
   return (
@@ -31,7 +48,8 @@ export default async function ContentBriefsPage() {
             {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
           </div>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Erstelle strukturierte Inhaltsanweisungen für SEO-optimierten Content.
+            Erstelle strukturierte Briefings mit Keywords, Zielgruppe und Seitenstruktur —
+            und gib sie direkt zur Kundenfreigabe frei.
           </p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
@@ -50,7 +68,9 @@ export default async function ContentBriefsPage() {
           </Button>
         </div>
       </div>
-      <ContentBriefsWorkspace initialBriefs={initialBriefs} />
+      <Suspense fallback={<ContentBriefsSkeleton />}>
+        <ContentBriefsContent tenantId={context.tenant.id} />
+      </Suspense>
     </>
   )
 }

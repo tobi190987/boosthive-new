@@ -29,8 +29,8 @@ export default async function BrandTrendsPage() {
             {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
           </div>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Google-Trends-Verläufe, Web-Mentions und Sentiment für deine
-            Kunden-Marken.
+            Beobachte Google-Trends, Web-Mentions und Markenstimmung für deine Kunden —
+            erkenne Chancen und Krisen früh.
           </p>
         </div>
         <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">

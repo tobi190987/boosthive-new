@@ -1,9 +1,26 @@
+import { Suspense } from 'react'
 import { getKeywordProjectsList } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { KeywordProjectsWorkspace } from '@/components/keyword-projects-workspace'
 import { ModuleLockedCard } from '@/components/module-locked-card'
 import { ModuleHelpTooltip } from '@/components/module-help-tooltip'
 import { MODULE_HELP } from '@/lib/tool-groups'
+import { Skeleton } from '@/components/ui/skeleton'
+
+async function KeywordsContent({ tenantId, role }: { tenantId: string; role: 'admin' | 'member' }) {
+  const initialProjects = await getKeywordProjectsList(tenantId)
+  return <KeywordProjectsWorkspace role={role} initialProjects={initialProjects} />
+}
+
+function KeywordsSkeleton() {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <Skeleton className="h-44 w-full rounded-2xl" />
+      <Skeleton className="h-44 w-full rounded-2xl" />
+      <Skeleton className="h-44 w-full rounded-2xl" />
+    </div>
+  )
+}
 
 export default async function KeywordsPage() {
   const context = await requireTenantShellContext()
@@ -14,7 +31,6 @@ export default async function KeywordsPage() {
     return <ModuleLockedCard moduleName="Keywordranking" isAdmin={isAdmin} />
   }
 
-  const initialProjects = await getKeywordProjectsList(context.tenant.id)
   const help = MODULE_HELP['seo_analyse']
 
   return (
@@ -25,13 +41,13 @@ export default async function KeywordsPage() {
           {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
         </div>
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Tracke Rankings deiner Keywords über Zeit.
+          Tracke Google-Positionen für Keywords deiner Kunden und beobachte,
+          wie sich Rankings über Zeit entwickeln.
         </p>
       </div>
-      <KeywordProjectsWorkspace
-        role={context.membership.role}
-        initialProjects={initialProjects}
-      />
+      <Suspense fallback={<KeywordsSkeleton />}>
+        <KeywordsContent tenantId={context.tenant.id} role={context.membership.role} />
+      </Suspense>
     </>
   )
 }

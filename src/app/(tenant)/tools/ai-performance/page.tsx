@@ -27,7 +27,8 @@ export default async function AiPerformancePage() {
           {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
         </div>
         <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Optimiere Inhalte und Kampagnen mit KI-gestützten Analysen.
+          Starte KI-Analysen für Websites und Anzeigen — erhalte Optimierungsvorschläge
+          und vergleiche Ergebnisse im zeitlichen Verlauf.
         </p>
       </div>
       <AiPerformanceWorkspace initialAnalyses={initialAnalyses} />
