@@ -26,16 +26,16 @@ export default async function BrandTrendsPage() {
         title="Brand Intelligence"
         description="Beobachte Google-Trends, Web-Mentions und Markenstimmung für deine Kunden — erkenne Chancen und Krisen früh."
         features={help?.features}
-        actions={
-          <div className="w-full sm:w-[280px]">
-            <CustomerSelectorDropdown
-              className="mx-0 my-0 w-full"
-              triggerClassName="mx-0 my-0 w-full"
-              compact
-            />
-          </div>
-        }
       />
+      <div className="flex justify-end">
+        <div className="w-full sm:w-[280px]">
+          <CustomerSelectorDropdown
+            className="mx-0 my-0 w-full"
+            triggerClassName="mx-0 my-0 w-full"
+            compact
+          />
+        </div>
+      </div>
       <BrandTrendsWorkspace isAdmin={isAdmin} />
     </div>
   )

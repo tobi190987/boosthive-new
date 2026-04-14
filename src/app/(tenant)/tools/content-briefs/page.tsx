@@ -47,24 +47,22 @@ export default async function ContentBriefsPage() {
         title="Content Briefs"
         description="Erstelle strukturierte Briefings mit Keywords, Zielgruppe und Seitenstruktur — und gib sie direkt zur Kundenfreigabe frei."
         features={help?.features}
-        actions={
-          <>
-            <div className="w-full sm:w-[280px]">
-              <CustomerSelectorDropdown
-                className="mx-0 my-0 w-full"
-                triggerClassName="mx-0 my-0 w-full"
-                compact
-              />
-            </div>
-            <Button asChild variant="dark" className="gap-2 shrink-0">
-              <Link href="/tools/content-briefs?action=create">
-                <Plus className="h-4 w-4" />
-                Neues Briefing
-              </Link>
-            </Button>
-          </>
-        }
       />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <div className="w-full sm:w-[280px]">
+          <CustomerSelectorDropdown
+            className="mx-0 my-0 w-full"
+            triggerClassName="mx-0 my-0 w-full"
+            compact
+          />
+        </div>
+        <Button asChild variant="dark" className="gap-2 shrink-0">
+          <Link href="/tools/content-briefs?action=create">
+            <Plus className="h-4 w-4" />
+            Neues Briefing
+          </Link>
+        </Button>
+      </div>
       <Suspense fallback={<ContentBriefsSkeleton />}>
         <ContentBriefsContent tenantId={context.tenant.id} />
       </Suspense>

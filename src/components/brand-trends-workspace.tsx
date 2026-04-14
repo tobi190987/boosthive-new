@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  HelpCircle,
   Plus,
   RefreshCw,
   Star,
@@ -607,6 +608,26 @@ function TrendChartCard({
                 · „{keyword}&#34;
               </span>
             ) : null}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300 transition-colors"
+                  aria-label="Index-Erklärung"
+                >
+                  <HelpCircle className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-[260px] space-y-1.5">
+                <p className="text-xs font-medium">Was bedeutet der Index?</p>
+                <ul className="space-y-1 text-xs text-slate-300">
+                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5">100</span><span>= maximales Interesse im gewählten Zeitraum (Höchstwert)</span></li>
+                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5">50</span><span>= halb so viel Interesse wie der Spitzenwert</span></li>
+                  <li className="flex items-start gap-1.5"><span className="shrink-0 mt-0.5">0</span><span>= kaum oder kein messbares Suchinteresse</span></li>
+                </ul>
+                <p className="text-[11px] text-slate-400 pt-0.5">Der Index ist relativ — absolute Suchvolumina werden nicht angezeigt.</p>
+              </TooltipContent>
+            </Tooltip>
           </CardTitle>
           <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
             Google-Trends-Index (0–100) · {PERIOD_LABELS[period]}

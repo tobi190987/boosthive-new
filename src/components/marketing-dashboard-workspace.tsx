@@ -59,6 +59,7 @@ import {
   readMarketingDashboardRefreshPayload,
 } from '@/lib/marketing-dashboard-refresh'
 import type { TenantShellContext } from '@/lib/tenant-shell'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -1365,7 +1366,12 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
   if (!customersLoading && customers.length === 0) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Marketing Dashboard</h1>
+        <TenantShellHeader
+          context={context}
+          eyebrow="Dashboard"
+          title="Marketing Dashboard"
+          description="Performance-Übersicht über alle verbundenen Kanäle — GA4, Google Ads, Meta Ads und TikTok Ads."
+        />
         <DashboardCustomerPickerCard activeCustomerName={null} hasCustomers={false} />
         <Card className="rounded-2xl border border-slate-100 bg-white shadow-soft dark:border-border dark:bg-card">
           <CardContent className="flex flex-col items-center gap-5 px-6 py-16 text-center">
@@ -1394,7 +1400,12 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
   if (!activeCustomer) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Marketing Dashboard</h1>
+        <TenantShellHeader
+          context={context}
+          eyebrow="Dashboard"
+          title="Marketing Dashboard"
+          description="Performance-Übersicht über alle verbundenen Kanäle — GA4, Google Ads, Meta Ads und TikTok Ads."
+        />
         <DashboardCustomerPickerCard activeCustomerName={null} hasCustomers={customers.length > 0} />
         <NoCustomerSelected toolName="Marketing Performance" />
       </div>

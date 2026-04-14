@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { BudgetWorkspace } from '@/components/budget-workspace'
 import { ModuleLockedCard } from '@/components/module-locked-card'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 
 export const metadata: Metadata = {
   title: 'Budget & Ad Spend Tracking — BoostHive',
@@ -19,16 +20,14 @@ export default async function BudgetPage() {
   }
 
   return (
-    <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">
-          Budget & Ad Spend Tracking
-        </h1>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Überwache Werbebudgets über Google Ads, Meta Ads und TikTok Ads mit Soll/Ist-Vergleich und Alerts.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <TenantShellHeader
+        context={context}
+        eyebrow="Verwaltung"
+        title="Budget & Ad Spend Tracking"
+        description="Überwache Werbebudgets über Google Ads, Meta Ads und TikTok Ads mit Soll/Ist-Vergleich und Alerts."
+      />
       <BudgetWorkspace isAdmin={isAdmin} />
-    </>
+    </div>
   )
 }
