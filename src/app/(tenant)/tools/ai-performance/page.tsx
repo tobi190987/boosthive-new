@@ -3,7 +3,7 @@ import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { AiPerformanceWorkspace } from '@/components/ai-performance-workspace'
 import { ModuleLockedCard } from '@/components/module-locked-card'
 import { QuotaBadge } from '@/components/quota-badge'
-import { ModuleHelpTooltip } from '@/components/module-help-tooltip'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 import { MODULE_HELP } from '@/lib/tool-groups'
 
 export default async function AiPerformancePage() {
@@ -19,19 +19,16 @@ export default async function AiPerformancePage() {
   const help = MODULE_HELP['ai_performance']
 
   return (
-    <>
-      <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">AI Performance</h1>
-          <QuotaBadge metric="ai_performance_analyses" label="Analysen" />
-          {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
-        </div>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Starte KI-Analysen für Websites und Anzeigen — erhalte Optimierungsvorschläge
-          und vergleiche Ergebnisse im zeitlichen Verlauf.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <TenantShellHeader
+        context={context}
+        eyebrow="Analyse & SEO"
+        title="AI Performance"
+        description="Starte KI-Analysen für Websites und Anzeigen — erhalte Optimierungsvorschläge und vergleiche Ergebnisse im zeitlichen Verlauf."
+        features={help?.features}
+        badge={<QuotaBadge metric="ai_performance_analyses" label="Analysen" />}
+      />
       <AiPerformanceWorkspace initialAnalyses={initialAnalyses} />
-    </>
+    </div>
   )
 }

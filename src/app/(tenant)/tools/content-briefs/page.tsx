@@ -7,7 +7,7 @@ import { ContentBriefsWorkspace } from '@/components/content-briefs-workspace'
 import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { ModuleLockedCard } from '@/components/module-locked-card'
 import { Button } from '@/components/ui/button'
-import { ModuleHelpTooltip } from '@/components/module-help-tooltip'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 import { MODULE_HELP } from '@/lib/tool-groups'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -40,37 +40,34 @@ export default async function ContentBriefsPage() {
   const help = MODULE_HELP['content_briefs']
 
   return (
-    <>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Content Briefs</h1>
-            {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
-          </div>
-          <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-            Erstelle strukturierte Briefings mit Keywords, Zielgruppe und Seitenstruktur —
-            und gib sie direkt zur Kundenfreigabe frei.
-          </p>
-        </div>
-        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
-          <div className="w-full sm:w-[280px]">
-            <CustomerSelectorDropdown
-              className="mx-0 my-0 w-full"
-              triggerClassName="mx-0 my-0 w-full"
-              compact
-            />
-          </div>
-          <Button asChild variant="dark" className="gap-2 self-start">
-            <Link href="/tools/content-briefs?action=create">
-              <Plus className="h-4 w-4" />
-              Neues Briefing
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <TenantShellHeader
+        context={context}
+        eyebrow="Content & Kampagnen"
+        title="Content Briefs"
+        description="Erstelle strukturierte Briefings mit Keywords, Zielgruppe und Seitenstruktur — und gib sie direkt zur Kundenfreigabe frei."
+        features={help?.features}
+        actions={
+          <>
+            <div className="w-full sm:w-[280px]">
+              <CustomerSelectorDropdown
+                className="mx-0 my-0 w-full"
+                triggerClassName="mx-0 my-0 w-full"
+                compact
+              />
+            </div>
+            <Button asChild variant="dark" className="gap-2 shrink-0">
+              <Link href="/tools/content-briefs?action=create">
+                <Plus className="h-4 w-4" />
+                Neues Briefing
+              </Link>
+            </Button>
+          </>
+        }
+      />
       <Suspense fallback={<ContentBriefsSkeleton />}>
         <ContentBriefsContent tenantId={context.tenant.id} />
       </Suspense>
-    </>
+    </div>
   )
 }

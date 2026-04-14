@@ -3,7 +3,7 @@ import { getKeywordProjectsList } from '@/lib/tenant-app-data'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { KeywordProjectsWorkspace } from '@/components/keyword-projects-workspace'
 import { ModuleLockedCard } from '@/components/module-locked-card'
-import { ModuleHelpTooltip } from '@/components/module-help-tooltip'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 import { MODULE_HELP } from '@/lib/tool-groups'
 import { Skeleton } from '@/components/ui/skeleton'
 
@@ -34,20 +34,17 @@ export default async function KeywordsPage() {
   const help = MODULE_HELP['seo_analyse']
 
   return (
-    <>
-      <div className="mb-6">
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Keywordranking</h1>
-          {help && <ModuleHelpTooltip tagline={help.tagline} features={help.features} />}
-        </div>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Tracke Google-Positionen für Keywords deiner Kunden und beobachte,
-          wie sich Rankings über Zeit entwickeln.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <TenantShellHeader
+        context={context}
+        eyebrow="Analyse & SEO"
+        title="Keywordranking"
+        description="Tracke Google-Positionen für Keywords deiner Kunden und beobachte, wie sich Rankings über Zeit entwickeln."
+        features={help?.features}
+      />
       <Suspense fallback={<KeywordsSkeleton />}>
         <KeywordsContent tenantId={context.tenant.id} role={context.membership.role} />
       </Suspense>
-    </>
+    </div>
   )
 }
