@@ -466,4 +466,20 @@ Eine neue Migration wird benötigt:
 - **Empfehlung:** Bugs BUG-4, BUG-5, BUG-6, BUG-7, BUG-8, BUG-9, BUG-11 vor Deploy fixen. BUG-1 und BUG-10 in Folge-Sprint. Live-Browser-/Responsive-Test (375 / 768 / 1440 px) nach Fix nachholen.
 
 ## Deployment
-_To be added by /deploy_
+
+**Deployed:** 2026-04-14
+**Production URL:** https://*.boost-hive.de
+**Vercel Build:** https://boosthive-kshvpe2wn-tobis-projects-24837701.vercel.app
+**Git Tag:** v1.67.0-PROJ-67
+
+**Manuelle Schritte (einmalig):**
+1. Migration `052_brand_mentions.sql` im Supabase SQL-Editor ausführen.
+2. `EXA_API_KEY` in Vercel Environment Variables setzen (Settings → Environment Variables).
+3. `OPENROUTER_API_KEY` ist bereits gesetzt (aus PROJ-12).
+
+**Pre-Deployment Checks:**
+- [x] `npm run build` erfolgreich
+- [x] Lint: alle Fehler in bestehenden Dateien (keine neuen Fehler durch PROJ-67)
+- [x] QA durchgeführt: 13 Bugs gefunden, alle High/Medium vor Deploy behoben
+- [x] Alle Secrets in `.env.local.example` dokumentiert, kein Secret in Git
+- [x] Code committed und gepusht (a4459f2)

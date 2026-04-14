@@ -33,10 +33,11 @@ import {
 import { InlineConfirm } from '@/components/inline-confirm'
 import { NoCustomerSelected } from '@/components/no-customer-selected'
 import { BrandMentionsPanel } from '@/components/brand-mentions-panel'
+import { SocialTrendsPanel } from '@/components/social-trends-panel'
 import { useActiveCustomer } from '@/lib/active-customer-context'
 import { useToast } from '@/hooks/use-toast'
 
-type WorkspaceTab = 'trends' | 'mentions'
+type WorkspaceTab = 'trends' | 'mentions' | 'social'
 
 export interface BrandTrendsWorkspaceProps {
   isAdmin?: boolean
@@ -314,6 +315,7 @@ export function BrandTrendsWorkspace({
           <TabsList aria-label="Brand-Intelligence-Bereiche">
             <TabsTrigger value="trends">Trend-Verlauf</TabsTrigger>
             <TabsTrigger value="mentions">Mentions &amp; Sentiment</TabsTrigger>
+            <TabsTrigger value="social">Social Trends</TabsTrigger>
           </TabsList>
 
           <TabsContent value="trends" className="mt-6 flex flex-col gap-6">
@@ -353,6 +355,15 @@ export function BrandTrendsWorkspace({
               customerId={activeCustomer.id}
               keyword={primaryKeyword?.keyword ?? null}
               keywordId={primaryKeyword?.id ?? null}
+              isAdmin={isAdmin}
+            />
+          </TabsContent>
+
+          <TabsContent value="social" className="mt-6">
+            <SocialTrendsPanel
+              customerId={activeCustomer.id}
+              customerName={activeCustomer.name}
+              initialCategory={null}
               isAdmin={isAdmin}
             />
           </TabsContent>

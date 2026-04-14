@@ -1,6 +1,6 @@
 # PROJ-68: Social Media Trend Radar
 
-## Status: Planned
+## Status: In Progress
 **Created:** 2026-04-13
 **Last Updated:** 2026-04-13
 
@@ -46,7 +46,95 @@
 ---
 
 ## Tech Design (Solution Architect)
-_To be added by /architecture_
+
+### Ausgangslage & Einbettung
+
+PROJ-68 erweitert den bestehenden Brand-Trends-Bereich um einen dritten Tab. Das `brand-trends-workspace.tsx` hat aktuell zwei Tabs (`Trend-Verlauf` und `Mentions & Sentiment`). Neu kommt ein dritter Tab **„Social Trends"** dazu — als eigenständiges Panel, das denselben Kunden-Kontext und denselben Keyword-Manager oben nutzt.
+
+### Komponenten-Struktur
+
+```
+BrandTrendsWorkspace (bestehend — brand-trends-workspace.tsx)
++-- KeywordsManager (bestehend)
++-- Tabs (bestehend)
+|   +-- "Trend-Verlauf" Tab (bestehend, PROJ-66)
+|   +-- "Mentions & Sentiment" Tab (bestehend, PROJ-67)
+|   +-- "Social Trends" Tab (NEU)
+|       +-- SocialTrendsPanel (NEU — social-trends-panel.tsx)
+|           +-- IndustryCategoryEditor
+|           |   +-- Freitext-Input für eigene Kategorie
+|           |   +-- Dropdown mit gängigen Kategorien
+|           |   +-- Speichern-Button
+|           +-- PlatformTabs (TikTok / Instagram / YouTube)
+|           |   +-- Tab deaktiviert wenn API nicht verfügbar
+|           +-- PeriodFilter (Heute / Diese Woche / Dieser Monat)
+|           +-- HashtagTrendList
+|           |   +-- pro Hashtag: Name, Volumen-Badge, Richtungs-Indikator
+|           |   +-- SparklineChart (Recharts, letzte 14 Tage)
+|           |   +-- CSV-Export-Button
+|           +-- TrendingContentExamples
+|           |   +-- Top 3–5 Posts/Videos pro Hashtag
+|           |   +-- Thumbnail-Preview + Link
+|           +-- EmptyState (mit Kategorie-Vorschlägen)
+|           +-- ApiUnavailableState (Tab deaktiviert mit Hinweistext)
+```
+
+### Datenmodell
+
+**Neue Spalte in `customers`-Tabelle:**
+- `industry_category TEXT` (nullable, z. B. „Fitness", „Beauty", „Food")
+- Einfachste Lösung, kein separates Tabellen-Overhead
+
+**Neue Tabelle `social_trend_cache`:**
+- id UUID (PK)
+- tenant_id → Tenant-Isolierung (RLS)
+- customer_id → Kunden-Bezug
+- platform: 'tiktok' | 'instagram' | 'youtube'
+- category: Suchbegriff / Branche
+- period: 'today' | 'week' | 'month'
+- data JSONB (Hashtag-Liste, Sparkline-Punkte, Content-Beispiele)
+- cached_at TIMESTAMPTZ (24h TTL)
+- Unique-Constraint auf (customer_id, platform, category, period)
+- Gleiche Pattern wie `brand_trend_cache` aus PROJ-66
+
+### API-Routen (neu)
+
+| Route | Methode | Zweck |
+|-------|---------|-------|
+| `/api/tenant/social-trends` | GET | Trending-Daten laden (Cache oder frisch) |
+| `/api/tenant/social-trends/export` | GET | CSV-Download der Hashtags |
+| `/api/tenant/customers/[id]/industry-category` | PATCH | Branche für Kunden speichern |
+
+### Externe Dienste
+
+| Dienst | Zweck | Verfügbarkeit |
+|--------|-------|---------------|
+| TikTok Research API | TikTok-Trends primär | Benötigt approved Developer Access |
+| RapidAPI Social Trends | Instagram + YouTube | Sofort verfügbar (API-Key) |
+| Apify TikTok Scraper | Fallback wenn TikTok API gesperrt | Pay-per-use |
+
+Server-seitiger Handler prüft Verfügbarkeit und fällt auf nächsten Fallback zurück. Bei vollständigem Ausfall zeigt das UI den Tab als deaktiviert an.
+
+### Tech-Entscheidungen
+
+| Entscheidung | Begründung |
+|--------------|------------|
+| Recharts Sparklines | Bereits im Projekt installiert (PROJ-66) — keine neue Abhängigkeit |
+| Supabase-Cache (24h TTL) | Gleiche Architektur wie `brand_trend_cache` — API-Limits schonen |
+| Dritter Tab in bestehendem Workspace | Kein neues Routing nötig, passt zur Brand-Intelligence-Navigation |
+| JSONB für Cache-Daten | Flexible Datenstruktur je nach Plattform |
+| `industry_category` direkt in `customers` | Einfacher als separate Tabelle — ein Feld, weniger Joins |
+
+### Neue Pakete
+
+Keine neuen Pakete erforderlich — Recharts und shadcn/ui sind bereits vorhanden.
+
+### Migrationsplan
+
+1. Migration `053_social_trends.sql`: Tabelle `social_trend_cache` + Spalte `industry_category` in `customers` + RLS-Policies
+2. Neues Panel `social-trends-panel.tsx`
+3. Dritter Tab in `brand-trends-workspace.tsx` eintragen
+4. 3 neue API-Routen
 
 ## QA Test Results
 _To be added by /qa_
