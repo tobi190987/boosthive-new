@@ -884,7 +884,7 @@ function CreateProjectDialog({ open, onOpenChange, onCreated }: CreateProjectDia
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-slate-400 dark:text-slate-500">
-                  Mehr Iterationen = genauere Ergebnisse, aber mehr API-Calls.
+                  Mehr Iterationen = genauere Ergebnisse, aber längere Laufzeit und höhere API-Kosten. Für erste Analysen reichen 2–3.
                 </p>
               </div>
             </fieldset>

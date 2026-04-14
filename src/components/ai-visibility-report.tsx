@@ -22,6 +22,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   Table,
@@ -620,9 +621,19 @@ export function AiVisibilityReport({
     return (
       <Alert variant="destructive" className="rounded-2xl">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Analytics fehlgeschlagen</AlertTitle>
-        <AlertDescription>
-          Die Ergebnisaufbereitung für diese Analyse ist fehlgeschlagen. Bitte starte das Reprocessing im Backend oder führe die Analyse erneut aus.
+        <AlertTitle>Analyse konnte nicht ausgewertet werden</AlertTitle>
+        <AlertDescription className="flex flex-col gap-3">
+          <span>Die Ergebnisaufbereitung ist fehlgeschlagen. Starte eine neue Analyse für dieses Projekt, um aktuelle Ergebnisse zu erhalten.</span>
+          {onRefreshAnalyses && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-fit rounded-xl border-red-300 text-red-700 hover:bg-red-50"
+              onClick={onRefreshAnalyses}
+            >
+              Analysen neu laden
+            </Button>
+          )}
         </AlertDescription>
       </Alert>
     )
@@ -649,17 +660,18 @@ export function AiVisibilityReport({
         </div>
         <div className="flex flex-wrap gap-2">
           {reportableAnalyses.length > 1 && (
-            <select
-              value={selectedAnalysis.id}
-              onChange={(event) => onSelectAnalysis(event.target.value)}
-              className="h-10 rounded-full border border-slate-200 dark:border-border bg-white dark:bg-card px-4 text-sm text-slate-700 dark:text-slate-300 shadow-sm outline-none"
-            >
-              {reportableAnalyses.map((analysis) => (
-                <option key={analysis.id} value={analysis.id}>
-                  {formatDate(analysis.completed_at ?? analysis.created_at)}
-                </option>
-              ))}
-            </select>
+            <Select value={selectedAnalysis.id} onValueChange={onSelectAnalysis}>
+              <SelectTrigger className="h-10 rounded-full border-slate-200 dark:border-border bg-white dark:bg-card text-sm text-slate-700 dark:text-slate-300 shadow-sm w-auto min-w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {reportableAnalyses.map((analysis) => (
+                  <SelectItem key={analysis.id} value={analysis.id}>
+                    {formatDate(analysis.completed_at ?? analysis.created_at)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
           <Button
             onClick={handleExport}
@@ -697,6 +709,7 @@ export function AiVisibilityReport({
               tone="teal"
               icon={<Target className="h-4 w-4" />}
               description="Durchschnittliche Sichtbarkeit der Brand über alle Keywords."
+              tooltip="Share of Model (SOM): Wie oft deine Brand in KI-Antworten aller abgefragten Modelle genannt wird — ausgedrückt als Prozentwert über alle Keywords."
             />
             <MetricCard
               title="Stärkster Wettbewerber"
@@ -710,11 +723,12 @@ export function AiVisibilityReport({
               description="Höchster aggregierter Wettbewerber-Wert im aktuellen Lauf."
             />
             <MetricCard
-              title="Offene Empfehlungen"
+              title="Offene GEO-Empfehlungen"
               value={String(summary.openRecommendations)}
               tone="slate"
               icon={<FileText className="h-4 w-4" />}
-              description="Noch offene Maßnahmen im GEO-Backlog dieser Analyse."
+              description="Noch offene Maßnahmen im Empfehlungs-Backlog dieser Analyse."
+              tooltip="GEO (Generative Engine Optimization): Maßnahmen, die deine Sichtbarkeit in KI-generierten Antworten verbessern — vergleichbar mit SEO, aber für KI-Modelle."
             />
             <MetricCard
               title="Brand-Quellenanteil"
@@ -1006,7 +1020,12 @@ export function AiVisibilityReport({
                     <TableHead>Domain</TableHead>
                     <TableHead>Nennungen</TableHead>
                     <TableHead>Brand erwähnt</TableHead>
-                    <TableHead>Source Gap</TableHead>
+                    <TableHead>
+                      <SectionTitleWithTooltip
+                        title="Source Gap"
+                        tooltip="Quellen, in denen ein Wettbewerber genannt wird, deine Brand aber nicht — zeigt, wo du Sichtbarkeitspotenzial verlierst."
+                      />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>

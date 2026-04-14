@@ -9,7 +9,6 @@ import {
   CircleHelp,
   CreditCard,
   // Download, // ARCHIVED: Export Center nav item entfernt (April 2026)
-  HelpCircle,
   LayoutDashboard,
   // LayoutGrid, // ARCHIVED: Portfolio nav item entfernt (April 2026)
   Loader2,
@@ -293,7 +292,7 @@ function NavigationContent({
       </div>
       <Separator className="bg-slate-100 dark:bg-slate-800" />
 
-      <nav className="flex-1 px-3 py-3" aria-label="Tenant Navigation" data-tour="sidebar-nav">
+      <nav className="flex-1 px-3 py-3" aria-label="Hauptnavigation" data-tour="sidebar-nav">
         <div className="space-y-6">
           {/* Dashboard — alleinstehend ohne Label */}
           <ul className="space-y-1">
@@ -316,10 +315,8 @@ function NavigationContent({
                   <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                   Dashboard
                 </span>
-                {visiblePendingHref === '/dashboard' ? (
+                {visiblePendingHref === '/dashboard' && (
                   <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                 )}
               </Link>
             </li>
@@ -342,10 +339,8 @@ function NavigationContent({
                   <Wallet className={cn('h-4 w-4', isNavActive(pathname, '/budget') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                   Budget Tracking
                 </span>
-                {visiblePendingHref === '/budget' ? (
+                {visiblePendingHref === '/budget' && (
                   <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                ) : (
-                  <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                 )}
               </Link>
             </li>
@@ -410,22 +405,6 @@ function NavigationContent({
                           {tool.label}
                         </span>
                         <span className="flex items-center gap-1.5">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={(e) => e.preventDefault()}
-                                tabIndex={-1}
-                                aria-label={`Hilfe: ${tool.label}`}
-                                className="opacity-0 group-hover/navitem:opacity-100 transition-opacity p-0.5 rounded"
-                              >
-                                <HelpCircle className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="max-w-[220px]">
-                              {tool.description}
-                            </TooltipContent>
-                          </Tooltip>
                           {hasAccess ? (
                             <>
                               {tool.href === '/tools/kanban' && openApprovalsCount > 0 && (
@@ -433,14 +412,23 @@ function NavigationContent({
                                   {openApprovalsCount}
                                 </span>
                               )}
-                              {visiblePendingHref === tool.href ? (
+                              {visiblePendingHref === tool.href && (
                                 <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                              ) : (
-                                <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                               )}
                             </>
                           ) : (
-                            <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center justify-center">
+                                  <Lock className="h-3.5 w-3.5 text-slate-300 dark:text-slate-600" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="right" className="max-w-[200px] text-xs">
+                                {context.membership.role === 'admin'
+                                  ? 'Modul nicht gebucht — unter Abrechnung freischalten'
+                                  : 'Modul gesperrt — Admin kontaktieren'}
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </span>
                       </Link>
@@ -485,10 +473,8 @@ function NavigationContent({
                           <item.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
                           {item.label}
                         </span>
-                        {pendingHref === item.href ? (
+                        {pendingHref === item.href && (
                           <Loader2 className="h-4 w-4 animate-spin text-slate-300 dark:text-slate-600" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-slate-300 dark:text-slate-600" />
                         )}
                       </Link>
                     </li>
@@ -564,7 +550,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
         size="icon"
         className="text-slate-700 dark:text-slate-300"
         onClick={() => setOpen(true)}
-        aria-label="Tenant Navigation öffnen"
+        aria-label="Navigation öffnen"
       >
         <Menu className="h-5 w-5" />
       </Button>
@@ -608,7 +594,7 @@ export function TenantMobileHeader(props: TenantShellNavigationProps) {
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetContent side="left" className="w-[300px] p-0">
           <SheetHeader className="sr-only">
-            <SheetTitle>Tenant Navigation</SheetTitle>
+            <SheetTitle>Navigation</SheetTitle>
           </SheetHeader>
           <div className="flex h-full flex-col overflow-y-auto bg-white dark:bg-[#080c12]">
             <NavigationContent {...props} onNavigate={() => setOpen(false)} inMobileSheet />

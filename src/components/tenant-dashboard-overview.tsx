@@ -236,7 +236,7 @@ export function TenantDashboardOverview({
     <div className="space-y-8">
       {/* Greeting Header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">{greeting}</h1>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50" suppressHydrationWarning>{greeting}</h1>
         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Dein Workspace-Überblick für heute</p>
       </div>
 
@@ -302,7 +302,10 @@ export function TenantDashboardOverview({
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 dark:bg-slate-800">
                   <Sparkles className="h-5 w-5 text-slate-300 dark:text-slate-600" />
                 </div>
-                <p className="text-sm text-slate-400 dark:text-slate-500">Noch keine Aktivitäten vorhanden.</p>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Noch keine Aktivitäten</p>
+                  <p className="text-xs text-slate-400 dark:text-slate-500">Erstelle ein Content Brief oder genehmige eine Anzeige — dann erscheinen hier deine letzten Aktionen.</p>
+                </div>
               </div>
             ) : (
               <ul className="divide-y divide-slate-100 dark:divide-[#252d3a]">
@@ -402,8 +405,10 @@ export function TenantDashboardOverview({
                           {mod.name}
                         </span>
                         {mod.status === 'canceling' && (
-                          <Badge className="rounded-full bg-blue-50 text-blue-600 hover:bg-blue-50">
-                            Endet bald
+                          <Badge className="rounded-full bg-amber-50 text-amber-700 hover:bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300">
+                            {mod.current_period_end
+                              ? `Endet am ${new Date(mod.current_period_end).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })}`
+                              : 'Endet bald'}
                           </Badge>
                         )}
                       </CardTitle>

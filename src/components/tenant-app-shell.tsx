@@ -35,7 +35,7 @@ export function TenantAppShell({
         <OnboardingTour
           tenantId={context.tenant.id}
           userId={context.user.id}
-          enabled={context.onboarding.isComplete}
+          enabled={!context.onboarding.isComplete}
         />
         <div className="flex min-h-screen">
           <TenantSidebar

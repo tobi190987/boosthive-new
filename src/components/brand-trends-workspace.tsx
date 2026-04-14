@@ -89,7 +89,7 @@ function validateKeyword(value: string): string | null {
     return 'Keyword darf maximal 60 Zeichen haben.'
   }
   if (!/^[\p{L}\p{N}\s&.\-']+$/u.test(trimmed)) {
-    return 'Keyword enthält ungültige Sonderzeichen.'
+    return 'Ungültige Zeichen — erlaubt sind Buchstaben, Zahlen, Leerzeichen sowie - . & \''
   }
   return null
 }
@@ -282,7 +282,7 @@ export function BrandTrendsWorkspace({
   }
 
   if (!activeCustomer) {
-    return <NoCustomerSelected toolName="Brand Trends" />
+    return <NoCustomerSelected toolName="Brand Intelligence" />
   }
 
   return (
