@@ -43,6 +43,8 @@ export interface MentionPayload {
   truncated: boolean
   sentimentScore: number | null
   distribution: MentionDistribution
+  /** false wenn Sentiment-Klassifikation für diesen Datensatz fehlschlug */
+  sentimentReliable: boolean
 }
 
 export interface MentionResponse extends MentionPayload {
@@ -214,6 +216,14 @@ interface OpenRouterResponse {
   error?: { message?: string }
 }
 
+/** BUG-4/5: Signalisiert, ob Sentiment-Klassifikation fehlschlug (kein Cache-Write bei false) */
+export class SentimentClassificationError extends Error {
+  constructor(message = 'Sentiment-Klassifikation nicht verfügbar.') {
+    super(message)
+    this.name = 'SentimentClassificationError'
+  }
+}
+
 async function classifyBatch(
   snippets: string[]
 ): Promise<SentimentLabel[]> {
@@ -264,8 +274,11 @@ async function classifyBatch(
       throw new MentionsRateLimitError('OpenRouter Rate-Limit erreicht.')
     }
     if (!res.ok) {
-      // Fallback: neutral — Feature bleibt nutzbar, nur Sentiment fehlt
-      return snippets.map(() => 'neutral')
+      // BUG-4/5 Fix: Nicht auf neutral fallen lassen und cachen — stattdessen
+      // Fehler signalisieren, damit der Aufrufer den Cache-Write überspringt.
+      throw new SentimentClassificationError(
+        `OpenRouter HTTP ${res.status}`
+      )
     }
 
     const json = (await res.json()) as OpenRouterResponse
@@ -274,7 +287,10 @@ async function classifyBatch(
     return parsed
   } catch (err) {
     if (err instanceof MentionsRateLimitError) throw err
-    return snippets.map(() => 'neutral')
+    if (err instanceof SentimentClassificationError) throw err
+    throw new SentimentClassificationError(
+      err instanceof Error ? err.message : 'Unbekannter Fehler.'
+    )
   } finally {
     clearTimeout(timeout)
   }
@@ -304,21 +320,30 @@ function normalizeLabel(value: string): SentimentLabel {
   return 'neutral'
 }
 
+/** BUG-11 Fix: Batches parallel ausführen statt sequentiell (10 Batches à 15s → ~15s statt ~150s) */
 async function classifyMentions(
   rawMentions: Array<Omit<Mention, 'sentiment'>>
-): Promise<Mention[]> {
-  const results: Mention[] = []
+): Promise<{ mentions: Mention[]; reliable: boolean }> {
+  const batches: Array<Array<Omit<Mention, 'sentiment'>>> = []
   for (let i = 0; i < rawMentions.length; i += SENTIMENT_BATCH_SIZE) {
-    const batch = rawMentions.slice(i, i + SENTIMENT_BATCH_SIZE)
-    const snippets = batch.map((m) =>
-      `${m.title}. ${m.snippet}`.trim().slice(0, 600)
-    )
-    const labels = await classifyBatch(snippets)
-    batch.forEach((m, idx) => {
-      results.push({ ...m, sentiment: labels[idx] ?? 'neutral' })
-    })
+    batches.push(rawMentions.slice(i, i + SENTIMENT_BATCH_SIZE))
   }
-  return results
+
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const snippets = batch.map((m) =>
+        `${m.title}. ${m.snippet}`.trim().slice(0, 600)
+      )
+      // BUG-4/5: SentimentClassificationError hochwubbeln — Aufrufer entscheidet
+      const labels = await classifyBatch(snippets)
+      return batch.map((m, idx) => ({
+        ...m,
+        sentiment: labels[idx] ?? 'neutral',
+      }))
+    })
+  )
+
+  return { mentions: results.flat(), reliable: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -328,7 +353,8 @@ async function classifyMentions(
 function buildPayload(
   mentions: Mention[],
   totalFound: number,
-  truncated: boolean
+  truncated: boolean,
+  sentimentReliable = true
 ): MentionPayload {
   const distribution: MentionDistribution = {
     positive: 0,
@@ -351,6 +377,7 @@ function buildPayload(
     truncated,
     sentimentScore,
     distribution,
+    sentimentReliable,
   }
 }
 
@@ -379,16 +406,17 @@ export async function getBrandMentions(
   }
 ): Promise<Omit<MentionResponse, 'alertThreshold' | 'keywordId'>> {
   const { tenantId, customerId, keyword, period } = params
-  const normalizedKeyword = keyword.trim()
+  // BUG-8 Fix: keyword-Vergleich case-insensitiv — in Cache lowercase normalisieren
+  const normalizedKeyword = keyword.trim().toLowerCase()
 
-  // 1) Cache lookup
+  // 1) Cache lookup (BUG-8: ilike für case-insensitiven Match)
   const { data: cached } = await admin
     .from('brand_mention_cache')
     .select(
       'mentions, sentiment_score, positive_count, neutral_count, negative_count, total_found, truncated, cached_at'
     )
     .eq('customer_id', customerId)
-    .eq('keyword', normalizedKeyword)
+    .ilike('keyword', normalizedKeyword)
     .eq('period', period)
     .maybeSingle<MentionCacheRow>()
 
@@ -407,6 +435,7 @@ export async function getBrandMentions(
         negative: cached.negative_count,
       },
       cachedAt: cached.cached_at,
+      sentimentReliable: true,
       stale: false,
     }
   }
@@ -416,36 +445,58 @@ export async function getBrandMentions(
     const rawMentions = await fetchMentionsFromExa(normalizedKeyword, period)
     const totalFound = rawMentions.length
     const truncated = totalFound >= MAX_MENTIONS
-    const withSentiment = await classifyMentions(rawMentions)
-    const payload = buildPayload(withSentiment, totalFound, truncated)
 
-    const cachedAt = new Date().toISOString()
-    const { error: upsertError } = await admin
-      .from('brand_mention_cache')
-      .upsert(
-        {
-          tenant_id: tenantId,
-          customer_id: customerId,
-          keyword: normalizedKeyword,
-          period,
-          mentions: payload.mentions,
-          sentiment_score: payload.sentimentScore,
-          positive_count: payload.distribution.positive,
-          neutral_count: payload.distribution.neutral,
-          negative_count: payload.distribution.negative,
-          total_found: payload.total,
-          truncated: payload.truncated,
-          cached_at: cachedAt,
-        },
-        { onConflict: 'customer_id,keyword,period' }
+    let withSentiment: Mention[]
+    let sentimentReliable = true
+
+    try {
+      const classified = await classifyMentions(rawMentions)
+      withSentiment = classified.mentions
+    } catch (sentimentErr) {
+      if (sentimentErr instanceof MentionsRateLimitError) throw sentimentErr
+      // BUG-4/5 Fix: Sentiment-Fehler → neutral-Fallback, aber NICHT cachen
+      sentimentReliable = false
+      withSentiment = rawMentions.map((m) => ({ ...m, sentiment: 'neutral' as SentimentLabel }))
+      console.error(
+        '[brand-mentions] sentiment classification failed',
+        sentimentErr instanceof Error ? sentimentErr.message : sentimentErr
       )
-
-    if (upsertError) {
-      // Cache-Schreiben darf das Feature nicht blockieren – nur loggen
-      console.error('[brand-mentions] cache upsert failed', upsertError.message)
     }
 
-    return { ...payload, cachedAt, stale: false }
+    const payload = buildPayload(withSentiment, totalFound, truncated, sentimentReliable)
+
+    // BUG-4/5 Fix: Nur cachen wenn Sentiment zuverlässig ist
+    if (sentimentReliable) {
+      const cachedAt = new Date().toISOString()
+      const { error: upsertError } = await admin
+        .from('brand_mention_cache')
+        .upsert(
+          {
+            tenant_id: tenantId,
+            customer_id: customerId,
+            keyword: normalizedKeyword,
+            period,
+            mentions: payload.mentions,
+            sentiment_score: payload.sentimentScore,
+            positive_count: payload.distribution.positive,
+            neutral_count: payload.distribution.neutral,
+            negative_count: payload.distribution.negative,
+            total_found: payload.total,
+            truncated: payload.truncated,
+            cached_at: cachedAt,
+          },
+          { onConflict: 'customer_id,keyword,period' }
+        )
+
+      if (upsertError) {
+        console.error('[brand-mentions] cache upsert failed', upsertError.message)
+      }
+
+      return { ...payload, cachedAt, stale: false }
+    }
+
+    // Sentiment unzuverlässig: Live-Daten ohne Cache zurückgeben
+    return { ...payload, cachedAt: null, stale: false }
   } catch (err) {
     // 3) Bei Fehler: Stale-Cache zurückgeben, falls vorhanden
     if (cached) {
@@ -460,6 +511,7 @@ export async function getBrandMentions(
           negative: cached.negative_count,
         },
         cachedAt: cached.cached_at,
+        sentimentReliable: true,
         stale: true,
       }
     }
@@ -496,15 +548,17 @@ export async function maybeTriggerSentimentAlert(
   }
 
   try {
-    // Deduplizierung: pro Tenant + Keyword + Period max. eine offene Alert-
-    // Notification innerhalb der letzten 24h. Verhindert Spam beim Re-Fetch.
+    // BUG-1 Fix: Dedup nicht via LIKE auf body (Substring-Matches bei ähnlichen Keywords).
+    // Stattdessen exakte Übereinstimmung auf customer_id + keyword + period via link-Feld.
+    // Das link-Feld enthält den vollständig qualifizierten Pfad, der alle drei enthält.
     const since = new Date(Date.now() - CACHE_TTL_MS).toISOString()
+    const alertLink = `/tools/brand-trends?customer=${customerId}&keyword=${encodeURIComponent(keyword)}&period=${period}`
     const { data: existing } = await admin
       .from('notifications')
       .select('id')
       .eq('tenant_id', tenantId)
       .eq('type', 'sentiment_alert')
-      .ilike('body', `%${keyword}%`)
+      .eq('link', alertLink)
       .gte('created_at', since)
       .limit(1)
 
@@ -531,7 +585,8 @@ export async function maybeTriggerSentimentAlert(
     const customerName = customer?.name ?? 'Kunde'
     const title = 'Sentiment-Alert: Score unter Schwellwert'
     const body = `${customerName} – "${keyword}" (${period}): Sentiment-Score ${sentimentScore} liegt unter dem Schwellwert ${threshold}.`
-    const link = '/tools/brand-trends'
+    // BUG-1: Link enthält customer+keyword+period für exakte Dedup-Erkennung
+    const link = `/tools/brand-trends?customer=${customerId}&keyword=${encodeURIComponent(keyword)}&period=${period}`
 
     const rows = admins.map((row) => ({
       tenant_id: tenantId,

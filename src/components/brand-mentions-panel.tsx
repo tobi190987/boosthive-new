@@ -66,6 +66,10 @@ interface MentionsResponse {
   cachedAt: string | null
   alertThreshold: number | null
   keywordId: string | null
+  /** BUG-7: stale=true → Daten aus abgelaufenem Cache (API war nicht erreichbar) */
+  stale?: boolean
+  /** BUG-7: false → Sentiment-Klassifikation schlug fehl, Scores nur Schätzwerte */
+  sentimentReliable?: boolean
 }
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -164,10 +168,10 @@ export function BrandMentionsPanel({
     return () => controller.abort()
   }, [loadMentions])
 
-  // Reset Pagination bei Filter-Änderung
+  // Reset Pagination bei Filter- oder Kontext-Änderung
   useEffect(() => {
     setPage(1)
-  }, [source, period])
+  }, [source, period, customerId, keyword])
 
   const filteredMentions = useMemo(() => {
     if (!data) return []
@@ -210,6 +214,28 @@ export function BrandMentionsPanel({
         <PeriodTabs period={period} onChange={setPeriod} />
         <SourceTabs source={source} onChange={setSource} />
       </div>
+
+      {/* BUG-7: Stale-Daten Warnung */}
+      {data?.stale ? (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>
+            Daten aus dem Cache (Stand:{' '}
+            {data.cachedAt ? formatDateTime(data.cachedAt) : '?'}) — API war
+            nicht erreichbar.
+          </span>
+        </div>
+      ) : null}
+
+      {/* BUG-7: Sentiment-Klassifikation unzuverlässig */}
+      {data && data.sentimentReliable === false ? (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>
+            Sentiment-Analyse temporär nicht verfügbar. Scores zeigen Schätzwerte.
+          </span>
+        </div>
+      ) : null}
 
       {/* KPI-Bereich */}
       <div className="grid gap-4 md:grid-cols-3">

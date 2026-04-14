@@ -67,12 +67,27 @@ CREATE POLICY "tenant members read brand_mention_cache"
 -- Keine authenticated-Policies → RLS lehnt Client-Schreibzugriffe ab.
 
 -- ── notifications.type-CHECK erweitern ──────────────────────
--- Bisher in migrations/030: ('approval_approved','approval_changes_requested')
--- Neue Typen (bereits im Code verwendet): 'budget_alert'.
--- Neu durch PROJ-67:                      'sentiment_alert'.
+-- BUG-6 Fix: Constraint-Name kann auto-generiert sein (notifications_type_check)
+-- oder manuell gepatcht worden sein. DO-Block findet + droppt ALLE CHECK-
+-- Constraints auf der type-Spalte, bevor der neue benannte Constraint gesetzt wird.
 
-ALTER TABLE notifications
-  DROP CONSTRAINT IF EXISTS notifications_type_check;
+DO $$
+DECLARE
+  r RECORD;
+BEGIN
+  FOR r IN
+    SELECT tc.constraint_name
+    FROM   information_schema.table_constraints tc
+    JOIN   information_schema.check_constraints cc
+           ON cc.constraint_name = tc.constraint_name
+    WHERE  tc.table_name        = 'notifications'
+      AND  tc.constraint_type   = 'CHECK'
+      AND  cc.check_clause      ILIKE '%type%'
+  LOOP
+    EXECUTE 'ALTER TABLE notifications DROP CONSTRAINT IF EXISTS '
+            || quote_ident(r.constraint_name);
+  END LOOP;
+END $$;
 
 ALTER TABLE notifications
   ADD CONSTRAINT notifications_type_check
