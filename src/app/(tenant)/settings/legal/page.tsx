@@ -3,6 +3,7 @@ import { LegalPrivacyWorkspace } from '@/components/legal-privacy-workspace'
 import { getSubprocessorEntries } from '@/lib/legal'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
 import { createAdminClient } from '@/lib/supabase-admin'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 
 export default async function LegalSettingsPage() {
   const context = await requireTenantShellContext()
@@ -26,15 +27,14 @@ export default async function LegalSettingsPage() {
   const avvAcceptedAt = (tenantRow as { avv_accepted_at?: string | null } | null)?.avv_accepted_at ?? null
 
   return (
-    <>
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Einstellungen</h1>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Profil, Team und rechtliche Angaben verwalten.
-        </p>
-      </div>
-      <div className="mb-6 h-px bg-slate-100 dark:bg-slate-800" />
+    <div className="space-y-6">
+      <TenantShellHeader
+        context={context}
+        eyebrow="Verwaltung"
+        title="Rechtliches & Datenschutz"
+        description="Verwalte Auftragsverarbeitungsverträge, Datenschutzhinweise und Unterauftragsverarbeiter."
+      />
       <LegalPrivacyWorkspace subprocessorEntries={subprocessorEntries} avvAcceptedAt={avvAcceptedAt} />
-    </>
+    </div>
   )
 }

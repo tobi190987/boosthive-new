@@ -1,6 +1,7 @@
 import { forbidden, redirect } from 'next/navigation'
 import { TeamInvitationsWorkspace } from '@/components/team-invitations-workspace'
 import { requireTenantShellContext } from '@/lib/tenant-shell'
+import { TenantShellHeader } from '@/components/tenant-shell-header'
 
 export default async function TeamSettingsPage() {
   const context = await requireTenantShellContext()
@@ -14,14 +15,14 @@ export default async function TeamSettingsPage() {
   }
 
   return (
-    <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Team & Einladungen</h1>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
-          Lade Mitarbeiter ein und verwalte Rollen und Zugriffsrechte.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <TenantShellHeader
+        context={context}
+        eyebrow="Verwaltung"
+        title="Team & Einladungen"
+        description="Lade Mitarbeiter ein, vergib Rollen und verwalte Zugriffsrechte für deinen Workspace."
+      />
       <TeamInvitationsWorkspace tenantSlug={context.tenant.slug} />
-    </>
+    </div>
   )
 }

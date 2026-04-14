@@ -324,20 +324,6 @@ function ProjectListView({
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-soft">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-xl text-slate-950 dark:text-slate-50">
-            <Sparkles className="h-5 w-5 text-blue-600" />
-            AI Visibility
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="text-sm leading-6 text-slate-600 dark:text-slate-300">
-          <p>
-            AI Visibility analysiert systematisch, wie führende KI-Modelle wie ChatGPT und Claude Ihre Marke wahrnehmen und im Vergleich zum Wettbewerb empfehlen. Daraus leitet es präzise Optimierungsvorschläge (GEO) ab, um Ihre Sichtbarkeit in generativen Antworten messbar zu steigern.
-          </p>
-        </CardContent>
-      </Card>
-
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Analyse-Projekte</h2>
