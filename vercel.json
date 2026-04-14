@@ -2,15 +2,15 @@
   "crons": [
     {
       "path": "/api/cron/keyword-rankings",
-      "schedule": "0 2 * * *"
+      "schedule": "30 4 * * *"
     },
     {
       "path": "/api/cron/keyword-rankings-cleanup",
-      "schedule": "30 2 * * *"
+      "schedule": "30 4 * * *"
     },
     {
       "path": "/api/cron/budget-sync",
-      "schedule": "30 6 * * *"
+      "schedule": "30 4 * * *"
     }
   ]
 }
