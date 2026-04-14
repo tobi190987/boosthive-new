@@ -13,7 +13,7 @@
  *   PATCH /api/tenant/customers/[id]/industry-category  — body: { industry_category: string | null }
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
@@ -296,10 +296,10 @@ export function SocialTrendsPanel({
         throw new Error('Export konnte nicht erstellt werden.')
       }
       const blob = await res.blob()
+      // BUG-4: kein a.download setzen → Browser verwendet Content-Disposition-Header vom Server (bereits sanitisiert)
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `social-trends_${customerName}_${platform}_${period}.csv`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
@@ -326,7 +326,7 @@ export function SocialTrendsPanel({
         customerId={customerId}
         initialCategory={category}
         onSaved={handleCategorySaved}
-        disabled={!isAdmin && category !== null}
+        disabled={!isAdmin}
       />
 
       {categoryLoading ? (
@@ -346,8 +346,8 @@ export function SocialTrendsPanel({
             />
             <div className="flex flex-wrap items-center gap-3">
               <PeriodTabs period={period} onChange={setPeriod} />
-              <Tooltip>
-                <TooltipProvider delayDuration={150}>
+              <TooltipProvider delayDuration={150}>
+                <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
                       type="button"
@@ -365,8 +365,8 @@ export function SocialTrendsPanel({
                   <TooltipContent>
                     Trending-Hashtags als CSV herunterladen
                   </TooltipContent>
-                </TooltipProvider>
-              </Tooltip>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
 
@@ -493,6 +493,12 @@ function IndustryCategoryEditor({
               id="industry-category-input"
               value={value}
               onChange={(e) => setValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !disabled && !saving && dirty) {
+                  e.preventDefault()
+                  void handleSave()
+                }
+              }}
               placeholder="z. B. Fitness, Beauty, Food…"
               disabled={disabled || saving}
               maxLength={60}
@@ -799,11 +805,12 @@ function TrendingContentExamples({
                 {ex.thumbnailUrl ? (
                   <Image
                     src={ex.thumbnailUrl}
-                    alt=""
+                    alt={`Vorschau: ${ex.title}`}
                     fill
                     sizes="48px"
                     className="object-cover"
                     unoptimized
+                    referrerPolicy="no-referrer"
                   />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-slate-400">

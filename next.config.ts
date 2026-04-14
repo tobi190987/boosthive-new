@@ -11,6 +11,14 @@ const nextConfig: NextConfig = {
         hostname: '*.supabase.co',
         pathname: '/storage/v1/object/public/**',
       },
+      // Social Media CDN-Hosts für PROJ-68 Social Trend Radar Thumbnails (BUG-2)
+      { protocol: 'https', hostname: '*.tiktokcdn.com' },
+      { protocol: 'https', hostname: '*.tiktokcdn-us.com' },
+      { protocol: 'https', hostname: 'p16-sign-va.tiktokcdn.com' },
+      { protocol: 'https', hostname: 'p77-sign-va.tiktokcdn.com' },
+      { protocol: 'https', hostname: '*.fbcdn.net' },
+      { protocol: 'https', hostname: 'i.ytimg.com' },
+      { protocol: 'https', hostname: '*.ytimg.com' },
     ],
   },
 
