@@ -1346,6 +1346,12 @@ interface BudgetDetailSheetProps {
   onManualSpendSaved: () => void
 }
 
+interface CampaignSpendEntry {
+  campaignId: string
+  campaignName: string
+  totalSpend: number
+}
+
 function BudgetDetailSheet({
   budget,
   monthKey,
@@ -1360,6 +1366,9 @@ function BudgetDetailSheet({
   const [manualDate, setManualDate] = useState('')
   const [manualAmount, setManualAmount] = useState('')
   const [manualSaving, setManualSaving] = useState(false)
+
+  const [campaignSpend, setCampaignSpend] = useState<CampaignSpendEntry[]>([])
+  const [campaignSpendLoading, setCampaignSpendLoading] = useState(false)
 
   const loadEntries = useCallback(async () => {
     if (!budget) return
@@ -1380,9 +1389,27 @@ function BudgetDetailSheet({
     }
   }, [budget])
 
+  const loadCampaignSpend = useCallback(async () => {
+    if (!budget || !budget.campaign_ids || budget.campaign_ids.length < 2 || !budget.has_integration) return
+    setCampaignSpendLoading(true)
+    try {
+      const res = await fetch(`/api/tenant/budgets/${budget.id}/campaign-spend`, {
+        credentials: 'include',
+      })
+      if (!res.ok) return
+      const data = (await res.json()) as { campaigns?: CampaignSpendEntry[] }
+      setCampaignSpend(data.campaigns ?? [])
+    } catch {
+      setCampaignSpend([])
+    } finally {
+      setCampaignSpendLoading(false)
+    }
+  }, [budget])
+
   useEffect(() => {
     if (open && budget) {
       void loadEntries()
+      void loadCampaignSpend()
       const today = new Date()
       setManualDate(
         `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(
@@ -1391,7 +1418,10 @@ function BudgetDetailSheet({
       )
       setManualAmount('')
     }
-  }, [open, budget, loadEntries])
+    if (!open) {
+      setCampaignSpend([])
+    }
+  }, [open, budget, loadEntries, loadCampaignSpend])
 
   const chartData = useMemo(() => {
     if (!budget) return [] as { label: string; value: number; target: number; over: boolean }[]
@@ -1555,6 +1585,60 @@ function BudgetDetailSheet({
                 )}
               </CardContent>
             </Card>
+
+            {budget.campaign_ids && budget.campaign_ids.length >= 2 && budget.has_integration && (
+              <Card className="rounded-2xl border-slate-100 shadow-none dark:border-border">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Kampagnen-Aufteilung
+                  </CardTitle>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Spend-Anteil pro Kampagne im ausgewählten Monat.
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  {campaignSpendLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-8 rounded-xl" />
+                      <Skeleton className="h-8 rounded-xl" />
+                    </div>
+                  ) : campaignSpend.length === 0 ? (
+                    <p className="text-xs text-slate-400 dark:text-slate-500">
+                      Keine Daten — Spend synchronisieren, um Kampagnen-Aufteilung zu sehen.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {campaignSpend.map((c) => {
+                        const pct = budget.spent_amount > 0 ? (c.totalSpend / budget.spent_amount) * 100 : 0
+                        return (
+                          <div key={c.campaignId} className="space-y-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="truncate max-w-[60%] font-medium text-slate-700 dark:text-slate-200">
+                                {c.campaignName}
+                              </span>
+                              <span className="shrink-0 tabular-nums text-slate-900 dark:text-slate-100 font-semibold">
+                                {formatCurrencyPrecise(c.totalSpend, budget.currency)}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-blue-500 dark:bg-blue-400"
+                                  style={{ width: `${Math.min(pct, 100)}%` }}
+                                />
+                              </div>
+                              <span className="shrink-0 text-[10px] tabular-nums text-slate-400 dark:text-slate-500 w-10 text-right">
+                                {pct.toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
 
             <Card className="rounded-2xl border-slate-100 shadow-none dark:border-border">
               <CardHeader className="pb-3">

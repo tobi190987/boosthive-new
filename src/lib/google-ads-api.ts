@@ -623,7 +623,7 @@ async function fetchGoogleAdsCampaignDailySpend(options: {
   managerCustomerId?: string
   startDate: string
   endDate: string
-}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number; clicks: number }[]> {
   const customerId = normalizeCustomerId(options.customerId)
   const managerCustomerId = normalizeCustomerId(options.managerCustomerId ?? '')
   const batches = await fetchGoogleAdsJson<GoogleAdsSearchStreamBatch[]>(
@@ -637,7 +637,8 @@ async function fetchGoogleAdsCampaignDailySpend(options: {
             campaign.id,
             campaign.name,
             segments.date,
-            metrics.cost_micros
+            metrics.cost_micros,
+            metrics.clicks
           FROM campaign
           WHERE segments.date BETWEEN '${options.startDate}' AND '${options.endDate}'
         `,
@@ -653,6 +654,7 @@ async function fetchGoogleAdsCampaignDailySpend(options: {
       campaignName: row.campaign?.name || 'Unbenannte Kampagne',
       date: String(row.segments?.date ?? '').trim(),
       cost: parseNumber(row.metrics?.costMicros) / 1_000_000,
+      clicks: parseNumber(row.metrics?.clicks),
     }))
     .filter((r) => r.date && r.campaignId)
 }
@@ -661,7 +663,7 @@ export async function getGoogleAdsCampaignDailySpend(
   integration: GoogleAdsIntegrationRecord,
   credentials: GoogleAdsCredentials,
   options: { startDate: string; endDate: string }
-): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+): Promise<{ campaignId: string; campaignName: string; date: string; cost: number; clicks: number }[]> {
   const { accessToken, credentials: refreshed } = await getValidGoogleAdsToken(integration.id, credentials)
   const customerId = refreshed.google_ads_customer_id ?? credentials.google_ads_customer_id
   if (!customerId) return []

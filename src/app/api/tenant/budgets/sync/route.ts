@@ -117,8 +117,8 @@ export async function POST(request: NextRequest) {
           dailySpend = Array.from(byDate.entries()).map(([date, amount]) => ({ date, amount }))
 
           const totalCost = filtered.reduce((a, r) => a + r.cost, 0)
-          const clicksAll = 0 // clicks not returned by campaign daily spend query
-          cpc = totalCost > 0 && clicksAll > 0 ? totalCost / clicksAll : null
+          const totalClicks = filtered.reduce((a, r) => a + r.clicks, 0)
+          cpc = totalCost > 0 && totalClicks > 0 ? totalCost / totalClicks : null
         } else {
           const snapshot = await getGoogleAdsDashboardSnapshot(integration, credentials, '30d')
           const timeseries = snapshot.data.timeseries ?? []
@@ -149,6 +149,10 @@ export async function POST(request: NextRequest) {
             byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.cost)
           }
           dailySpend = Array.from(byDate.entries()).map(([date, amount]) => ({ date, amount }))
+
+          const totalCost = filtered.reduce((a, r) => a + r.cost, 0)
+          const totalImpressions = filtered.reduce((a, r) => a + r.impressions, 0)
+          cpm = totalCost > 0 && totalImpressions > 0 ? (totalCost / totalImpressions) * 1000 : null
         } else {
           const snapshot = await getMetaAdsDashboardSnapshot(integration, credentials, '30d')
           const timeseries = snapshot.data.timeseries ?? []
@@ -179,14 +183,23 @@ export async function POST(request: NextRequest) {
             byDate.set(r.date, (byDate.get(r.date) ?? 0) + r.cost)
           }
           dailySpend = Array.from(byDate.entries()).map(([date, amount]) => ({ date, amount }))
+
+          // Aggregate CPC from campaign snapshot for filtered campaigns
+          const snapshot = await getTikTokAdsDashboardSnapshot(integration, credentials, '30d')
+          const filteredCampaigns = snapshot.data.campaigns.filter((c) => campaignIds!.includes(c.id))
+          const totalCost = filteredCampaigns.reduce((a, c) => a + c.cost, 0)
+          const totalClicks = filteredCampaigns.reduce((a, c) => a + c.clicks, 0)
+          cpc = totalCost > 0 && totalClicks > 0 ? totalCost / totalClicks : null
         } else {
           const snapshot = await getTikTokAdsDashboardSnapshot(integration, credentials, '30d')
           const timeseries = snapshot.data.timeseries ?? []
           dailySpend = timeseries
             .filter((p) => p.label >= monthStart && p.label <= monthEnd)
             .map((p) => ({ date: p.label, amount: p.value }))
+          const totalClicks = snapshot.data.totalClicks
+          const totalCost = snapshot.data.totalCost
+          cpc = totalCost > 0 && totalClicks > 0 ? totalCost / totalClicks : null
         }
-        cpc = null
         cpm = null
         roas = null
       }

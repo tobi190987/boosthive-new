@@ -417,9 +417,9 @@ async function fetchMetaAdsCampaignDailySpend(options: {
   adAccountId: string
   startDate: string
   endDate: string
-}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+}): Promise<{ campaignId: string; campaignName: string; date: string; cost: number; impressions: number }[]> {
   const url = new URL(`${META_GRAPH_API}/${normalizeAdAccountId(options.adAccountId)}/insights`)
-  url.searchParams.set('fields', 'campaign_id,campaign_name,date_start,spend')
+  url.searchParams.set('fields', 'campaign_id,campaign_name,date_start,spend,impressions')
   url.searchParams.set('level', 'campaign')
   url.searchParams.set('time_increment', '1')
   url.searchParams.set('limit', '5000')
@@ -437,6 +437,7 @@ async function fetchMetaAdsCampaignDailySpend(options: {
       campaignName: row.campaign_name || 'Unbenannte Kampagne',
       date: row.date_start ?? '',
       cost: parseNumber(row.spend),
+      impressions: parseNumber(row.impressions),
     }))
     .filter((r) => r.date && r.campaignId)
 }
@@ -445,7 +446,7 @@ export async function getMetaAdsCampaignDailySpend(
   integration: MetaAdsIntegrationRecord,
   credentials: MetaAdsCredentials,
   options: { startDate: string; endDate: string }
-): Promise<{ campaignId: string; campaignName: string; date: string; cost: number }[]> {
+): Promise<{ campaignId: string; campaignName: string; date: string; cost: number; impressions: number }[]> {
   const { accessToken, credentials: refreshed } = await getValidMetaAdsToken(integration.id, credentials)
   const adAccountId = refreshed.selected_ad_account_id ?? credentials.selected_ad_account_id
   if (!adAccountId) return []
