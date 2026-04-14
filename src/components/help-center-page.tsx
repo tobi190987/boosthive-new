@@ -603,17 +603,17 @@ const articles: HelpArticle[] = [
         bullets: [
           'Mitglieder einladen und offene Einladungen nachverfolgen',
           'Admins und User sauber voneinander trennen',
-          'Zugriffe direkt im Tenant verwalten',
+          'Zugriffe direkt in der Organisation verwalten',
         ],
       },
       {
         title: 'Profil und Branding',
         paragraphs: [
-          'Im Profilbereich werden persönliche Angaben und Workspace-nahe Stammdaten gepflegt. Dazu gehören sowohl eigene Profildaten als auch branding-relevante Angaben wie das Tenant-Logo.',
+          'Im Profilbereich werden persönliche Angaben und Stammdaten gepflegt. Dazu gehören sowohl eigene Profildaten als auch branding-relevante Angaben wie das Agentur-Logo.',
         ],
         bullets: [
           'Name, Avatar und Benachrichtigungen pflegen',
-          'Tenant-Logo für White-Label-Kontext hinterlegen',
+          'Agentur-Logo für White-Label-Kontext hinterlegen',
           'Abrechnungsinformationen an einer Stelle pflegen',
         ],
       },

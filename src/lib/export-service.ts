@@ -100,7 +100,7 @@ export const MIME_BY_FORMAT: Record<ExportFormat, string> = {
 
 export const TYPE_LABELS: Record<ExportType, string> = {
   keyword_rankings: 'Keyword Rankings',
-  marketing_dashboard: 'Marketing Dashboard',
+  marketing_dashboard: 'Marketing Performance',
   gsc_discovery: 'GSC Discovery',
   customer_report: 'Kundenbericht',
 }
@@ -386,7 +386,7 @@ function buildMarketingDashboardSnapshot(
   branding: BrandingConfig
 ): PngSnapshotPayload {
   return {
-    title: 'Marketing Dashboard',
+    title: 'Marketing Performance',
     subtitle: branding.customerName
       ? `${branding.tenantName} · ${branding.customerName}`
       : `${branding.tenantName} · Alle Kunden`,

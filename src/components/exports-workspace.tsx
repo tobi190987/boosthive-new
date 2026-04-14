@@ -131,7 +131,7 @@ const EXPORT_TYPES: ExportTypeOption[] = [
   },
   {
     id: 'marketing_dashboard',
-    name: 'Marketing Dashboard',
+    name: 'Marketing Performance',
     description: 'Kombinierter Bericht aus GA4-, Ads- und Performance-Metriken.',
     icon: BarChart3,
     iconBg: 'bg-violet-50 dark:bg-violet-950/40',
@@ -160,7 +160,7 @@ const EXPORT_TYPES: ExportTypeOption[] = [
 
 const EXPORT_TYPE_LABELS: Record<ExportType, string> = {
   keyword_rankings: 'Keyword Rankings',
-  marketing_dashboard: 'Marketing Dashboard',
+  marketing_dashboard: 'Marketing Performance',
   gsc_discovery: 'GSC Discovery',
   customer_report: 'Kundenbericht',
 }

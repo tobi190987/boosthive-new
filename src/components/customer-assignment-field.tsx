@@ -29,7 +29,7 @@ export function CustomerAssignmentField({
   customers,
   loading = false,
   label = 'Kunde',
-  description = 'Optional. Du kannst den Vorgang direkt einem Kunden zuordnen oder tenant-weit anlegen.',
+  description = 'Optional. Du kannst den Vorgang direkt einem Kunden zuordnen oder für alle Kunden anlegen.',
   placeholder = 'Kunde auswählen',
   noneLabel = 'Ohne Kunde',
   triggerClassName,

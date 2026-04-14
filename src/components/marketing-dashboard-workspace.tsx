@@ -1344,7 +1344,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         <TenantShellHeader
           context={context}
           eyebrow="Dashboard"
-          title="Marketing Dashboard"
+          title="Marketing Performance"
           description="Performance-Übersicht über alle verbundenen Kanäle — GA4, Google Ads, Meta Ads und TikTok Ads."
         />
         <DashboardCustomerPickerCard activeCustomerName={null} hasCustomers={false} />
@@ -1378,7 +1378,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
         <TenantShellHeader
           context={context}
           eyebrow="Dashboard"
-          title="Marketing Dashboard"
+          title="Marketing Performance"
           description="Performance-Übersicht über alle verbundenen Kanäle — GA4, Google Ads, Meta Ads und TikTok Ads."
         />
         <DashboardCustomerPickerCard activeCustomerName={null} hasCustomers={customers.length > 0} />
@@ -1409,7 +1409,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
       {/* Header */}
       <div className="flex flex-col gap-3 print:hidden sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Marketing Dashboard</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-50">Marketing Performance</h1>
           <p className="mt-0.5 text-sm text-slate-500 dark:text-slate-400">
             Performance-Übersicht · <span className="font-medium text-slate-700 dark:text-slate-200">{activeCustomer.name}</span>
           </p>

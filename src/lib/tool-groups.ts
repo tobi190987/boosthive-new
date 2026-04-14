@@ -65,7 +65,7 @@ export const TOOL_GROUPS: { label: string; items: ToolItem[] }[] = [
         color: 'purple',
       },
       {
-        label: 'Brand Trends',
+        label: 'Brand Intelligence',
         description: 'Beobachte Google-Trends, Web-Mentions und Markenstimmung für deine Kunden.',
         href: '/tools/brand-trends',
         icon: TrendingUp,

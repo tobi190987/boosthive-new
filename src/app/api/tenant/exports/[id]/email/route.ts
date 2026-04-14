@@ -29,7 +29,7 @@ const FORMAT_LABELS: Record<string, string> = {
 
 const TYPE_LABELS: Record<string, string> = {
   keyword_rankings: 'Keyword Rankings',
-  marketing_dashboard: 'Marketing Dashboard',
+  marketing_dashboard: 'Marketing Performance',
   gsc_discovery: 'GSC Discovery',
   customer_report: 'Kundenbericht',
 }

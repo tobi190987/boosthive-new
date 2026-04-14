@@ -13,7 +13,7 @@ export default async function BrandTrendsPage() {
   const isAdmin = context.membership.role === 'admin'
 
   if (!hasAccess) {
-    return <ModuleLockedCard moduleName="Brand Trends" isAdmin={isAdmin} />
+    return <ModuleLockedCard moduleName="Brand Intelligence" isAdmin={isAdmin} />
   }
 
   const help = MODULE_HELP['brand_intelligence']
