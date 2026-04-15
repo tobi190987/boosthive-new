@@ -1701,21 +1701,39 @@ function SeoAnalysisWorkspace({
           if (!response.ok) return
 
           const data = await response.json()
-          setAnalyses((current) =>
-            current.map((analysis) =>
-              analysis.id === analysisId
-                ? {
-                    ...analysis,
-                    status: data.status,
-                    pagesCrawled: data.pagesCrawled ?? analysis.pagesCrawled,
-                    pagesTotal: data.pagesTotal ?? analysis.pagesTotal,
-                    totalPages: data.result?.totalPages ?? analysis.totalPages,
-                    overallScore: data.result?.overallScore ?? analysis.overallScore,
-                    completedAt: data.completedAt ?? analysis.completedAt,
-                  }
-                : analysis
-            )
-          )
+          setAnalyses((current) => {
+            const exists = current.some((a) => a.id === analysisId)
+            if (exists) {
+              return current.map((analysis) =>
+                analysis.id === analysisId
+                  ? {
+                      ...analysis,
+                      status: data.status,
+                      pagesCrawled: data.pagesCrawled ?? analysis.pagesCrawled,
+                      pagesTotal: data.pagesTotal ?? analysis.pagesTotal,
+                      totalPages: data.result?.totalPages ?? analysis.totalPages,
+                      overallScore: data.result?.overallScore ?? analysis.overallScore,
+                      completedAt: data.completedAt ?? analysis.completedAt,
+                    }
+                  : analysis
+              )
+            }
+            // Analysis not yet in state (navigated to the page before DB insert completed)
+            return [
+              {
+                id: analysisId,
+                status: data.status,
+                pagesCrawled: data.pagesCrawled ?? 0,
+                pagesTotal: data.pagesTotal ?? 0,
+                totalPages: data.result?.totalPages ?? null,
+                overallScore: data.result?.overallScore ?? null,
+                completedAt: data.completedAt ?? null,
+                createdAt: data.createdAt ?? new Date().toISOString(),
+                config: data.config ?? { urls: [], crawlMode: 'single' as const, maxPages: 50 },
+              },
+              ...current,
+            ]
+          })
 
           if (data.status === 'done' && data.result) {
             stopPolling()
