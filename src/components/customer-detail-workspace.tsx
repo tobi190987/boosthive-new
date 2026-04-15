@@ -437,6 +437,11 @@ export function CustomerDetailWorkspace({
     try {
       const res = await fetch(`/api/tenant/integrations/ga4/${customer.id}/properties`)
       if (!res.ok) {
+        if (res.status === 403) {
+          setGa4Properties([])
+          await loadIntegrations()
+          return
+        }
         const error = await res.json().catch(() => ({}))
         throw new Error(error.error || 'GA4-Properties konnten nicht geladen werden.')
       }
@@ -449,7 +454,7 @@ export function CustomerDetailWorkspace({
     } finally {
       setLoadingGa4Properties(false)
     }
-  }, [customer.id, ga4Integration, open])
+  }, [customer.id, ga4Integration, loadIntegrations, open])
 
   useEffect(() => {
     if (!open || activeTab !== 'integrations' || !ga4IsConnected) return
@@ -1334,7 +1339,7 @@ export function CustomerDetailWorkspace({
             </div>
           )}
 
-          {ga4Integration && (
+          {(ga4IsConnected || ga4NeedsReconnect) && (
             <div className="space-y-3">
               {ga4GoogleEmail && (
                 <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -1409,7 +1414,7 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              {(!ga4Integration || ga4NeedsReconnect) && (
+              {(!ga4IsConnected || ga4NeedsReconnect) && (
                 <Button onClick={handleConnectGa4} disabled={connectingGa4} className="rounded-xl">
                   {connectingGa4 ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -1419,7 +1424,7 @@ export function CustomerDetailWorkspace({
                   {ga4NeedsReconnect ? 'Erneut verbinden' : 'Mit Google verbinden'}
                 </Button>
               )}
-              {ga4Integration && (
+              {(ga4IsConnected || ga4NeedsReconnect) && (
                 <Button
                   type="button"
                   variant="outline"
