@@ -60,13 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (integration.status === 'token_expired') {
-      return NextResponse.json(
-        {
-          error:
-            'Die GSC-Verbindung ist abgelaufen. Bitte in der Kundenverwaltung erneut verbinden.',
-        },
-        { status: 403 }
-      )
+      return NextResponse.json({ connected: false, revoked: true, data: null, trend: null })
     }
 
     const snapshot = await getCustomerGscDashboardSnapshot(integration, credentials, range)
@@ -77,13 +71,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof CustomerGscTokenRevokedError) {
-      return NextResponse.json(
-        {
-          error:
-            'Die GSC-Verbindung wurde widerrufen oder ist abgelaufen. Bitte erneut verbinden.',
-        },
-        { status: 403 }
-      )
+      return NextResponse.json({ connected: false, revoked: true, data: null, trend: null })
     }
 
     if (isCredentialsDecryptError(error)) {

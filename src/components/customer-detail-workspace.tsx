@@ -358,7 +358,7 @@ export function CustomerDetailWorkspace({
   const ga4GoogleEmail =
     typeof ga4Credentials.google_email === 'string' ? ga4Credentials.google_email : ''
   const ga4NeedsReconnect = ga4Integration?.status === 'token_expired'
-  const ga4IsConnected = Boolean(ga4Integration && !ga4NeedsReconnect)
+  const ga4IsConnected = Boolean(ga4Integration && ga4Integration.status !== 'disconnected' && !ga4NeedsReconnect)
   const metaAdsIntegration = integrations.find(
     (integration) => integration.integration_type === 'meta_ads'
   )
@@ -382,7 +382,7 @@ export function CustomerDetailWorkspace({
   const metaAdsCurrency =
     typeof metaAdsCredentials.currency === 'string' ? metaAdsCredentials.currency : ''
   const metaAdsNeedsReconnect = metaAdsIntegration?.status === 'token_expired'
-  const metaAdsIsConnected = Boolean(metaAdsIntegration && !metaAdsNeedsReconnect)
+  const metaAdsIsConnected = Boolean(metaAdsIntegration && metaAdsIntegration.status !== 'disconnected' && !metaAdsNeedsReconnect)
   const tikTokIntegration = integrations.find(
     (integration) => integration.integration_type === 'tiktok_ads'
   )
@@ -402,7 +402,7 @@ export function CustomerDetailWorkspace({
   const tikTokCurrency =
     typeof tikTokCredentials.currency === 'string' ? tikTokCredentials.currency : ''
   const tikTokNeedsReconnect = tikTokIntegration?.status === 'token_expired'
-  const tikTokIsConnected = Boolean(tikTokIntegration && !tikTokNeedsReconnect)
+  const tikTokIsConnected = Boolean(tikTokIntegration && tikTokIntegration.status !== 'disconnected' && !tikTokNeedsReconnect)
   const googleAdsIntegration = integrations.find(
     (integration) => integration.integration_type === 'google_ads'
   )
@@ -420,7 +420,7 @@ export function CustomerDetailWorkspace({
   const googleAdsCurrency =
     typeof googleAdsCredentials.currency_code === 'string' ? googleAdsCredentials.currency_code : ''
   const googleAdsNeedsReconnect = googleAdsIntegration?.status === 'token_expired'
-  const googleAdsIsConnected = Boolean(googleAdsIntegration && !googleAdsNeedsReconnect)
+  const googleAdsIsConnected = Boolean(googleAdsIntegration && googleAdsIntegration.status !== 'disconnected' && !googleAdsNeedsReconnect)
   const gscIntegration = integrations.find((integration) => integration.integration_type === 'gsc')
   const gscCredentials = (gscIntegration?.credentials ?? {}) as Record<string, unknown>
   const gscSelectedProperty =
@@ -428,7 +428,7 @@ export function CustomerDetailWorkspace({
   const gscGoogleEmail =
     typeof gscCredentials.google_email === 'string' ? gscCredentials.google_email : ''
   const gscNeedsReconnect = gscIntegration?.status === 'token_expired'
-  const gscIsConnected = Boolean(gscIntegration && !gscNeedsReconnect)
+  const gscIsConnected = Boolean(gscIntegration && gscIntegration.status !== 'disconnected' && !gscNeedsReconnect)
 
   const loadGa4Properties = useCallback(async () => {
     if (!ga4Integration || !open) return

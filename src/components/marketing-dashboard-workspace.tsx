@@ -720,6 +720,7 @@ function GSCSection({
         platformName="Google Search Console"
         onConnect={onConnect}
         connecting={connecting}
+        revoked={state.revoked}
       />
     )
   }
