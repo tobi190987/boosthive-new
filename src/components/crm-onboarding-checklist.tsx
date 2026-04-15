@@ -30,6 +30,7 @@ interface CrmOnboardingChecklistProps {
   customerId: string
   initialItems?: OnboardingItem[] | null
   isAdmin: boolean
+  onSaved?: (items: OnboardingItem[]) => void
 }
 
 function genId(): string {
@@ -43,6 +44,7 @@ export function CrmOnboardingChecklist({
   customerId,
   initialItems,
   isAdmin,
+  onSaved,
 }: CrmOnboardingChecklistProps) {
   const [items, setItems] = useState<OnboardingItem[]>(
     initialItems && initialItems.length > 0 ? initialItems : []
@@ -75,13 +77,14 @@ export function CrmOnboardingChecklist({
           const data = await res.json().catch(() => ({}))
           throw new Error(data.error || 'Fehler beim Speichern')
         }
+        onSaved?.(nextItems)
       } catch (err) {
         toast.error(err instanceof Error ? err.message : 'Ein Fehler ist aufgetreten.')
       } finally {
         setSaving(false)
       }
     },
-    [customerId]
+    [customerId, onSaved]
   )
 
   const updateItems = useCallback(

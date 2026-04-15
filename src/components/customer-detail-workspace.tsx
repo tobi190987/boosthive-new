@@ -200,6 +200,9 @@ export function CustomerDetailWorkspace({
   const [churnNote, setChurnNote] = useState('')
   const [savingChurn, setSavingChurn] = useState(false)
   const [localLogoUrl, setLocalLogoUrl] = useState<string | null>(customer.logo_url ?? null)
+  const [localOnboardingChecklist, setLocalOnboardingChecklist] = useState<OnboardingItem[] | null>(
+    customer.onboarding_checklist ?? null
+  )
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [saving, setSaving] = useState(false)
   const [integrations, setIntegrations] = useState<IntegrationData[]>([])
@@ -2236,8 +2239,9 @@ export function CustomerDetailWorkspace({
             <TabsContent value="onboarding" className="space-y-4">
               <CrmOnboardingChecklist
                 customerId={customer.id}
-                initialItems={customer.onboarding_checklist ?? null}
+                initialItems={localOnboardingChecklist}
                 isAdmin={isAdmin}
+                onSaved={setLocalOnboardingChecklist}
               />
             </TabsContent>
 
