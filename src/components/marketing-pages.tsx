@@ -760,7 +760,7 @@ function RootHero() {
     <section className="relative grid gap-10 py-16 sm:py-20 lg:grid-cols-[1.1fr_0.9fr] lg:items-center lg:py-28">
       <div className="space-y-8">
         <span className="inline-flex items-center rounded-full border border-teal-500/40 bg-teal-500/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-300">
-          White-Label Marketing OS für Agenturen
+          White-Label Marketing-Plattform für Agenturen
         </span>
         <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
           Eine Plattform.<br />
@@ -1005,7 +1005,7 @@ function RootContactCta() {
               BoostHive persönlich kennenlernen.
             </h2>
             <p className="mt-4 text-sm leading-7 text-slate-300">
-              Agentur-Zugänge werden manuell provisioniert — kein Self-Service, keine Massenabfertigung. Schreib uns kurz, worum es geht, und wir zeigen dir die Plattform live an deinem Use Case.
+              Agentur-Zugänge werden persönlich eingerichtet — kein Self-Service, keine automatischen Prozesse. Schreib uns kurz, worum es geht, und wir zeigen dir die Plattform live an deinem Use Case.
             </p>
           </div>
           <div className="flex flex-col gap-3">

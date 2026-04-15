@@ -1485,7 +1485,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
                 Keine Integrationen verbunden
               </p>
               <p className="text-xs text-amber-600 dark:text-amber-400">
-                Verbinde Plattformen direkt im Kunden-Modal, um Marketing-Daten anzuzeigen.
+                Öffne die Kundendetails über den Button rechts und verbinde deine Marketing-Plattformen.
               </p>
             </div>
             <Button

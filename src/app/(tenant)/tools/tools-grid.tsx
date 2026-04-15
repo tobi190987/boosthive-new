@@ -87,8 +87,26 @@ function LockedToolCard({ tool }: { tool: ToolItem }) {
 }
 
 export function ToolsGrid({ activeCodes }: { activeCodes: string[] }) {
+  const allVisibleTools = TOOL_GROUPS.flatMap((g) =>
+    g.items.filter((t) => t.showInGrid !== false)
+  )
+  const activeCount = allVisibleTools.filter((t) => hasToolAccess(t.moduleCode, activeCodes)).length
+  const totalCount = allVisibleTools.length
+  const hasLocked = activeCount < totalCount
+
   return (
     <>
+      {hasLocked && (
+        <div className="flex items-center gap-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm dark:border-border dark:bg-card">
+          <span className="font-medium text-slate-700 dark:text-slate-200">
+            {activeCount} von {totalCount} Modulen aktiv
+          </span>
+          <span className="text-slate-400 dark:text-slate-500">—</span>
+          <a href="/billing" className="text-teal-600 hover:underline dark:text-teal-400">
+            Weitere Module freischalten
+          </a>
+        </div>
+      )}
       {TOOL_GROUPS.map((group) => (
         <div key={group.label}>
           <h2 className="mb-4 text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">

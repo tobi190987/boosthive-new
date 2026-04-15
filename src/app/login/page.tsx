@@ -23,8 +23,8 @@ export default async function TenantLoginPage({ searchParams }: LoginPageProps) 
       variant="tenant"
       eyebrow="Tenant Login"
       hideEyebrow
-      title="Willkommen zurück"
-      description="Melde dich an, um direkt in deinen Workspace zu wechseln."
+      title="Willkommen"
+      description="Melde dich an, um in deinen Workspace zu gelangen."
       brandLogoUrl={tenant?.logoUrl}
       brandAlt={tenant ? `${tenant.slug} Logo` : 'BoostHive Logo'}
       brandLogoClassName="h-[4.5rem] w-auto max-w-[300px] object-contain sm:h-20 sm:max-w-[340px]"

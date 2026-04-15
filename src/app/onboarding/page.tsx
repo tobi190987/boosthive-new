@@ -19,7 +19,7 @@ export default async function OnboardingPage() {
       shellSummary={shellSummary}
       eyebrow="Onboarding"
       title="Richte dein Profil und euren Workspace ein"
-      description="Beim ersten Login sammeln wir die Pflichtdaten für dein Profil. Admins hinterlegen zusätzlich die verpflichtenden Rechnungsdaten und Stripe."
+      description="Beim ersten Login hinterlegst du dein Profil. Admins richten zusätzlich die Rechnungsdaten und Zahlungsabwicklung ein."
     >
       <OnboardingTourTrigger tenantId={context.tenant.id} userId={context.user.id} />
       <TenantProfileWorkspace
