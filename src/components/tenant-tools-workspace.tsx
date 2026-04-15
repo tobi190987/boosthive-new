@@ -1850,6 +1850,16 @@ function SeoAnalysisWorkspace({
 
   useEffect(() => () => stopPolling(), [stopPolling])
 
+  // Refresh the list every 5 s while there are running analyses visible in the list view,
+  // so that the status badge and score update without a manual page reload.
+  useEffect(() => {
+    if (view.type !== 'list') return
+    const hasRunning = analyses.some((a) => a.status === 'running')
+    if (!hasRunning) return
+    const id = setInterval(() => void loadAnalyses(), 5000)
+    return () => clearInterval(id)
+  }, [view.type, analyses, loadAnalyses])
+
   const runningSummary = useMemo(
     () =>
       view.type === 'running'
