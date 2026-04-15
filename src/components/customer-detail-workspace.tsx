@@ -54,7 +54,7 @@ import {
 } from 'lucide-react'
 import { triggerMarketingDashboardRefresh } from '@/lib/marketing-dashboard-refresh'
 import { CUSTOMER_INDUSTRIES, isCustomerIndustry } from '@/lib/customer-industries'
-import { PortalAccessTab } from '@/components/portal-access-tab'
+
 import { CrmActivityTimeline } from '@/components/crm-activity-timeline'
 import {
   CrmOnboardingChecklist,
@@ -155,7 +155,6 @@ type CustomerDetailTab =
   | 'notes'
   | 'activities'
   | 'onboarding'
-  | 'portal'
 
 async function getResponseErrorMessage(res: Response, fallback: string) {
   const data = await res.json().catch(() => ({}))
@@ -2057,7 +2056,6 @@ export function CustomerDetailWorkspace({
               <TabsTrigger value="integrations">Integrationen</TabsTrigger>
               <TabsTrigger value="documents">Dokumente</TabsTrigger>
               <TabsTrigger value="notes">Notizen</TabsTrigger>
-              {isAdmin && <TabsTrigger value="portal">Portal-Zugang</TabsTrigger>}
             </TabsList>
 
             {/* Stammdaten */}
@@ -2501,12 +2499,6 @@ export function CustomerDetailWorkspace({
               </Card>
             </TabsContent>
 
-            {/* Portal-Zugang */}
-            {isAdmin && (
-              <TabsContent value="portal">
-                <PortalAccessTab customerId={customer.id} />
-              </TabsContent>
-            )}
           </Tabs>
         </DialogContent>
       </Dialog>

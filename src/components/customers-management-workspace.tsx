@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
-import { Search, Plus, Trash2, Users, Pencil, Globe, Euro, Bell } from 'lucide-react'
+import { Search, Plus, Trash2, Users, Pencil, Globe, Euro } from 'lucide-react'
 import { CustomerDetailWorkspace } from '@/components/customer-detail-workspace'
 import { FilterChips } from '@/components/filter-chips'
 import { useActiveCustomer } from '@/lib/active-customer-context'
@@ -41,8 +41,8 @@ interface CustomerExtended {
 const CRM_STATUS_LABEL: Record<CrmStatus, string> = {
   lead: 'Lead',
   prospect: 'Prospect',
-  active: 'Active',
-  paused: 'Paused',
+  active: 'Aktiv',
+  paused: 'Pausiert',
   churned: 'Churned',
 }
 
@@ -59,10 +59,8 @@ const CRM_STATUS_BADGE: Record<CrmStatus, string> = {
 }
 
 const CRM_STATUS_CHIPS: Array<{ id: CrmStatus; label: string }> = [
-  { id: 'lead', label: 'Lead' },
-  { id: 'prospect', label: 'Prospect' },
-  { id: 'active', label: 'Active' },
-  { id: 'paused', label: 'Paused' },
+  { id: 'active', label: 'Aktiv' },
+  { id: 'paused', label: 'Pausiert' },
   { id: 'churned', label: 'Churned' },
 ]
 
@@ -131,7 +129,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
   const [crmStatusFilter, setCrmStatusFilter] = useState<CrmStatus[]>([])
-  const [followUpOnly, setFollowUpOnly] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
   const [form, setForm] = useState<CustomerForm>(emptyForm)
   const [editingCustomer, setEditingCustomer] = useState<CustomerExtended | null>(null)
@@ -176,20 +173,14 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (customer.domain && customer.domain.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
-    const effectiveCrmStatuses: CrmStatus[] =
-      crmStatusFilter.length > 0
-        ? crmStatusFilter
-        : (['lead', 'prospect', 'active', 'paused'] as CrmStatus[])
     const customerCrmStatus: CrmStatus = customer.crm_status ?? 'active'
-    const matchesCrmStatus = effectiveCrmStatuses.includes(customerCrmStatus)
-    const matchesFollowUp = !followUpOnly || customer.has_due_follow_up === true
-    return matchesSearch && matchesStatus && matchesCrmStatus && matchesFollowUp
+    const matchesCrmStatus = crmStatusFilter.length === 0 || crmStatusFilter.includes(customerCrmStatus)
+    return matchesSearch && matchesStatus && matchesCrmStatus
   })
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
     statusFilter !== 'all' ||
-    crmStatusFilter.length > 0 ||
-    followUpOnly
+    crmStatusFilter.length > 0
 
   const totalMrr = customers
     .filter((c) => (c.crm_status ?? 'active') === 'active')
@@ -198,7 +189,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     (sum, c) => sum + (typeof c.monthly_volume === 'number' ? c.monthly_volume : 0),
     0
   )
-  const dueFollowUpsCount = customers.filter((c) => c.has_due_follow_up === true).length
   const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE)
   const pagedCustomers = filteredCustomers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
@@ -427,15 +417,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                   {filteredMrr > 0 && ` · ${EUR_FORMATTER.format(filteredMrr)}`}
                 </Badge>
               )}
-              {dueFollowUpsCount > 0 && (
-                <Badge
-                  variant="outline"
-                  className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-400"
-                >
-                  <Bell className="w-3.5 h-3.5 mr-1" />
-                  {dueFollowUpsCount} Follow-up{dueFollowUpsCount === 1 ? '' : 's'} fällig
-                </Badge>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -470,37 +451,23 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               }}
               onClear={() => { setStatusFilter('all'); setCurrentPage(1) }}
             />
-            <div className="flex flex-wrap items-center gap-2">
-              <FilterChips
-                chips={CRM_STATUS_CHIPS}
-                activeIds={crmStatusFilter}
-                onToggle={(id) => {
-                  setCurrentPage(1)
-                  setCrmStatusFilter((prev) => {
-                    const typedId = id as CrmStatus
-                    return prev.includes(typedId)
-                      ? prev.filter((s) => s !== typedId)
-                      : [...prev, typedId]
-                  })
-                }}
-                onClear={() => {
-                  setCrmStatusFilter([])
-                  setCurrentPage(1)
-                }}
-              />
-              <Button
-                variant={followUpOnly ? 'default' : 'outline'}
-                size="sm"
-                className="rounded-full"
-                onClick={() => {
-                  setFollowUpOnly((prev) => !prev)
-                  setCurrentPage(1)
-                }}
-              >
-                <Bell className="w-3.5 h-3.5 mr-1" />
-                Follow-up fällig
-              </Button>
-            </div>
+            <FilterChips
+              chips={CRM_STATUS_CHIPS}
+              activeIds={crmStatusFilter}
+              onToggle={(id) => {
+                setCurrentPage(1)
+                setCrmStatusFilter((prev) => {
+                  const typedId = id as CrmStatus
+                  return prev.includes(typedId)
+                    ? prev.filter((s) => s !== typedId)
+                    : [...prev, typedId]
+                })
+              }}
+              onClear={() => {
+                setCrmStatusFilter([])
+                setCurrentPage(1)
+              }}
+            />
           </div>
 
           {loading ? (
@@ -530,7 +497,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                       setSearchQuery('')
                       setStatusFilter('all')
                       setCrmStatusFilter([])
-                      setFollowUpOnly(false)
                     }}
                   >
                     Filter zurücksetzen
@@ -564,18 +530,7 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                     return (
                     <TableRow key={customer.id}>
                       <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <span>{customer.name}</span>
-                          {customer.has_due_follow_up && (
-                            <span
-                              className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                              aria-label="Follow-up fällig"
-                              title="Follow-up fällig"
-                            >
-                              <Bell className="w-3 h-3" />
-                            </span>
-                          )}
-                        </div>
+                        <span>{customer.name}</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
