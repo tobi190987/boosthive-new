@@ -216,7 +216,7 @@ export function SeoReportContent({
               <img
                 src={tenantLogoUrl}
                 alt={`${tenantName} Logo`}
-                className="max-h-14 max-w-[160px] object-contain brightness-0 invert"
+                className="max-h-14 max-w-[160px] object-contain"
               />
             ) : (
               <div className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-right">

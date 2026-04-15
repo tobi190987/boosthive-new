@@ -21,7 +21,7 @@ export default async function SeoPrintPage({
   }
 
   return (
-    <div className="p-0">
+    <div className="print-area">
       <PrintTrigger />
       <SeoReportContent
         result={analysis.result}
