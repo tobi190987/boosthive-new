@@ -161,6 +161,7 @@ interface PlatformState<T> {
   error: string | null
   data: T | null
   trend: number | null
+  revoked?: boolean
 }
 
 interface CustomerDetailData {
@@ -472,10 +473,12 @@ function NotConnectedCard({
   platformName,
   onConnect,
   connecting,
+  revoked,
 }: {
   platformName: string
   onConnect: () => void
   connecting: boolean
+  revoked?: boolean
 }) {
   return (
     <div className="flex flex-col items-center gap-4 py-10 text-center">
@@ -484,10 +487,12 @@ function NotConnectedCard({
       </div>
       <div className="space-y-1">
         <p className="text-sm font-medium text-slate-600 dark:text-slate-300">
-          {platformName} ist nicht verbunden
+          {revoked ? `${platformName}-Verbindung abgelaufen` : `${platformName} ist nicht verbunden`}
         </p>
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          Verbinde diese Plattform in der Kundenverwaltung.
+          {revoked
+            ? 'Der Zugriff wurde von Google widerrufen oder ist abgelaufen. Bitte erneut verbinden.'
+            : 'Verbinde diese Plattform in der Kundenverwaltung.'}
         </p>
       </div>
       <Button variant="outline" size="sm" className="rounded-xl" onClick={onConnect} disabled={connecting}>
@@ -496,7 +501,7 @@ function NotConnectedCard({
         ) : (
           <ExternalLink className="mr-2 h-3.5 w-3.5" />
         )}
-        Verbinden
+        {revoked ? 'Neu verbinden' : 'Verbinden'}
       </Button>
     </div>
   )
@@ -656,6 +661,7 @@ function GA4Section({
         platformName="Google Analytics 4"
         onConnect={onConnect}
         connecting={connecting}
+        revoked={state.revoked}
       />
     )
   }
@@ -1129,6 +1135,7 @@ export function MarketingDashboardWorkspace({ context }: MarketingDashboardWorks
           error: null,
           data: json.data ?? null,
           trend: json.trend ?? null,
+          revoked: json.revoked === true,
         })
       } catch (err) {
         setState((prev) => ({

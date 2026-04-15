@@ -59,10 +59,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (integration.status === 'token_expired') {
-      return NextResponse.json(
-        { error: 'Die GA4-Verbindung ist abgelaufen. Bitte in der Kundenverwaltung erneut verbinden.' },
-        { status: 403 }
-      )
+      return NextResponse.json({ connected: false, revoked: true, data: null, trend: null })
     }
 
     const data = await getGA4DashboardSnapshot(integration, credentials, range)
@@ -73,10 +70,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     if (error instanceof GA4TokenRevokedError) {
-      return NextResponse.json(
-        { error: 'Die GA4-Verbindung wurde widerrufen. Bitte in der Kundenverwaltung erneut verbinden.' },
-        { status: 403 }
-      )
+      return NextResponse.json({ connected: false, revoked: true, data: null, trend: null })
     }
 
     if (isCredentialsDecryptError(error)) {
