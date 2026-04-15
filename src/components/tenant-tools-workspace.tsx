@@ -669,6 +669,7 @@ function SeoResultsView({
   const [activeProblemFilterKey, setActiveProblemFilterKey] = useState<string | null>(null)
   const [showDetailsBackToTop, setShowDetailsBackToTop] = useState(false)
   const printRef = useRef<HTMLDivElement | null>(null)
+  const printContainerRef = useRef<HTMLDivElement | null>(null)
   const detailsTopRef = useRef<HTMLDivElement | null>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
@@ -779,7 +780,7 @@ function SeoResultsView({
   }, [visiblePages.length])
 
   const handleExportPdf = useCallback(() => {
-    if (!printRef.current) {
+    if (!printContainerRef.current) {
       toast({
         title: 'PDF konnte nicht vorbereitet werden',
         description: 'Der Report ist gerade noch nicht verfügbar.',
@@ -788,68 +789,48 @@ function SeoResultsView({
       return
     }
 
-    const styles = Array.from(document.querySelectorAll('style, link[rel="stylesheet"]'))
-      .map((node) => node.outerHTML)
-      .join('')
-    const frame = document.createElement('iframe')
-    frame.setAttribute('aria-hidden', 'true')
-    frame.className = 'fixed right-0 top-0 h-0 w-0 border-0 opacity-0'
-    document.body.appendChild(frame)
+    const PRINT_ID = 'seo-pdf-print-container'
+    printContainerRef.current.id = PRINT_ID
 
-    const html = `<!doctype html>
-<html lang="de">
-  <head>
-    <meta charset="utf-8" />
-    <base href="${window.location.origin}" />
-    <title>SEO-Analyse ${tenantSlug}-${analysisId.slice(0, 8)}</title>
-    ${styles}
-    <style>
-      @page { size: A4; margin: 14mm 12mm; }
-      html, body { background: #ffffff; }
-      body {
-        margin: 0;
-        color: #0f172a;
-        -webkit-print-color-adjust: exact;
-        print-color-adjust: exact;
+    const style = document.createElement('style')
+    style.id = 'seo-pdf-print-style'
+    style.textContent = `
+      @media print {
+        @page { size: A4; margin: 14mm 12mm; }
+        html, body { visibility: hidden; background: #ffffff !important; }
+        #${PRINT_ID} {
+          visibility: visible !important;
+          position: fixed !important;
+          inset: 0 !important;
+          left: 0 !important;
+          top: 0 !important;
+          width: 210mm !important;
+          opacity: 1 !important;
+          pointer-events: none !important;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+        #${PRINT_ID} * {
+          visibility: visible !important;
+        }
+        .print-avoid-break {
+          break-inside: avoid;
+          page-break-inside: avoid;
+        }
       }
-      .print-avoid-break {
-        break-inside: avoid;
-        page-break-inside: avoid;
-      }
-    </style>
-  </head>
-  <body>
-    ${printRef.current.innerHTML}
-  </body>
-</html>`
-
-    const printWindow = frame.contentWindow
-    if (!printWindow) {
-      frame.remove()
-      toast({
-        title: 'PDF konnte nicht vorbereitet werden',
-        description: 'Das Druckfenster konnte nicht initialisiert werden.',
-        variant: 'destructive',
-      })
-      return
-    }
+    `
+    document.head.appendChild(style)
 
     const cleanup = () => {
-      window.setTimeout(() => {
-        frame.remove()
-      }, 1000)
+      document.getElementById('seo-pdf-print-style')?.remove()
+      if (printContainerRef.current) {
+        printContainerRef.current.removeAttribute('id')
+      }
     }
 
-    printWindow.document.open()
-    printWindow.document.write(html)
-    printWindow.document.close()
-
-    window.setTimeout(() => {
-      printWindow.focus()
-      printWindow.print()
-      cleanup()
-    }, 500)
-  }, [analysisId, tenantSlug, toast])
+    window.addEventListener('afterprint', cleanup, { once: true })
+    window.print()
+  }, [toast])
 
   return (
     <div className="space-y-6">
@@ -873,7 +854,7 @@ function SeoResultsView({
         </Button>
       </div>
 
-      <div className="pointer-events-none fixed left-[-10000px] top-0 w-[210mm] opacity-0">
+      <div ref={printContainerRef} className="pointer-events-none fixed left-[-10000px] top-0 w-[210mm] opacity-0">
         <div ref={printRef}>
           <SeoReportContent
             result={result}
