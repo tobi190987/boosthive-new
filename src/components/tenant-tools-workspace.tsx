@@ -668,7 +668,6 @@ function SeoResultsView({
   const [visibleDetailCount, setVisibleDetailCount] = useState(DETAIL_PAGE_SIZE)
   const [activeProblemFilterKey, setActiveProblemFilterKey] = useState<string | null>(null)
   const [showDetailsBackToTop, setShowDetailsBackToTop] = useState(false)
-  const printRef = useRef<HTMLDivElement | null>(null)
   const detailsTopRef = useRef<HTMLDivElement | null>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
@@ -779,73 +778,8 @@ function SeoResultsView({
   }, [visiblePages.length])
 
   const handleExportPdf = useCallback(() => {
-    if (!printRef.current) {
-      toast({
-        title: 'PDF konnte nicht vorbereitet werden',
-        description: 'Der Report ist gerade noch nicht verfügbar.',
-        variant: 'destructive',
-      })
-      return
-    }
-
-    // Serialize all already-loaded CSS rules from document.styleSheets —
-    // this avoids any external file downloads in the iframe context.
-    const cssText = Array.from(document.styleSheets).flatMap((sheet) => {
-      try {
-        return Array.from(sheet.cssRules).map((rule) => rule.cssText)
-      } catch {
-        return [] // cross-origin or restricted sheets — skip silently
-      }
-    }).join('\n')
-
-    const doc = `<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8" />
-  <title>SEO-Analyse Report</title>
-  <style>${cssText}</style>
-  <style>
-    @page { size: A4; margin: 14mm 12mm; }
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body {
-      margin: 0;
-      padding: 0;
-      min-height: 0;
-      background: #ffffff;
-      color: #0f172a;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
-  </style>
-</head>
-<body>${printRef.current.innerHTML}</body>
-</html>`
-
-    const frame = document.createElement('iframe')
-    frame.setAttribute('aria-hidden', 'true')
-    frame.style.cssText =
-      'position:fixed;top:-99999px;left:-99999px;width:1px;height:1px;border:0;visibility:hidden'
-    document.body.appendChild(frame)
-
-    const cleanup = () => {
-      window.setTimeout(() => frame.remove(), 1000)
-    }
-
-    frame.addEventListener('load', () => {
-      const cw = frame.contentWindow
-      if (!cw) { frame.remove(); return }
-      // Small buffer so the browser finishes layout before printing
-      window.setTimeout(() => {
-        cw.focus()
-        cw.print()
-        cleanup()
-      }, 400)
-    })
-
-    // srcdoc sets the iframe content without any network request
-    frame.srcdoc = doc
-  }, [toast])
+    window.open(`/seo-print/${analysisId}`, '_blank')
+  }, [analysisId])
 
   return (
     <div className="space-y-6">
@@ -867,20 +801,6 @@ function SeoResultsView({
         >
           PDF speichern
         </Button>
-      </div>
-
-      <div className="pointer-events-none fixed left-[-10000px] top-0 w-[210mm] opacity-0">
-        <div ref={printRef}>
-          <SeoReportContent
-            result={result}
-            tenantName={tenantName}
-            tenantSlug={tenantSlug}
-            tenantLogoUrl={tenantLogoUrl}
-            createdAt={createdAt}
-            sourceUrl={sourceUrl}
-            crawlMode={crawlMode}
-          />
-        </div>
       </div>
 
       <Card className="rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-soft">
@@ -1142,7 +1062,7 @@ function SeoResultsView({
   )
 }
 
-function SeoReportContent({
+function _SeoReportContentMovedToSeoReportContentTsx({
   result,
   tenantName,
   tenantSlug,
