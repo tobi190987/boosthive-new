@@ -33,7 +33,6 @@ import { NotificationBell } from '@/components/notification-bell'
 import { cn } from '@/lib/utils'
 import { GlobalCommandPalette } from '@/components/global-command-palette'
 import { useActiveCustomer } from '@/lib/active-customer-context'
-import { CustomerSelectorDropdown } from '@/components/customer-selector-dropdown'
 import { writeSessionCache } from '@/lib/client-cache'
 import type { ShellNotification } from '@/lib/tenant-app-data'
 import type { TenantShellContext } from '@/lib/tenant-shell'
@@ -293,10 +292,6 @@ function NavigationContent({
         ) : null}
       </div>
       <Separator className="bg-slate-100 dark:bg-slate-800" />
-
-      <div className="px-3 py-3 pb-0">
-        <CustomerSelectorDropdown />
-      </div>
 
       <nav className="flex-1 px-3 py-3" aria-label="Hauptnavigation" data-tour="sidebar-nav">
         <div className="space-y-6">
