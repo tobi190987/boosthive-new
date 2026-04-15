@@ -58,11 +58,6 @@ const CRM_STATUS_BADGE: Record<CrmStatus, string> = {
     'border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400',
 }
 
-const CRM_STATUS_CHIPS: Array<{ id: CrmStatus; label: string }> = [
-  { id: 'active', label: 'Aktiv' },
-  { id: 'paused', label: 'Pausiert' },
-  { id: 'churned', label: 'Churned' },
-]
 
 const EUR_FORMATTER = new Intl.NumberFormat('de-DE', {
   style: 'currency',
@@ -128,7 +123,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'paused'>('all')
-  const [crmStatusFilter, setCrmStatusFilter] = useState<CrmStatus[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [form, setForm] = useState<CustomerForm>(emptyForm)
   const [editingCustomer, setEditingCustomer] = useState<CustomerExtended | null>(null)
@@ -173,22 +167,16 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
     const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          (customer.domain && customer.domain.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesStatus = statusFilter === 'all' || customer.status === statusFilter
-    const customerCrmStatus: CrmStatus = customer.crm_status ?? 'active'
-    const matchesCrmStatus = crmStatusFilter.length === 0 || crmStatusFilter.includes(customerCrmStatus)
-    return matchesSearch && matchesStatus && matchesCrmStatus
+    return matchesSearch && matchesStatus
   })
   const hasActiveFilters =
     searchQuery.trim().length > 0 ||
-    statusFilter !== 'all' ||
-    crmStatusFilter.length > 0
+    statusFilter !== 'all'
 
   const totalMrr = customers
     .filter((c) => (c.crm_status ?? 'active') === 'active')
     .reduce((sum, c) => sum + (typeof c.monthly_volume === 'number' ? c.monthly_volume : 0), 0)
-  const filteredMrr = filteredCustomers.reduce(
-    (sum, c) => sum + (typeof c.monthly_volume === 'number' ? c.monthly_volume : 0),
-    0
-  )
+
   const totalPages = Math.ceil(filteredCustomers.length / PAGE_SIZE)
   const pagedCustomers = filteredCustomers.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE)
 
@@ -411,12 +399,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                 <Euro className="w-3.5 h-3.5 mr-1" />
                 MRR: {EUR_FORMATTER.format(totalMrr)}
               </Badge>
-              {crmStatusFilter.length > 0 && filteredCustomers.length > 0 && (
-                <Badge variant="outline" className="border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-300">
-                  {filteredCustomers.length} {filteredCustomers.length === 1 ? 'Kunde' : 'Kunden'}
-                  {filteredMrr > 0 && ` · ${EUR_FORMATTER.format(filteredMrr)}`}
-                </Badge>
-              )}
             </div>
           </div>
         </CardHeader>
@@ -451,23 +433,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
               }}
               onClear={() => { setStatusFilter('all'); setCurrentPage(1) }}
             />
-            <FilterChips
-              chips={CRM_STATUS_CHIPS}
-              activeIds={crmStatusFilter}
-              onToggle={(id) => {
-                setCurrentPage(1)
-                setCrmStatusFilter((prev) => {
-                  const typedId = id as CrmStatus
-                  return prev.includes(typedId)
-                    ? prev.filter((s) => s !== typedId)
-                    : [...prev, typedId]
-                })
-              }}
-              onClear={() => {
-                setCrmStatusFilter([])
-                setCurrentPage(1)
-              }}
-            />
           </div>
 
           {loading ? (
@@ -496,7 +461,6 @@ export function CustomersManagementWorkspace({ isAdmin }: { isAdmin: boolean }) 
                     onClick={() => {
                       setSearchQuery('')
                       setStatusFilter('all')
-                      setCrmStatusFilter([])
                     }}
                   >
                     Filter zurücksetzen
