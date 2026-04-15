@@ -789,43 +789,68 @@ function SeoResultsView({
       return
     }
 
-    const PRINT_ID = 'seo-pdf-print-container'
-    printContainerRef.current.id = PRINT_ID
+    const container = printContainerRef.current
+    const originalParent = container.parentElement
+    const originalNextSibling = container.nextSibling
+
+    // Move to direct body child so position:static works across multiple pages
+    document.body.appendChild(container)
+    container.setAttribute('data-print-area', 'true')
+
+    // Force light mode so dark: Tailwind variants stay inactive during print
+    const htmlEl = document.documentElement
+    const hadDark = htmlEl.classList.contains('dark')
+    if (hadDark) htmlEl.classList.remove('dark')
 
     const style = document.createElement('style')
     style.id = 'seo-pdf-print-style'
     style.textContent = `
       @media print {
         @page { size: A4; margin: 14mm 12mm; }
-        html, body { visibility: hidden; background: #ffffff !important; }
-        #${PRINT_ID} {
-          visibility: visible !important;
-          position: fixed !important;
-          inset: 0 !important;
-          left: 0 !important;
-          top: 0 !important;
-          width: 210mm !important;
+        /* Hide all sibling body children */
+        body > *:not([data-print-area]) { display: none !important; }
+        /* Print container in normal flow */
+        [data-print-area] {
+          display: block !important;
+          position: static !important;
+          left: auto !important;
+          top: auto !important;
+          width: 100% !important;
+          max-width: none !important;
           opacity: 1 !important;
-          pointer-events: none !important;
+          transform: none !important;
+          background: #ffffff !important;
           -webkit-print-color-adjust: exact;
           print-color-adjust: exact;
         }
-        #${PRINT_ID} * {
-          visibility: visible !important;
-        }
-        .print-avoid-break {
-          break-inside: avoid;
-          page-break-inside: avoid;
-        }
+        /* Force opaque backgrounds (avoids translucent bg-white/90 etc.) */
+        [data-print-area] [class*="bg-white"] { background-color: #ffffff !important; }
+        [data-print-area] [class*="bg-slate-50"] { background-color: #f8fafc !important; }
+        [data-print-area] [class*="bg-slate-100"] { background-color: #f1f5f9 !important; }
+        [data-print-area] [class*="bg-blue-50"] { background-color: #eff6ff !important; }
+        [data-print-area] [class*="bg-amber-50"] { background-color: #fffbeb !important; }
+        /* Preserve border radii and borders */
+        [data-print-area] * { box-sizing: border-box; }
+        /* Page breaks */
+        .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
+        /* Section spacing on page breaks */
+        [data-print-area] section + section { margin-top: 20px; }
       }
     `
     document.head.appendChild(style)
 
     const cleanup = () => {
-      document.getElementById('seo-pdf-print-style')?.remove()
-      if (printContainerRef.current) {
-        printContainerRef.current.removeAttribute('id')
+      style.remove()
+      container.removeAttribute('data-print-area')
+      // Restore original position in the React tree
+      if (originalParent) {
+        if (originalNextSibling) {
+          originalParent.insertBefore(container, originalNextSibling)
+        } else {
+          originalParent.appendChild(container)
+        }
       }
+      if (hadDark) htmlEl.classList.add('dark')
     }
 
     window.addEventListener('afterprint', cleanup, { once: true })
@@ -1157,116 +1182,109 @@ function SeoReportContent({
   })
 
   return (
-    <div className="mx-auto w-full max-w-[210mm] bg-white dark:bg-card p-8 text-slate-900 dark:text-slate-100">
-      <section className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card p-8">
+    <div className="mx-auto w-full max-w-[210mm] bg-white p-6 text-slate-900">
+      {/* Cover / Header */}
+      <section className="print-avoid-break rounded-2xl bg-slate-900 p-8 text-white">
         <div className="flex items-start justify-between gap-6">
-          <div className="space-y-4">
-            <Badge className="w-fit rounded-full bg-slate-900 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.28em] text-white hover:bg-slate-900">
+          <div className="space-y-3">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-slate-400">
               SEO-Analyse Report
-            </Badge>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-blue-600">
-                {tenantName} / {tenantSlug}
-              </p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50">
-                SEO-Analyse
-              </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-600 dark:text-slate-300">
-                Sauber aufbereiteter Report mit Prioritäten, technischen Checks und den
-                wichtigsten Problemseiten.
-              </p>
-            </div>
+            </p>
+            <h1 className="text-3xl font-bold tracking-tight">
+              SEO-Analyse
+            </h1>
+            <p className="text-sm font-semibold text-blue-400">
+              {tenantName} · {tenantSlug}
+            </p>
           </div>
-
           <div className="flex shrink-0 items-center justify-end">
             {tenantLogoUrl ? (
               <img
                 src={tenantLogoUrl}
                 alt={`${tenantName} Logo`}
-                className="max-h-16 max-w-[180px] object-contain"
+                className="max-h-14 max-w-[160px] object-contain brightness-0 invert"
               />
             ) : (
-              <div className="rounded-2xl border border-slate-200 dark:border-border bg-white dark:bg-card px-4 py-3 text-right">
-                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{tenantName}</p>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Agentur Branding</p>
+              <div className="rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-right">
+                <p className="text-sm font-semibold text-white">{tenantName}</p>
+                <p className="text-xs text-slate-400">Agentur</p>
               </div>
             )}
           </div>
         </div>
 
-        <div className="mt-6 grid gap-3 md:grid-cols-3">
-          <div className="rounded-2xl bg-white/90 p-4 dark:bg-secondary/70">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          <div className="rounded-xl bg-slate-800 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               Domain
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-              {extractHostname(sourceUrl) ?? 'Nicht verfügbar'}
+            <p className="mt-1.5 text-base font-semibold text-white">
+              {extractHostname(sourceUrl) ?? '–'}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 dark:bg-secondary/70">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+          <div className="rounded-xl bg-slate-800 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               Crawl-Modus
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-              {crawlMode ? formatCrawlModeLabel(crawlMode) : 'Nicht verfügbar'}
+            <p className="mt-1.5 text-base font-semibold text-white">
+              {crawlMode ? formatCrawlModeLabel(crawlMode) : '–'}
             </p>
           </div>
-          <div className="rounded-2xl bg-white/90 p-4 dark:bg-secondary/70">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+          <div className="rounded-xl bg-slate-800 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
               Erstellt am
             </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900 dark:text-slate-100">
-              {createdAt ? formatDate(createdAt) : 'Nicht verfügbar'}
+            <p className="mt-1.5 text-base font-semibold text-white">
+              {createdAt ? formatDate(createdAt) : '–'}
             </p>
           </div>
         </div>
       </section>
 
-      <section className="mt-6 grid gap-5 xl:grid-cols-[180px_1fr] xl:items-start">
-        <div className="print-avoid-break flex items-start justify-center xl:justify-start">
+      {/* Score + KPIs */}
+      <section className="mt-5 grid gap-4 grid-cols-[auto_1fr] items-center">
+        <div className="print-avoid-break flex items-center justify-center">
           <div
             className={cn(
-              'flex h-32 w-32 flex-col items-center justify-center rounded-full border-8',
+              'flex h-28 w-28 flex-col items-center justify-center rounded-full border-8',
               tone.bg
             )}
           >
             <span className={cn('text-4xl font-bold', tone.text)}>{result.overallScore}</span>
-            <span className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
+            <span className="mt-1 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">
               {scoreLabel(result.overallScore)}
             </span>
           </div>
         </div>
-        <div className="grid gap-3 sm:grid-cols-3">
-          <div className="print-avoid-break rounded-2xl bg-slate-50 dark:bg-card p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-              Seiten
-            </p>
-            <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">{result.totalPages}</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="print-avoid-break rounded-xl bg-slate-50 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Seiten</p>
+            <p className="mt-1.5 text-2xl font-bold text-slate-900">{result.totalPages}</p>
+            <p className="mt-0.5 text-xs text-slate-500">Analysiert</p>
           </div>
-          <div className="print-avoid-break rounded-2xl bg-blue-50 dark:bg-blue-950/30 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-              Erreichbar
-            </p>
-            <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          <div className="print-avoid-break rounded-xl bg-blue-50 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Erreichbar</p>
+            <p className="mt-1.5 text-2xl font-bold text-blue-700">
               {result.pages.filter((page) => !page.error).length}
             </p>
+            <p className="mt-0.5 text-xs text-slate-500">Öffentlich</p>
           </div>
-          <div className="print-avoid-break rounded-2xl bg-slate-100 dark:bg-secondary p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-              Kritisch
-            </p>
-            <p className="mt-2 text-xl font-semibold text-slate-900 dark:text-slate-100">
+          <div className="print-avoid-break rounded-xl bg-amber-50 p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">Kritisch</p>
+            <p className="mt-1.5 text-2xl font-bold text-amber-700">
               {result.pages.filter((page) => page.score < 60 || page.error).length}
             </p>
+            <p className="mt-0.5 text-xs text-slate-500">Handlungsbedarf</p>
           </div>
         </div>
       </section>
 
-      <section className="mt-6 grid gap-4 xl:grid-cols-2">
-        <Card className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
-              <AlertCircle className="h-5 w-5 text-blue-600" />
+      {/* Insights */}
+      <section className="mt-5 grid gap-4 grid-cols-2">
+        <Card className="print-avoid-break rounded-xl border border-slate-100 bg-slate-50 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <AlertCircle className="h-4 w-4 text-red-500" />
               Kritische Probleme
             </CardTitle>
           </CardHeader>
@@ -1275,10 +1293,10 @@ function SeoReportContent({
           </CardContent>
         </Card>
 
-        <Card className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-slate-50 dark:bg-card shadow-none">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
-              <Sparkles className="h-5 w-5 text-blue-600" />
+        <Card className="print-avoid-break rounded-xl border border-slate-100 bg-slate-50 shadow-none">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+              <Sparkles className="h-4 w-4 text-blue-600" />
               Handlungsempfehlungen
             </CardTitle>
           </CardHeader>
@@ -1294,11 +1312,11 @@ function SeoReportContent({
       </section>
 
       {result.technicalSeo ? (
-        <section className="mt-6">
-          <Card className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-none">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3 text-base text-slate-950 dark:text-slate-50">
-                <Zap className="h-5 w-5 text-blue-600" />
+        <section className="mt-5">
+          <Card className="print-avoid-break rounded-xl border border-slate-100 bg-white shadow-none">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm font-semibold text-slate-900">
+                <Zap className="h-4 w-4 text-blue-600" />
                 Technisches SEO
               </CardTitle>
             </CardHeader>
@@ -1311,10 +1329,10 @@ function SeoReportContent({
                     <div
                       key={check.label}
                       className={cn(
-                        'print-avoid-break rounded-2xl border px-4 py-3 text-sm',
+                        'print-avoid-break rounded-xl border px-3 py-2.5 text-sm',
                         check.ok
-                          ? 'border-blue-100 bg-blue-50 text-blue-600 dark:border-blue-900/60 dark:bg-blue-950/30 dark:text-blue-300'
-                          : 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200'
+                          ? 'border-blue-100 bg-blue-50 text-blue-700'
+                          : 'border-amber-200 bg-amber-50 text-amber-800'
                       )}
                     >
                       <div className="flex items-center gap-2 font-medium">
@@ -1337,64 +1355,53 @@ function SeoReportContent({
         </section>
       ) : null}
 
-      <section className="mt-6 space-y-4">
-        <div className="print-avoid-break">
-          <h2 className="text-lg font-semibold text-slate-950 dark:text-slate-50">Seiten im Detail</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Nach Score sortiert: schwächste Seiten zuerst, stärkste zuletzt.
-          </p>
+      {/* Pages detail */}
+      <section className="mt-5 space-y-3">
+        <div className="print-avoid-break border-b border-slate-200 pb-2">
+          <h2 className="text-sm font-bold uppercase tracking-[0.2em] text-slate-500">Seiten im Detail</h2>
+          <p className="text-xs text-slate-400">Nach Score sortiert — schwächste Seiten zuerst.</p>
         </div>
         {printablePages.map((page) => (
           <Card
             key={page.url}
-            className="print-avoid-break rounded-2xl border border-slate-100 dark:border-border bg-white dark:bg-card shadow-none"
+            className="print-avoid-break rounded-xl border border-slate-100 bg-white shadow-none"
           >
-            <CardHeader>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div>
-                  <CardTitle className="text-base text-slate-950 dark:text-slate-50">
+            <CardHeader className="pb-2">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <CardTitle className="text-sm font-semibold text-slate-900">
                     {sanitizeSeoText(page.title) || extractHostname(page.url) || 'Seite'}
                   </CardTitle>
-                  <p className="mt-1 break-all text-sm text-slate-500 dark:text-slate-400">{page.url}</p>
+                  <p className="mt-0.5 break-all text-xs text-slate-400">{page.url}</p>
                 </div>
-                <Badge className={cn('rounded-full', scoreTone(page.score).badge)}>
+                <Badge className={cn('shrink-0 rounded-full text-xs', scoreTone(page.score).badge)}>
                   Score {page.score}
                 </Badge>
               </div>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                <div className="rounded-2xl bg-slate-50 dark:bg-card p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-                    Title
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    {sanitizeSeoText(page.title) || 'Kein Title gefunden'}
+            <CardContent className="space-y-3 pt-0">
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Title</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-700">
+                    {sanitizeSeoText(page.title) || '—'}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-card p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-                    Meta Description
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    {sanitizeSeoText(page.metaDescription) || 'Keine Meta Description gefunden'}
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Meta Description</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-700">
+                    {sanitizeSeoText(page.metaDescription) || '—'}
                   </p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-card p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-                    Headlines
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    {page.h1s.length} H1 / {page.h2s.length} H2
-                  </p>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Headlines</p>
+                  <p className="mt-1 text-xs text-slate-700">{page.h1s.length} H1 · {page.h2s.length} H2</p>
                 </div>
-                <div className="rounded-2xl bg-slate-50 dark:bg-card p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">
-                    Content
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300">
-                    {page.wordCount} Wörter, {page.images.total} Bilder, {page.images.withoutAlt}{' '}
-                    ohne Alt
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Content</p>
+                  <p className="mt-1 text-xs text-slate-700">
+                    {page.wordCount} Wörter · {page.images.total} Bilder
+                    {page.images.withoutAlt > 0 && ` · ${page.images.withoutAlt} ohne Alt`}
                   </p>
                 </div>
               </div>
