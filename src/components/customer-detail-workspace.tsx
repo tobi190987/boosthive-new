@@ -574,6 +574,13 @@ export function CustomerDetailWorkspace({
           return
         }
 
+        // Token widerrufen → Integrations-Status aktualisieren, kein Toast
+        if (res.status === 403) {
+          setGscProperties([])
+          await loadIntegrations()
+          return
+        }
+
         throw new Error(
           await getResponseErrorMessage(res, 'GSC-Properties konnten nicht geladen werden.')
         )
@@ -587,7 +594,7 @@ export function CustomerDetailWorkspace({
     } finally {
       setLoadingGscProperties(false)
     }
-  }, [customer.id, gscIntegration, open])
+  }, [customer.id, gscIntegration, loadIntegrations, open])
 
   useEffect(() => {
     if (!open || activeTab !== 'integrations' || !gscIsConnected || !isAdmin) return
@@ -1889,7 +1896,7 @@ export function CustomerDetailWorkspace({
             </div>
           )}
 
-          {gscIntegration && (
+          {(gscIsConnected || gscNeedsReconnect) && (
             <div className="space-y-3">
               {gscGoogleEmail && (
                 <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -1964,14 +1971,14 @@ export function CustomerDetailWorkspace({
                   ) : (
                     <ExternalLink className="mr-2 h-4 w-4" />
                   )}
-                  {gscIntegration
+                  {(gscIsConnected || gscNeedsReconnect)
                     ? gscNeedsReconnect
                       ? 'Erneut verbinden'
                       : 'Google-Konto wechseln'
                     : 'Mit Google verbinden'}
                 </Button>
               )}
-              {gscIntegration && (
+              {(gscIsConnected || gscNeedsReconnect) && (
                 <Button
                   type="button"
                   variant="outline"
