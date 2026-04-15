@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { CheckCircle2, Clock, Download, FileText, Loader2, ShieldCheck, Trash2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,8 +80,11 @@ export function LegalPrivacyWorkspace({ subprocessorEntries, avvAcceptedAt: init
       if (!res.ok) throw new Error((payload as { error?: string }).error ?? 'AVV-Bestätigung fehlgeschlagen.')
       setAvvAcceptedAt(new Date().toISOString())
       await loadAuditLog()
+      toast.success('AVV wurde erfolgreich bestätigt.')
     } catch (confirmError) {
-      setError(confirmError instanceof Error ? confirmError.message : 'AVV-Bestätigung fehlgeschlagen.')
+      const msg = confirmError instanceof Error ? confirmError.message : 'AVV-Bestätigung fehlgeschlagen.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setConfirmingAvv(false)
     }
@@ -93,8 +97,11 @@ export function LegalPrivacyWorkspace({ subprocessorEntries, avvAcceptedAt: init
       const datePart = new Date().toISOString().slice(0, 10)
       await downloadFromEndpoint('/api/tenant/legal/av-contract', `av-vertrag_${datePart}.pdf`)
       await loadAuditLog()
+      toast.success('AV-Vertrag wurde heruntergeladen.')
     } catch (downloadError) {
-      setError(downloadError instanceof Error ? downloadError.message : 'AV-Vertrag konnte nicht erstellt werden.')
+      const msg = downloadError instanceof Error ? downloadError.message : 'AV-Vertrag konnte nicht erstellt werden.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setDownloadingAv(false)
     }
@@ -107,8 +114,11 @@ export function LegalPrivacyWorkspace({ subprocessorEntries, avvAcceptedAt: init
       const datePart = new Date().toISOString().slice(0, 10)
       await downloadFromEndpoint('/api/tenant/legal/data-export', `datenexport_${datePart}.json`)
       await loadAuditLog()
+      toast.success('Datenexport wurde heruntergeladen.')
     } catch (downloadError) {
-      setError(downloadError instanceof Error ? downloadError.message : 'Datenexport fehlgeschlagen.')
+      const msg = downloadError instanceof Error ? downloadError.message : 'Datenexport fehlgeschlagen.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setDownloadingExport(false)
     }
@@ -127,8 +137,11 @@ export function LegalPrivacyWorkspace({ subprocessorEntries, avvAcceptedAt: init
       const payload = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error((payload as { error?: string }).error ?? 'Löschen fehlgeschlagen.')
       await loadAuditLog()
+      toast.success('Alle Daten wurden gelöscht.')
     } catch (deleteError) {
-      setError(deleteError instanceof Error ? deleteError.message : 'Löschen fehlgeschlagen.')
+      const msg = deleteError instanceof Error ? deleteError.message : 'Löschen fehlgeschlagen.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setDeletingData(false)
     }

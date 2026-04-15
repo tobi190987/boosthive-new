@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { Building2, Plus, Search, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -233,12 +234,11 @@ export function OwnerDashboardWorkspace() {
       }
 
       await refreshTenantData()
+      toast.success(`Status von „${tenant.name}" wurde auf „${nextStatus}" gesetzt.`)
     } catch (toggleError) {
-      setError(
-        toggleError instanceof Error
-          ? toggleError.message
-          : 'Tenant-Status konnte nicht aktualisiert werden.'
-      )
+      const msg = toggleError instanceof Error ? toggleError.message : 'Tenant-Status konnte nicht aktualisiert werden.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setTogglingId(null)
     }
@@ -260,10 +260,11 @@ export function OwnerDashboardWorkspace() {
       }
 
       await refreshTenantData()
+      toast.success(`„${tenant.name}" wurde gelöscht.`)
     } catch (deleteError) {
-      setError(
-        deleteError instanceof Error ? deleteError.message : 'Tenant konnte nicht gelöscht werden.'
-      )
+      const msg = deleteError instanceof Error ? deleteError.message : 'Tenant konnte nicht gelöscht werden.'
+      setError(msg)
+      toast.error(msg)
     } finally {
       setDeletingId(null)
     }

@@ -64,6 +64,7 @@ import {
 } from '@/lib/tenant-status'
 import { toast } from '@/hooks/use-toast'
 import { PLAN_LIMITS, type QuotaMetric } from '@/lib/usage-limits'
+import { cn } from '@/lib/utils'
 
 // ─── Quota types & helpers ────────────────────────────────────────────────────
 
@@ -350,7 +351,7 @@ export function OwnerTenantTable({
               <Button
                 type="button"
                 variant="outline"
-                className="border-slate-100 dark:border-border bg-white dark:bg-card"
+                className="hidden md:inline-flex border-slate-100 dark:border-border bg-white dark:bg-card"
                 onClick={onCancelBulkEdit}
                 disabled={bulkAction !== null}
               >
@@ -360,7 +361,7 @@ export function OwnerTenantTable({
               <Button
                 type="button"
                 variant="outline"
-                className="border-slate-100 dark:border-border bg-white dark:bg-card"
+                className="hidden md:inline-flex border-slate-100 dark:border-border bg-white dark:bg-card"
                 onClick={onStartBulkEdit}
               >
                 Mehrfach bearbeiten
@@ -370,7 +371,7 @@ export function OwnerTenantTable({
         </div>
 
         {bulkEditMode ? (
-          <div className="flex flex-col gap-3 border-b border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="hidden md:flex flex-col gap-3 border-b border-slate-100 dark:border-border bg-slate-50 dark:bg-card px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-slate-600 dark:text-slate-300">
               {selectedCount > 0
                 ? `${selectedCount} Agentur${selectedCount === 1 ? '' : 'en'} ausgewählt`
@@ -416,7 +417,137 @@ export function OwnerTenantTable({
           </div>
         ) : null}
 
-        <Table>
+        {/* Mobile Card View (< md) */}
+        <div className="flex flex-col divide-y divide-slate-100 dark:divide-border md:hidden">
+          {tenants.map((tenant) => {
+            const isPending = busyTenantId === tenant.id
+            return (
+              <div
+                key={tenant.id}
+                className={cn(
+                  'flex items-start gap-3 px-4 py-4',
+                  tenant.is_archived && 'opacity-70'
+                )}
+              >
+                <div className="min-w-0 flex-1 space-y-1.5">
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/owner/tenants/${tenant.id}`}
+                      className="truncate text-sm font-semibold text-slate-900 transition-colors hover:text-blue-600 dark:text-slate-100"
+                    >
+                      {tenant.name}
+                    </Link>
+                  </div>
+                  <p className="truncate text-xs text-slate-500 dark:text-slate-400">{tenant.slug}.boost-hive.de</p>
+                  <div className="flex flex-wrap items-center gap-2 pt-1">
+                    {archivedFilter === 'only' || tenant.is_archived ? (
+                      <Badge className="rounded-full bg-slate-100 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-800">
+                        Archiviert
+                      </Badge>
+                    ) : (
+                      <Badge className={tenantStatusBadgeClass(tenant.status)}>
+                        {tenantStatusLabel(tenant.status)}
+                      </Badge>
+                    )}
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {tenant.memberCount} User
+                    </span>
+                    {tenant.avv_accepted_at ? (
+                      <span className="flex items-center gap-1 text-[11px] text-emerald-600">
+                        <CheckCircle2 className="h-3 w-3" />
+                        AVV
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-[11px] text-amber-500">
+                        <Clock className="h-3 w-3" />
+                        AVV offen
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9 shrink-0 rounded-full"
+                      disabled={isPending}
+                      aria-label={`Aktionen für ${tenant.name}`}
+                    >
+                      {isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <MoreHorizontal className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="rounded-2xl border-slate-100 dark:border-border">
+                    <DropdownMenuItem asChild>
+                      <Link href={`/owner/tenants/${tenant.id}`} className="cursor-pointer">
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Details öffnen
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => setQuotaTenant(tenant)}
+                      disabled={isPending}
+                    >
+                      <Gauge className="mr-2 h-4 w-4" />
+                      Quota aufstocken
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      className="cursor-pointer"
+                      onClick={() => setConfirmTenant(tenant)}
+                      disabled={isPending || tenant.is_archived || !canOwnerToggleTenantStatus(tenant.status)}
+                    >
+                      {tenant.status === 'inactive' ? (
+                        <CirclePlay className="mr-2 h-4 w-4" />
+                      ) : (
+                        <CirclePause className="mr-2 h-4 w-4" />
+                      )}
+                      {ownerToggleTenantStatusLabel(tenant.status)}
+                    </DropdownMenuItem>
+                    {tenant.is_archived ? (
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setRestoreTenant(tenant)}
+                        disabled={isPending}
+                      >
+                        <RotateCcw className="mr-2 h-4 w-4" />
+                        Aktivieren
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onClick={() => setArchiveTenant(tenant)}
+                        disabled={isPending}
+                      >
+                        <Archive className="mr-2 h-4 w-4" />
+                        Archivieren
+                      </DropdownMenuItem>
+                    )}
+                    {tenant.is_archived ? (
+                      <>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="cursor-pointer text-blue-600 focus:text-blue-600"
+                          onClick={() => setDeleteTenant(tenant)}
+                          disabled={isPending}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Endgültig löschen
+                        </DropdownMenuItem>
+                      </>
+                    ) : null}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )
+          })}
+        </div>
+
+        <Table className="hidden md:table">
           <TableHeader>
             <TableRow className="hover:bg-transparent">
               {bulkEditMode ? (

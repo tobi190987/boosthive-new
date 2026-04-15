@@ -1,10 +1,11 @@
 'use client'
 
 import Image from 'next/image'
-import { useCallback, useEffect, useRef, useState, type ComponentType } from 'react'
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ComponentType } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import {
+  ChevronLeft,
   ChevronRight,
   CircleHelp,
   CreditCard,
@@ -317,7 +318,7 @@ function NavigationContent({
                 aria-current={isNavActive(pathname, '/dashboard') ? 'page' : undefined}
               >
                 <span className="flex items-center gap-3">
-                  <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                  <LayoutDashboard className={cn('h-4 w-4', isNavActive(pathname, '/dashboard') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400')} />
                   Dashboard
                 </span>
                 {visiblePendingHref === '/dashboard' && (
@@ -341,7 +342,7 @@ function NavigationContent({
                 aria-current={isNavActive(pathname, '/budget') ? 'page' : undefined}
               >
                 <span className="flex items-center gap-3">
-                  <Wallet className={cn('h-4 w-4', isNavActive(pathname, '/budget') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                  <Wallet className={cn('h-4 w-4', isNavActive(pathname, '/budget') ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400')} />
                   Budget Tracking
                 </span>
                 {visiblePendingHref === '/budget' && (
@@ -365,7 +366,7 @@ function NavigationContent({
                       ? 'nav-content-group'
                       : undefined
                 }
-                className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
                 aria-expanded={isSectionOpen(group.label)}
               >
                 {group.label}
@@ -400,7 +401,7 @@ function NavigationContent({
                       >
                         <span className="flex items-center gap-3">
                           {hasAccess ? (
-                            <tool.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                            <tool.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400')} />
                           ) : (
                             <div className="relative">
                               <tool.icon className="h-4 w-4 text-slate-300 dark:text-slate-600" />
@@ -450,7 +451,7 @@ function NavigationContent({
                 type="button"
                 onClick={() => toggleSection('Verwaltung')}
                 data-tour="nav-admin-group"
-                className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-400 transition-colors"
+                className="flex w-full items-center justify-between mb-2 px-3 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 hover:text-slate-600 dark:text-slate-400 dark:hover:text-slate-300 transition-colors"
                 aria-expanded={isSectionOpen('Verwaltung')}
               >
                 Verwaltung
@@ -475,7 +476,7 @@ function NavigationContent({
                         aria-current={active ? 'page' : undefined}
                       >
                         <span className="flex items-center gap-3">
-                          <item.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500')} />
+                          <item.icon className={cn('h-4 w-4', active ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-400')} />
                           {item.label}
                         </span>
                         {pendingHref === item.href && (
@@ -535,10 +536,240 @@ function NavigationContent({
   )
 }
 
-export function TenantSidebar(props: TenantShellNavigationProps) {
+const SIDEBAR_COLLAPSED_KEY = 'sidebar-collapsed'
+
+interface FlatNavItem {
+  label: string
+  href: string
+  icon: ComponentType<{ className?: string }>
+  hasAccess: boolean
+  badge?: number
+}
+
+function TenantSidebarCollapsed({
+  context,
+  initialOpenApprovalsCount = 0,
+  initialNotifications = [],
+}: TenantShellNavigationProps) {
+  const pathname = usePathname()
+  const router = useRouter()
+  const openApprovalsCount = initialOpenApprovalsCount
+
+  const flatItems: FlatNavItem[] = [
+    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, hasAccess: true },
+    { label: 'Budget Tracking', href: '/budget', icon: Wallet, hasAccess: true },
+  ]
+
+  for (const group of TOOL_GROUPS) {
+    for (const tool of group.items.filter((t) => t.showInNav !== false)) {
+      const hasAccess =
+        context.activeModuleCodes.includes('all') ||
+        context.activeModuleCodes.includes(tool.moduleCode) ||
+        ((tool.moduleCode === 'kanban' || tool.moduleCode === 'approvals') &&
+          (context.activeModuleCodes.includes('content_briefs') ||
+            context.activeModuleCodes.includes('ad_generator')))
+      const badge =
+        (tool.href === '/tools/kanban' || tool.href === '/tools/approvals') && openApprovalsCount > 0
+          ? openApprovalsCount
+          : undefined
+      flatItems.push({
+        label: tool.label,
+        href: tool.href,
+        icon: tool.icon,
+        hasAccess,
+        badge,
+      })
+    }
+  }
+
+  if (context.membership.role === 'admin') {
+    flatItems.push(
+      { label: 'Kunden', href: '/tools/customers', icon: UserRound, hasAccess: true },
+      { label: 'User-Management', href: '/settings/team', icon: Users2, hasAccess: true },
+      { label: 'Rechtliches & Datenschutz', href: '/settings/legal', icon: ShieldCheck, hasAccess: true },
+      { label: 'Abrechnung', href: '/billing', icon: CreditCard, hasAccess: true }
+    )
+  }
+
   return (
-    <aside className="sticky top-0 hidden h-screen w-[280px] shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white dark:border-border dark:bg-[#080c12] md:flex">
-      <NavigationContent {...props} />
+    <>
+      <div className="flex items-center justify-center px-2 py-4">
+        {context.tenant.logoUrl ? (
+          <Image
+            src={context.tenant.logoUrl}
+            alt={`${context.tenant.name} Logo`}
+            width={40}
+            height={40}
+            className="h-9 w-9 rounded-xl object-contain"
+            unoptimized
+          />
+        ) : (
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-sm font-semibold text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+            {context.tenant.name.slice(0, 1).toUpperCase()}
+          </div>
+        )}
+      </div>
+
+      <Separator className="bg-slate-100 dark:bg-slate-800" />
+
+      <div className="flex justify-center px-2 py-3">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href="/help"
+              onMouseEnter={() => router.prefetch('/help')}
+              className="flex h-10 w-10 items-center justify-center rounded-2xl text-slate-400 transition-colors hover:bg-slate-50 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-200"
+              aria-label="Hilfe öffnen"
+            >
+              <CircleHelp className="h-4 w-4" />
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">Hilfe</TooltipContent>
+        </Tooltip>
+      </div>
+
+      <nav className="flex-1 px-2 py-1" aria-label="Hauptnavigation (kollabiert)">
+        <ul className="space-y-1">
+          {flatItems.map((item) => {
+            const active = isNavActive(pathname, item.href)
+            return (
+              <li key={item.href}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Link
+                      href={item.href}
+                      onMouseEnter={() => router.prefetch(item.href)}
+                      aria-label={item.label}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'relative mx-auto flex h-10 w-10 items-center justify-center rounded-2xl transition-colors',
+                        active
+                          ? 'bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400'
+                          : item.hasAccess
+                            ? 'text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#1e2635]/60 dark:hover:text-slate-100'
+                            : 'text-slate-400 dark:text-slate-600'
+                      )}
+                    >
+                      <item.icon
+                        className={cn(
+                          'h-5 w-5',
+                          active
+                            ? 'text-blue-600 dark:text-blue-400'
+                            : item.hasAccess
+                              ? 'text-slate-500 dark:text-slate-400'
+                              : 'text-slate-300 dark:text-slate-600'
+                        )}
+                      />
+                      {!item.hasAccess && (
+                        <Lock className="absolute right-1 top-1 h-2.5 w-2.5 text-slate-300 dark:text-slate-600" />
+                      )}
+                      {item.badge ? (
+                        <span className="absolute right-0 top-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[9px] font-bold text-white">
+                          {item.badge}
+                        </span>
+                      ) : null}
+                    </Link>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">{item.label}</TooltipContent>
+                </Tooltip>
+              </li>
+            )
+          })}
+        </ul>
+      </nav>
+
+      <Separator className="bg-slate-100 dark:bg-slate-800" />
+
+      <div className="flex flex-col items-center gap-2 p-2">
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Link
+              href="/settings/profile"
+              className="flex h-10 w-10 items-center justify-center rounded-2xl transition hover:bg-slate-50 dark:hover:bg-secondary"
+              aria-label="Profil bearbeiten"
+            >
+              <Avatar className="h-8 w-8 border border-slate-100 dark:border-[#2d3847]">
+                <AvatarImage src={context.user.avatarUrl ?? undefined} alt={context.user.email} />
+                <AvatarFallback className="bg-blue-50 text-xs font-semibold text-blue-600 dark:bg-blue-950/50 dark:text-blue-400">
+                  {getUserInitials(
+                    { first_name: context.user.firstName, last_name: context.user.lastName },
+                    context.user.email
+                  )}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+          </TooltipTrigger>
+          <TooltipContent side="right">Profil</TooltipContent>
+        </Tooltip>
+        <NotificationBell initialNotifications={initialNotifications} />
+        <ThemeToggle />
+      </div>
+      <GlobalCommandPalette />
+    </>
+  )
+}
+
+function subscribeToSidebarStorage(cb: () => void) {
+  window.addEventListener('storage', cb)
+  return () => window.removeEventListener('storage', cb)
+}
+
+function getCollapsedSnapshot(): boolean {
+  try {
+    return localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function getServerCollapsedSnapshot(): boolean {
+  return false
+}
+
+export function TenantSidebar(props: TenantShellNavigationProps) {
+  const storedCollapsed = useSyncExternalStore(
+    subscribeToSidebarStorage,
+    getCollapsedSnapshot,
+    getServerCollapsedSnapshot
+  )
+  const [override, setOverride] = useState<boolean | null>(null)
+  const isCollapsed = override ?? storedCollapsed
+
+  const toggleCollapsed = useCallback(() => {
+    const next = !isCollapsed
+    try {
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(next))
+    } catch {
+      /* ignore */
+    }
+    setOverride(next)
+  }, [isCollapsed])
+
+  return (
+    <aside
+      className={cn(
+        'sticky top-0 hidden h-screen shrink-0 flex-col overflow-y-auto border-r border-slate-100 bg-white transition-[width] duration-200 dark:border-border dark:bg-[#080c12] md:flex',
+        isCollapsed ? 'w-[64px] lg:w-[280px]' : 'w-[280px]'
+      )}
+    >
+      <div className="relative flex h-full flex-col">
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={isCollapsed ? 'Sidebar ausklappen' : 'Sidebar einklappen'}
+          aria-pressed={isCollapsed}
+          className="absolute right-[-12px] top-6 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:text-slate-900 dark:border-border dark:bg-card dark:text-slate-400 dark:hover:text-slate-100 md:flex lg:hidden"
+        >
+          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+        {/* Auf md..lg: konditionell collapsed/expanded — auf lg+: immer expanded */}
+        <div className="flex h-full flex-col lg:hidden">
+          {isCollapsed ? <TenantSidebarCollapsed {...props} /> : <NavigationContent {...props} />}
+        </div>
+        <div className="hidden h-full flex-col lg:flex">
+          <NavigationContent {...props} />
+        </div>
+      </div>
     </aside>
   )
 }

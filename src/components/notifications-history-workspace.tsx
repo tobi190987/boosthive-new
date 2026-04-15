@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, Check, ExternalLink, Filter } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -76,8 +77,9 @@ export function NotificationsHistoryWorkspace({ notifications: initial }: { noti
       setNotifications((prev) =>
         prev.map((n) => (n.read_at ? n : { ...n, read_at: new Date().toISOString() }))
       )
+      toast.success('Alle Benachrichtigungen als gelesen markiert.')
     } catch {
-      // silent
+      toast.error('Benachrichtigungen konnten nicht aktualisiert werden.')
     }
   }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
 import { InviteDialog, type InvitationDraft } from '@/components/invite-dialog'
 import { TeamMemberTable, type TeamMemberRecord } from '@/components/team-member-table'
 import { Button } from '@/components/ui/button'
@@ -129,6 +130,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         )
         return [newEntry, ...filtered]
       })
+      toast.success(`Einladung an ${payload.invitation.email} wurde versendet.`)
     }
 
   }
@@ -146,6 +148,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
 
       if (!response.ok) {
         setError(payload.error ?? 'Einladung konnte nicht erneut versendet werden.')
+        toast.error(payload.error ?? 'Einladung konnte nicht erneut versendet werden.')
         return
       }
 
@@ -165,6 +168,7 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
         setEntries((current) =>
           current.map((entry) => (entry.id === id ? nextEntry : entry))
         )
+        toast.success('Einladung wurde erneut versendet.')
       }
     } finally {
       setPendingAction(null)
@@ -194,10 +198,12 @@ export function TeamInvitationsWorkspace({ tenantSlug }: TeamInvitationsWorkspac
 
       if (!response.ok) {
         setError(payload.error ?? fallbackError)
+        toast.error(payload.error ?? fallbackError)
         return
       }
 
       setEntries((current) => current.filter((currentEntry) => currentEntry.id !== entry.id))
+      toast.success(entry.kind === 'invitation' ? 'Einladung gelöscht.' : 'User wurde entfernt.')
     } finally {
       setPendingAction(null)
     }

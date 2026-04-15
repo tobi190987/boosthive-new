@@ -33,10 +33,18 @@ const SEGMENT_LABELS: Record<string, string> = {
   'seo-compare': 'Competitor Analyse',
   'gsc-rankings': 'GSC Rankings',
   rankings: 'Rankings',
+  // top-level pages
+  budget: 'Budget Tracking',
+  exports: 'Export Center',
+  portfolio: 'Portfolio',
+  // tools sub-pages (additional)
+  'brand-trends': 'Brand Intelligence',
+  'social-calendar': 'Social Media Kalender',
   // settings sub-pages
   profile: 'Profil',
   team: 'Team',
   legal: 'Rechtliches',
+  portal: 'Client-Portal',
 }
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

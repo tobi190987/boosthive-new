@@ -63,6 +63,7 @@ BoostHive ist eine SaaS-Plattform für Marketingagenturen, die als vollständige
 | P2 | Brand Mention Monitoring & Sentiment Analyse | Planned |
 | P2 | Social Media Trend Radar | Planned |
 | P1 | Landing Page Startseite (Root Domain) | Planned |
+| P1 | UX Tablet & Mobile (Sidebar Collapse + Mobile Tenant Table) | Planned |
 
 ## Success Metrics
 - **Technische Stabilität:** Zero-Downtime-Deployment, nachgewiesene Datenisolation zwischen Tenants
