@@ -669,7 +669,6 @@ function SeoResultsView({
   const [activeProblemFilterKey, setActiveProblemFilterKey] = useState<string | null>(null)
   const [showDetailsBackToTop, setShowDetailsBackToTop] = useState(false)
   const printRef = useRef<HTMLDivElement | null>(null)
-  const printContainerRef = useRef<HTMLDivElement | null>(null)
   const detailsTopRef = useRef<HTMLDivElement | null>(null)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
@@ -780,7 +779,7 @@ function SeoResultsView({
   }, [visiblePages.length])
 
   const handleExportPdf = useCallback(() => {
-    if (!printContainerRef.current) {
+    if (!printRef.current) {
       toast({
         title: 'PDF konnte nicht vorbereitet werden',
         description: 'Der Report ist gerade noch nicht verfügbar.',
@@ -789,72 +788,63 @@ function SeoResultsView({
       return
     }
 
-    const container = printContainerRef.current
-    const originalParent = container.parentElement
-    const originalNextSibling = container.nextSibling
-
-    // Move to direct body child so position:static works across multiple pages
-    document.body.appendChild(container)
-    container.setAttribute('data-print-area', 'true')
-
-    // Force light mode so dark: Tailwind variants stay inactive during print
-    const htmlEl = document.documentElement
-    const hadDark = htmlEl.classList.contains('dark')
-    if (hadDark) htmlEl.classList.remove('dark')
-
-    const style = document.createElement('style')
-    style.id = 'seo-pdf-print-style'
-    style.textContent = `
-      @media print {
-        @page { size: A4; margin: 14mm 12mm; }
-        /* Hide all sibling body children */
-        body > *:not([data-print-area]) { display: none !important; }
-        /* Print container in normal flow */
-        [data-print-area] {
-          display: block !important;
-          position: static !important;
-          left: auto !important;
-          top: auto !important;
-          width: 100% !important;
-          max-width: none !important;
-          opacity: 1 !important;
-          transform: none !important;
-          background: #ffffff !important;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-        /* Force opaque backgrounds (avoids translucent bg-white/90 etc.) */
-        [data-print-area] [class*="bg-white"] { background-color: #ffffff !important; }
-        [data-print-area] [class*="bg-slate-50"] { background-color: #f8fafc !important; }
-        [data-print-area] [class*="bg-slate-100"] { background-color: #f1f5f9 !important; }
-        [data-print-area] [class*="bg-blue-50"] { background-color: #eff6ff !important; }
-        [data-print-area] [class*="bg-amber-50"] { background-color: #fffbeb !important; }
-        /* Preserve border radii and borders */
-        [data-print-area] * { box-sizing: border-box; }
-        /* Page breaks */
-        .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
-        /* Section spacing on page breaks */
-        [data-print-area] section + section { margin-top: 20px; }
+    // Serialize all already-loaded CSS rules from document.styleSheets —
+    // this avoids any external file downloads in the iframe context.
+    const cssText = Array.from(document.styleSheets).flatMap((sheet) => {
+      try {
+        return Array.from(sheet.cssRules).map((rule) => rule.cssText)
+      } catch {
+        return [] // cross-origin or restricted sheets — skip silently
       }
-    `
-    document.head.appendChild(style)
+    }).join('\n')
+
+    const doc = `<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>SEO-Analyse Report</title>
+  <style>${cssText}</style>
+  <style>
+    @page { size: A4; margin: 14mm 12mm; }
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      min-height: 0;
+      background: #ffffff;
+      color: #0f172a;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .print-avoid-break { break-inside: avoid; page-break-inside: avoid; }
+  </style>
+</head>
+<body>${printRef.current.innerHTML}</body>
+</html>`
+
+    const frame = document.createElement('iframe')
+    frame.setAttribute('aria-hidden', 'true')
+    frame.style.cssText =
+      'position:fixed;top:-99999px;left:-99999px;width:1px;height:1px;border:0;visibility:hidden'
+    document.body.appendChild(frame)
 
     const cleanup = () => {
-      style.remove()
-      container.removeAttribute('data-print-area')
-      // Restore original position in the React tree
-      if (originalParent) {
-        if (originalNextSibling) {
-          originalParent.insertBefore(container, originalNextSibling)
-        } else {
-          originalParent.appendChild(container)
-        }
-      }
-      if (hadDark) htmlEl.classList.add('dark')
+      window.setTimeout(() => frame.remove(), 1000)
     }
 
-    window.addEventListener('afterprint', cleanup, { once: true })
-    window.print()
+    frame.addEventListener('load', () => {
+      const cw = frame.contentWindow
+      if (!cw) { frame.remove(); return }
+      // Small buffer so the browser finishes layout before printing
+      window.setTimeout(() => {
+        cw.focus()
+        cw.print()
+        cleanup()
+      }, 400)
+    })
+
+    // srcdoc sets the iframe content without any network request
+    frame.srcdoc = doc
   }, [toast])
 
   return (
@@ -879,7 +869,7 @@ function SeoResultsView({
         </Button>
       </div>
 
-      <div ref={printContainerRef} className="pointer-events-none fixed left-[-10000px] top-0 w-[210mm] opacity-0">
+      <div className="pointer-events-none fixed left-[-10000px] top-0 w-[210mm] opacity-0">
         <div ref={printRef}>
           <SeoReportContent
             result={result}
