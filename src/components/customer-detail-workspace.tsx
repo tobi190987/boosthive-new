@@ -1478,7 +1478,7 @@ export function CustomerDetailWorkspace({
             </div>
           )}
 
-          {metaAdsIntegration && (
+          {(metaAdsIsConnected || metaAdsNeedsReconnect) && (
             <div className="space-y-3">
               {metaAdsUserName && (
                 <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -1551,21 +1551,21 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              {(!metaAdsAccountId || metaAdsNeedsReconnect) && (
+              {(!metaAdsIsConnected || metaAdsNeedsReconnect) && (
                 <Button onClick={handleConnectMetaAds} disabled={connectingMetaAds} className="rounded-xl">
                   {connectingMetaAds ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <ExternalLink className="mr-2 h-4 w-4" />
                   )}
-                  {metaAdsIntegration
+                  {(metaAdsIsConnected || metaAdsNeedsReconnect)
                     ? metaAdsNeedsReconnect
                       ? 'Erneut verbinden'
                       : 'Meta-Konto wechseln'
                     : 'Mit Meta verbinden'}
                 </Button>
               )}
-              {metaAdsIntegration && (
+              {(metaAdsIsConnected || metaAdsNeedsReconnect) && (
                 <Button
                   type="button"
                   variant="outline"
@@ -1760,7 +1760,7 @@ export function CustomerDetailWorkspace({
             </div>
           )}
 
-          {googleAdsIntegration && (
+          {(googleAdsIsConnected || googleAdsNeedsReconnect) && (
             <div className="space-y-3">
               {googleAdsGoogleEmail && (
                 <div className="rounded-lg border border-white/70 bg-white/80 px-3 py-2 text-sm dark:border-slate-800 dark:bg-slate-900/60">
@@ -1833,21 +1833,21 @@ export function CustomerDetailWorkspace({
         <div className="flex shrink-0 flex-col gap-2">
           {isAdmin ? (
             <>
-              {(!googleAdsAccountId || googleAdsNeedsReconnect) && (
+              {(!googleAdsIsConnected || googleAdsNeedsReconnect) && (
                 <Button onClick={handleConnectGoogleAds} disabled={connectingGoogleAds} className="rounded-xl">
                   {connectingGoogleAds ? (
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
                     <ExternalLink className="mr-2 h-4 w-4" />
                   )}
-                  {googleAdsIntegration
+                  {(googleAdsIsConnected || googleAdsNeedsReconnect)
                     ? googleAdsNeedsReconnect
                       ? 'Erneut verbinden'
                       : 'Google-Konto wechseln'
                     : 'Mit Google verbinden'}
                 </Button>
               )}
-              {googleAdsIntegration && (
+              {(googleAdsIsConnected || googleAdsNeedsReconnect) && (
                 <Button
                   type="button"
                   variant="outline"
