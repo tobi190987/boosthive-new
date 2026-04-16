@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   AlertTriangle,
   BadgeEuro,
@@ -282,6 +282,7 @@ export function BudgetWorkspace({ isAdmin }: BudgetWorkspaceProps) {
   const [error, setError] = useState<string | null>(null)
   const [hasAnyIntegration, setHasAnyIntegration] = useState(true)
   const [syncing, setSyncing] = useState(false)
+  const lastLoadTimeRef = useRef<number>(0)
 
   const lastSyncedAt = useMemo(() => {
     const dates = budgets.map((b) => b.last_synced_at).filter(Boolean) as string[]
@@ -346,6 +347,7 @@ export function BudgetWorkspace({ isAdmin }: BudgetWorkspaceProps) {
       const data = (await res.json()) as BudgetsResponse
       setBudgets(data.budgets ?? [])
       setHasAnyIntegration(data.hasAnyIntegration ?? false)
+      lastLoadTimeRef.current = Date.now()
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Unbekannter Fehler beim Laden.'
@@ -358,6 +360,21 @@ export function BudgetWorkspace({ isAdmin }: BudgetWorkspaceProps) {
 
   useEffect(() => {
     void loadBudgets()
+  }, [loadBudgets])
+
+  // Auto-Refresh wenn Tab wieder aktiv wird und Daten älter als 30 Min sind
+  useEffect(() => {
+    const STALE_MS = 30 * 60 * 1000
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        const age = Date.now() - lastLoadTimeRef.current
+        if (age > STALE_MS) {
+          void loadBudgets()
+        }
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
   }, [loadBudgets])
 
   const handleSync = useCallback(async () => {
