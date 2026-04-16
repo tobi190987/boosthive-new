@@ -2,14 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cleanupOldRankingData } from '@/lib/keyword-rankings'
 
 function isAuthorizedCronRequest(request: NextRequest) {
-  const cronSecret = process.env.CRON_SECRET
-  const authHeader = request.headers.get('authorization')
-
-  if (cronSecret) {
-    return authHeader === `Bearer ${cronSecret}`
+  if (request.headers.get('x-vercel-cron') === '1') {
+    return true
   }
-
-  return request.headers.get('x-vercel-cron') === '1'
+  const cronSecret = process.env.CRON_SECRET
+  if (!cronSecret) return false
+  return request.headers.get('authorization') === `Bearer ${cronSecret}`
 }
 
 export async function GET(request: NextRequest) {
