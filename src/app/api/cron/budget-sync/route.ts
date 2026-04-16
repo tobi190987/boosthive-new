@@ -19,30 +19,15 @@ import {
 export const maxDuration = 300
 
 function isAuthorizedCronRequest(request: NextRequest) {
-  // Vercel setzt diesen Header bei automatischen und manuellen Cron-Aufrufen
-  if (request.headers.get('x-vercel-cron') === '1') {
-    return true
-  }
-  // Fallback: CRON_SECRET für manuelle Tests via curl etc.
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret) return false
   return request.headers.get('authorization') === `Bearer ${cronSecret}`
 }
 
 export async function GET(request: NextRequest) {
-  // TEMP DEBUG
-  const xvc = request.headers.get('x-vercel-cron')
-  const auth = request.headers.get('authorization')
-  const secret = process.env.CRON_SECRET
-  console.log('[cron1] x-vercel-cron:', xvc)
-  console.log('[cron2] auth prefix:', auth?.substring(0, 14) ?? 'none')
-  console.log('[cron3] secret len:', secret?.length ?? 0)
-  console.log('[cron4] match:', auth === `Bearer ${secret}`)
-
-  if (xvc !== '1' && auth !== `Bearer ${secret}`) {
-    return NextResponse.json({ error: 'Unauthorized.', debug: { xvc, authPresent: !!auth, secretLen: secret?.length ?? 0 } }, { status: 401 })
+  if (!isAuthorizedCronRequest(request)) {
+    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
-  // END DEBUG — Warten auf Log-Analyse
 
   const admin = createAdminClient()
 
