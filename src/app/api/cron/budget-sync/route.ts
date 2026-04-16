@@ -30,6 +30,16 @@ function isAuthorizedCronRequest(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // TEMP DEBUG – wird nach Fix entfernt
+  const allHeaders: Record<string, string> = {}
+  request.headers.forEach((v, k) => { allHeaders[k] = k === 'authorization' ? `Bearer ***` : v })
+  console.log('[cron-debug]', JSON.stringify({
+    headers: allHeaders,
+    cronSecretPresent: !!process.env.CRON_SECRET,
+    cronSecretLength: process.env.CRON_SECRET?.length,
+    authMatch: request.headers.get('authorization') === `Bearer ${process.env.CRON_SECRET}`,
+  }))
+
   if (!isAuthorizedCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
